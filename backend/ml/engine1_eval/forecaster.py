@@ -6,6 +6,7 @@ Prediction intervals are not the model's job: the harness builds the same empiri
 for every candidate (see harness.py), which keeps coverage comparable.
 """
 
+from datetime import date
 from typing import Protocol
 
 import numpy as np
@@ -14,6 +15,9 @@ import numpy as np
 class Forecaster(Protocol):
     name: str
 
-    def forecast(self, history: np.ndarray, horizon: int) -> np.ndarray:
-        """Point forecasts for the `horizon` weeks after `history` (non-negative amounts)."""
+    def forecast(self, history: np.ndarray, horizon: int, start: date) -> np.ndarray:
+        """Point forecasts for the `horizon` weeks after `history` (non-negative amounts).
+
+        `start` is the Monday of `history[0]`, for models that use the calendar.
+        """
         ...

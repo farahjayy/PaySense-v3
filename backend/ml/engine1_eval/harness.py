@@ -10,10 +10,11 @@ simpler choice.)
 
 import time
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 
 import numpy as np
 
-from ml.engine1_eval.data import Series
+from ml.engine1_eval.data import DAYS_PER_WEEK, Series
 from ml.engine1_eval.forecaster import Forecaster
 from ml.engine1_eval.metrics import (
     cumulative_margin_error,
@@ -34,6 +35,8 @@ class EvalConfig:
     max_origins: int | None = None
     interval_level: float = 0.8
     min_interval_errors: int = 8
+    history_limit: int | None = None  # models see only the last N weeks (short-history study)
+    first_origin_date: date | None = None  # no origin earlier than this week (see _origins)
 
 
 @dataclass
@@ -50,8 +53,23 @@ def rolling_origins(
     return origins[-max_origins:] if max_origins else origins
 
 
-def _history(values: np.ndarray, origin: int) -> np.ndarray:
-    history = values[:origin].copy()
+def _origins(length: int, series_start: date, config: EvalConfig) -> list[int]:
+    """Origins for one series. `first_origin_date` keeps every model on the same, later part of the
+    calendar, so a global model trained on earlier weeks of other series is never tested on the
+    weeks it was trained on (calendar effects such as exam weeks are shared across series)."""
+    first = config.min_train
+    if config.first_origin_date is not None:
+        days = (config.first_origin_date - series_start).days
+        first = max(first, -(-days // DAYS_PER_WEEK))  # ceiling division
+    return rolling_origins(length, first, config.horizon, config.stride, config.max_origins)
+
+
+def _history_start(series_start: date, origin: int, history: np.ndarray) -> date:
+    return series_start + timedelta(days=DAYS_PER_WEEK * (origin - len(history)))
+
+
+def _history(values: np.ndarray, origin: int, limit: int | None = None) -> np.ndarray:
+    history = values[max(0, origin - limit) if limit else 0 : origin].copy()
     history.flags.writeable = False
     return history
 
@@ -87,8 +105,8 @@ class _ErrorLedger:
         return lower, upper
 
 
-def _forecast(model: Forecaster, history: np.ndarray, horizon: int) -> np.ndarray:
-    forecast = np.asarray(model.forecast(history, horizon), dtype=float)
+def _forecast(model: Forecaster, history: np.ndarray, horizon: int, start: date) -> np.ndarray:
+    forecast = np.asarray(model.forecast(history, horizon, start), dtype=float)
     if forecast.shape != (horizon,):
         raise ValueError(f"{model.name} returned {forecast.shape}, expected ({horizon},)")
     return forecast
@@ -98,12 +116,12 @@ def evaluate_series(series: Series, model: Forecaster, config: EvalConfig) -> Se
     result = SeriesEvaluation()
     ledger = _ErrorLedger(config.horizon)
     last = config.horizon
-    for origin in rolling_origins(
-        len(series), config.min_train, config.horizon, config.stride, config.max_origins
-    ):
-        history = _history(series.values, origin)
+    for origin in _origins(len(series), series.start, config):
+        history = _history(series.values, origin, config.history_limit)
         began = time.perf_counter()
-        forecast = _forecast(model, history, config.horizon)
+        forecast = _forecast(
+            model, history, config.horizon, _history_start(series.start, origin, history)
+        )
         result.seconds += time.perf_counter() - began
         actual = series.values[origin : origin + config.horizon]
         bounds = ledger.bounds(origin, forecast, config.interval_level, config.min_interval_errors)
@@ -119,7 +137,7 @@ def evaluate_series(series: Series, model: Forecaster, config: EvalConfig) -> Se
             "source": series.source,
             "model": model.name,
             "origin": origin,
-            "train_len": origin,
+            "train_len": len(history),
             "scale": scale,
         }
         for h in config.report_horizons:
@@ -141,18 +159,17 @@ def evaluate_pair(
     if spend.start != income.start or len(spend) != len(income):
         raise ValueError("spend and income series must cover the same weeks")
     rows = []
-    for origin in rolling_origins(
-        len(spend), config.min_train, config.horizon, config.stride, config.max_origins
-    ):
+    for origin in _origins(len(spend), spend.start, config):
         spend_history, income_history = (
-            _history(spend.values, origin),
-            _history(income.values, origin),
+            _history(spend.values, origin, config.history_limit),
+            _history(income.values, origin, config.history_limit),
         )
+        start = _history_start(spend.start, origin, spend_history)
         scale = naive_scale(income_history - spend_history)
         if scale is None:
             continue
-        spend_forecast = _forecast(model, spend_history, config.horizon)
-        income_forecast = _forecast(model, income_history, config.horizon)
+        spend_forecast = _forecast(model, spend_history, config.horizon, start)
+        income_forecast = _forecast(model, income_history, config.horizon, start)
         spend_actual = spend.values[origin : origin + config.horizon]
         income_actual = income.values[origin : origin + config.horizon]
         row = {

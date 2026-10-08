@@ -1,5 +1,7 @@
 """The benchmarks every comparison must include (D-05, D-06): naive and moving average."""
 
+from datetime import date
+
 import numpy as np
 
 
@@ -8,7 +10,7 @@ class Naive:
 
     name = "naive"
 
-    def forecast(self, history: np.ndarray, horizon: int) -> np.ndarray:
+    def forecast(self, history: np.ndarray, horizon: int, start: date) -> np.ndarray:
         return np.full(horizon, history[-1], dtype=float)
 
 
@@ -24,5 +26,5 @@ class MovingAverage:
         self.window = window
         self.name = f"ma{window}"
 
-    def forecast(self, history: np.ndarray, horizon: int) -> np.ndarray:
+    def forecast(self, history: np.ndarray, horizon: int, start: date) -> np.ndarray:
         return np.full(horizon, float(np.mean(history[-self.window :])), dtype=float)

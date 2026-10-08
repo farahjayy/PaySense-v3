@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 import pytest
@@ -40,7 +40,7 @@ def test_a_model_is_only_ever_shown_history_before_the_origin():
     class Recorder:
         name = "recorder"
 
-        def forecast(self, history, horizon):
+        def forecast(self, history, horizon, start):
             seen.append(history.copy())
             assert not history.flags.writeable  # cannot be altered, and cannot be extended
             return np.zeros(horizon)
@@ -60,7 +60,7 @@ def test_an_oracle_that_reads_the_future_scores_nearly_zero_so_the_harness_would
     class Oracle:
         name = "oracle"
 
-        def forecast(self, history, horizon):
+        def forecast(self, history, horizon, start):
             start = len(history)
             return values[start : start + horizon]
 
@@ -130,3 +130,33 @@ def test_two_runs_give_identical_rows():
     second = evaluate_series(series(values), MovingAverage(3), CONFIG).rows
 
     np.testing.assert_equal(first, second)
+
+
+def test_a_first_origin_date_keeps_every_origin_in_the_later_part_of_the_calendar():
+    config = EvalConfig(
+        horizon=4,
+        report_horizons=(1, 4),
+        min_train=6,
+        stride=2,
+        first_origin_date=date(2025, 3, 3),  # 8 weeks after the series starts
+    )
+
+    rows = evaluate_series(series(np.arange(1.0, 40.0)), Naive(), config).rows
+
+    assert min(r["origin"] for r in rows) == 8
+
+
+def test_a_history_limit_shows_the_model_only_the_most_recent_weeks():
+    seen = []
+
+    class Recorder:
+        name = "recorder"
+
+        def forecast(self, history, horizon, start):
+            seen.append((len(history), start))
+            return np.zeros(horizon)
+
+    config = EvalConfig(horizon=4, report_horizons=(4,), min_train=10, stride=100, history_limit=6)
+    evaluate_series(series(np.arange(1.0, 30.0)), Recorder(), config)
+
+    assert seen == [(6, date(2025, 1, 6) + timedelta(weeks=4))]
