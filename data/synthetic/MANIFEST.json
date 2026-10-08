@@ -1,0 +1,24 @@
+{
+  "files": {
+    "profiles.jsonl": {
+      "rows": 10000,
+      "sha256": "4634854bd1c0bc3c718266b0e276436dcdf753a9297d388b6dbf03ef94eab604"
+    },
+    "weekly_series.csv": {
+      "rows": 780000,
+      "sha256": "671c4e44e8be5e69112661f50a776dc010ea42fc433d5d9e7dfd0319ebdbe040"
+    }
+  },
+  "params_hash": "bd12a1ef423c041e",
+  "persona_counts": {
+    "budget_conscious": 3958,
+    "frequent_bnpl": 3482,
+    "irregular_income": 2560
+  },
+  "profiles": 10000,
+  "seed": 20251228,
+  "versions": {
+    "numpy": "2.5.3",
+    "python": "3.12.15"
+  }
+}
