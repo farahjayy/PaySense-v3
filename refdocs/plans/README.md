@@ -27,4 +27,5 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 
 | File | Description | Status |
 |---|---|---|
-| [2026-10-08-p0-foundation.md](2026-10-08-p0-foundation.md) | P0 Foundation — toolchain spike, backend/frontend skeletons, username login + user scoping, generated API client, test tooling | Draft |
+| [2026-10-08-p0-foundation.md](2026-10-08-p0-foundation.md) | P0 Foundation — toolchain spike, backend/frontend skeletons, username login + user scoping, generated API client, test tooling | In progress — all but live-Supabase checks |
+| [2026-10-08-p1-ledger-bnpl.md](2026-10-08-p1-ledger-bnpl.md) | P1 Ledger & BNPL domain — pure-domain ports (schedule, limit split, flows, CSV), repositories, API; no balance (D-27) | In progress |
