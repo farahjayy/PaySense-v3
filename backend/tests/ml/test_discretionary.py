@@ -123,12 +123,12 @@ def test_some_weeks_are_unusually_large():
     assert big / weeks > 0.02
 
 
-def test_the_category_mix_follows_the_cited_household_weights():
-    counts = {}
+def test_category_spend_shares_follow_the_cited_household_weights():
+    spent = {}
     for index in range(80):
         for t in spend_only(spending("budget_conscious", index)):
-            counts[t.category] = counts.get(t.category, 0) + 1
-    total = sum(counts.values())
+            spent[t.category] = spent.get(t.category, 0) + t.amount_sen
+    total = sum(spent.values())
     food, eat, transport = (
         PARAMS["discretionary.category_weight_food"],
         PARAMS["discretionary.category_weight_eating_out"],
@@ -137,8 +137,20 @@ def test_the_category_mix_follows_the_cited_household_weights():
     other = PARAMS["discretionary.category_other_share"]
     scale = (1 - other) / (food + eat + transport)
 
-    assert counts["Food"] / total == pytest.approx((food + eat) * scale, abs=0.04)
-    assert counts["Transport"] / total == pytest.approx(transport * scale, abs=0.04)
+    # Approximate on purpose: a week's total is fixed first and then split across a handful of
+    # transactions, so weeks with one or two transactions pull shares towards the commoner category.
+    assert spent["Food"] / total == pytest.approx((food + eat) * scale, abs=0.08)
+    assert spent["Transport"] / total == pytest.approx(transport * scale, abs=0.08)
+
+
+def test_a_shopping_or_education_purchase_is_typically_bigger_than_a_bus_fare():
+    sizes = {}
+    for index in range(60):
+        for t in spend_only(spending("budget_conscious", index)):
+            sizes.setdefault(t.category, []).append(t.amount_sen)
+
+    assert median(sizes["Shopping"]) > 2 * median(sizes["Transport"])
+    assert median(sizes["Education"]) > median(sizes["Food"])
 
 
 def test_the_importer_recovers_the_intended_category_at_the_documented_rate():

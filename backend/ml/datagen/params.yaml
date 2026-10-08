@@ -222,10 +222,10 @@ discretionary:
     assumed: true
     why: "Size of such a week relative to normal."
   transactions_per_week_mean:
-    value: 9
+    value: 5
     unit: count
     assumed: true
-    why: "Mean number of discretionary transactions per week (Poisson)."
+    why: "Mean number of discretionary transactions per week (Poisson). With the cited RM201-400 monthly spend this makes a typical transaction around RM14; more transactions per week would imply a typical meal of a few ringgit, which testers would find implausible."
   category_weight_food:
     value: 16.3
     unit: percent_of_household_spending
@@ -258,6 +258,12 @@ discretionary:
     unit: ratio
     assumed: true
     why: "As above."
+  category_size_weight:
+    food: {value: 1.0, unit: ratio, assumed: true, why: "Relative typical size of one transaction by category (food = 1). No published transaction-level sizes; chosen so a shopping or education purchase is several times a meal or a bus fare. Category spend shares still follow the cited household weights; only the number of transactions per category changes."}
+    transport: {value: 0.6, unit: ratio, assumed: true, why: "As above."}
+    shopping: {value: 3.0, unit: ratio, assumed: true, why: "As above."}
+    entertainment: {value: 2.0, unit: ratio, assumed: true, why: "As above."}
+    education: {value: 3.0, unit: ratio, assumed: true, why: "As above."}
   unrecognisable_description_share:
     value: 0.08
     unit: ratio

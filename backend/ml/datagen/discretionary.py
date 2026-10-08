@@ -20,10 +20,11 @@ WEEKS_PER_MONTH = 52 / 12
 MIN_TXN_SEN = 100  # RM1
 MIN_SPLITTABLE_SEN = 300  # a week smaller than this becomes a single transaction
 PAYDAY_WINDOW_DAYS = 3
-TXN_AMOUNT_SHAPE = 1.2  # gamma shape of transaction sizes within a week
+TXN_AMOUNT_SHAPE = 3.0  # gamma shape of transaction sizes within a week (higher = fewer tiny ones)
 
 
-def _category_probabilities(params: Params) -> tuple[list[str], np.ndarray]:
+def _category_shares(params: Params) -> tuple[list[str], np.ndarray]:
+    """Share of discretionary *spend* per category (the cited household weights)."""
     food = (
         params["discretionary.category_weight_food"]
         + params["discretionary.category_weight_eating_out"]
@@ -38,12 +39,24 @@ def _category_probabilities(params: Params) -> tuple[list[str], np.ndarray]:
     }
     split_total = sum(split.values())
     names = ["Food", "Transport", *split]
-    probabilities = [
-        food * scale,
-        transport * scale,
-        *(other * s / split_total for s in split.values()),
-    ]
-    return names, np.array(probabilities) / sum(probabilities)
+    shares = [food * scale, transport * scale, *(other * s / split_total for s in split.values())]
+    return names, np.array(shares) / sum(shares)
+
+
+def _category_sizes(params: Params, names: list[str]) -> np.ndarray:
+    return np.array([params[f"discretionary.category_size_weight.{n.lower()}"] for n in names])
+
+
+def _category_probabilities(params: Params) -> tuple[list[str], np.ndarray, np.ndarray]:
+    """Per-transaction category odds and size weights.
+
+    Spend share = odds x typical size, so the odds are the cited spend shares divided by the size
+    weights: bigger purchases (shopping) are rarer per transaction, not cheaper per category.
+    """
+    names, shares = _category_shares(params)
+    sizes = _category_sizes(params, names)
+    odds = shares / sizes
+    return names, odds / odds.sum(), sizes
 
 
 def _split_exactly(total: int, shares: np.ndarray) -> list[int]:
@@ -79,6 +92,7 @@ def _week_spending(
     income_dates: Collection[date],
     names: list[str],
     probabilities: np.ndarray,
+    sizes: np.ndarray,
     rng: np.random.Generator,
 ) -> list[Txn]:
     days = [
@@ -103,13 +117,15 @@ def _week_spending(
         size=count,
         p=_day_weights(days, income_dates, params) / _day_weights(days, income_dates, params).sum(),
     )
+    chosen = rng.choice(len(names), size=count, p=probabilities)
     amounts = _split_exactly(
-        max(total_sen, MIN_TXN_SEN * count), rng.gamma(TXN_AMOUNT_SHAPE, size=count)
+        max(total_sen, MIN_TXN_SEN * count),
+        rng.gamma(TXN_AMOUNT_SHAPE, size=count) * sizes[chosen],
     )
     miss = params["discretionary.unrecognisable_description_share"]
     out = []
-    for day_index, amount in zip(when, amounts, strict=True):
-        category = str(rng.choice(names, p=probabilities))
+    for day_index, category_index, amount in zip(when, chosen, amounts, strict=True):
+        category = names[int(category_index)]
         description = describe(category, rng, recognisable=rng.random() >= miss)
         out.append(Txn(days[int(day_index)], amount, "expense", category, description))
     return out
@@ -169,11 +185,21 @@ def generate_discretionary(
         exam_months=params["discretionary.exam_months"],
         per_semester=params["discretionary.exam_weeks_per_semester"],
     )
-    names, probabilities = _category_probabilities(params)
+    names, probabilities, sizes = _category_probabilities(params)
     txns: list[Txn] = []
     for monday in iter_weeks(start, end):
         txns += _week_spending(
-            params, base_week, monday, start, end, exam, income_dates, names, probabilities, rng
+            params,
+            base_week,
+            monday,
+            start,
+            end,
+            exam,
+            income_dates,
+            names,
+            probabilities,
+            sizes,
+            rng,
         )
     txns += _monthly_extras(params, start, end, rng)
     txns.sort(key=lambda t: (t.date, t.description, t.amount_sen))
