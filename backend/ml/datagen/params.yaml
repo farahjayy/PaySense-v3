@@ -89,6 +89,11 @@ income:
     unit: ratio
     assumed: true
     why: "Log-normal spread of part-time pay."
+  parttime_monthly_jitter:
+    value: 0.10
+    unit: ratio
+    assumed: true
+    why: "Month-to-month variation in part-time pay (hours differ)."
   parttime_pay_day:
     value: 28
     unit: day
