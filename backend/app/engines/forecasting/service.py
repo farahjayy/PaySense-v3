@@ -18,7 +18,7 @@ from app.domain.merchants import normalise_merchant
 from app.domain.schedule import add_months
 from app.engines.forecasting.completeness import SuspectMonth, assess
 from app.engines.forecasting.errors import mean_forecast_errors, rolling_error_paths, widen
-from app.engines.forecasting.flows import ProposedPlan, known_flows
+from app.engines.forecasting.flows import ProposedPlan, known_flows, unlogged_occurrences_net
 from app.engines.forecasting.series import build_weekly_series
 from app.engines.forecasting.simulate import (
     DEFAULT_PATHS,
@@ -138,7 +138,8 @@ def build_forecast(
         horizon,
         paths,
         seed,
-        month_to_date_sen=month_to_date_net(rows, first_of_month, forecast_from),
+        month_to_date_sen=month_to_date_net(rows, first_of_month, forecast_from)
+        + unlogged_occurrences_net(confirmed, rows, first_of_month, forecast_from),
         fallback_errors=fallback,
     )
     latest = max(as_date(r["date"]) for r in rows)

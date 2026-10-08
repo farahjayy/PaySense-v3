@@ -12,6 +12,7 @@ from datetime import date, timedelta
 from typing import Any, Protocol
 
 from app.domain.flows import as_date
+from app.domain.merchants import normalise_merchant
 from app.domain.schedule import add_months
 
 FIXED_STEP_DAYS = {"weekly": 7, "biweekly": 14}
@@ -115,3 +116,36 @@ def known_flows(
                 continue  # a checkout instalment is already in cash_at_purchase_sen
             flows[month_key(instalment.due_date)].instalments_sen += instalment.amount_sen
     return flows
+
+
+MATCH_TOLERANCE_DAYS = 7  # an actual payment this close to its scheduled day counts as that payment
+
+
+def unlogged_occurrences_net(
+    items: Iterable[Mapping[str, Any]],
+    rows: Iterable[Mapping[str, Any]],
+    first_day: date,
+    until: date,
+) -> int:
+    """Income minus bills for confirmed items that were due in [first_day, until) but have no
+    matching logged transaction. A confirmed allowance or rent that the user simply has not entered
+    yet is assumed to have happened, instead of leaving a hole in the month."""
+    logged = [
+        (normalise_merchant(r.get("description")), as_date(r["date"]))
+        for r in rows
+        if first_day <= as_date(r["date"]) < until
+    ]
+    net = 0
+    for item in items:
+        if not item.get("active", True):
+            continue
+        text = normalise_merchant(item.get("match_text") or item["name"])
+        for due in occurrences(item, first_day, until - timedelta(days=1)):
+            seen = any(
+                name == text and abs((day - due).days) <= MATCH_TOLERANCE_DAYS
+                for name, day in logged
+            )
+            if not seen:
+                amount = int(item["amount_sen"])
+                net += amount if item["kind"] == "income" else -amount
+    return net

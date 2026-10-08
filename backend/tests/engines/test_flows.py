@@ -180,3 +180,37 @@ def test_the_inputs_are_not_modified():
     known_flows(items, [], START, END)
 
     assert items == before
+
+
+def test_a_confirmed_item_due_this_month_but_not_logged_is_assumed_to_have_happened():
+    from app.engines.forecasting.flows import unlogged_occurrences_net
+
+    items = [
+        item("income", 100000, anchor=date(2025, 1, 1)) | {"name": "Duit belanja"},
+        item("bill", 30000, anchor=date(2025, 1, 3)) | {"name": "Sewa bilik"},
+    ]
+    logged = [{"date": date(2025, 5, 3), "description": "Sewa bilik 0305"}]  # rent logged only
+
+    net = unlogged_occurrences_net(items, logged, date(2025, 5, 1), date(2025, 5, 12))
+
+    assert net == 100000  # the unlogged allowance counts; the logged rent is not counted twice
+
+
+def test_a_logged_payment_a_few_days_off_its_schedule_still_counts_as_that_payment():
+    from app.engines.forecasting.flows import unlogged_occurrences_net
+
+    items = [item("income", 100000, anchor=date(2025, 1, 1)) | {"name": "Duit belanja"}]
+    late = [{"date": date(2025, 5, 4), "description": "Duit belanja"}]  # paid three days late
+
+    assert unlogged_occurrences_net(items, late, date(2025, 5, 1), date(2025, 5, 12)) == 0
+
+
+def test_inactive_items_and_occurrences_outside_the_window_are_ignored():
+    from app.engines.forecasting.flows import unlogged_occurrences_net
+
+    items = [
+        item("bill", 30000, anchor=date(2025, 1, 20), active=False) | {"name": "Old"},
+        item("bill", 30000, anchor=date(2025, 1, 25)) | {"name": "Later"},  # due after the window
+    ]
+
+    assert unlogged_occurrences_net(items, [], date(2025, 5, 1), date(2025, 5, 12)) == 0
