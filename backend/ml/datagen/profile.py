@@ -34,6 +34,8 @@ class StudentProfile:
     start: date
     as_of: date
     transactions: tuple[Txn, ...]
+    income_events: tuple[Txn, ...]  # the same objects, kept apart for the Engine 1 cohort
+    discretionary_events: tuple[Txn, ...]
     recurring_truth: tuple[RecurringTruth, ...]
     bnpl: BnplResult
     purchase: PurchaseProposal
@@ -90,6 +92,8 @@ def generate_profile(
         start=start,
         as_of=as_of,
         transactions=tuple(transactions),
+        income_events=tuple(income.events),
+        discretionary_events=tuple(spending),
         recurring_truth=(*income.truth, *bills.truth),
         bnpl=bnpl,
         purchase=purchase,

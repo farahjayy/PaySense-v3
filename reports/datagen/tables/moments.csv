@@ -1,0 +1,32 @@
+param,description,unit,kind,target,measured,status,note
+income.ptptn_annual_sen,PTPTN lump sums (x disbursements per year) equal a cited annual amount,share,cited,1.0000,1.0000,within tolerance,1395 lump sums
+discretionary.monthly_median_sen.budget_conscious,"Median monthly discretionary spend, budget-conscious persona",sen,cited,30000,28998,within tolerance,"target is the midpoint of a modal band (RM201-400), not a bound"
+discretionary.category_weight_food,Food (food plus eating out) share of discretionary spend,share,cited,0.5190,0.5566,within tolerance,food and eating out are one generated category
+discretionary.category_weight_eating_out,"Eating out (generated together with food, see the row above)",share,cited,,,no target,measured jointly with category_weight_food
+discretionary.category_weight_transport,Transport share of discretionary spend,share,cited,0.1810,0.2298,within tolerance,
+bnpl.instalment_options.spaylater,spaylater: plans use an instalment count the provider offers,share,cited,1.0000,1.0000,within tolerance,515 plans
+bnpl.instalment_options.tiktok_paylater,tiktok_paylater: plans use an instalment count the provider offers,share,cited,1.0000,1.0000,within tolerance,209 plans
+bnpl.instalment_options.atome,atome: plans use an instalment count the provider offers,share,cited,1.0000,1.0000,within tolerance,245 plans
+bnpl.zero_fee_instalments.spaylater,spaylater: fee is zero on zero-fee counts and the long-plan rate otherwise,share,cited,1.0000,1.0000,within tolerance,515 plans
+bnpl.zero_fee_instalments.tiktok_paylater,tiktok_paylater: fee is zero on zero-fee counts and the long-plan rate otherwise,share,cited,1.0000,1.0000,within tolerance,209 plans
+bnpl.zero_fee_instalments.atome,atome: fee is zero on zero-fee counts and the long-plan rate otherwise,share,cited,1.0000,1.0000,within tolerance,245 plans
+bnpl.long_plan_fee_rate_pct,Long plans carry the cited monthly fee rate (checked together with the zero-fee rows),share,cited,1.0000,1.0000,within tolerance,
+bnpl.limit_cap_sen.spaylater,spaylater: largest recorded limit never exceeds the documented cap,sen,cited,1000000,850803,within tolerance,
+bnpl.limit_cap_sen.tiktok_paylater,tiktok_paylater: largest recorded limit never exceeds the documented cap,sen,cited,1000000,561062,within tolerance,
+repayment.on_time_share,Instalments paid on the due date,share,cited,0.8800,0.8703,within tolerance,5459 instalments; the generator adds an assumed missed share
+repayment.late_but_paid_share,Instalments paid late,share,cited,0.1200,0.1220,within tolerance,
+population.persona_weights.frequent_bnpl,Share of profiles in the frequent_bnpl persona,share,assumed,0.3500,0.3540,within tolerance,
+population.persona_weights.budget_conscious,Share of profiles in the budget_conscious persona,share,assumed,0.4000,0.3700,within tolerance,
+population.persona_weights.irregular_income,Share of profiles in the irregular_income persona,share,assumed,0.2500,0.2760,within tolerance,
+bnpl.ownership_probability.frequent_bnpl,Share of frequent_bnpl profiles holding any BNPL plan,share,assumed,0.8500,0.8446,within tolerance,
+bnpl.ownership_probability.budget_conscious,Share of budget_conscious profiles holding any BNPL plan,share,assumed,0.2500,0.2595,within tolerance,
+bnpl.ownership_probability.irregular_income,Share of irregular_income profiles holding any BNPL plan,share,assumed,0.5500,0.5507,within tolerance,
+bnpl.provider_weights.spaylater,Share of plans on spaylater,share,assumed,0.5000,0.4769,within tolerance,
+bnpl.provider_weights.tiktok_paylater,Share of plans on tiktok_paylater,share,assumed,0.2000,0.1935,within tolerance,
+bnpl.provider_weights.atome,Share of plans on atome,share,assumed,0.2000,0.2269,within tolerance,
+bnpl.provider_weights.other,Share of plans on other,share,assumed,0.1000,0.1028,within tolerance,
+derived.monthly_income_median.frequent_bnpl,"Median monthly income, frequent_bnpl persona (no cited target)",sen,derived,,91140,no target,
+derived.monthly_income_median.budget_conscious,"Median monthly income, budget_conscious persona (no cited target)",sen,derived,,52812,no target,
+derived.monthly_income_median.irregular_income,"Median monthly income, irregular_income persona (no cited target)",sen,derived,,86397,no target,
+purchase.price_to_monthly_income_range,"Smallest and largest proposed price as a multiple of monthly income (range is a coverage choice, not an estimate)",ratio,assumed,3.0000,2.9925,within tolerance,smallest 0.0200 (range starts at 0.02)
+derived.purchase_limit_capped_share,Share of proposed purchases split by a provider limit (no cited target),share,derived,,0.1030,no target,

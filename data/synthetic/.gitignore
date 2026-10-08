@@ -1,0 +1,4 @@
+# Generated outputs are not committed; only the manifest is, so a run can be checked.
+*
+!.gitignore
+!MANIFEST.json
