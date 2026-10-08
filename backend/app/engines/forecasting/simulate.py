@@ -61,6 +61,12 @@ class Simulation:
     bootstrap: str  # "paths" | "block" | "plain" | "none" | "fallback": how errors were resampled
 
 
+def forecaster_for(forecaster: Forecaster, kind: str) -> Forecaster:
+    """One model per series kind when it has them (the LSTM), else the same model for both."""
+    chooser = getattr(forecaster, "for_kind", None)
+    return chooser(kind) if chooser else forecaster
+
+
 def band(p_shortfall: float) -> str:
     if p_shortfall < SAFE_BELOW:
         return "Safe"
@@ -167,10 +173,18 @@ def simulate(
 
     rng = np.random.default_rng(seed)
     spend_point = np.clip(
-        forecaster.forecast(series.spend.astype(float), weeks, series.start), 0, None
+        forecaster_for(forecaster, "spend").forecast(
+            series.spend.astype(float), weeks, series.start
+        ),
+        0,
+        None,
     )
     income_point = np.clip(
-        forecaster.forecast(series.income.astype(float), weeks, series.start), 0, None
+        forecaster_for(forecaster, "income").forecast(
+            series.income.astype(float), weeks, series.start
+        ),
+        0,
+        None,
     )
     spend = np.clip(spend_point + _draw(spend_errors, weeks, paths, rng), 0, None)
     income = np.clip(income_point + _draw(income_errors, weeks, paths, rng), 0, None)

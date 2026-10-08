@@ -228,7 +228,7 @@ def test_the_real_served_model_and_clock_work_without_overrides(api, fake_db, am
 
     res = api.get("/api/forecast", headers=amir)
 
-    assert res.status_code == 200 and res.json()["model"] in {"ma13", "ma4", "naive"}
+    assert res.status_code == 200 and res.json()["model"] == "lstm"
 
 
 def test_a_stale_ledger_is_flagged_with_the_day_it_was_last_updated(api, fake_db, amir):
@@ -250,3 +250,14 @@ def test_a_confirmed_item_keeps_the_text_it_matches_even_if_renamed(api, amir):
     )  # fmt: skip
 
     assert res.status_code == 201 and res.json()["match_text"] == "duit belanja"
+
+
+def test_a_full_forecast_with_the_real_lstm_end_to_end(api, fake_db, amir):
+    fill(fake_db, "amir")
+    api.app.dependency_overrides.pop(get_forecaster, None)  # keep the pinned clock, serve the LSTM
+
+    body = api.get("/api/forecast", headers=amir).json()
+
+    assert body["status"] == "ok" and body["model"] == "lstm"
+    assert body["simulation"]["months"] == ["2025-05", "2025-06", "2025-07"]
+    assert body["band"] in {"Safe", "Caution", "At Risk"}

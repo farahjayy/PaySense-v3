@@ -146,3 +146,23 @@ class GlobalLstm:
         with torch.no_grad():
             ratio = self._network(x)[0].numpy()[:horizon]
         return np.clip(ratio.astype(float) * mean, 0.0, None)
+
+    def predict_ratio(self, windows: np.ndarray) -> np.ndarray:
+        """The network's scaled output for a batch of scaled windows, shape (batch, window)."""
+        x = torch.from_numpy(np.asarray(windows, dtype=np.float32)).unsqueeze(-1)
+        with torch.no_grad():
+            return self._network(x).numpy()
+
+    def to_onnx(self, path) -> None:
+        """Export for the API process, which serves it with onnxruntime and never imports torch."""
+        dummy = torch.zeros(1, self.config.window, 1)
+        torch.onnx.export(
+            self._network,
+            (dummy,),
+            str(path),
+            input_names=["window"],
+            output_names=["ratio"],
+            dynamic_axes={"window": {0: "batch"}, "ratio": {0: "batch"}},
+            opset_version=17,
+            dynamo=False,
+        )

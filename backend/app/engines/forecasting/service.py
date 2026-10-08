@@ -25,6 +25,7 @@ from app.engines.forecasting.simulate import (
     Forecaster,
     Simulation,
     band,
+    forecaster_for,
     health_score,
     simulate,
 )
@@ -114,8 +115,12 @@ def build_forecast(
     forecast_from = series.start + timedelta(days=7 * series.weeks)
     horizon = max(end or horizon_end(today), forecast_from)
     known = known_flows(confirmed, plans, forecast_from, horizon, proposed)
-    spend_errors = rolling_error_paths(series.spend, series.start, forecaster)
-    income_errors = rolling_error_paths(series.income, series.start, forecaster)
+    spend_errors = rolling_error_paths(
+        series.spend, series.start, forecaster_for(forecaster, "spend")
+    )
+    income_errors = rolling_error_paths(
+        series.income, series.start, forecaster_for(forecaster, "income")
+    )
     fallback = len(spend_errors) < MIN_ERROR_PATHS or len(income_errors) < MIN_ERROR_PATHS
     if fallback:  # too short to score the model: use the series' own spread, never zero noise
         spend_errors = mean_forecast_errors(series.spend)

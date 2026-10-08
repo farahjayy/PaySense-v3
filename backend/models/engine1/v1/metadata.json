@@ -1,0 +1,49 @@
+{
+  "epsilon": 1e-09,
+  "files": {
+    "lstm_income.onnx": "87186798ef3821b42c21690df626a921707bf81291b26f14c71538222cedf36d",
+    "lstm_spend.onnx": "56b0e083483091d9c1e5d265e06ead1ab5393e118ef8c777d6d63c94f0acdb9a"
+  },
+  "hidden": 32,
+  "horizon": 13,
+  "kinds": [
+    "spend",
+    "income"
+  ],
+  "model": "global-lstm",
+  "parameters": {
+    "income": 4909,
+    "spend": 4909
+  },
+  "parity_with_torch": {
+    "income": {
+      "max_abs_difference": 2.5033950805664062e-06,
+      "windows": 400
+    },
+    "spend": {
+      "max_abs_difference": 2.384185791015625e-07,
+      "windows": 400
+    }
+  },
+  "selection_sha256": "aceb59f37cd585cb0b912848f4ad49b6aadceb539992515af8f4b85acc864fef",
+  "training": {
+    "config": "full",
+    "cutoff_week": 52,
+    "lstm": {
+      "epochs": 25,
+      "hidden": 32,
+      "window": 26
+    },
+    "profiles": 3000,
+    "seed": 20251228,
+    "series_start": "2024-07-01"
+  },
+  "version": "v1",
+  "versions": {
+    "numpy": "2.5.3",
+    "onnxruntime": "1.30.0",
+    "python": "3.12.15",
+    "torch": "2.14.1+cpu"
+  },
+  "window": 26
+}
