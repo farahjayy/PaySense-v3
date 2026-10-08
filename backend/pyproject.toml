@@ -32,9 +32,21 @@ ml = [
     "matplotlib>=3.11.2",
     "numpy>=2.5.3",
     "pandas>=3.0.6",
+    "prophet>=1.5.0",
     "pyyaml>=6.0.3",
+    "scikit-learn>=1.9.1",
     "scipy>=1.18.1",
+    "statsforecast>=2.0.1",
+    "torch>=2.14.1",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
 
 [tool.uv]
 # `uv run` installs the ml group too, so offline tooling and its tests work without flags.
