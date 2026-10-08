@@ -176,6 +176,11 @@ discretionary:
       # Midpoint of the cited modal band RM201-400 per month (n = 454). The band is modal, not a bound.
     frequent_bnpl: {value: 45000, unit: sen, assumed: true, why: "tok_cheah_2024 reports spending rises with income but gives no number; set above the modal band."}
     irregular_income: {value: 35000, unit: sen, assumed: true, why: "Between the other two personas."}
+  student_level_sigma:
+    value: 0.30
+    unit: ratio
+    assumed: true
+    why: "Log-normal spread of how much different students of the same persona spend; no published figure."
   weekly_sigma:
     value: 0.45
     unit: ratio
@@ -238,6 +243,21 @@ discretionary:
     unit: ratio
     assumed: true
     why: "Share of discretionary spend outside food, eating out and transport (shopping, entertainment, education). The DOSM page gave no shares for these groups."
+  other_split_shopping:
+    value: 0.50
+    unit: ratio
+    assumed: true
+    why: "Split of the 'other' discretionary share into shopping / entertainment / education; the DOSM page gave no shares for these groups."
+  other_split_entertainment:
+    value: 0.30
+    unit: ratio
+    assumed: true
+    why: "As above."
+  other_split_education:
+    value: 0.20
+    unit: ratio
+    assumed: true
+    why: "As above."
   unrecognisable_description_share:
     value: 0.08
     unit: ratio
