@@ -16,6 +16,7 @@ from typing import Any
 
 from postgrest import APIError
 
+MAX_ROWS = 1000  # Supabase/PostgREST default `max-rows`: larger selects are silently truncated
 UNIQUE_VIOLATION = "23505"
 FOREIGN_KEY_VIOLATION = "23503"
 
@@ -77,8 +78,9 @@ class FakeQuery:
         self._op = "select"
         self._payload: Any = None
         self._filters: list[Any] = []
-        self._order: tuple[str, bool] | None = None
+        self._orders: list[tuple[str, bool]] = []
         self._limit: int | None = None
+        self._range: tuple[int, int] | None = None
 
     # -- operations
     def select(self, _columns: str = "*") -> "FakeQuery":
@@ -110,7 +112,11 @@ class FakeQuery:
         return self
 
     def order(self, column: str, *, desc: bool = False) -> "FakeQuery":
-        self._order = (column, desc)
+        self._orders.append((column, desc))
+        return self
+
+    def range(self, start: int, end: int) -> "FakeQuery":
+        self._range = (start, end)
         return self
 
     def limit(self, n: int) -> "FakeQuery":
@@ -132,10 +138,14 @@ class FakeQuery:
 
     def _select(self) -> list[dict[str, Any]]:
         rows = self._matching()
-        if self._order:
-            column, desc = self._order
+        for column, desc in reversed(self._orders):  # stable sorts, last key first
             rows = sorted(rows, key=lambda r: (r.get(column) is None, r.get(column)), reverse=desc)
-        return rows[: self._limit] if self._limit is not None else rows
+        if self._range is not None:
+            start, end = self._range
+            rows = rows[start : end + 1]
+        if self._limit is not None:
+            rows = rows[: self._limit]
+        return rows[:MAX_ROWS]
 
     def _insert(self) -> list[dict[str, Any]]:
         payload = self._payload if isinstance(self._payload, list) else [self._payload]

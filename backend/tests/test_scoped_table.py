@@ -50,8 +50,8 @@ def test_list_returns_only_the_callers_rows(db, two_users):
     table.insert(amir, _txn(100))
     table.insert(siti, _txn(200))
 
-    assert [r["amount_sen"] for r in table.list(amir)] == [100]
-    assert [r["amount_sen"] for r in table.list(siti)] == [200]
+    assert [r["amount_sen"] for r in table.list_rows(amir)] == [100]
+    assert [r["amount_sen"] for r in table.list_rows(siti)] == [200]
 
 
 def test_get_cannot_read_another_users_row(db, two_users):
@@ -97,9 +97,9 @@ def test_list_supports_filters_order_and_limit(db, two_users):
     for amount in (300, 100, 200):
         table.insert(amir, _txn(amount, type="income" if amount == 300 else "expense"))
 
-    expenses = table.list(amir, order_by="amount_sen", descending=True, type="expense")
+    expenses = table.list_rows(amir, order_by="amount_sen", descending=True, type="expense")
     assert [r["amount_sen"] for r in expenses] == [200, 100]
-    assert len(table.list(amir, limit=1)) == 1
+    assert len(table.list_rows(amir, limit=1)) == 1
 
 
 def test_list_refuses_a_user_id_filter(db, two_users):
@@ -107,7 +107,7 @@ def test_list_refuses_a_user_id_filter(db, two_users):
     table = ScopedTable(db, "transactions")
 
     with pytest.raises(ValueError, match="user_id"):
-        table.list(amir, user_id=siti)
+        table.list_rows(amir, user_id=siti)
 
 
 @pytest.mark.parametrize("bad", [None, "", "   "])
@@ -115,7 +115,7 @@ def test_every_operation_requires_a_user_id(db, bad):
     table = ScopedTable(db, "transactions")
 
     with pytest.raises(ValueError, match="user_id"):
-        table.list(bad)
+        table.list_rows(bad)
     with pytest.raises(ValueError, match="user_id"):
         table.get(bad, "x")
     with pytest.raises(ValueError, match="user_id"):
@@ -124,3 +124,60 @@ def test_every_operation_requires_a_user_id(db, bad):
         table.update(bad, "x", {"amount_sen": 1})
     with pytest.raises(ValueError, match="user_id"):
         table.delete(bad, "x")
+
+
+def test_list_rows_returns_every_row_beyond_the_postgrest_cap(db, two_users):
+    amir, siti = two_users
+    table = ScopedTable(db, "transactions")
+    for n in range(1, 1501):
+        db.rows("transactions").append(
+            {"id": f"{n:08d}-0000-4000-8000-000000000000", "user_id": amir, **_txn(n)}
+        )
+    table.insert(siti, _txn(7))
+
+    rows = table.list_rows(amir)
+
+    assert len(rows) == 1500
+    assert len({r["id"] for r in rows}) == 1500  # no duplicates across pages
+
+
+def test_list_rows_orders_across_page_boundaries(db, two_users):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+    for n in range(1, 1201):
+        db.rows("transactions").append(
+            {"id": f"{n:08d}-0000-4000-8000-000000000000", "user_id": amir, **_txn(n)}
+        )
+
+    rows = table.list_rows(amir, order_by="amount_sen", descending=True)
+
+    assert [r["amount_sen"] for r in rows] == list(range(1200, 0, -1))
+
+
+def test_list_rows_limit_larger_than_a_page_is_honoured(db, two_users):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+    for n in range(1, 1501):
+        db.rows("transactions").append(
+            {"id": f"{n:08d}-0000-4000-8000-000000000000", "user_id": amir, **_txn(n)}
+        )
+
+    assert len(table.list_rows(amir, limit=1200)) == 1200
+    assert len(table.list_rows(amir, limit=5)) == 5
+
+
+@pytest.mark.parametrize("bad_id", ["abc", "", "1; drop table x", "../../etc"])
+def test_a_malformed_row_id_is_simply_not_found(db, two_users, bad_id):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+
+    assert table.get(amir, bad_id) is None
+    assert table.update(amir, bad_id, {"amount_sen": 1}) is None
+    assert table.delete(amir, bad_id) is False
+
+
+def test_list_rows_refuses_a_none_filter(db, two_users):
+    amir, _ = two_users
+
+    with pytest.raises(ValueError, match="None"):
+        ScopedTable(db, "transactions").list_rows(amir, category=None)

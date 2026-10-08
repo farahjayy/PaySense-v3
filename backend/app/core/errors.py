@@ -3,8 +3,14 @@
 from fastapi import HTTPException
 
 
-def api_error(status_code: int, code: str, message: str) -> HTTPException:
-    return HTTPException(status_code=status_code, detail={"code": code, "message": message})
+def api_error(
+    status_code: int, code: str, message: str, headers: dict[str, str] | None = None
+) -> HTTPException:
+    return HTTPException(
+        status_code=status_code,
+        detail={"code": code, "message": message},
+        headers=headers,
+    )
 
 
 def not_found(code: str, message: str) -> HTTPException:
@@ -16,7 +22,7 @@ def bad_request(code: str, message: str) -> HTTPException:
 
 
 def unauthorized(code: str, message: str) -> HTTPException:
-    return api_error(401, code, message)
+    return api_error(401, code, message, headers={"WWW-Authenticate": "Bearer"})
 
 
 def conflict(code: str, message: str) -> HTTPException:

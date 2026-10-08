@@ -5,6 +5,7 @@ from typing import Any
 
 from postgrest import APIError
 
+from app.db.base import is_uuid
 from app.db.client import Database
 
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
@@ -19,7 +20,7 @@ class UsernameTakenError(Exception):
 def normalise_username(raw: str) -> str | None:
     """Trimmed username if it is well-formed, else None. Never raises on hostile input."""
     candidate = raw.strip() if isinstance(raw, str) else ""
-    return candidate if USERNAME_PATTERN.match(candidate) else None
+    return candidate if USERNAME_PATTERN.fullmatch(candidate) else None
 
 
 def _escape_like(value: str) -> str:
@@ -38,6 +39,8 @@ def get_by_username(db: Database, username: str) -> dict[str, Any] | None:
 
 
 def get_by_id(db: Database, user_id: str) -> dict[str, Any] | None:
+    if not is_uuid(user_id):
+        return None
     rows = db.table("users").select("*").eq("id", user_id).limit(1).execute().data
     return rows[0] if rows else None
 

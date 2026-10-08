@@ -13,7 +13,8 @@ begin;
 -- ---------------------------------------------------------------- users
 create table users (
     id uuid primary key default gen_random_uuid(),
-    username text not null check (username = btrim(username) and length(username) between 1 and 64),
+    -- Same rule as app/db/users.py USERNAME_PATTERN, so a hand-inserted user can always log in.
+    username text not null check (username ~ '^[A-Za-z0-9_.-]{1,64}$'),
     display_name text not null check (length(btrim(display_name)) > 0),
     persona text check (persona in ('frequent_bnpl', 'budget_conscious', 'irregular_income')),
     created_at timestamptz not null default now()
@@ -154,8 +155,14 @@ alter table bnpl_installments enable row level security;
 alter table transactions enable row level security;
 alter table provider_limits enable row level security;
 
--- No policies are created on purpose. As defence in depth, also drop the default grants.
+-- No policies are created on purpose. As defence in depth, also drop the default grants...
 revoke all on users, user_settings, recurring_items, risk_checks, bnpl_plans,
     bnpl_installments, transactions, provider_limits from anon, authenticated;
+
+-- ...and stop Supabase's default privileges from re-granting them on tables, sequences and
+-- functions created by FUTURE migrations (a later table that forgets RLS must not be public).
+alter default privileges in schema public revoke all on tables from anon, authenticated;
+alter default privileges in schema public revoke all on sequences from anon, authenticated;
+alter default privileges in schema public revoke all on functions from anon, authenticated;
 
 commit;

@@ -99,7 +99,7 @@ def test_me_with_an_expired_token_is_401(client, settings):
             "iss": "paysense-api",
             "exp": datetime.now(UTC) - timedelta(minutes=1),
         },
-        settings.session_secret,
+        settings.session_secret.get_secret_value(),
         algorithm="HS256",
     )
 
@@ -145,3 +145,65 @@ def test_successful_login_does_not_count_against_the_limit(settings, db):
     client = TestClient(create_app(settings, db=db, login_limiter=limiter))
 
     assert all(_login(client, "amir").status_code == 200 for _ in range(5))
+
+
+def test_spoofed_forwarded_for_does_not_change_the_rate_limit_bucket(settings, db):
+    limiter = LoginRateLimiter(max_failures=2, window_seconds=60)
+    client = TestClient(create_app(settings, db=db, login_limiter=limiter))
+
+    first = client.post("/api/auth/login", json={"username": "nobody"})
+    spoofed = client.post(
+        "/api/auth/login", json={"username": "nobody"}, headers={"X-Forwarded-For": "9.9.9.9"}
+    )
+    blocked = client.post(
+        "/api/auth/login", json={"username": "nobody"}, headers={"X-Forwarded-For": "8.8.8.8"}
+    )
+
+    assert (first.status_code, spoofed.status_code, blocked.status_code) == (401, 401, 429)
+
+
+def test_rate_limited_response_says_when_to_retry(settings, db):
+    limiter = LoginRateLimiter(max_failures=1, window_seconds=90)
+    client = TestClient(create_app(settings, db=db, login_limiter=limiter))
+    client.post("/api/auth/login", json={"username": "nobody"})
+
+    res = client.post("/api/auth/login", json={"username": "nobody"})
+
+    assert res.status_code == 429
+    assert res.headers["retry-after"] == "90"
+
+
+def test_unknown_and_malformed_usernames_get_the_same_answer(client):
+    unknown = _login(client, "nobody")
+    malformed = _login(client, "no body!")
+
+    assert unknown.status_code == malformed.status_code == 401
+    assert unknown.json() == malformed.json()
+
+
+def test_login_requests_are_bucketed_per_ipv6_prefix():
+    from app.api.auth import client_key
+
+    class _Req:
+        def __init__(self, host):
+            self.client = type("C", (), {"host": host})()
+
+    a = client_key(_Req("2001:db8:aaaa:bbbb:1::1"))
+    b = client_key(_Req("2001:db8:aaaa:bbbb:ffff::2"))
+    c = client_key(_Req("2001:db8:aaaa:cccc::1"))
+
+    assert a == b
+    assert a != c
+    assert client_key(_Req("203.0.113.5")) == "203.0.113.5"
+
+
+def test_limiter_memory_is_bounded_when_keys_keep_changing():
+    now = [0.0]
+    limiter = LoginRateLimiter(
+        max_failures=5, window_seconds=60, max_keys=100, clock=lambda: now[0]
+    )
+
+    for n in range(1000):
+        limiter.record_failure(f"key-{n}")
+
+    assert limiter.tracked_keys() <= 100

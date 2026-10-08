@@ -52,14 +52,16 @@ def test_alg_none_rejected(settings):
 def test_missing_expiry_rejected(settings):
     claims = _claims()
     del claims["exp"]
-    no_exp = jwt.encode(claims, settings.session_secret, algorithm="HS256")
+    no_exp = jwt.encode(claims, settings.session_secret.get_secret_value(), algorithm="HS256")
 
     with pytest.raises(InvalidTokenError):
         decode_access_token(no_exp, settings)
 
 
 def test_wrong_issuer_rejected(settings):
-    other = jwt.encode(_claims(iss="someone-else"), settings.session_secret, algorithm="HS256")
+    other = jwt.encode(
+        _claims(iss="someone-else"), settings.session_secret.get_secret_value(), algorithm="HS256"
+    )
 
     with pytest.raises(InvalidTokenError):
         decode_access_token(other, settings)
@@ -68,7 +70,7 @@ def test_wrong_issuer_rejected(settings):
 def test_missing_subject_rejected(settings):
     claims = _claims()
     del claims["sub"]
-    anonymous = jwt.encode(claims, settings.session_secret, algorithm="HS256")
+    anonymous = jwt.encode(claims, settings.session_secret.get_secret_value(), algorithm="HS256")
 
     with pytest.raises(InvalidTokenError):
         decode_access_token(anonymous, settings)

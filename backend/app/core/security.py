@@ -20,7 +20,8 @@ def create_access_token(
     issued_at = now or datetime.now(UTC)
     expires_at = issued_at + timedelta(hours=settings.session_ttl_hours)
     claims = {"sub": user_id, "iss": ISSUER, "iat": issued_at, "exp": expires_at}
-    return jwt.encode(claims, settings.session_secret, algorithm=ALGORITHM), expires_at
+    key = settings.session_secret.get_secret_value()
+    return jwt.encode(claims, key, algorithm=ALGORITHM), expires_at
 
 
 def decode_access_token(token: str, settings: Settings, now: datetime | None = None) -> str:
@@ -32,14 +33,16 @@ def decode_access_token(token: str, settings: Settings, now: datetime | None = N
     try:
         claims = jwt.decode(
             token,
-            settings.session_secret,
+            settings.session_secret.get_secret_value(),
             algorithms=[ALGORITHM],
             issuer=ISSUER,
             options={"require": ["exp", "sub", "iss"], "verify_exp": False},
         )
     except jwt.PyJWTError as err:
         raise InvalidTokenError(str(err)) from err
-    current = (now or datetime.now(UTC)).timestamp()
-    if claims["exp"] <= current:
+    expiry = claims["exp"]
+    if isinstance(expiry, bool) or not isinstance(expiry, int | float):
+        raise InvalidTokenError("exp claim must be a number")
+    if expiry <= (now or datetime.now(UTC)).timestamp():
         raise InvalidTokenError("token has expired")
     return claims["sub"]

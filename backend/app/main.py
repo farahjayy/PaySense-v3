@@ -1,35 +1,60 @@
 """FastAPI app factory.
 
 `create_app(settings)` is what tests use. The module-level `app` that uvicorn imports is built
-lazily so that importing this module never requires a configured environment.
+lazily (and once) so that importing this module never requires a configured environment.
 """
 
 import sys
 from typing import Any
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import auth, health
 from app.api.rate_limit import LoginRateLimiter
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
 
+_STATUS_CODES = {
+    400: "bad_request",
+    401: "not_authenticated",
+    403: "forbidden",
+    404: "not_found",
+    405: "method_not_allowed",
+    409: "conflict",
+    429: "too_many_requests",
+}
+_STATUS_MESSAGES = {404: "Not found.", 405: "Method not allowed."}
 
-def _envelope(status_code: int, code: str, message: str) -> JSONResponse:
+
+def _envelope(
+    status_code: int, code: str, message: str, headers: dict[str, str] | None = None
+) -> JSONResponse:
     return JSONResponse(
-        status_code=status_code, content={"detail": {"code": code, "message": message}}
+        status_code=status_code,
+        content={"detail": {"code": code, "message": message}},
+        headers=headers,
     )
 
 
 def _validation_message(err: RequestValidationError) -> str:
+    errors = err.errors()
+    if any(e["type"] == "json_invalid" for e in errors):
+        return "Request body is not valid JSON."
     parts = []
-    for e in err.errors():
+    for e in errors:
         field = ".".join(str(p) for p in e["loc"] if p != "body")
         parts.append(f"{field}: {e['msg']}" if field else e["msg"])
     return "; ".join(parts)
+
+
+def _operation_id(route: APIRoute) -> str:
+    return route.name  # keeps generated TypeScript names short: `login`, not `login_api_auth_...`
 
 
 def create_app(
@@ -37,7 +62,7 @@ def create_app(
     db: Database | None = None,
     login_limiter: LoginRateLimiter | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="PaySense API", version="0.1.0")
+    app = FastAPI(title="PaySense API", version="0.1.0", generate_unique_id_function=_operation_id)
     app.state.settings = settings
     app.state.db = db  # built lazily on first use when None (see api/deps.py)
     app.state.login_limiter = login_limiter or LoginRateLimiter()
@@ -49,24 +74,55 @@ def create_app(
         allow_headers=["*"],
     )
 
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_handler(_: Request, err: StarletteHTTPException) -> JSONResponse:
+        detail = err.detail
+        if isinstance(detail, dict) and {"code", "message"} <= detail.keys():
+            code, message = detail["code"], detail["message"]
+        else:
+            code = _STATUS_CODES.get(err.status_code, f"http_{err.status_code}")
+            message = _STATUS_MESSAGES.get(err.status_code) or (
+                detail if isinstance(detail, str) else "Request failed."
+            )
+        return _envelope(err.status_code, code, message, headers=err.headers)
+
     @app.exception_handler(RequestValidationError)
     async def _validation_handler(_: Request, err: RequestValidationError) -> JSONResponse:
         return _envelope(422, "validation_error", _validation_message(err))
 
+    @app.exception_handler(httpx.HTTPError)
+    async def _upstream_handler(_: Request, __: httpx.HTTPError) -> JSONResponse:
+        return _envelope(
+            503, "upstream_unavailable", "The database is not reachable. Try again shortly."
+        )
+
     @app.exception_handler(Exception)
-    async def _unexpected_handler(_: Request, __: Exception) -> JSONResponse:
-        return _envelope(500, "internal_error", "Something went wrong on our side.")
+    async def _unexpected_handler(request: Request, __: Exception) -> JSONResponse:
+        # Runs in ServerErrorMiddleware, outside CORSMiddleware, so add the CORS header here;
+        # otherwise the browser reports an opaque CORS failure instead of our 500.
+        response = _envelope(500, "internal_error", "Something went wrong on our side.")
+        origin = request.headers.get("origin")
+        if origin and origin in settings.cors_origin_list:
+            response.headers["access-control-allow-origin"] = origin
+            response.headers["vary"] = "Origin"
+        return response
 
     app.include_router(health.router, prefix="/api")
     app.include_router(auth.router, prefix="/api")
     return app
 
 
+_app: FastAPI | None = None
+
+
 def __getattr__(name: str) -> Any:
+    global _app
     if name != "app":
         raise AttributeError(name)
-    try:
-        return create_app(get_settings())
-    except MissingSettingsError as err:
-        print(err, file=sys.stderr)
-        raise SystemExit(2) from err
+    if _app is None:
+        try:
+            _app = create_app(get_settings())
+        except MissingSettingsError as err:
+            print(err, file=sys.stderr)
+            raise SystemExit(2) from err
+    return _app

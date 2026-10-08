@@ -55,8 +55,8 @@ def test_each_user_sees_only_their_own_rows_through_the_repository(db, client):
     mine = transactions.insert(amir, {**row, "amount_sen": 1500})
     transactions.insert(siti, {**row, "amount_sen": 2500})
 
-    assert [r["id"] for r in transactions.list(amir)] == [mine["id"]]
-    assert [r["amount_sen"] for r in transactions.list(siti)] == [2500]
+    assert [r["id"] for r in transactions.list_rows(amir)] == [mine["id"]]
+    assert [r["amount_sen"] for r in transactions.list_rows(siti)] == [2500]
 
 
 def test_tampered_credential_is_refused(client):

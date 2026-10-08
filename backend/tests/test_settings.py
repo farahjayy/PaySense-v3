@@ -84,3 +84,35 @@ def test_server_exits_naming_session_secret_when_it_is_missing(tmp_path):
 
     assert result.returncode != 0
     assert "SESSION_SECRET" in result.stderr
+
+
+def _kwargs(**overrides):
+    base = dict(
+        _env_file=None,
+        supabase_url="https://x.supabase.co",
+        supabase_service_key="k",
+        session_secret="s" * 32,
+        cors_origins="http://localhost:3000",
+    )
+    return base | overrides
+
+
+@pytest.mark.parametrize("field", ["supabase_url", "supabase_service_key", "cors_origins"])
+def test_empty_values_are_rejected(field):
+    with pytest.raises(ValidationError):
+        Settings(**_kwargs(**{field: ""}))
+
+
+@pytest.mark.parametrize("origins", ["*", "http://localhost:3000/", "http://a.com, *", " , "])
+def test_unsafe_cors_origins_are_rejected(origins):
+    with pytest.raises(ValidationError):
+        Settings(**_kwargs(cors_origins=origins))
+
+
+def test_secrets_do_not_appear_in_repr():
+    s = Settings(**_kwargs(session_secret="topsecretvalue" * 3, supabase_service_key="svc-key-123"))
+
+    text = repr(s) + str(s)
+    assert "topsecretvalue" not in text
+    assert "svc-key-123" not in text
+    assert s.session_secret.get_secret_value().startswith("topsecretvalue")
