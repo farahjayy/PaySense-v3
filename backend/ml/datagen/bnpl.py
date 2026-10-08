@@ -50,6 +50,7 @@ class BnplResult:
     plans: list[GeneratedPlan] = field(default_factory=list)
     payments: list[Txn] = field(default_factory=list)
     limits: dict[str, int | None] = field(default_factory=dict)  # recorded limit, None = unknown
+    actual_limits: dict[str, int] = field(default_factory=dict)  # what each provider really allows
 
 
 def _lognormal(rng: np.random.Generator, median: float, sigma: float) -> float:
@@ -93,7 +94,7 @@ def _outcome_shares(params: Params) -> np.ndarray:
     return shares / shares.sum()  # the cited shares plus the assumed miss rate, renormalised
 
 
-def _unpaid_total_on(plans: list[GeneratedPlan], provider: str, day: date) -> int:
+def unpaid_total_on(plans: list[GeneratedPlan], provider: str, day: date) -> int:
     """What earlier plans on this provider still owed on `day` (the limit they are using)."""
     owed = 0
     for plan in plans:
@@ -106,7 +107,7 @@ def _unpaid_total_on(plans: list[GeneratedPlan], provider: str, day: date) -> in
     return owed
 
 
-def _propose(
+def build_proposal(
     params: Params,
     provider: str,
     purchase: date,
@@ -198,6 +199,7 @@ def generate_bnpl(
     if rng.random() >= params[f"bnpl.ownership_probability.{persona}"]:
         return result
     actual, result.limits = _true_limits(params, rng)
+    result.actual_limits = actual
     count = 1 + int(rng.poisson(params[f"bnpl.active_plans_extra_mean.{persona}"]))
     span = (end - start).days + LOOKBACK_DAYS
     purchases = sorted(
@@ -221,11 +223,11 @@ def generate_bnpl(
         )
         remaining = None
         if provider in NAMED_PROVIDERS:
-            remaining = max(
-                actual[provider] - _unpaid_total_on(result.plans, provider, purchase), 0
-            )
+            remaining = max(actual[provider] - unpaid_total_on(result.plans, provider, purchase), 0)
         try:
-            proposal = _propose(params, provider, purchase, instalments, price, remaining, rng)
+            proposal = build_proposal(
+                params, provider, purchase, instalments, price, remaining, rng
+            )
         except ProposalError:
             continue  # no limit left for this one: the student simply did not buy it
         key = f"plan-{index}"
