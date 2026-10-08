@@ -193,6 +193,15 @@ def list_for_summary(db: Database, user_id: str) -> list[dict[str, Any]]:
     return _table(db).list_rows(user_id, order_by="date", columns="date,amount_sen,type,category")
 
 
+def list_for_forecast(db: Database, user_id: str) -> list[dict[str, Any]]:
+    """Every transaction, reduced to the columns recurring detection and the forecast need."""
+    columns = (
+        "date,amount_sen,type,category,description,"
+        "bnpl_plan_id,bnpl_installment_id,recurring_item_id,is_bnpl"
+    )
+    return _table(db).list_rows(user_id, order_by="date", columns=columns)
+
+
 def get_for_installment(db: Database, user_id: str, installment_id: str) -> dict[str, Any] | None:
     """The payment that settles this instalment, if one has been logged."""
     if not is_uuid(installment_id):

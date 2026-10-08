@@ -1,4 +1,4 @@
-"""Recurring income and bills — manual CRUD (detection suggestions arrive in P4)."""
+"""Recurring income and bills: CRUD, plus detected suggestions the user may confirm."""
 
 import datetime as dt
 from typing import Literal, Self
@@ -11,6 +11,8 @@ from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
 from app.api.types import AppDate, Sen, reject_explicit_nulls, text
 from app.core.errors import not_found, unprocessable
 from app.db import recurring_items as repo
+from app.db import transactions
+from app.engines.forecasting.recurring import detect
 
 Kind = Literal["income", "bill"]
 Cadence = Literal["weekly", "biweekly", "monthly", "semester", "custom"]
@@ -30,6 +32,7 @@ class RecurringIn(BaseModel):
     custom_interval_days: int | None = Field(default=None, ge=1, le=366)
     anchor_date: AppDate
     active: bool = True
+    origin: Literal["manual", "detected"] = "manual"
 
     @model_validator(mode="after")
     def _custom_needs_an_interval(self) -> Self:
@@ -66,6 +69,17 @@ class RecurringOut(ApiModel):
     origin: Literal["detected", "manual"]
 
 
+class SuggestionOut(ApiModel):
+    name: str
+    display_name: str
+    kind: Kind
+    amount_sen: int
+    cadence: Cadence
+    anchor_date: dt.date
+    confidence: float
+    occurrences: int
+
+
 def _missing():
     return not_found("recurring_item_not_found", "No such recurring item.")
 
@@ -76,6 +90,15 @@ def list_items(user: CurrentUser, db: DbDep, active_only: bool = False) -> list[
         RecurringOut.model_validate(row)
         for row in repo.list_items(db, user.id, active_only=active_only)
     ]
+
+
+@router.get("/suggestions", response_model=list[SuggestionOut])
+def suggestions(user: CurrentUser, db: DbDep) -> list[SuggestionOut]:
+    """Patterns found in the user's own ledger. Nothing is saved: confirming one is a normal
+    POST with `origin: "detected"`."""
+    rows = transactions.list_for_forecast(db, user.id)
+    known = [item["name"] for item in repo.list_items(db, user.id)]
+    return [SuggestionOut.model_validate(vars(s)) for s in detect(rows, confirmed_names=known)]
 
 
 @router.post("", response_model=RecurringOut, status_code=201)

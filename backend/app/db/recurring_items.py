@@ -1,4 +1,4 @@
-"""Recurring items (confirmed income and bills): manual CRUD. Detection arrives in P4."""
+"""Recurring items (confirmed income and bills). Detection only suggests; the user confirms."""
 
 import datetime as dt
 from collections.abc import Mapping
@@ -10,6 +10,7 @@ from app.domain.flows import as_date
 
 TABLE = "recurring_items"
 KINDS = frozenset({"income", "bill"})
+ORIGINS = frozenset({"manual", "detected"})
 CADENCES = frozenset({"weekly", "biweekly", "monthly", "semester", "custom"})
 UPDATABLE = frozenset(
     {"name", "amount_sen", "cadence", "custom_interval_days", "anchor_date", "active"}
@@ -54,9 +55,12 @@ def create(
     anchor_date: dt.date | str,
     custom_interval_days: int | None = None,
     active: bool = True,
+    origin: str = "manual",
 ) -> dict[str, Any]:
     if kind not in KINDS:
         raise ValueError(f"kind must be one of {sorted(KINDS)}")
+    if origin not in ORIGINS:
+        raise ValueError(f"origin must be one of {sorted(ORIGINS)}")
     cadence, interval = _check_cadence(cadence, custom_interval_days)
     row = {
         "kind": kind,
@@ -66,7 +70,7 @@ def create(
         "custom_interval_days": interval,
         "anchor_date": as_date(anchor_date).isoformat(),
         "active": bool(active),
-        "origin": "manual",
+        "origin": origin,
     }
     return _table(db).insert(user_id, row)
 

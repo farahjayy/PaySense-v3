@@ -181,6 +181,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recurring-items/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggestions
+         * @description Patterns found in the user's own ledger. Nothing is saved: confirming one is a normal
+         *     POST with `origin: "detected"`.
+         */
+        get: operations["suggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recurring-items/{item_id}": {
         parameters: {
             query?: never;
@@ -345,6 +366,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Forecast */
+        get: operations["forecast"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -462,6 +500,30 @@ export interface components {
          */
         ErrorEnvelope: {
             detail: components["schemas"]["ErrorDetail"];
+        };
+        /** ForecastOut */
+        ForecastOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "locked";
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Model */
+            model: string;
+            /** Months Of History */
+            months_of_history: number;
+            /** Suspect Months */
+            suspect_months: components["schemas"]["SuspectMonthOut"][];
+            simulation: components["schemas"]["SimulationOut"] | null;
+            /** Band */
+            band: ("Safe" | "Caution" | "At Risk") | null;
+            /** Health Score */
+            health_score: number | null;
         };
         /** HealthOut */
         HealthOut: {
@@ -825,6 +887,12 @@ export interface components {
              * @default true
              */
             active: boolean;
+            /**
+             * Origin
+             * @default manual
+             * @enum {string}
+             */
+            origin: "manual" | "detected";
         };
         /** RecurringOut */
         RecurringOut: {
@@ -874,12 +942,82 @@ export interface components {
             /** Active */
             active?: boolean | null;
         };
+        /** SimulationOut */
+        SimulationOut: {
+            /** Months */
+            months: string[];
+            /** Monthly Margin P10 Sen */
+            monthly_margin_p10_sen: number[];
+            /** Monthly Margin P50 Sen */
+            monthly_margin_p50_sen: number[];
+            /** Monthly Margin P90 Sen */
+            monthly_margin_p90_sen: number[];
+            /** Cumulative Margin P10 Sen */
+            cumulative_margin_p10_sen: number[];
+            /** Cumulative Margin P50 Sen */
+            cumulative_margin_p50_sen: number[];
+            /** Cumulative Margin P90 Sen */
+            cumulative_margin_p90_sen: number[];
+            /** P Shortfall */
+            p_shortfall: number;
+            /** Worst Month */
+            worst_month: string | null;
+            /** Weeks */
+            weeks: number;
+            /** Horizon Capped */
+            horizon_capped: boolean;
+            /**
+             * Bootstrap
+             * @enum {string}
+             */
+            bootstrap: "block" | "plain" | "none";
+        };
         /** SkippedRowOut */
         SkippedRowOut: {
             /** Row */
             row: number;
             /** Reason */
             reason: string;
+        };
+        /** SuggestionOut */
+        SuggestionOut: {
+            /** Name */
+            name: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "income" | "bill";
+            /** Amount Sen */
+            amount_sen: number;
+            /**
+             * Cadence
+             * @enum {string}
+             */
+            cadence: "weekly" | "biweekly" | "monthly" | "semester" | "custom";
+            /**
+             * Anchor Date
+             * Format: date
+             */
+            anchor_date: string;
+            /** Confidence */
+            confidence: number;
+            /** Occurrences */
+            occurrences: number;
+        };
+        /** SuspectMonthOut */
+        SuspectMonthOut: {
+            /** Month */
+            month: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "no_income" | "low_spend";
+            /** Detail */
+            detail: string;
         };
         /** TransactionIn */
         TransactionIn: {
@@ -1586,6 +1724,44 @@ export interface operations {
             };
         };
     };
+    suggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionOut"][];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     delete_item: {
         parameters: {
             query?: never;
@@ -2184,6 +2360,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillsOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    forecast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastOut"];
                 };
             };
             /** @description Not logged in, or the session is invalid */

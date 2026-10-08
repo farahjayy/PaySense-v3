@@ -20,6 +20,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api import (
     auth,
     bills,
+    forecast,
     health,
     imports,
     plans,
@@ -154,6 +155,7 @@ def create_app(
     app.include_router(imports.router, prefix="/api")
     app.include_router(plans.router, prefix="/api")
     app.include_router(bills.router, prefix="/api")
+    app.include_router(forecast.router, prefix="/api")
     return app
 
 

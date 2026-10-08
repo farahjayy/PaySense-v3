@@ -112,8 +112,15 @@ def _walk_properties(spec):
 
 
 def _types(definition):
+    """The JSON types of a property; a list of numbers is judged by what its items are."""
     options = definition.get("anyOf", [definition])
-    return {o.get("type") for o in options} - {"null", None}
+    found = set()
+    for option in options:
+        if option.get("type") == "array":
+            found |= _types(option.get("items", {}))
+        else:
+            found.add(option.get("type"))
+    return found - {"null", None}
 
 
 def test_every_money_field_in_the_api_is_an_integer_number_of_sen(api):
