@@ -158,6 +158,18 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** supabase-py has no transactions, and a client timeout looks identical whether or not Postgres committed. The first design ("on any error, delete the payment I logged") could erase a real payment after a committed-but-unacknowledged flip, leaving a paid instalment with no expense and no way to repair it (a retry says "already paid"). Tying the payment to the instalment makes the worst case recoverable (a logged payment against a still-unpaid instalment, fixed by one retry) instead of silent.
 **Trade-off.** A transient inconsistency window remains (payment logged, instalment not yet flipped); both the forecast and the month summary would briefly count the cash as spent while the instalment still shows as due. **Rejected for now:** moving create-plan / mark-paid into Postgres functions via `supabase.rpc` for true transactions — the cleaner fix, but it moves business logic into SQL and splits it from the tested Python; revisit if the real-database tests show the window matters.
 
+## D-31 — Synthetic population: what the generator may and may not show the models
+*2026-10-08 · Claude decision after the P2 python and ML audits*
+
+**Decision.**
+1. **Answer keys are separated from inputs.** Each exported profile nests the persona, the generator's true income, the true provider limits and the recurring ground truth under `truth`; the Engine 1 cohort has no persona column. Training and serving code must never read `truth` (a P5 test enforces it); evaluation code may.
+2. **The proposed purchase is built against the limit the student has *recorded*, not the true limit** (D-28: no recorded limit means no cap). Existing plans in the history are built against the true limit, because the provider really enforced it.
+3. **Repayment behaviour is drawn once per student.** The cited 88 / 12 / <0.5% are shares of account holders (CCOB), so a student is "always on time", "sometimes late" or "misses one"; they are not per-instalment probabilities.
+4. **The weekly series carries structure the forecasters are not told about** (AR(1) drift in the spending level, a payday-week lift, exam dips, outlier weeks). Day-of-week and payday-day effects only move spending within a week, so they are *not* claimed as weekly-scale difficulty.
+5. **Every parameter is in `params.yaml`** with a citation or an `assumed` reason; structural constants that change outputs are parameters too. The report separates distribution matches from "wiring checks" that hold by construction.
+**Why.** The first version leaked the true limit into the purchase (train/serve skew on `limit_known`), applied a holder-level statistic to instalments (only 37% of holders were fully on time against a cited 88%), and claimed weekly-scale richness it did not have, so a "forecaster beats benchmarks" result on it would have been partly an artefact. Each was found by the ml-auditor and fixed before any model saw the data.
+**Trade-off.** More assumed parameters (105 of 121) and a noisier weekly total than the drawn one; the report says both. The synthetic population remains a stand-in, never evidence about real students.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)
@@ -169,4 +181,6 @@ Not decisions — guesses made to keep moving. Each one must be confirmed or kil
 3. `ASSUMED:` ~10,000 synthetic profiles suffice (resolve in P5 with learning curves).
 4. `ASSUMED:` (D-27) Shortfall is judged on the cumulative margin from RM0, not on each month alone; P5 reports the per-month version as a sensitivity check.
 5. `ASSUMED:` (D-28) The limit caps the financed total payable including fee, and used limit = sum of unpaid instalment amounts; confirm with a real checkout during P1.
-6. `ASSUMED:` (D-27) Incomplete-month thresholds and the unconfirmed-income series follow the same candidates and protocol as discretionary spend (fix in P3/P4).
+6. `ASSUMED:` (D-27) Incomplete-month thresholds and the unconfirmed-income series follow the same candidates and protocol as discretionary spend (fix in P3/P4). P3 evaluates total weekly income; the confirmed/unconfirmed split is decided by recurring detection in P4.
+7. `ASSUMED:` (D-31) The cited RM201-400 monthly spending band (Tok & Cheah 2024) is applied to *discretionary* spend only, with rent, phone and subscriptions added on top. The source most naturally describes total spending; the report states the interpretation.
+8. `ASSUMED:` (D-31) 105 of 121 generator parameters are assumptions (listed with reasons in `reports/datagen/README.md`); they are chosen for plausibility and coverage and stress-tested in P5, not defended as estimates.

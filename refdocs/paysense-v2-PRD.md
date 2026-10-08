@@ -242,6 +242,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-28 | A provider limit caps the financed amount; the excess is paid at checkout and counted in the purchase month | Author-confirmed real checkout behaviour; a purchase above the limit is otherwise impossible |
 | D-29 | API money is integer sen (`*_sen`); refunds/transfers are reserved categories; CSV import is stateless with duplicate flagging | No float ever touches a ringgit amount; refunds must not inflate income; Render restarts lose in-memory state |
 | D-30 | A payment is tied to its instalment (unique); ambiguous failures never delete a payment; create-plan logs payments before flipping checkout instalments | No transactions in supabase-py, and a timeout looks the same whether or not the database committed |
+| D-31 | The synthetic population keeps answer keys under `truth`, builds the proposed purchase from the recorded limit only, draws repayment per student, and puts weekly-scale structure (not day-level) in the series | The first version leaked the true limit, applied a holder-level statistic per instalment and over-claimed difficulty; found by audit before any model saw it |
 
 ---
 

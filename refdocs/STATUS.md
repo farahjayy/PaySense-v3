@@ -4,7 +4,7 @@
 
 **Build philosophy:** dependency order, no dates. Each phase ends green — tested and actually run — before the next one starts. Port what v1 proved, rebuild what v1 got wrong, and never ship a number that doesn't trace to a model, a simulation or the user's data.
 
-**Right now:** P0 and P1 are built and green against the in-memory test database; **nothing has run against the real Supabase project yet.** **Blocked on the author:** create the Supabase project (Singapore), put `SUPABASE_URL` and the secret key into `backend/.env`, apply `backend/migrations/0001_init.sql` in the SQL editor (it is still unapplied, so it was edited in place twice — see CHANGELOG), and optionally set `SUPABASE_ANON_KEY` for the RLS check. Then run, from `backend/`: `uv run python scripts/check_rls.py`, `uv run python scripts/seed_users.py ...` and `uv run pytest -m integration` (20 real-database contract tests are written and skipped). P1 also needs **one real checkout example** from the author to confirm the provider-limit rule (D-28, `ASSUMED`). **Design change this session:** forecasting no longer uses an account balance (D-27) and a provider limit now caps the financed amount, with the excess paid at checkout (D-28). Next phase: P2 (synthetic population) — its plan + execution docs come first.
+**Right now:** P0 and P1 are built and green against the in-memory test database; **nothing has run against the real Supabase project yet.** **Blocked on the author:** create the Supabase project (Singapore), put `SUPABASE_URL` and the secret key into `backend/.env`, apply `backend/migrations/0001_init.sql` in the SQL editor (it is still unapplied, so it was edited in place twice — see CHANGELOG), and optionally set `SUPABASE_ANON_KEY` for the RLS check. Then run, from `backend/`: `uv run python scripts/check_rls.py`, `uv run python scripts/seed_users.py ...` and `uv run pytest -m integration` (20 real-database contract tests are written and skipped). P1 also needs **one real checkout example** from the author to confirm the provider-limit rule (D-28, `ASSUMED`). **Design change this session:** forecasting no longer uses an account balance (D-27) and a provider limit now caps the financed amount, with the excess paid at checkout (D-28). **P2 (synthetic population) is built and audited.** Next phase: P3 (Engine 1 evaluation) — plan and execution docs are written; no code yet. P3 needs MoneyData and, if obtainable without a paid account, Berka (ASSUMED 3).
 
 ---
 
@@ -14,7 +14,7 @@
 |---|---|---|
 | P0 Foundation | Monorepo skeleton, tooling, Supabase migrations, username login + user scoping, OpenAPI→TS client, dependency & memory spike | 🔶 In progress — everything verified except the live-Supabase steps (migration applied, anon-key RLS check, integration tests, real-DB login) |
 | P1 Ledger & BNPL domain | Port v1 domain + tests, transactions/month-summary/plans/providers APIs, CSV import, recurring items, provider limits with the financed/checkout split (D-28) | 🔶 In progress — all code built, reviewed and green on the in-memory DB (909 backend tests); the 20 real-DB contract tests are written but unrun; D-28 limit rule is `ASSUMED` |
-| P2 Synthetic population | `ml/datagen`, cited params, persona CSVs, Engine 2 profiles, Engine 1 cohort | ⬜ Not started |
+| P2 Synthetic population | `ml/datagen`, cited params, persona CSVs, Engine 2 profiles, Engine 1 cohort | ✅ Done — generator, 3 persona CSVs, 10,000-profile export + manifest and distribution report built, audited (python-reviewer, ml-auditor) and green (1085 tests). Persona CSVs await the author's review before P9 |
 | P3 Engine 1 evaluation | 5 forecasters × 4 datasets, rolling-origin, MASE + significance, reports | ⬜ Not started |
 | P4 Engine 1 serving | Recurring detection, component forecaster, Monte Carlo, `/api/forecast`, health score | ⬜ Not started |
 | P5 Engine 2 training | Simulation labels, shared features, 4 classifiers, tuning, CV, calibration, ablation | ⬜ Not started |
@@ -32,7 +32,21 @@ Status vocabulary — use these exactly, and never round up:
 
 ---
 
-## P1 — Ledger & BNPL domain (current phase)
+## P2 — Synthetic population
+
+| Item | Approach | Status |
+|---|---|---|
+| Parameters and provenance | `params.yaml` + `sources.md`; the loader refuses a parameter with neither a source key nor `assumed` + reason; duplicate keys rejected | ✅ 121 parameters: 16 cited, 105 assumed |
+| Generator | income (allowance, PTPTN, part-time, gig), bills, discretionary spend (category allocation, AR(1) drift, payday week, exam dips), existing BNPL plans built with the app's own `propose_plan`, proposed purchase | ✅ |
+| Profiles | `generate_profile`; deterministic; a 10-profile run is a prefix of a 100-profile run; answer keys under `truth` | ✅ |
+| Persona CSVs | 3 committed files, 4 months each, import through `parse_csv` with no skipped rows | ✅ built · 🔶 **author review before P9** |
+| Export | `profiles.jsonl` + `weekly_series.csv` + committed `MANIFEST.json`; 10,000 profiles in 490 s, peak 76 MB | ✅ |
+| Distribution report | `reports/datagen/` generated by script; per-holder repayment, 15% spend-share tolerance, wiring checks labelled | ✅ |
+| Reviews | python-reviewer and ml-auditor | ✅ HIGH findings fixed (D-31); cross-machine reproducibility not verified (stated in the report) |
+
+---
+
+## P1 — Ledger & BNPL domain
 
 | Item | Approach | Status |
 |---|---|---|
@@ -85,12 +99,13 @@ What has actually been run, not what has been written. A row here needs a real c
 | 2026-10-08 | After applying the reviews: frontend | `npm run gen:api && npm run check:api && npx tsc --noEmit && npm run lint && npx vitest run`; `NEXT_PUBLIC_API_BASE_URL=… npm run build` (and without the variable); `npx playwright test` | check:api OK; tsc, lint clean; **85 tests passed**; build OK, and **fails without the API URL, naming it**; Playwright 6 passed |
 | 2026-10-08 | P1 frontend contract | `cd frontend && npm run gen:api && npm run check:api && npx tsc --noEmit && npm run lint && npx vitest run && npm run build` | types regenerated for 18 endpoints; check:api exit 0; tsc clean; lint clean; **62 tests passed**; build OK |
 
+| 2026-10-08 | P2 synthetic population | `cd backend && uv run ruff check . && uv run pytest -q`; `uv run python -m ml.datagen.personas` (twice, SHA-256 compared); `uv run python -m ml.datagen.export --profiles 10000`; `uv run python -m ml.datagen.report` | **1085 passed**, 20 integration deselected; ruff clean; persona CSVs identical across runs; 10,000 profiles exported (490 s, peak working set 76 MB); report regenerated on the same 10,000 profiles. Second consecutive report run on the final code not diffed; test-scale determinism (150 profiles, byte-identical incl. figures) passes |
 ---
 
 ## Known gaps
 
-- A file-structure doc is still worth writing once P1 adds the domain layer; README §Project layout carries the tree meanwhile.
-- Three working assumptions are open (`changelog/DECISIONS.md` bottom); the Python-version and memory ones were resolved by the P0 spike (D-23, D-15).
+- File-structure doc: `refdocs/guides/file-structure.md` (written at the end of P2). README's project-layout block is older and still marks built folders as planned; refresh it when P3 adds `engine1_eval/`.
+- Eight working assumptions are open (`changelog/DECISIONS.md` bottom); the Python-version and memory ones were resolved by the P0 spike (D-23, D-15).
 - Render memory is only indicative: the spike measured Windows RSS for import-and-toy-workload, not the real served stack. Re-measure at the end of P4 and P6, then on Render in P8.
 - `frontend/.env.example` could not be created in this session (a permission rule blocks writing `.env*` files); the code defaults to `http://localhost:8000`, so it is optional locally. Create it from `refdocs/guides/env_setup.md` when convenient.
 - `npm audit` reports high-severity findings in the dev-only ESLint toolchain (`braces` via `eslint-config-next`); nothing in the shipped bundle. Revisit when `eslint-config-next` publishes a fix.
