@@ -141,6 +141,7 @@
 - **C1:** `GET /api/provider-limits` returns only the three named providers; `PUT` for `other` is refused (the manual path takes no limit). ADR D-29 written. A `get_today` dependency was added so tests pin the clock.
 - **C2–C5:** as written, plus `tests/api/conftest.py` fixtures. The transactions list filter is `?type=` (aliased from `kind`). `python-multipart` was added for uploads; `uv add` hit an intermittent Windows `Access is denied` removing the project's `dist-info`, worked around once with `uv pip install`.
 - **C6:** `schema.d.ts` regenerated for 18 endpoints; `lib/money.ts` (+ tests mirroring the Python cases) added for D-29.
+- **After the reviews:** `transactions.bnpl_installment_id` (unique) added to the unapplied migration (D-30); `app/core/body_limit.py`, `app/api/types.py` (trimmed text, bounded dates, null-rejecting patches) and `app/db` batching/projection added; `list_for_summary` moved the summary query out of the route; `domain.schedule.generate_schedule` gained an `anchor`; `tzdata` added.
 - **Gating slip:** one commit went in with a failing test (a hard-coded set of operation ids); fixed in the next commit and the commit procedure now gates on the full suite passing.
 
 ## Wrap-up (do not skip)
@@ -149,7 +150,7 @@
 - [x] `refdocs/changelog/CHANGELOG.md` — session entry, including the `ASSUMED:` items built on (D-27 cumulative-margin definition, D-28 limit rule)
 - [x] `refdocs/changelog/DECISIONS.md` — D-27, D-28, D-29 added (and PRD §7)
 - [x] This doc updated to match what actually happened
-- [~] Reviews: `security-reviewer`, `fastapi-reviewer`, `react-reviewer` launched; findings and fixes recorded in the CHANGELOG entry when they return
+- [x] Reviews: `security-reviewer`, `fastapi-reviewer`, `react-reviewer` run; findings and fixes recorded in the CHANGELOG ("P0/P1 reviews applied"); ADR D-30 added; deferred items in STATUS Known gaps
 - [ ] **Live-Supabase verification** (needs the author): apply the migration, `check_rls.py`, `seed_users.py`, `pytest -m integration`
 - [ ] **A real checkout example** (needs the author) to confirm or correct the D-28 limit rule
 - [ ] File-structure doc (the domain layer now exists) — written at the start of P2

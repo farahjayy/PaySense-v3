@@ -116,7 +116,7 @@ Confirmed from the founding context documents and the scaffold interview (2026-1
 |---|---|
 | `users` | `id`, `username` (unique, case-insensitive), `display_name`, `persona` (`frequent_bnpl` / `budget_conscious` / `irregular_income` / null), `created_at`. Seeded by an admin script; no sign-up endpoint. |
 | `user_settings` | Onboarding state only. **No balance** (D-27): forecasting runs on flows. |
-| `transactions` | v1 shape (`date`, `amount` > 0, `type` income/expense/savings, `category`, `description`, `account_name`, `is_bnpl`, `source` manual/csv/seed) + `bnpl_plan_id`, `recurring_item_id`. |
+| `transactions` | v1 shape (`date`, `amount` > 0, `type` income/expense/savings, `category`, `description`, `account_name`, `is_bnpl`, `source` manual/csv/seed) + `bnpl_plan_id`, `bnpl_installment_id` (the instalment a logged payment settles; unique, D-30), `recurring_item_id`. Amounts are `amount_sen` (bigint). |
 | `recurring_items` | `kind` income/bill, `name`, `amount`, `cadence` weekly/biweekly/monthly/semester/custom, `anchor_date`, `active`, `origin` detected/manual. |
 | `bnpl_plans`, `bnpl_installments` | v1 shape (provider, price, monthly fee rate, instalments, first payment date, status, paid flags) + `risk_check_id`, `risk_check_type`. Money in sen. The financed part and the checkout payment are both derivable from the plan (D-28). |
 | `provider_limits` | Optional per-user credit limit per provider. It caps how much of a purchase can be financed; the excess is paid at checkout (D-28). |
@@ -241,6 +241,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-27 | Engine 1 forecasts income and expense flows; there is no starting balance, no running ledger, no balance sync. Shortfall = cumulative margin < RM0 at a month-end | Students rarely keep a reliable balance and incomplete logs corrupted a balance anchor; BNM's own household stress test is margin-based |
 | D-28 | A provider limit caps the financed amount; the excess is paid at checkout and counted in the purchase month | Author-confirmed real checkout behaviour; a purchase above the limit is otherwise impossible |
 | D-29 | API money is integer sen (`*_sen`); refunds/transfers are reserved categories; CSV import is stateless with duplicate flagging | No float ever touches a ringgit amount; refunds must not inflate income; Render restarts lose in-memory state |
+| D-30 | A payment is tied to its instalment (unique); ambiguous failures never delete a payment; create-plan logs payments before flipping checkout instalments | No transactions in supabase-py, and a timeout looks the same whether or not the database committed |
 
 ---
 

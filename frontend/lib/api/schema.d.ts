@@ -1384,6 +1384,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description The request conflicts with the current state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description The request body or parameters are invalid */
             422: {
                 headers: {
@@ -1430,6 +1439,15 @@ export interface operations {
             };
             /** @description No such record for this user */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request conflicts with the current state */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2068,12 +2086,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description Already paid, or changed concurrently */
+            /** @description The request conflicts with the current state */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
             };
             /** @description The request body or parameters are invalid */
             422: {
@@ -2128,12 +2148,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description An instalment is already paid */
+            /** @description The request conflicts with the current state */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
             };
             /** @description The request body or parameters are invalid */
             422: {

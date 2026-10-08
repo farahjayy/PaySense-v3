@@ -151,6 +151,13 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** v1 stored RM floats and converted at the edges; rounding bugs there are what the sen discipline exists to prevent. Refunds netting against spend keeps the discretionary series honest; counting them as income would inflate the income forecast. Render restarts and sleeps, so in-memory preview state would lose uploads.
 **Rejected.** RM floats (v1); RM decimal strings (every client must parse them, no benefit over sen); negative transaction amounts (the `amount_sen > 0` invariant is load-bearing); a new transaction column for refunds (not needed yet); a server-side preview store.
 
+## D-30 — A payment is tied to its instalment; ambiguous failures never delete a payment
+*2026-10-08 · Claude decision after the P1 FastAPI review (HIGH finding)*
+
+**Decision.** `transactions.bnpl_installment_id` links a logged payment to the instalment it settles, with a **partial unique index** (one payment per instalment) and a composite `(id, user_id)` foreign key. Logging a payment is therefore idempotent (`_ensure_payment` finds the existing row or inserts it). `mark_paid` logs first, then flips the instalment with a conditional update; if the flip errors it **re-reads the instalment** and treats a committed flip as success — it never deletes the payment on an ambiguous error. `create_plan` inserts instalments as unpaid, logs the checkout payments, and only then flips the checkout instalments to paid; on failure it deletes everything linked to the plan, each cleanup step independent so a failed step cannot mask the original error or skip the plan delete. `delete_many` sends ids in batches of 100.
+**Why.** supabase-py has no transactions, and a client timeout looks identical whether or not Postgres committed. The first design ("on any error, delete the payment I logged") could erase a real payment after a committed-but-unacknowledged flip, leaving a paid instalment with no expense and no way to repair it (a retry says "already paid"). Tying the payment to the instalment makes the worst case recoverable (a logged payment against a still-unpaid instalment, fixed by one retry) instead of silent.
+**Trade-off.** A transient inconsistency window remains (payment logged, instalment not yet flipped); both the forecast and the month summary would briefly count the cash as spent while the instalment still shows as due. **Rejected for now:** moving create-plan / mark-paid into Postgres functions via `supabase.rpc` for true transactions — the cleaner fix, but it moves business logic into SQL and splits it from the tested Python; revisit if the real-database tests show the window matters.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)
