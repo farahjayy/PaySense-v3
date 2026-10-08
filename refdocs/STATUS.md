@@ -4,7 +4,7 @@
 
 **Build philosophy:** dependency order, no dates. Each phase ends green — tested and actually run — before the next one starts. Port what v1 proved, rebuild what v1 got wrong, and never ship a number that doesn't trace to a model, a simulation or the user's data.
 
-**Right now:** P0 is built and green everywhere that does not need the live database. **Blocked on the author:** create the Supabase project (Singapore), put `SUPABASE_URL` and the secret key into `backend/.env`, apply `backend/migrations/0001_init.sql` in the SQL editor, and optionally set `SUPABASE_ANON_KEY` for the RLS check. Then run (from `backend/`) `uv run python scripts/check_rls.py`, `uv run python scripts/seed_users.py ...` and `uv run pytest -m integration` — those three are the only P0 items still unverified. P1's pure-domain ports (schedule, providers, ledger maths) do not need the database and proceed meanwhile.
+**Right now:** P0 and P1 are built and green against the in-memory test database; **nothing has run against the real Supabase project yet.** **Blocked on the author:** create the Supabase project (Singapore), put `SUPABASE_URL` and the secret key into `backend/.env`, apply `backend/migrations/0001_init.sql` in the SQL editor (it is still unapplied, so it was edited in place twice — see CHANGELOG), and optionally set `SUPABASE_ANON_KEY` for the RLS check. Then run, from `backend/`: `uv run python scripts/check_rls.py`, `uv run python scripts/seed_users.py ...` and `uv run pytest -m integration` (18 real-database contract tests are written and skipped). P1 also needs **one real checkout example** from the author to confirm the provider-limit rule (D-28, `ASSUMED`). **Design change this session:** forecasting no longer uses an account balance (D-27) and a provider limit now caps the financed amount, with the excess paid at checkout (D-28). Next phase: P2 (synthetic population) — its plan + execution docs come first.
 
 ---
 
@@ -13,7 +13,7 @@
 | Phase | Scope | Status |
 |---|---|---|
 | P0 Foundation | Monorepo skeleton, tooling, Supabase migrations, username login + user scoping, OpenAPI→TS client, dependency & memory spike | 🔶 In progress — everything verified except the live-Supabase steps (migration applied, anon-key RLS check, integration tests, real-DB login) |
-| P1 Ledger & BNPL domain | Port v1 domain + tests, transactions/month-summary/plans/providers APIs, CSV import, recurring items, provider limits with the financed/checkout split (D-28) | ⬜ Not started — plan + execution docs next (balance logic dropped by D-27) |
+| P1 Ledger & BNPL domain | Port v1 domain + tests, transactions/month-summary/plans/providers APIs, CSV import, recurring items, provider limits with the financed/checkout split (D-28) | 🔶 In progress — all code built and green on the in-memory DB (826 backend tests, 97% coverage); real-DB contract tests unrun; D-28 limit rule is `ASSUMED`; review findings being applied |
 | P2 Synthetic population | `ml/datagen`, cited params, persona CSVs, Engine 2 profiles, Engine 1 cohort | ⬜ Not started |
 | P3 Engine 1 evaluation | 5 forecasters × 4 datasets, rolling-origin, MASE + significance, reports | ⬜ Not started |
 | P4 Engine 1 serving | Recurring detection, component forecaster, Monte Carlo, `/api/forecast`, health score | ⬜ Not started |
@@ -32,7 +32,22 @@ Status vocabulary — use these exactly, and never round up:
 
 ---
 
-## P0 — Foundation (current phase)
+## P1 — Ledger & BNPL domain (current phase)
+
+| Item | Approach | Status |
+|---|---|---|
+| Money, providers, schedule | `domain/{money,providers,schedule}.py`; every v1 schedule test re-expressed in sen; limit split (D-28); manual Other-provider schedule (D-24) | ✅ 324 domain tests |
+| Categorise, flows, plans, bills | Reserved `Refund`/`Transfer` categories; one shared flow classification and month summary; plan read-model; monthly bills | ✅ |
+| CSV import parser | stdlib `csv`; per-file direction detection; every unusable row reported; multiplicity-aware duplicate flags | ✅ |
+| Plan proposal builder | `domain/plan_builder.py` — one pure function behind both preview and create | ✅ |
+| Repositories | transactions, recurring items, plans (self-compensating create / mark-paid), provider limits; isolation test per function | ✅ against the in-memory fake · 🔶 real-DB contract tests (18) written, **not run** |
+| API routes | providers, provider limits, transactions, month summary, recurring items, CSV import (stateless), plans (preview/create/read/rename/delete/pay/bulk pay), bills — 18 endpoints, each with a two-user test and an unauthenticated test | ✅ |
+| Typed client | `schema.d.ts` regenerated for all 18 endpoints; `lib/money.ts` twin of the Python money helpers | ✅ |
+| Review | python/fastapi, security and react reviewers | 🔶 launched; findings recorded in CHANGELOG when they return |
+
+---
+
+## P0 — Foundation
 
 | Item | Approach | Status |
 |---|---|---|
@@ -62,7 +77,11 @@ What has actually been run, not what has been written. A row here needs a real c
 | 2026-10-08 | Migration SQL is valid Postgres | `pglast.parse_sql` over `0001_init.sql` | 32 statements parsed. **Syntax only — not applied to any database** |
 | 2026-10-08 | Frontend lint, types, unit tests, build | `cd frontend && npm run lint && npx tsc --noEmit && npx vitest run --coverage && npm run build` | lint clean; tsc clean; 26 tests passed (lib 92.5%, overall 84.6% stmts); build OK (3 routes) |
 | 2026-10-08 | Generated API types cannot drift silently | `npm run check:api` on the real tree, then after adding a field to `HealthOut`, then reverted | exit 0 → exit 1 → exit 0 |
-| 2026-10-08 | Browser journey: redirect to /login, bad username, sign in, reload keeps session, log out, guarded route | `cd frontend && npx playwright test` (real FastAPI app on the in-memory DB + `next dev`) | 6 passed (3 tests × desktop Chrome and Pixel 7). **Fake database, not Supabase** |
+| 2026-10-08 | Browser journey: redirect to /login, bad username, sign in, reload keeps session, log out, guarded route | `cd frontend && npx playwright test` (real FastAPI app on the in-memory DB + `next dev`) | 6 passed (3 tests × desktop Chrome and Pixel 7). **Fake database, not Supabase.** Re-run after P1: still 6 passed |
+| 2026-10-08 | P1 backend: domain, repositories, API | `cd backend && uv run ruff check . && uv run pytest -q --cov=app` | **826 passed**, 18 integration deselected; 97% coverage on `app/`; ruff clean. All against `tests/fakes.py`, not Supabase |
+| 2026-10-08 | The author's limit example end to end | `tests/api/test_plans_api.py::test_the_authors_example_limit_200_price_300_pay_100_at_checkout` and `::test_create_logs_the_excess_over_the_limit_as_a_checkout_payment` | limit RM200 + price RM300 → RM200 financed, RM100 checkout payment, RM100 logged as a linked expense |
+| 2026-10-08 | Every money field in the API is an integer sen | `tests/api/test_providers_api.py::test_every_money_field_in_the_api_is_an_integer_number_of_sen` (walks the OpenAPI document) | passes over all P1 models |
+| 2026-10-08 | P1 frontend contract | `cd frontend && npm run gen:api && npm run check:api && npx tsc --noEmit && npm run lint && npx vitest run && npm run build` | types regenerated for 18 endpoints; check:api exit 0; tsc clean; lint clean; **62 tests passed**; build OK |
 
 ---
 
@@ -73,6 +92,9 @@ What has actually been run, not what has been written. A row here needs a real c
 - Render memory is only indicative: the spike measured Windows RSS for import-and-toy-workload, not the real served stack. Re-measure at the end of P4 and P6, then on Render in P8.
 - `frontend/.env.example` could not be created in this session (a permission rule blocks writing `.env*` files); the code defaults to `http://localhost:8000`, so it is optional locally. Create it from `refdocs/guides/env_setup.md` when convenient.
 - `npm audit` reports high-severity findings in the dev-only ESLint toolchain (`braces` via `eslint-config-next`); nothing in the shipped bundle. Revisit when `eslint-config-next` publishes a fix.
+- **D-28 is partly assumed:** whether a provider caps financing on price or price-plus-fee, and how it counts used limit, is a guess until the author supplies a real SPayLater / TikTok / Atome checkout example (PRD §8 Q9). One function (`split_for_limit`) and one (`used_limit_sen`) carry the assumption.
+- **D-27 limitation, deliberate:** a student living on savings with no income looks At Risk because savings are not credited. An optional savings-buffer input is recorded as future work (PRD §8 Q11).
+- `uv add` on this Windows machine intermittently fails to reinstall the project package (`Access is denied` removing its `dist-info`); `uv pip install` of the dependency plus the pyproject/lock edit worked around it once. If `uv run` complains, retry — it cleared by itself.
 - Providers other than SPayLater, TikTok PayLater and Atome use the manual "Other provider" entry until the author records a real checkout example for them (D-24).
 - The simulation-label design should be shown to the supervisor before P5 (PRD §8 Q7).
 - `gh` (GitHub CLI): `gh.exe` exists at `C:\Program Files\GitHub CLI` but is not on the Git Bash PATH; the earlier note that it was not installed was wrong. Pushing is still the author's job.

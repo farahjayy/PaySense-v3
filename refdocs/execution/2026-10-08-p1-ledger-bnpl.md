@@ -129,12 +129,28 @@
 
 ---
 
+## What actually happened (deviations from the tasks above)
+
+- **Design change before any P1 code (D-27, D-28):** the author asked to drop the account balance and described the limit-capped financing rule. The migration (still unapplied) was edited twice: balance columns removed from `user_settings`, then `purchase_date`, `financed_sen`, `upfront_sen` and a `financed + upfront = total` check added to `bnpl_plans` (Task B1). The PRD, ADRs, README and superprompt were updated to match. The plan doc was written by hand because the planning agent hit an API session limit.
+- **A1–A7:** as written. `flows.py` holds `classify`, `month_summary`, `history_span` and `as_date` (other modules import `as_date` from it). `categorize.py` keeps "transfer" out of the Transfer keywords (a bare "transfer in" is usually an allowance). The CSV parser decides direction **per file** (any negative amount ⇒ signed; none ⇒ unsigned, rows assumed expense and flagged), an improvement over v1's per-row guess.
+- **New module not in the task list:** `domain/plan_builder.py` (`propose_plan`) — one pure function behind both `POST /api/plans/preview` and `POST /api/plans`, so the preview is by construction what gets saved.
+- **ScopedTable grew** (needed by the repositories): `between` range filters, `insert_many`, `delete_many`, and `update(..., where=...)` for the conditional flip. `list` was renamed `list_rows` earlier (P0 review).
+- **tests/fakes.py grew** to model what the repositories rely on: composite foreign keys, `on delete cascade` / `set null`, all-or-nothing multi-row insert, unique checks on update, `upsert`, `gte`/`lte`/`in_`. It still does not enforce check constraints.
+- **B2–B5:** as written. `bulk_create` removes already-written chunks if a later chunk fails; `create_plan` and `mark_paid` undo themselves (tested by injecting failures). Payments logged by a plan are read-only through the transactions routes (409 `managed_by_plan`) — not in the original task list.
+- **B6:** `tests/integration/test_p1_repositories.py` written (9 tests, plus the 9 from P0 = 18); `tests/integration/conftest.py` now owns the fixtures. **Not run** — needs credentials.
+- **C1:** `GET /api/provider-limits` returns only the three named providers; `PUT` for `other` is refused (the manual path takes no limit). ADR D-29 written. A `get_today` dependency was added so tests pin the clock.
+- **C2–C5:** as written, plus `tests/api/conftest.py` fixtures. The transactions list filter is `?type=` (aliased from `kind`). `python-multipart` was added for uploads; `uv add` hit an intermittent Windows `Access is denied` removing the project's `dist-info`, worked around once with `uv pip install`.
+- **C6:** `schema.d.ts` regenerated for 18 endpoints; `lib/money.ts` (+ tests mirroring the Python cases) added for D-29.
+- **Gating slip:** one commit went in with a failing test (a hard-coded set of operation ids); fixed in the next commit and the commit procedure now gates on the full suite passing.
+
 ## Wrap-up (do not skip)
 
-- [ ] `refdocs/STATUS.md` — phase table, verification ledger (name each command and result; mark integration tests unrun if they are)
-- [ ] `refdocs/changelog/CHANGELOG.md` — session entry, including anything `ASSUMED:` that was built on
-- [ ] `refdocs/changelog/DECISIONS.md` — D-29 added (and PRD §7); ASSUMED 5 resolved or restated
-- [ ] This doc updated to match what actually happened
-- [ ] Reviews run: `python-reviewer` + `fastapi-reviewer` on the new Python, `security-reviewer` on the import path and every new route
-- [ ] File-structure doc written (the domain layer now exists)
+- [x] `refdocs/STATUS.md` — phase table, verification ledger (integration tests marked unrun)
+- [x] `refdocs/changelog/CHANGELOG.md` — session entry, including the `ASSUMED:` items built on (D-27 cumulative-margin definition, D-28 limit rule)
+- [x] `refdocs/changelog/DECISIONS.md` — D-27, D-28, D-29 added (and PRD §7)
+- [x] This doc updated to match what actually happened
+- [~] Reviews: `security-reviewer`, `fastapi-reviewer`, `react-reviewer` launched; findings and fixes recorded in the CHANGELOG entry when they return
+- [ ] **Live-Supabase verification** (needs the author): apply the migration, `check_rls.py`, `seed_users.py`, `pytest -m integration`
+- [ ] **A real checkout example** (needs the author) to confirm or correct the D-28 limit rule
+- [ ] File-structure doc (the domain layer now exists) — written at the start of P2
 - [ ] Next: write `refdocs/plans/<date>-p2-synthetic-population.md` + its execution doc
