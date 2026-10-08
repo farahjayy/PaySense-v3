@@ -257,3 +257,63 @@ def test_what_already_happened_this_month_counts_toward_this_months_margin():
 
     assert earned.monthly_margin_p50_sen[0] == without.monthly_margin_p50_sen[0] + 50000
     assert earned.p_shortfall <= without.p_shortfall
+
+
+def test_the_horizon_runs_to_the_end_of_its_last_month():
+    mid = simulate(
+        series=series(7000), known=flows(["2025-05", "2025-06"]), forecaster=LastValue(),
+        spend_errors=np.zeros(10), income_errors=np.zeros(0), start=TODAY,
+        end=date(2025, 6, 10), paths=5, seed=1,
+    )  # fmt: skip
+    whole = simulate(
+        series=series(7000), known=flows(["2025-05", "2025-06"]), forecaster=LastValue(),
+        spend_errors=np.zeros(10), income_errors=np.zeros(0), start=TODAY,
+        end=date(2025, 6, 30), paths=5, seed=1,
+    )  # fmt: skip
+
+    assert mid.monthly_margin_p50_sen == whole.monthly_margin_p50_sen
+
+
+def test_whole_error_paths_are_joined_so_a_wrong_level_stays_wrong():
+    from app.engines.forecasting.simulate import path_bootstrap
+
+    paths = np.array([[10.0] * 8, [-10.0] * 8])  # the model was either high all the time or low
+
+    draws = path_bootstrap(paths, length=16, paths=200, rng=np.random.default_rng(1))
+
+    assert draws.shape == (200, 16)
+    for row in draws:
+        assert len(set(row[:8])) == 1 and len(set(row[8:])) == 1  # constant within a piece
+
+
+def test_path_resampling_gives_bands_of_the_right_order_for_a_drifting_level():
+    from app.engines.forecasting.errors import rolling_error_paths
+    from app.engines.forecasting.models import MovingAverage
+    from app.engines.forecasting.service import ERROR_INFLATION
+    from app.engines.forecasting.simulate import path_bootstrap
+
+    def ar1(seed, n, phi=0.5, sd=1000.0):
+        rng = np.random.default_rng(seed)
+        x, out = 0.0, []
+        for _ in range(n):
+            x = phi * x + rng.normal(0, sd)
+            out.append(10000 + x)
+        return np.array(out)
+
+    truth, spread, covered = [], [], []
+    for seed in range(120):
+        full = ar1(seed, 40 + 13)
+        history, future = full[:40], full[40:]
+        point = MovingAverage(8).forecast(history, 13, TODAY)
+        errors = rolling_error_paths(history, TODAY, MovingAverage(8)) * ERROR_INFLATION
+        sums = path_bootstrap(errors, 13, 200, np.random.default_rng(seed)).sum(axis=1)
+        actual = float(future.sum() - point.sum())
+        truth.append(actual)
+        spread.append(sums.std())
+        low, high = np.percentile(sums, [10, 90])
+        covered.append(low <= actual <= high)
+
+    # Measured in the P4 calibration run: about 0.8 coverage at 40 weeks of history for this
+    # series. It is lower for shorter or more persistent series; the serving report says so.
+    assert 0.7 < np.mean(spread) / np.std(truth) < 2.0
+    assert np.mean(covered) >= 0.6

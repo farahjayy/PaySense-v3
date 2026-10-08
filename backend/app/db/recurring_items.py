@@ -7,13 +7,14 @@ from typing import Any
 from app.db.base import ScopedTable
 from app.db.client import Database
 from app.domain.flows import as_date
+from app.domain.merchants import normalise_merchant
 
 TABLE = "recurring_items"
 KINDS = frozenset({"income", "bill"})
 ORIGINS = frozenset({"manual", "detected"})
 CADENCES = frozenset({"weekly", "biweekly", "monthly", "semester", "custom"})
 UPDATABLE = frozenset(
-    {"name", "amount_sen", "cadence", "custom_interval_days", "anchor_date", "active"}
+    {"name", "match_text", "amount_sen", "cadence", "custom_interval_days", "anchor_date", "active"}
 )
 
 
@@ -56,6 +57,7 @@ def create(
     custom_interval_days: int | None = None,
     active: bool = True,
     origin: str = "manual",
+    match_text: str | None = None,
 ) -> dict[str, Any]:
     if kind not in KINDS:
         raise ValueError(f"kind must be one of {sorted(KINDS)}")
@@ -65,6 +67,7 @@ def create(
     row = {
         "kind": kind,
         "name": _check_name(name),
+        "match_text": normalise_merchant(match_text or name) or None,
         "amount_sen": _check_amount(amount_sen),
         "cadence": cadence,
         "custom_interval_days": interval,

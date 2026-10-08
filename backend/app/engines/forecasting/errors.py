@@ -1,44 +1,62 @@
 """A user's own rolling-origin forecast errors (plan P4, task C6).
 
 The residual bootstrap needs a record of how wrong the served model has been on THIS user's
-series. At each past origin the model sees only the history before it, forecasts a few weeks, and
-the signed errors (actual minus forecast) are kept. Only the latest origins are used, which bounds
-the cost of a request. Errors are pooled across the forecast steps.
+series. At each past origin the model sees only the history before it, forecasts the next
+`horizon` weeks, and the whole signed error PATH (actual minus forecast, week by week) is kept.
+Keeping paths rather than a flat pile of errors preserves how errors persist from one week to the
+next: a level that is wrong stays wrong for a while, and resampling single weeks as if independent
+would make the bands far too narrow over a long horizon. Only the latest origins are used, which
+bounds the cost of a request.
 """
-
-from datetime import date, timedelta
 
 import numpy as np
 
 from app.engines.forecasting.simulate import Forecaster
 
-DAYS_PER_WEEK = 7
-DEFAULT_HORIZON = 4  # weeks scored at each origin
+DEFAULT_HORIZON = 8  # weeks scored at each origin, and the length of a resampled error path
 DEFAULT_MIN_TRAIN = 8
 DEFAULT_STRIDE = 2
 DEFAULT_MAX_ORIGINS = 10
 
 
-def rolling_errors(
+def rolling_error_paths(
     values: np.ndarray,
-    start: date,
+    start,
     forecaster: Forecaster,
     horizon: int = DEFAULT_HORIZON,
     min_train: int = DEFAULT_MIN_TRAIN,
     stride: int = DEFAULT_STRIDE,
     max_origins: int = DEFAULT_MAX_ORIGINS,
 ) -> np.ndarray:
-    """Signed errors (actual - forecast) from up to `max_origins` latest origins; empty if the
-    series is too short for even one."""
+    """Signed error paths, shape (origins, horizon), from up to `max_origins` latest origins;
+    zero rows if the series is too short for even one."""
     values = np.asarray(values, dtype=float)
     origins = list(range(min_train, len(values) - horizon + 1, stride))[-max_origins:]
-    errors: list[float] = []
+    paths = []
     for origin in origins:
         history = values[:origin]  # nothing after the origin is ever shown to the model
         forecast = np.clip(forecaster.forecast(history, horizon, start), 0, None)
-        errors.extend((values[origin : origin + horizon] - forecast).tolist())
-    return np.array(errors)
+        paths.append(values[origin : origin + horizon] - forecast)
+    return np.array(paths).reshape(len(paths), horizon)
 
 
-def week_start_of(start: date, weeks: int) -> date:
-    return start + timedelta(days=DAYS_PER_WEEK * weeks)
+def rolling_errors(
+    values: np.ndarray,
+    start,
+    forecaster: Forecaster,
+    horizon: int = 4,
+    min_train: int = DEFAULT_MIN_TRAIN,
+    stride: int = DEFAULT_STRIDE,
+    max_origins: int = DEFAULT_MAX_ORIGINS,
+) -> np.ndarray:
+    """The same errors pooled into one flat sequence (kept for the simple cases and tests)."""
+    return rolling_error_paths(
+        values, start, forecaster, horizon, min_train, stride, max_origins
+    ).ravel()
+
+
+def mean_forecast_errors(values: np.ndarray) -> np.ndarray:
+    """A last-resort error scale for a series too short to score: how far each week sits from the
+    series' own mean, as a single path. Used so the bands are honest rather than zero-width."""
+    values = np.asarray(values, dtype=float)
+    return (values - values.mean()).reshape(1, -1) if len(values) else np.zeros((0, 1))

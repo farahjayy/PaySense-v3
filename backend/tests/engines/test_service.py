@@ -176,8 +176,8 @@ def test_month_to_date_income_is_not_forgotten():
         txn(date(2025, 4, 28), 5000),  # last month: not part of this month
     ]
 
-    assert month_to_date_net(rows, TODAY) == 170000
-    assert month_to_date_net([], TODAY) == 0
+    assert month_to_date_net(rows, date(2025, 5, 1), TODAY) == 170000
+    assert month_to_date_net([], date(2025, 5, 1), TODAY) == 0
 
 
 def _four_months_of(kind_row):
@@ -206,3 +206,55 @@ def test_a_lock_says_why():
     short = build_forecast([txn(date(2025, 5, 6), 100)], [], [], TODAY, LastValue())
 
     assert short.lock_reason == "needs_four_months"
+
+
+# --- findings from the P4 audit ---
+def test_a_renamed_item_still_covers_its_transactions_through_its_match_text():
+    rows = ledger(income_per_month=60000, spend_per_week=6000)
+    named_differently = {**ALLOWANCE, "name": "Allowance", "amount_sen": 60000}
+
+    unlinked = build_forecast(rows, [named_differently, RENT], [], TODAY, Mean())
+    linked = build_forecast(
+        rows, [{**named_differently, "match_text": "duit belanja"}, RENT], [], TODAY, Mean()
+    )
+
+    assert "Allowance" in unlinked.unmatched_items  # the user is told the link is missing
+    assert "Allowance" not in linked.unmatched_items
+    # unlinked, the logged allowance is forecast as income AND placed as a known flow: too rosy
+    assert (
+        linked.simulation.cumulative_margin_p50_sen[-1]
+        < unlinked.simulation.cumulative_margin_p50_sen[-1]
+    )
+
+
+def test_a_ledger_that_stopped_being_updated_is_forecast_from_where_it_stopped():
+    stopped = date(2025, 4, 20)  # a Sunday: the ledger was last updated then
+    rows = [r for r in ledger(start=date(2024, 12, 2)) if r["date"] <= stopped]
+    today = date(2025, 5, 25)
+
+    result = build_forecast(rows, [ALLOWANCE, RENT], [], today, Mean())
+
+    assert result.status == "ok" and result.stale_days == (today - result.data_through).days
+    assert result.stale_days >= 30
+    assert result.band == "Safe"  # five silent weeks are not read as five weeks of zero income
+
+
+def test_four_calendar_months_without_enough_complete_weeks_stay_locked():
+    rows = [txn(date(2025, 1, 31), 6000)] + [
+        txn(date(2025, 3, 3) + timedelta(days=7 * i), 6000) for i in range(4)
+    ]
+    rows += [txn(date(2025, m, 1), 200000, "income", "Allowance", "Duit") for m in (2, 3, 4)]
+
+    result = build_forecast(rows, [], [], date(2025, 4, 1), Mean())
+
+    assert result.status == "locked" and result.lock_reason == "needs_four_months"
+
+
+def test_a_short_history_widens_the_bands_instead_of_reporting_a_false_certainty():
+    rows = ledger(start=date(2025, 1, 20), months=5)[:]  # about 16-17 weeks of spending
+
+    result = build_forecast(rows, [ALLOWANCE, RENT], [], TODAY, Mean())
+
+    if result.status == "ok":
+        assert result.simulation.bootstrap in {"fallback", "paths"}
+        assert result.simulation.bootstrap != "none"

@@ -5,8 +5,9 @@
 * income: income that is not covered by a confirmed recurring income. A refund is not income.
 
 Weeks run Monday to Sunday and only complete weeks are used: a half-observed first week would look
-like a spending drop, and the current week is still in progress. A week with nothing in it is an
-explicit zero. Everything is integer sen.
+like a spending drop, and the current week is still in progress. The series also stops at the last
+logged day, so a user who stopped logging does not look like a user who stopped spending. A
+week with nothing in it is an explicit zero. Everything is integer sen.
 """
 
 from collections.abc import Iterable, Mapping
@@ -18,7 +19,7 @@ import numpy as np
 
 from app.domain.categorize import BNPL, REFUND, TRANSFER
 from app.domain.flows import as_date
-from app.engines.forecasting.recurring import normalise_merchant
+from app.domain.merchants import normalise_merchant
 
 DAYS_PER_WEEK = 7
 MONDAY_FIRST_GAP_MESSAGE = "the first partial week is dropped"
@@ -65,8 +66,11 @@ def build_weekly_series(
     keys = {(kind, normalise_merchant(text)) for kind, text in covered}
     keys = {(kind, text) for kind, text in keys if text}  # a nameless item matches nothing
     events: list[tuple[date, str, int]] = []
+    latest: date | None = None  # the last day anything at all was logged
     for row in rows:
         day = as_date(row["date"])
+        if day < today and (latest is None or day > latest):
+            latest = day
         amount = int(row["amount_sen"])
         category = row.get("category")
         if category == TRANSFER or row["type"] == "savings":
@@ -85,6 +89,8 @@ def build_weekly_series(
     first = min(day for day, _, _ in events)
     monday = first + timedelta(days=(-first.weekday()) % DAYS_PER_WEEK)
     last = today - timedelta(days=1)  # today's week is in progress
+    if latest is not None:
+        last = min(last, latest)  # weeks after the last logged day were never observed
     sunday = last - timedelta(days=(last.weekday() + 1) % DAYS_PER_WEEK)
     weeks = ((sunday - monday).days + 1) // DAYS_PER_WEEK
     if weeks < 1:

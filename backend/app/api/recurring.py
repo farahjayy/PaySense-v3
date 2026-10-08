@@ -44,6 +44,9 @@ class RecurringIn(BaseModel):
     anchor_date: AppDate
     active: bool = True
     origin: Literal["manual", "detected"] = "manual"
+    # the merchant text it matches in the ledger: pass a suggestion's `name`, so renaming the item
+    # (the display name) never unlinks its transactions
+    match_text: Annotated[text(80), AfterValidator(_needs_letters)] | None = None
 
     @model_validator(mode="after")
     def _custom_needs_an_interval(self) -> Self:
@@ -72,6 +75,7 @@ class RecurringOut(ApiModel):
     id: str
     kind: Kind
     name: str
+    match_text: str | None
     amount_sen: int
     cadence: Cadence
     custom_interval_days: int | None

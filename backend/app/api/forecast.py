@@ -11,7 +11,7 @@ from app.api.deps import CurrentUser, DbDep, TodayDep
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
 from app.db import plans as plans_repo
 from app.db import recurring_items, transactions
-from app.engines.forecasting.service import build_forecast
+from app.engines.forecasting.service import STALE_AFTER_DAYS, build_forecast
 from app.engines.forecasting.serving import served_forecaster
 from app.engines.forecasting.simulate import Forecaster
 
@@ -27,7 +27,7 @@ ForecasterDep = Annotated[Forecaster, Depends(get_forecaster)]
 
 class SuspectMonthOut(ApiModel):
     month: str
-    reason: Literal["no_income", "low_spend"]
+    reason: Literal["no_income", "low_spend", "no_data"]
     detail: str
 
 
@@ -43,7 +43,7 @@ class SimulationOut(ApiModel):
     worst_month: str | None
     weeks: int
     horizon_capped: bool
-    bootstrap: Literal["block", "plain", "none"]
+    bootstrap: Literal["paths", "block", "plain", "none", "fallback"]
 
 
 class ForecastOut(ApiModel):
@@ -51,6 +51,10 @@ class ForecastOut(ApiModel):
     as_of: dt.date
     model: str
     months_of_history: int
+    data_through: dt.date | None
+    stale_days: int | None
+    is_stale: bool
+    unmatched_items: list[str]
     suspect_months: list[SuspectMonthOut]
     lock_reason: Literal["needs_four_months", "no_usable_history"] | None
     simulation: SimulationOut | None
@@ -82,6 +86,10 @@ def forecast(user: CurrentUser, db: DbDep, today: TodayDep, model: ForecasterDep
         "as_of": today,
         "model": model.name,
         "months_of_history": result.months_of_history,
+        "data_through": result.data_through,
+        "stale_days": result.stale_days,
+        "is_stale": (result.stale_days or 0) > STALE_AFTER_DAYS,
+        "unmatched_items": list(result.unmatched_items),
         "suspect_months": [vars(s) for s in result.suspect_months],
         "lock_reason": result.lock_reason,
         "simulation": shown,

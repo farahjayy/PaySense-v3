@@ -120,3 +120,22 @@ def test_rows_dated_after_today_do_not_count_toward_the_four_month_gate():
     result = assess(rows, TODAY)
 
     assert result.months_of_history == 1 and result.status == "locked"
+
+
+def test_a_month_with_nothing_logged_at_all_is_flagged_not_hidden():
+    rows = ledger([(2025, 1), (2025, 2), (2025, 4)])  # March was never entered
+
+    suspects = assess(rows, TODAY).suspect_months
+
+    assert [(s.month, s.reason) for s in suspects if s.reason == "no_data"] == [
+        ("2025-03", "no_data")
+    ]
+
+
+def test_a_student_funded_by_semester_lump_sums_is_not_told_every_month_lacks_income():
+    funded = {(2025, 3): {}}  # income only in one of the four months (a PTPTN disbursement)
+    rows = ledger(
+        FOUR_MONTHS, {ym: {"with_income": False} for ym in FOUR_MONTHS if ym not in funded}
+    )
+
+    assert not any(s.reason == "no_income" for s in assess(rows, TODAY).suspect_months)

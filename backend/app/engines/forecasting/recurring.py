@@ -6,7 +6,6 @@ a skipped period is tolerated) and whose amounts stay within 15% of the group's 
 here writes to the ledger: a suggestion becomes a recurring item only when the user confirms it.
 """
 
-import re
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -16,10 +15,12 @@ from typing import Any
 
 from app.domain.categorize import BNPL, REFUND, TRANSFER
 from app.domain.flows import as_date
+from app.domain.merchants import normalise_merchant
 
 MIN_OCCURRENCES = 3
 AMOUNT_TOLERANCE = 0.15
 MIN_SHARE = 0.75  # share of gaps / amounts that must fit the pattern
+RECENCY_PERIODS = 1.5  # last seen within this many periods of today, or it has stopped
 SKIPPED_PERIODS = (1, 2)  # a gap of two periods means one occurrence was missed
 # Gap windows in days: (low, high) for one period.
 CADENCE_WINDOWS = {
@@ -29,8 +30,6 @@ CADENCE_WINDOWS = {
     "semester": (150, 215),
 }
 EXCLUDED_CATEGORIES = {REFUND, TRANSFER, BNPL}
-NON_LETTERS = re.compile(r"[^a-z ]+")
-SPACES = re.compile(r"\s+")
 
 
 @dataclass(frozen=True)
@@ -43,13 +42,6 @@ class Suggestion:
     anchor_date: date  # the latest occurrence
     confidence: float  # 0 to 1: how clean the pattern is
     occurrences: int
-
-
-def normalise_merchant(text: str | None) -> str:
-    """Lower-case letters only: digits, references, dates and punctuation are dropped."""
-    if not text:
-        return ""
-    return SPACES.sub(" ", NON_LETTERS.sub(" ", text.lower())).strip()
 
 
 def _candidate(row: Mapping[str, Any]) -> bool:
@@ -115,6 +107,11 @@ def detect(
         if cadence is None or amounts is None:
             continue
         label, gap_share = cadence
+        if (
+            today is not None
+            and (today - dates[-1]).days > RECENCY_PERIODS * CADENCE_WINDOWS[label][1]
+        ):
+            continue  # it stopped: a cancelled subscription is not a bill to plan around
         amount, amount_share, spread = amounts
         found.append(
             Suggestion(

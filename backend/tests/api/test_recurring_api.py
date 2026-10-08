@@ -25,6 +25,7 @@ def test_create_returns_a_manual_active_item(api, amir):
         "id": "x",
         "kind": "income",
         "name": "Monthly allowance",
+        "match_text": "monthly allowance",
         "amount_sen": 80000,
         "cadence": "monthly",
         "custom_interval_days": None,

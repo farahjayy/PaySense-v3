@@ -517,6 +517,14 @@ export interface components {
             model: string;
             /** Months Of History */
             months_of_history: number;
+            /** Data Through */
+            data_through: string | null;
+            /** Stale Days */
+            stale_days: number | null;
+            /** Is Stale */
+            is_stale: boolean;
+            /** Unmatched Items */
+            unmatched_items: string[];
             /** Suspect Months */
             suspect_months: components["schemas"]["SuspectMonthOut"][];
             /** Lock Reason */
@@ -895,6 +903,8 @@ export interface components {
              * @enum {string}
              */
             origin: "manual" | "detected";
+            /** Match Text */
+            match_text?: string | null;
         };
         /** RecurringOut */
         RecurringOut: {
@@ -907,6 +917,8 @@ export interface components {
             kind: "income" | "bill";
             /** Name */
             name: string;
+            /** Match Text */
+            match_text: string | null;
             /** Amount Sen */
             amount_sen: number;
             /**
@@ -972,7 +984,7 @@ export interface components {
              * Bootstrap
              * @enum {string}
              */
-            bootstrap: "block" | "plain" | "none";
+            bootstrap: "paths" | "block" | "plain" | "none" | "fallback";
         };
         /** SkippedRowOut */
         SkippedRowOut: {
@@ -1017,7 +1029,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "no_income" | "low_spend";
+            reason: "no_income" | "low_spend" | "no_data";
             /** Detail */
             detail: string;
         };

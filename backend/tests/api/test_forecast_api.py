@@ -229,3 +229,24 @@ def test_the_real_served_model_and_clock_work_without_overrides(api, fake_db, am
     res = api.get("/api/forecast", headers=amir)
 
     assert res.status_code == 200 and res.json()["model"] in {"ma13", "ma4", "naive"}
+
+
+def test_a_stale_ledger_is_flagged_with_the_day_it_was_last_updated(api, fake_db, amir):
+    fill(fake_db, "amir")
+    api.app.dependency_overrides[get_today] = lambda: date(2025, 6, 20)  # weeks after the last row
+
+    body = api.get("/api/forecast", headers=amir).json()
+
+    assert body["is_stale"] is True and body["stale_days"] >= 14
+    assert body["data_through"] is not None
+
+
+def test_a_confirmed_item_keeps_the_text_it_matches_even_if_renamed(api, amir):
+    res = api.post(
+        "/api/recurring-items",
+        json={"kind": "income", "name": "Allowance", "match_text": "Duit Belanja 0412",
+              "amount_sen": 100, "cadence": "monthly", "anchor_date": "2025-05-01"},
+        headers=amir,
+    )  # fmt: skip
+
+    assert res.status_code == 201 and res.json()["match_text"] == "duit belanja"

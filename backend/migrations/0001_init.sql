@@ -35,6 +35,9 @@ create table recurring_items (
     user_id uuid not null references users(id) on delete cascade,
     kind text not null check (kind in ('income', 'bill')),
     name text not null check (length(btrim(name)) > 0),
+    -- the normalised merchant text this item matches in the ledger (the detected suggestion's key),
+    -- kept apart from the display name so renaming an item does not unlink its transactions
+    match_text text,
     amount_sen bigint not null check (amount_sen > 0),
     cadence text not null check (cadence in ('weekly', 'biweekly', 'monthly', 'semester', 'custom')),
     custom_interval_days int check (custom_interval_days > 0),

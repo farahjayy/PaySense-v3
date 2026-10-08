@@ -58,7 +58,7 @@ class Simulation:
     p_negative_by_month: list[float]
     weeks: int
     horizon_capped: bool
-    bootstrap: str  # "block" | "plain" | "none": how the residuals were resampled
+    bootstrap: str  # "paths" | "block" | "plain" | "none" | "fallback": how errors were resampled
 
 
 def band(p_shortfall: float) -> str:
@@ -85,9 +85,36 @@ def block_bootstrap(
     return residuals[index].reshape(paths, blocks * block)[:, :length]
 
 
-def _bootstrap_kind(*residuals: np.ndarray) -> str:
-    if all(len(r) == 0 for r in residuals):
+def path_bootstrap(
+    error_paths: np.ndarray, length: int, paths: int, rng: np.random.Generator
+) -> np.ndarray:
+    """`paths` sequences of `length` weeks, each built by joining whole past error paths.
+
+    An error path is how wrong the model was, week by week, from one past origin. Joining whole
+    paths keeps a wrong level wrong for as long as it really stayed wrong, which is what makes a
+    long-horizon band wide enough.
+    """
+    if error_paths.size == 0:
+        return np.zeros((paths, length))
+    rows, width = error_paths.shape
+    pieces = math.ceil(length / width)
+    pick = rng.integers(0, rows, size=(paths, pieces))
+    return error_paths[pick].reshape(paths, pieces * width)[:, :length]
+
+
+def _draw(errors: np.ndarray, length: int, paths: int, rng: np.random.Generator) -> np.ndarray:
+    if errors.ndim == 2:
+        return path_bootstrap(errors, length, paths, rng)
+    return block_bootstrap(errors, length, paths, BOOTSTRAP_BLOCK, rng)
+
+
+def _bootstrap_kind(*residuals: np.ndarray, fallback: bool = False) -> str:
+    if fallback:
+        return "fallback"
+    if all(r.size == 0 for r in residuals):
         return "none"
+    if all(r.ndim == 2 for r in residuals if r.size):
+        return "paths" if all(len(r) >= 2 for r in residuals if r.size) else "plain"
     return "block" if all(len(r) >= 2 * BOOTSTRAP_BLOCK for r in residuals if len(r)) else "plain"
 
 
@@ -120,10 +147,13 @@ def simulate(
     paths: int = DEFAULT_PATHS,
     seed: int = 0,
     month_to_date_sen: int = 0,
+    fallback_errors: bool = False,
 ) -> Simulation:
     if series.start is None or series.weeks == 0:
         raise ValueError("a forecast needs at least one complete week of history")
     first_monday = series.start + timedelta(days=DAYS_PER_WEEK * series.weeks)
+    end = _month_end(month_key(end))  # whole months only: a partial last month would miss income
+    # that lands later in it and invent a month-end shortfall
     needed = math.ceil(((end - first_monday).days + 1) / DAYS_PER_WEEK)
     weeks = max(1, min(needed, MAX_WEEKS))
     capped = needed > MAX_WEEKS
@@ -142,12 +172,8 @@ def simulate(
     income_point = np.clip(
         forecaster.forecast(series.income.astype(float), weeks, series.start), 0, None
     )
-    spend = np.clip(
-        spend_point + block_bootstrap(spend_errors, weeks, paths, BOOTSTRAP_BLOCK, rng), 0, None
-    )
-    income = np.clip(
-        income_point + block_bootstrap(income_errors, weeks, paths, BOOTSTRAP_BLOCK, rng), 0, None
-    )
+    spend = np.clip(spend_point + _draw(spend_errors, weeks, paths, rng), 0, None)
+    income = np.clip(income_point + _draw(income_errors, weeks, paths, rng), 0, None)
 
     weights = _month_weights(first_monday, weeks, start, last_day, months)
     flows = [known[m] for m in months]
@@ -175,7 +201,7 @@ def simulate(
         p_negative_by_month=[float(p) for p in p_negative],
         weeks=weeks,
         horizon_capped=capped,
-        bootstrap=_bootstrap_kind(spend_errors, income_errors),
+        bootstrap=_bootstrap_kind(spend_errors, income_errors, fallback=fallback_errors),
     )
 
 

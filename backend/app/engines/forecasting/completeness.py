@@ -17,7 +17,9 @@ from app.domain.flows import as_date, classify, month_summary
 
 MIN_MONTHS = 4  # supervisor constraint: fewer than four months of history locks the forecast
 MIN_REFERENCE_MONTHS = 3  # spending is compared with the median of at least this many months
-MIN_MONTHS_WITH_INCOME = 2  # "no income" is only suspicious if income appears elsewhere
+MIN_MONTHS_WITH_INCOME = 2  # "no income" is only suspicious if income appears elsewhere...
+MIN_INCOME_MONTH_SHARE = 0.5  # ...in at least half the months: a semester-funded student is not
+# suspicious for having no income in most months
 LOW_SPEND_FRACTION = 0.4  # ASSUMED: a month under 40% of the median month looks incomplete
 
 
@@ -53,9 +55,10 @@ def assess(rows: Iterable[Mapping[str, Any]], today: date) -> Completeness:
     suspects: list[SuspectMonth] = []
 
     income_months = [m for m in complete if m.income_sen > 0]
+    regular_income = len(income_months) >= MIN_INCOME_MONTH_SHARE * len(complete)
     for m in complete:
         others_with_income = len(income_months) - (1 if m.income_sen > 0 else 0)
-        if m.income_sen == 0 and others_with_income >= MIN_MONTHS_WITH_INCOME:
+        if m.income_sen == 0 and others_with_income >= MIN_MONTHS_WITH_INCOME and regular_income:
             suspects.append(
                 SuspectMonth(
                     m.month,
@@ -63,6 +66,8 @@ def assess(rows: Iterable[Mapping[str, Any]], today: date) -> Completeness:
                     "No income is logged this month although it appears in other months.",
                 )
             )
+
+    suspects += _blank_months(rows, current)
 
     if len(complete) >= MIN_REFERENCE_MONTHS:
         typical = median(m.spend_sen for m in complete)
@@ -76,3 +81,18 @@ def assess(rows: Iterable[Mapping[str, Any]], today: date) -> Completeness:
                     )
                 )
     return Completeness(status, months, sorted(suspects, key=lambda s: (s.month, s.reason)))
+
+
+def _blank_months(rows: list[Mapping[str, Any]], current: str) -> list[SuspectMonth]:
+    """Calendar months between the first logged one and now with nothing logged at all."""
+    logged = {as_date(r["date"]).strftime("%Y-%m") for r in rows if classify(r) != "transfer"}
+    if not logged:
+        return []
+    year, month = map(int, min(logged).split("-"))
+    blanks = []
+    while f"{year:04d}-{month:02d}" < current:
+        key = f"{year:04d}-{month:02d}"
+        if key not in logged:
+            blanks.append(SuspectMonth(key, "no_data", "Nothing is logged for this month."))
+        year, month = year + (month == 12), month % 12 + 1
+    return blanks

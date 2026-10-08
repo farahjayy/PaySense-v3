@@ -238,4 +238,11 @@ def test_rows_dated_after_today_are_ignored():
     rows = monthly("Sewa bilik", 45000, months=4)  # Jan to Apr 2025
 
     assert detect(rows, today=date(2025, 2, 20)) == []  # only two occurrences are in the past
-    assert len(detect(rows, today=date(2025, 12, 1))) == 1
+    assert len(detect(rows, today=date(2025, 4, 20))) == 1
+
+
+def test_something_that_stopped_long_ago_is_not_suggested():
+    rows = monthly("Netflix subscription", 5500, months=4)  # last charge 5 April 2025
+
+    assert len(detect(rows, today=date(2025, 5, 1))) == 1
+    assert detect(rows, today=date(2025, 12, 1)) == []  # months of silence: cancelled
