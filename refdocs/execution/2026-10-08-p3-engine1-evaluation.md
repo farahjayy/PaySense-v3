@@ -13,7 +13,7 @@
   2. Let *L* be the literature candidate (ARIMA, Prophet or LSTM) with the lowest pooled MASE and *B* the best benchmark (naive or moving average).
   3. Serve *L* unless *B* beats *L* with a Holm-adjusted Wilcoxon p < 0.05 **and** a median per-series MASE difference of at least 0.02; in that case serve *B* and report that as the finding.
   4. Cost never changes the decision; it is reported (milliseconds per forecast, parameter count), because P4 may have to export the LSTM to ONNX if it wins (D-15).
-  5. "Pooled" means: per model, the mean of the per-series mean MASE at 13 weeks within each dataset, then the mean over datasets (equal weight per dataset). The synthetic cohort is scored at the longest history shown to the models; MoneyData and Berka with all history.
+  5. "Pooled" means: per model, the **geometric** mean of the per-series mean MASE at 13 weeks within each dataset, then the mean over datasets (equal weight per dataset). (Amended after a small run and before the full run: the arithmetic mean was dominated by one nearly-flat Berka account; ASSUMED 10.) The arithmetic mean is reported beside it. The synthetic cohort is scored at the longest history shown to the models; MoneyData and Berka with all history.
   6. *Clarification made after a small smoke run and before the full run:* an earlier draft of this list had a rule 4 that sent ties to the cheaper model. It contradicted rule 3 (D-06 serves the literature candidate unless it is significantly worse), so it was removed. The smoke run's winner did not influence the edit.
 - Dates are never used to frame deadlines; "origins" below are forecast origins in the data.
 

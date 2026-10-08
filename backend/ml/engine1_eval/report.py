@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 import pandas as pd
 
 matplotlib.use("Agg")
@@ -43,6 +44,7 @@ DECIMALS = 4
 FIGURE_DPI = 110
 PNG_METADATA = {"Software": None}
 MIN_ORIGINS_FOR_DM = 3
+GEOMETRIC_FLOOR = 1e-6  # a perfect forecast has MASE 0, which a logarithm cannot take
 
 
 @dataclass(frozen=True)
@@ -57,7 +59,12 @@ class Selection:
     ci_high: float
     n_series: int
     dropped_series: int  # series some model failed on, removed for every model
-    metric: dict[str, float]
+    metric: dict[str, float]  # geometric mean per dataset, then mean over datasets
+    arithmetic_metric: dict[str, float]  # the plain mean, shown for comparison
+
+
+def _geometric_mean(values: pd.Series) -> float:
+    return float(np.exp(np.log(values.clip(lower=GEOMETRIC_FLOOR)).mean()))
 
 
 def select_model(scores: pd.DataFrame, seed: int = 0) -> Selection:
@@ -77,8 +84,10 @@ def select_model(scores: pd.DataFrame, seed: int = 0) -> Selection:
     long = complete.reset_index().melt(
         id_vars=["source", "series_id", "kind"], var_name="model", value_name="mase"
     )
-    per_source = long.groupby(["model", "source"])["mase"].mean().reset_index()
-    metric = per_source.groupby("model")["mase"].mean().to_dict()
+    geometric = long.groupby(["model", "source"])["mase"].apply(_geometric_mean).reset_index()
+    metric = geometric.groupby("model")["mase"].mean().to_dict()
+    arithmetic = long.groupby(["model", "source"])["mase"].mean().reset_index()
+    arithmetic_metric = arithmetic.groupby("model")["mase"].mean().to_dict()
     literature = [m for m in metric if m in LITERATURE]
     benchmarks = [m for m in metric if m in BENCHMARKS]
     if not literature:
@@ -109,6 +118,7 @@ def select_model(scores: pd.DataFrame, seed: int = 0) -> Selection:
         n_series=len(complete),
         dropped_series=total - len(complete),
         metric={m: float(v) for m, v in metric.items()},
+        arithmetic_metric={m: float(v) for m, v in arithmetic_metric.items()},
     )
 
 
@@ -435,7 +445,10 @@ def render_readme(parts: dict, selection: Selection, horizon: int) -> str:
         f"Holm-adjusted Wilcoxon p = {s.p_value:.4g} over {s.n_series} series "
         f"({s.dropped_series} dropped because some model failed on them)."
     )
-    decision = pd.DataFrame(sorted(s.metric.items()), columns=["model", "decision_metric"])
+    decision = pd.DataFrame(
+        [(m, s.metric[m], s.arithmetic_metric[m]) for m in sorted(s.metric)],
+        columns=["model", "decision_metric (geometric)", "arithmetic mean"],
+    )
     tables = parts["tables"]
     command = f"uv run python -m ml.engine1_eval.run --config {config['name']}"
     regenerate = (

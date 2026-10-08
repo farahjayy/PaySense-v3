@@ -61,11 +61,13 @@ def md_table(frame: pd.DataFrame) -> str:
 
 def rule_text(horizon: int) -> str:
     return (
-        "Rule (ADR D-06, fixed before any result): serve the best literature candidate (ARIMA, "
-        f"Prophet, LSTM) by mean MASE at {horizon} weeks, averaged over datasets with equal "
-        f"weight, unless the best benchmark beats it by at least {MATERIAL_MASE_DIFFERENCE} MASE "
-        f"with a Holm-adjusted Wilcoxon p < {SIGNIFICANCE}, in which case the benchmark is "
-        "served and that is the finding. Only series every model scored are used; the "
-        "synthetic cohort is scored at the longest history shown to the models, and the rule "
-        "is also applied at each shorter history (table below)."
+        "Rule (ADR D-06): serve the best literature candidate (ARIMA, Prophet, LSTM) by MASE at "
+        f"{horizon} weeks, unless the best benchmark beats it by at least "
+        f"{MATERIAL_MASE_DIFFERENCE} MASE with a Holm-adjusted Wilcoxon p < {SIGNIFICANCE}, in "
+        'which case the benchmark is served and that is the finding. "MASE" here is the '
+        "geometric mean over a dataset's series (so one series with a nearly flat history cannot "
+        "decide the ranking), then the mean over datasets with equal weight; the plain arithmetic "
+        "mean is shown beside it. Only series every model scored are used; the synthetic cohort is "
+        "scored at the longest history shown to the models, and the rule is also applied at each "
+        "shorter history (table below)."
     )

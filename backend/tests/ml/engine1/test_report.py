@@ -218,3 +218,17 @@ def test_regenerating_gives_identical_files(stored, tmp_path):
         a = hashlib.sha256((tmp_path / "a" / name).read_bytes()).hexdigest()
         b = hashlib.sha256((tmp_path / "b" / name).read_bytes()).hexdigest()
         assert a == b, name
+
+
+def test_one_series_with_a_huge_error_cannot_decide_between_two_models():
+    rows = []
+    for i in range(20):
+        rows.append(("synthetic", f"s{i}", "spend", "arima", 0.8))
+        rows.append(("synthetic", f"s{i}", "spend", "ma4", 1.0))
+    rows[-2] = ("synthetic", "s19", "spend", "arima", 30.0)  # one series where arima blew up
+
+    choice = select_model(scores(rows))
+
+    assert choice.arithmetic_metric["arima"] > choice.arithmetic_metric["ma4"]  # the mean is fooled
+    assert choice.metric["arima"] < choice.metric["ma4"]  # the geometric mean is not
+    assert choice.served == "arima"
