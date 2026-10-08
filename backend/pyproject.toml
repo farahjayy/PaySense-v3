@@ -28,6 +28,17 @@ dev = [
     "ruff>=0.9",
     "httpx2>=2.13.1",
 ]
+ml = [
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.3",
+    "pandas>=3.0.6",
+    "pyyaml>=6.0.3",
+    "scipy>=1.18.1",
+]
+
+[tool.uv]
+# `uv run` installs the ml group too, so offline tooling and its tests work without flags.
+default-groups = ["dev", "ml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
