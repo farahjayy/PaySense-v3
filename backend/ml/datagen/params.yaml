@@ -1,0 +1,333 @@
+# Parameters of the synthetic Malaysian-student population (ADR D-08).
+#
+# Every leaf is {value, unit, ...} and carries EITHER `source: <key in sources.md>` OR
+# `assumed: true` + `why`. The loader (params.py) refuses anything else. Money is integer sen.
+# Where a figure is cited, sources.md says exactly what the source states and what it does not.
+# Honest summary: very little about Malaysian student finances is published, so most parameters
+# are assumptions chosen to be plausible and to span the range Engine 2 must handle; they are
+# listed in the generated report's limitations and are stress-tested rather than defended.
+
+population:
+  persona_weights:
+    frequent_bnpl:
+      value: 0.35
+      unit: ratio
+      assumed: true
+      why: "No published split of students into BNPL-usage personas. The three personas are the supervisor's UAT groups; weights are chosen so every group has thousands of training profiles."
+    budget_conscious:
+      value: 0.40
+      unit: ratio
+      assumed: true
+      why: "As above."
+    irregular_income:
+      value: 0.25
+      unit: ratio
+      assumed: true
+      why: "As above."
+
+history:
+  default_months:
+    value: 18
+    unit: count
+    assumed: true
+    why: "Long enough for rolling-origin evaluation (minimum 26 training weeks plus test windows); the app itself only requires 4 months."
+  persona_months:
+    value: 4
+    unit: count
+    assumed: true
+    why: "Supervisor-mandated length of the UAT persona histories (academic-constraints.md section 3) - a design constraint, not an empirical figure."
+
+income:
+  allowance_probability:
+    frequent_bnpl: {value: 1.0, unit: ratio, assumed: true, why: "Assumed that this persona receives a regular family allowance."}
+    budget_conscious: {value: 1.0, unit: ratio, assumed: true, why: "Assumed fixed-income persona: regular family allowance."}
+    irregular_income: {value: 0.3, unit: ratio, assumed: true, why: "Assumed: gig-income persona mostly self-funded, sometimes topped up by family."}
+  allowance_median_sen:
+    frequent_bnpl: {value: 60000, unit: sen, assumed: true, why: "No published distribution of student allowances. Chosen so that spending in the cited RM201-400 modal band (tok_cheah_2024) plus bills is affordable."}
+    budget_conscious: {value: 50000, unit: sen, assumed: true, why: "As above, set a little above the cited modal spending band so the persona is solvent but tight."}
+    irregular_income: {value: 20000, unit: sen, assumed: true, why: "Small occasional top-up only."}
+  allowance_sigma:
+    value: 0.25
+    unit: ratio
+    assumed: true
+    why: "Log-normal spread of allowance between students; no published figure."
+  allowance_day_of_month:
+    value: [1, 5]
+    unit: day
+    assumed: true
+    why: "Allowances typically arrive at the start of the month; range assumed."
+  ptptn_annual_sen:
+    value: [309000, 463000, 618000, 333000, 499000, 665000]
+    unit: sen
+    source: ptptn_loan_table
+    # Public-university degree, annual: Arts 50% / 75% / max, then Science 50% / 75% / max.
+  ptptn_probability:
+    frequent_bnpl: {value: 0.45, unit: ratio, assumed: true, why: "PTPTN page gives amounts but not the share of students holding a loan."}
+    budget_conscious: {value: 0.55, unit: ratio, assumed: true, why: "As above; assumed higher for the lower-income persona."}
+    irregular_income: {value: 0.30, unit: ratio, assumed: true, why: "As above."}
+  ptptn_disbursements_per_year:
+    value: 2
+    unit: count
+    assumed: true
+    why: "The PTPTN page does not state the number or timing of disbursements (an earlier research note said 2-3; the page does not support it). Two per year, at semester starts, is assumed."
+  ptptn_months:
+    value: [3, 9]
+    unit: month_of_year
+    assumed: true
+    why: "Assumed semester-start months for the two lump sums."
+  parttime_probability:
+    frequent_bnpl: {value: 0.5, unit: ratio, assumed: true, why: "No published share of students with part-time work."}
+    budget_conscious: {value: 0.1, unit: ratio, assumed: true, why: "Fixed-income persona: rarely works."}
+    irregular_income: {value: 0.0, unit: ratio, assumed: true, why: "This persona's work is modelled as gig income instead."}
+  parttime_monthly_median_sen:
+    value: 45000
+    unit: sen
+    assumed: true
+    why: "Assumed part-time monthly pay; no published figure for students."
+  parttime_sigma:
+    value: 0.2
+    unit: ratio
+    assumed: true
+    why: "Log-normal spread of part-time pay."
+  parttime_pay_day:
+    value: 28
+    unit: day
+    assumed: true
+    why: "Month-end pay assumed."
+  gig_jobs_per_week_mean:
+    value: 2.5
+    unit: count
+    assumed: true
+    why: "Mean jobs per week for the irregular-income persona (Poisson); no published figure."
+  gig_pay_median_sen:
+    value: 7000
+    unit: sen
+    assumed: true
+    why: "Median pay per gig job; no published figure."
+  gig_pay_sigma:
+    value: 0.5
+    unit: ratio
+    assumed: true
+    why: "Log-normal spread of gig pay."
+  gig_dry_spell_probability_per_month:
+    value: 0.15
+    unit: ratio
+    assumed: true
+    why: "Chance a month has far fewer jobs (exams, holidays); the irregularity this persona exists to test."
+  gig_dry_spell_job_multiplier:
+    value: 0.2
+    unit: ratio
+    assumed: true
+    why: "Job volume multiplier during a dry spell."
+
+bills:
+  rent_probability:
+    value: 0.8
+    unit: ratio
+    assumed: true
+    why: "Share of students paying hostel/rent themselves; no official figure."
+  rent_monthly_sen_range:
+    value: [15000, 45000]
+    unit: sen
+    assumed: true
+    why: "Hostel/shared-room range. Only a commercial budgeting site gives figures (hostel-based total RM650-1,080), with no stated method, so it is not cited."
+  rent_day_of_month:
+    value: [1, 5]
+    unit: day
+    assumed: true
+    why: "Rent due at the start of the month."
+  phone_monthly_sen_range:
+    value: [3000, 6000]
+    unit: sen
+    assumed: true
+    why: "Prepaid/postpaid data plan; typical range assumed."
+  phone_day_of_month:
+    value: [10, 20]
+    unit: day
+    assumed: true
+    why: "Assumed billing-day range."
+  subscription_probability:
+    value: 0.6
+    unit: ratio
+    assumed: true
+    why: "Share with a streaming/music subscription."
+  subscription_monthly_sen_range:
+    value: [1500, 4000]
+    unit: sen
+    assumed: true
+    why: "Assumed price range per subscription."
+  variable_bill_jitter_ratio:
+    value: 0.03
+    unit: ratio
+    assumed: true
+    why: "Small month-to-month variation in phone/utility bills."
+
+discretionary:
+  monthly_median_sen:
+    budget_conscious:
+      value: 30000
+      unit: sen
+      source: tok_cheah_2024
+      # Midpoint of the cited modal band RM201-400 per month (n = 454). The band is modal, not a bound.
+    frequent_bnpl: {value: 45000, unit: sen, assumed: true, why: "tok_cheah_2024 reports spending rises with income but gives no number; set above the modal band."}
+    irregular_income: {value: 35000, unit: sen, assumed: true, why: "Between the other two personas."}
+  weekly_sigma:
+    value: 0.45
+    unit: ratio
+    assumed: true
+    why: "Log-normal week-to-week spread of discretionary spending; no published figure."
+  day_of_week_weights:
+    value: [0.9, 0.9, 0.95, 1.0, 1.25, 1.3, 0.9]
+    unit: ratio
+    assumed: true
+    why: "Monday..Sunday spending shape (weekend peak); no published figure. Deliberately not present in Engine 1's model so the cohort is richer than the forecaster."
+  payday_bump_ratio:
+    value: 0.25
+    unit: ratio
+    assumed: true
+    why: "Extra spending in the three days after income lands."
+  exam_week_dip_ratio:
+    value: 0.30
+    unit: ratio
+    assumed: true
+    why: "Spending falls during exam weeks."
+  exam_weeks_per_semester:
+    value: 2
+    unit: count
+    assumed: true
+    why: "Assumed length of exam periods."
+  outlier_probability_per_week:
+    value: 0.04
+    unit: ratio
+    assumed: true
+    why: "Occasional unusually large week (event, trip, repair)."
+  outlier_multiplier:
+    value: 2.5
+    unit: ratio
+    assumed: true
+    why: "Size of such a week relative to normal."
+  transactions_per_week_mean:
+    value: 9
+    unit: count
+    assumed: true
+    why: "Mean number of discretionary transactions per week (Poisson)."
+  category_weight_food:
+    value: 16.3
+    unit: percent_of_household_spending
+    source: dosm_hes_2022
+  category_weight_eating_out:
+    value: 16.1
+    unit: percent_of_household_spending
+    source: dosm_hes_2022
+  category_weight_transport:
+    value: 11.3
+    unit: percent_of_household_spending
+    source: dosm_hes_2022
+  category_other_share:
+    value: 0.30
+    unit: ratio
+    assumed: true
+    why: "Share of discretionary spend outside food, eating out and transport (shopping, entertainment, education). The DOSM page gave no shares for these groups."
+  unrecognisable_description_share:
+    value: 0.08
+    unit: ratio
+    assumed: true
+    why: "Share of merchant descriptions the keyword categoriser cannot place (the importer's real-world miss rate is unknown)."
+  refund_probability_per_month:
+    value: 0.15
+    unit: ratio
+    assumed: true
+    why: "Chance of a refund in a month, so the reserved Refund category is exercised."
+  transfer_probability_per_month:
+    value: 0.40
+    unit: ratio
+    assumed: true
+    why: "Chance of an own-account move (e-wallet top-up), so the reserved Transfer category is exercised."
+
+bnpl:
+  ownership_probability:
+    frequent_bnpl: {value: 0.85, unit: ratio, assumed: true, why: "Defines the persona. No published share of students using BNPL (bnpl_billing_rules_my and bnm_fsr_2h2022 describe users, not students)."}
+    budget_conscious: {value: 0.25, unit: ratio, assumed: true, why: "Defines the persona (uses BNPL rarely)."}
+    irregular_income: {value: 0.55, unit: ratio, assumed: true, why: "Defines the persona."}
+  active_plans_extra_mean:
+    frequent_bnpl: {value: 1.4, unit: count, assumed: true, why: "Mean extra concurrent plans beyond the first, given ownership (Poisson); stacking is common abroad (CFPB) but there is no Malaysian student figure."}
+    budget_conscious: {value: 0.3, unit: count, assumed: true, why: "As above."}
+    irregular_income: {value: 0.7, unit: count, assumed: true, why: "As above."}
+  provider_weights:
+    spaylater: {value: 0.50, unit: ratio, assumed: true, why: "No published student market shares; SPayLater assumed most common (Shopee reach)."}
+    tiktok_paylater: {value: 0.20, unit: ratio, assumed: true, why: "As above."}
+    atome: {value: 0.20, unit: ratio, assumed: true, why: "As above."}
+    other: {value: 0.10, unit: ratio, assumed: true, why: "Other providers use the manual entry path (D-24)."}
+  price_median_sen:
+    value: 15000
+    unit: sen
+    assumed: true
+    why: "Median BNPL purchase price; no published figure."
+  price_sigma:
+    value: 0.9
+    unit: ratio
+    assumed: true
+    why: "Log-normal spread of purchase prices."
+  price_range_sen:
+    value: [1500, 150000]
+    unit: sen
+    assumed: true
+    why: "Clamp on existing-plan prices."
+  instalment_options:
+    spaylater: {value: [1, 3, 12, 18, 24], unit: count, source: bnpl_billing_rules_my}
+    tiktok_paylater: {value: [1, 6, 12], unit: count, source: bnpl_billing_rules_my}
+    atome: {value: [3, 6, 12], unit: count, source: bnpl_billing_rules_my}
+    other: {value: [2, 3, 4, 6, 12], unit: count, assumed: true, why: "Manual-entry providers: plausible plan lengths; the user types what their checkout shows."}
+  zero_fee_instalments:
+    spaylater: {value: [1, 3], unit: count, source: bnpl_billing_rules_my}
+    tiktok_paylater: {value: [1, 6], unit: count, source: bnpl_billing_rules_my}
+    atome: {value: [3], unit: count, source: bnpl_billing_rules_my}
+  long_plan_fee_rate_pct:
+    value: 1.5
+    unit: percent_per_month
+    source: bnpl_billing_rules_my
+  limit_cap_sen:
+    spaylater: {value: 1000000, unit: sen, source: bnpl_billing_rules_my}
+    tiktok_paylater: {value: 1000000, unit: sen, source: bnpl_billing_rules_my}
+    atome: {value: 500000, unit: sen, assumed: true, why: "The document says only that Atome limits 'vary by user'."}
+  limit_median_sen:
+    spaylater: {value: 150000, unit: sen, assumed: true, why: "The documented RM2,500-10,000 range is for the general user base; students (new accounts, temporary limits) are assumed lower."}
+    tiktok_paylater: {value: 100000, unit: sen, assumed: true, why: "As above (documented: up to RM10,000, starts smaller)."}
+    atome: {value: 80000, unit: sen, assumed: true, why: "Documented: new users get lower limits."}
+  limit_sigma:
+    value: 0.6
+    unit: ratio
+    assumed: true
+    why: "Log-normal spread of limits."
+  limit_known_probability:
+    value: 0.8
+    unit: ratio
+    assumed: true
+    why: "Share of users who record their limit in the app (the limit_known feature)."
+
+repayment:
+  on_time_share:
+    value: 0.88
+    unit: ratio
+    source: ccob_repayment_2024
+  late_but_paid_share:
+    value: 0.12
+    unit: ratio
+    source: ccob_repayment_2024
+  missed_share:
+    value: 0.004
+    unit: ratio
+    assumed: true
+    why: "The source says 'fewer than 0.5%' could not repay; 0.4% is chosen within that bound. The three shares are renormalised by the generator."
+  late_days_range:
+    value: [1, 14]
+    unit: days
+    assumed: true
+    why: "How late a late payment is; no published distribution."
+
+purchase:
+  price_to_monthly_income_range:
+    value: [0.02, 3.0]
+    unit: ratio
+    assumed: true
+    why: "Proposed-purchase price as a multiple of expected monthly income, sampled log-uniformly so Engine 2 sees clearly safe, borderline and clearly unaffordable cases. Chosen for coverage, not realism."
