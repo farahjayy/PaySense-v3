@@ -1,0 +1,40 @@
+[project]
+name = "paysense-backend"
+version = "0.1.0"
+description = "PaySense v2 API: financial health forecasting and BNPL risk classification"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.142",
+    "uvicorn[standard]>=0.54",
+    "pydantic-settings>=2.6",
+    "supabase>=2.32",
+    "pyjwt>=2.15",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=6",
+    "httpx>=0.28",
+    "ruff>=0.9",
+    "httpx2>=2.13.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: hits the real Supabase project (needs SUPABASE_URL)"]
+addopts = "-m 'not integration'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+"scripts/**" = ["S101"]
+
+[tool.coverage.run]
+source = ["app"]
