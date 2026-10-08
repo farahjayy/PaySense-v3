@@ -30,3 +30,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 |---|---|---|
 | [2026-10-08-p0-foundation.md](2026-10-08-p0-foundation.md) | [../plans/2026-10-08-p0-foundation.md](../plans/2026-10-08-p0-foundation.md) | In progress — all but live-Supabase checks |
 | [2026-10-08-p1-ledger-bnpl.md](2026-10-08-p1-ledger-bnpl.md) | [../plans/2026-10-08-p1-ledger-bnpl.md](../plans/2026-10-08-p1-ledger-bnpl.md) | In progress |
+| [2026-10-08-p2-synthetic-population.md](2026-10-08-p2-synthetic-population.md) | [../plans/2026-10-08-p2-synthetic-population.md](../plans/2026-10-08-p2-synthetic-population.md) | Not started |
