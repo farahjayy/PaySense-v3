@@ -186,6 +186,17 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Cost.** About 1 ms per origin against 250-600 ms for Prophet and AutoARIMA, which is what makes a per-request error record affordable.
 **Rejected.** Serving AutoARIMA (better on synthetic margin, but 350 ms per fit, ten fits per request) and the 13-week moving average (the strongest benchmark, 28% worse than the LSTM on MASE).
 
+## D-35 — The forecast gate, the incomplete-month rules and the actual / forecast boundary
+*2026-10-09 · Claude decision during P4 (resolves ASSUMED 6 for thresholds; thresholds themselves remain assumptions)*
+
+**Decision.**
+1. **Gate.** A forecast is produced only with at least four calendar months containing a real transaction up to today (supervisor constraint) **and** at least 17 complete Monday-Sunday weeks of usable history (a user with four calendar months touched but eight weeks of data would otherwise get a falsely precise answer). Otherwise the response is `locked` with a reason (`needs_four_months` or `no_usable_history`), never an error.
+2. **Incomplete months** are listed, not hidden: a month with nothing logged (`no_data`); a month with no income when income appears in at least half of the other complete months and at least two of them (`no_income`; a semester-funded student is not told most months are incomplete); a month whose spending is under 40% of the median month (`low_spend`). The current month is never flagged. The forecast is still produced; the noisy month stays in the error record so the bands widen.
+3. **Actual versus forecast.** Everything before `forecast_from`, the Monday after the last complete *logged* week, is actual (the month-to-date net comes from the ledger, D-33); everything from `forecast_from` on is rule and model: known flows placed on their dates and the forecast variable series. A ledger that stopped being updated is therefore forecast from where it stopped (with a staleness flag after 14 days), not read as weeks of zero spending. A confirmed recurring item carries the merchant text it matches (`match_text`), separate from its display name, and the forecast tells the user when a confirmed item matches nothing logged.
+4. **Uncertainty.** The user's own error record is kept as whole eight-week paths from up to ten recent origins (not a pool of single weeks) and joined to cover the horizon; with fewer than two paths the series' own spread is used (`fallback`), never zero noise. Recorded errors are widened by a factor of 1.5 around their own mean (`ERROR_INFLATION`, an assumption): this narrows but does not close the gap to nominal coverage (`reports/engine1/serving_check.md`: about 0.5-0.7 inside P10-P90 against 0.8).
+**Why.** The thresholds come from the audit scenarios, not from data: a stale ledger flipped a comfortable user from Safe to At Risk; four calendar months with eight weeks of data produced p = 0 and "Safe"; a deleted month was invisible; flat resampling of single weeks gave a third of the true spread over a long horizon.
+**Trade-off.** All thresholds are assumptions with no real-user evidence; they are tested on synthetic ledgers with deliberately broken months and will be revisited after UAT. The forecast remains more confident than it should be on short histories.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)
@@ -196,7 +207,7 @@ Not decisions — guesses made to keep moving. Each one must be confirmed or kil
 3. `ASSUMED:` ~10,000 synthetic profiles suffice (resolve in P5 with learning curves).
 4. `ASSUMED:` (D-27) Shortfall is judged on the cumulative margin from RM0, not on each month alone; P5 reports the per-month version as a sensitivity check.
 5. `ASSUMED:` (D-28) The limit caps the financed total payable including fee, and used limit = sum of unpaid instalment amounts; confirm with a real checkout during P1.
-6. `ASSUMED:` (D-27) Incomplete-month thresholds and the unconfirmed-income series follow the same candidates and protocol as discretionary spend (fix in P3/P4). P3 evaluates total weekly income; the confirmed/unconfirmed split is decided by recurring detection in P4.
+6. `ASSUMED:` (D-27) Incomplete-month thresholds and the unconfirmed-income series follow the same candidates and protocol as discretionary spend (fix in P3/P4). P3 evaluates total weekly income; the confirmed/unconfirmed split is decided by recurring detection in P4. **Resolved in P4 by D-35 (thresholds still assumptions).**
 7. `ASSUMED:` (D-31) The cited RM201-400 monthly spending band (Tok & Cheah 2024) is applied to *discretionary* spend only, with rent, phone and subscriptions added on top. The source most naturally describes total spending; the report states the interpretation.
 8. `ASSUMED:` (D-31) 105 of 121 generator parameters are assumptions (listed with reasons in `reports/datagen/README.md`); they are chosen for plausibility and coverage and stress-tested in P5, not defended as estimates.
 9. `ASSUMED:` (D-06, P3) The Engine 1 selection rule keeps pooled MASE as the primary metric, with 13-week cumulative-margin error and bias reported beside it as co-checks rather than a veto. The audit showed MASE can favour a model that is biased on the running total (it rewards forecasting the median). If the author wants margin error to be co-primary, D-06 must be amended before the served model is fixed in P4.

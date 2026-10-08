@@ -60,3 +60,12 @@ def mean_forecast_errors(values: np.ndarray) -> np.ndarray:
     series' own mean, as a single path. Used so the bands are honest rather than zero-width."""
     values = np.asarray(values, dtype=float)
     return (values - values.mean()).reshape(1, -1) if len(values) else np.zeros((0, 1))
+
+
+def widen(error_paths: np.ndarray, factor: float) -> np.ndarray:
+    """Spread the recorded errors by `factor` around their own mean: the bands get wider but the
+    centring on the model's record (its level bias) is left exactly where it was."""
+    if error_paths.size == 0:
+        return error_paths
+    centre = error_paths.mean()
+    return centre + factor * (error_paths - centre)

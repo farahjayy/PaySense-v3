@@ -17,7 +17,7 @@ from app.domain.flows import as_date, month_summary
 from app.domain.merchants import normalise_merchant
 from app.domain.schedule import add_months
 from app.engines.forecasting.completeness import SuspectMonth, assess
-from app.engines.forecasting.errors import mean_forecast_errors, rolling_error_paths
+from app.engines.forecasting.errors import mean_forecast_errors, rolling_error_paths, widen
 from app.engines.forecasting.flows import ProposedPlan, known_flows
 from app.engines.forecasting.series import build_weekly_series
 from app.engines.forecasting.simulate import (
@@ -125,7 +125,8 @@ def build_forecast(
     if fallback:  # too short to score the model: use the series' own spread, never zero noise
         spend_errors = mean_forecast_errors(series.spend)
         income_errors = mean_forecast_errors(series.income)
-    spend_errors, income_errors = spend_errors * ERROR_INFLATION, income_errors * ERROR_INFLATION
+    spend_errors = widen(spend_errors, ERROR_INFLATION)
+    income_errors = widen(income_errors, ERROR_INFLATION)
     first_of_month = date(forecast_from.year, forecast_from.month, 1)
     simulation = simulate(
         series,

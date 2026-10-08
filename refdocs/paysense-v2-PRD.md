@@ -245,6 +245,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-31 | The synthetic population keeps answer keys under `truth`, builds the proposed purchase from the recorded limit only, draws repayment per student, and puts weekly-scale structure (not day-level) in the series | The first version leaked the true limit, applied a holder-level statistic per instalment and over-claimed difficulty; found by audit before any model saw it |
 | D-33 | The cumulative margin starts at RM0 at the start of the current month and includes this month's actual net so far (amends D-27's "RM0 today") | Read literally, income received earlier this month was ignored while the rest of the month's bills were counted, so users looked At Risk on any day after payday |
 | D-34 | Engine 1 serves the global LSTM (per kind), exported to ONNX; torch stays out of the API process | Best literature candidate by the D-06 rule: geometric-mean MASE 0.815 against 1.044 for the best benchmark, p = 2e-37, best on every dataset and history length; about 1 ms per forecast |
+| D-35 | Forecast gate = 4 calendar months and 17 complete weeks; incomplete-month rules (no data / no income / low spend); actual before `forecast_from`, rules and model after; error paths with a 1.5x widening | Four calendar months can hold eight weeks of data; stale ledgers must not read as zero spending; short histories must widen the bands, not report false certainty |
 
 ---
 

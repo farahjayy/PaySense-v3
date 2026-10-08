@@ -287,7 +287,7 @@ def test_whole_error_paths_are_joined_so_a_wrong_level_stays_wrong():
 
 
 def test_path_resampling_gives_bands_of_the_right_order_for_a_drifting_level():
-    from app.engines.forecasting.errors import rolling_error_paths
+    from app.engines.forecasting.errors import rolling_error_paths, widen
     from app.engines.forecasting.models import MovingAverage
     from app.engines.forecasting.service import ERROR_INFLATION
     from app.engines.forecasting.simulate import path_bootstrap
@@ -305,7 +305,7 @@ def test_path_resampling_gives_bands_of_the_right_order_for_a_drifting_level():
         full = ar1(seed, 40 + 13)
         history, future = full[:40], full[40:]
         point = MovingAverage(8).forecast(history, 13, TODAY)
-        errors = rolling_error_paths(history, TODAY, MovingAverage(8)) * ERROR_INFLATION
+        errors = widen(rolling_error_paths(history, TODAY, MovingAverage(8)), ERROR_INFLATION)
         sums = path_bootstrap(errors, 13, 200, np.random.default_rng(seed)).sum(axis=1)
         actual = float(future.sum() - point.sum())
         truth.append(actual)

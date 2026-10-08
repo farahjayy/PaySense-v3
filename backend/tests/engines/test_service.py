@@ -258,3 +258,15 @@ def test_a_short_history_widens_the_bands_instead_of_reporting_a_false_certainty
     if result.status == "ok":
         assert result.simulation.bootstrap in {"fallback", "paths"}
         assert result.simulation.bootstrap != "none"
+
+
+def test_widening_spreads_the_errors_but_keeps_their_centre():
+    from app.engines.forecasting.errors import widen
+
+    paths = np.array([[1.0, 3.0], [5.0, 7.0]])
+
+    widened = widen(paths, 2.0)
+
+    assert widened.mean() == paths.mean()
+    assert widened.std() == 2 * paths.std()
+    assert widen(np.zeros((0, 4)), 2.0).size == 0
