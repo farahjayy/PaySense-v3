@@ -1,0 +1,2 @@
+data/personas/*.csv text eol=lf
+data/synthetic/MANIFEST.json text eol=lf
