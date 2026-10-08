@@ -55,10 +55,394 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Providers */
+        get: operations["list_providers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/provider-limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Limits */
+        get: operations["list_limits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/provider-limits/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Limit */
+        put: operations["put_limit"];
+        post?: never;
+        /** Delete Limit */
+        delete: operations["delete_limit"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Transactions
+         * @description Newest first. Without `start`/`end`, the last 90 days up to today.
+         */
+        get: operations["list_transactions"];
+        put?: never;
+        /** Create Transaction */
+        post: operations["create_transaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transactions/{transaction_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Transaction */
+        delete: operations["delete_transaction"];
+        options?: never;
+        head?: never;
+        /** Update Transaction */
+        patch: operations["update_transaction"];
+        trace?: never;
+    };
+    "/api/summary/months": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Months */
+        get: operations["months"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recurring-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Items */
+        get: operations["list_items"];
+        put?: never;
+        /** Create Item */
+        post: operations["create_item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recurring-items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Item */
+        delete: operations["delete_item"];
+        options?: never;
+        head?: never;
+        /** Update Item */
+        patch: operations["update_item"];
+        trace?: never;
+    };
+    "/api/import/csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Csv */
+        post: operations["preview_csv"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/import/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Import */
+        post: operations["confirm_import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plans/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Plan */
+        post: operations["preview_plan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plans */
+        get: operations["list_plans"];
+        put?: never;
+        /** Create Plan */
+        post: operations["create_plan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plan */
+        get: operations["get_plan"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Plan
+         * @description Delete a plan. Payments it logged are kept by default (unlinked); pass
+         *     `keep_payments=false` to delete them too.
+         */
+        delete: operations["delete_plan"];
+        options?: never;
+        head?: never;
+        /** Rename Plan */
+        patch: operations["rename_plan"];
+        trace?: never;
+    };
+    "/api/plans/{plan_id}/installments/{seq}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pay Installment */
+        post: operations["pay_installment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plans/{plan_id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay Installments
+         * @description Mark several instalments paid at once. Everything is checked before anything is paid.
+         */
+        post: operations["pay_installments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bills */
+        get: operations["bills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BillItemOut */
+        BillItemOut: {
+            /** Plan Id */
+            plan_id: string;
+            /** Item Name */
+            item_name: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "spaylater" | "tiktok_paylater" | "atome" | "other";
+            /** Provider Label */
+            provider_label: string;
+            /** Seq */
+            seq: number;
+            /** Amount Sen */
+            amount_sen: number;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Is Paid */
+            is_paid: boolean;
+        };
+        /** BillMonthOut */
+        BillMonthOut: {
+            /** Month */
+            month: string;
+            /** Is Current */
+            is_current: boolean;
+            /** Total Due Sen */
+            total_due_sen: number;
+            /** Paid Total Sen */
+            paid_total_sen: number;
+            /** Fully Paid */
+            fully_paid: boolean;
+            /** Has Overdue */
+            has_overdue: boolean;
+            /** Items */
+            items: components["schemas"]["BillItemOut"][];
+        };
+        /** BillsOut */
+        BillsOut: {
+            /** Months */
+            months: components["schemas"]["BillMonthOut"][];
+        };
+        /** Body_preview_csv */
+        Body_preview_csv: {
+            /** File */
+            file: string;
+        };
+        /** BulkPayIn */
+        BulkPayIn: {
+            /**
+             * Paid Date
+             * @description Defaults to today
+             */
+            paid_date?: string | null;
+            /** Seqs */
+            seqs: number[];
+        };
+        /** ConfirmIn */
+        ConfirmIn: {
+            /** Rows */
+            rows: components["schemas"]["ConfirmRow"][];
+        };
+        /** ConfirmOut */
+        ConfirmOut: {
+            /** Created */
+            created: number;
+        };
+        /** ConfirmRow */
+        ConfirmRow: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Amount Sen
+             * @description Money in integer sen (100 sen = RM 1)
+             */
+            amount_sen: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "income" | "expense" | "savings";
+            /** Category */
+            category: string;
+            /** Description */
+            description?: string | null;
+        };
         /** ErrorDetail */
         ErrorDetail: {
             /**
@@ -87,6 +471,97 @@ export interface components {
              */
             status: "ok";
         };
+        /** HistoryOut */
+        HistoryOut: {
+            /**
+             * First Date
+             * Format: date
+             */
+            first_date: string;
+            /**
+             * Last Date
+             * Format: date
+             */
+            last_date: string;
+            /** Distinct Months */
+            distinct_months: number;
+            /** Span Days */
+            span_days: number;
+            /** Days Since Last */
+            days_since_last: number;
+        };
+        /** ImportPreviewOut */
+        ImportPreviewOut: {
+            /** Rows */
+            rows: components["schemas"]["ImportRowOut"][];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedRowOut"][];
+            /** Duplicate Count */
+            duplicate_count: number;
+        };
+        /** ImportRowOut */
+        ImportRowOut: {
+            /** Row */
+            row: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Amount Sen */
+            amount_sen: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "income" | "expense" | "savings";
+            /** Category Guess */
+            category_guess: string;
+            /** Description */
+            description: string | null;
+            /** Issues */
+            issues: string[];
+            /** Duplicate */
+            duplicate: boolean;
+        };
+        /** InstalmentOut */
+        InstalmentOut: {
+            /** Seq */
+            seq: number;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Amount Sen */
+            amount_sen: number;
+            /** Is Paid */
+            is_paid: boolean;
+            /** Paid Date */
+            paid_date: string | null;
+        };
+        /** LimitIn */
+        LimitIn: {
+            /**
+             * Limit Sen
+             * @description Money in integer sen (100 sen = RM 1)
+             */
+            limit_sen: number;
+        };
+        /** LimitOut */
+        LimitOut: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "spaylater" | "tiktok_paylater" | "atome";
+            /** Limit Sen */
+            limit_sen: number | null;
+            /** Used Sen */
+            used_sen: number;
+            /** Remaining Sen */
+            remaining_sen: number | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Username */
@@ -108,6 +583,380 @@ export interface components {
              */
             expires_in: number;
             user: components["schemas"]["UserOut"];
+        };
+        /** MonthOut */
+        MonthOut: {
+            /** Month */
+            month: string;
+            /** Income Sen */
+            income_sen: number;
+            /** Spend Sen */
+            spend_sen: number;
+            /** Refund Sen */
+            refund_sen: number;
+            /** Savings Sen */
+            savings_sen: number;
+            /** Net Sen */
+            net_sen: number;
+        };
+        /** MonthSummaryOut */
+        MonthSummaryOut: {
+            /** Months */
+            months: components["schemas"]["MonthOut"][];
+            history: components["schemas"]["HistoryOut"] | null;
+        };
+        /** PayIn */
+        PayIn: {
+            /**
+             * Paid Date
+             * @description Defaults to today
+             */
+            paid_date?: string | null;
+        };
+        /**
+         * PlanIn
+         * @description Either a rule-driven provider (send `total_price_sen`) or "other" (send the dates and the
+         *     instalment amount or total payable from your own checkout).
+         */
+        PlanIn: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "spaylater" | "tiktok_paylater" | "atome" | "other";
+            /** Item Name */
+            item_name: string;
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Num Installments */
+            num_installments: number;
+            /** Total Price Sen */
+            total_price_sen?: number | null;
+            /**
+             * Monthly Fee Rate Pct
+             * @default 0
+             */
+            monthly_fee_rate_pct: number;
+            /** First Payment Date */
+            first_payment_date?: string | null;
+            /** Provider Label */
+            provider_label?: string | null;
+            /** Instalment Sen */
+            instalment_sen?: number | null;
+            /** Total Payable Sen */
+            total_payable_sen?: number | null;
+        };
+        /** PlanOut */
+        PlanOut: {
+            /** Id */
+            id: string;
+            /** Item Name */
+            item_name: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "spaylater" | "tiktok_paylater" | "atome" | "other";
+            /** Provider Label */
+            provider_label: string;
+            /**
+             * Schedule Source
+             * @enum {string}
+             */
+            schedule_source: "provider_rule" | "manual";
+            /** Total Price Sen */
+            total_price_sen: number;
+            /** Financed Sen */
+            financed_sen: number;
+            /** Upfront Sen */
+            upfront_sen: number;
+            /** Monthly Fee Rate Pct */
+            monthly_fee_rate_pct: number;
+            /** Num Installments */
+            num_installments: number;
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /**
+             * First Payment Date
+             * Format: date
+             */
+            first_payment_date: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "completed" | "overdue";
+            /** Installment Amount Sen */
+            installment_amount_sen: number;
+            /** Total Payable Sen */
+            total_payable_sen: number;
+            /** Paid Count */
+            paid_count: number;
+            /** Remaining Count */
+            remaining_count: number;
+            /** Next Due Date */
+            next_due_date: string | null;
+            /** Risk Score At Creation */
+            risk_score_at_creation: number | null;
+            /** Installments */
+            installments: components["schemas"]["InstalmentOut"][];
+        };
+        /** PlanPatch */
+        PlanPatch: {
+            /** Item Name */
+            item_name: string;
+        };
+        /** PlanPreviewOut */
+        PlanPreviewOut: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "spaylater" | "tiktok_paylater" | "atome" | "other";
+            /** Provider Label */
+            provider_label: string;
+            /**
+             * Schedule Source
+             * @enum {string}
+             */
+            schedule_source: "provider_rule" | "manual";
+            /** Total Price Sen */
+            total_price_sen: number;
+            /** Financed Sen */
+            financed_sen: number;
+            /** Upfront Sen */
+            upfront_sen: number;
+            /** Total Payable Sen */
+            total_payable_sen: number;
+            /** Cash At Purchase Sen */
+            cash_at_purchase_sen: number;
+            /** Monthly Fee Rate Pct */
+            monthly_fee_rate_pct: number;
+            /** Num Installments */
+            num_installments: number;
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /**
+             * First Payment Date
+             * Format: date
+             */
+            first_payment_date: string;
+            /** Limit Known */
+            limit_known: boolean;
+            /** Remaining Limit Sen */
+            remaining_limit_sen: number | null;
+            /** Installments */
+            installments: components["schemas"]["PreviewInstalmentOut"][];
+        };
+        /** PreviewInstalmentOut */
+        PreviewInstalmentOut: {
+            /** Seq */
+            seq: number;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Amount Sen */
+            amount_sen: number;
+            /** Paid At Checkout */
+            paid_at_checkout: boolean;
+        };
+        /** ProviderOut */
+        ProviderOut: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "spaylater" | "tiktok_paylater" | "atome" | "other";
+            /** Label */
+            label: string;
+            /** Rule Driven */
+            rule_driven: boolean;
+            /** Checkout Instalments */
+            checkout_instalments: number;
+            /**
+             * Start Rule
+             * @enum {string}
+             */
+            start_rule: "purchase_date" | "months_after_purchase";
+            /** Start Offset Months */
+            start_offset_months: number;
+            /** Monthly Fee Applies */
+            monthly_fee_applies: boolean;
+        };
+        /** RecurringIn */
+        RecurringIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "income" | "bill";
+            /** Name */
+            name: string;
+            /**
+             * Amount Sen
+             * @description Money in integer sen (100 sen = RM 1)
+             */
+            amount_sen: number;
+            /**
+             * Cadence
+             * @enum {string}
+             */
+            cadence: "weekly" | "biweekly" | "monthly" | "semester" | "custom";
+            /** Custom Interval Days */
+            custom_interval_days?: number | null;
+            /**
+             * Anchor Date
+             * Format: date
+             */
+            anchor_date: string;
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+        };
+        /** RecurringOut */
+        RecurringOut: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "income" | "bill";
+            /** Name */
+            name: string;
+            /** Amount Sen */
+            amount_sen: number;
+            /**
+             * Cadence
+             * @enum {string}
+             */
+            cadence: "weekly" | "biweekly" | "monthly" | "semester" | "custom";
+            /** Custom Interval Days */
+            custom_interval_days: number | null;
+            /**
+             * Anchor Date
+             * Format: date
+             */
+            anchor_date: string;
+            /** Active */
+            active: boolean;
+            /**
+             * Origin
+             * @enum {string}
+             */
+            origin: "detected" | "manual";
+        };
+        /** RecurringPatch */
+        RecurringPatch: {
+            /** Name */
+            name?: string | null;
+            /** Amount Sen */
+            amount_sen?: number | null;
+            /** Cadence */
+            cadence?: ("weekly" | "biweekly" | "monthly" | "semester" | "custom") | null;
+            /** Custom Interval Days */
+            custom_interval_days?: number | null;
+            /** Anchor Date */
+            anchor_date?: string | null;
+            /** Active */
+            active?: boolean | null;
+        };
+        /** SkippedRowOut */
+        SkippedRowOut: {
+            /** Row */
+            row: number;
+            /** Reason */
+            reason: string;
+        };
+        /** TransactionIn */
+        TransactionIn: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Amount Sen
+             * @description Money in integer sen (100 sen = RM 1)
+             */
+            amount_sen: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "income" | "expense" | "savings";
+            /** Category */
+            category: string;
+            /** Description */
+            description?: string | null;
+            /** Account Name */
+            account_name?: string | null;
+            /** Recurring Item Id */
+            recurring_item_id?: string | null;
+        };
+        /** TransactionOut */
+        TransactionOut: {
+            /** Id */
+            id: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Amount Sen */
+            amount_sen: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "income" | "expense" | "savings";
+            /** Category */
+            category: string;
+            /** Description */
+            description: string | null;
+            /** Account Name */
+            account_name: string | null;
+            /** Is Bnpl */
+            is_bnpl: boolean;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "manual" | "csv" | "seed";
+            /** Bnpl Plan Id */
+            bnpl_plan_id: string | null;
+            /** Recurring Item Id */
+            recurring_item_id: string | null;
+        };
+        /** TransactionPatch */
+        TransactionPatch: {
+            /** Date */
+            date?: string | null;
+            /** Amount Sen */
+            amount_sen?: number | null;
+            /** Type */
+            type?: ("income" | "expense" | "savings") | null;
+            /** Category */
+            category?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Account Name */
+            account_name?: string | null;
+            /** Recurring Item Id */
+            recurring_item_id?: string | null;
         };
         /** UserOut */
         UserOut: {
@@ -238,6 +1087,1094 @@ export interface operations {
             };
             /** @description Too many failed attempts */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_providers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderOut"][];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_limits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitOut"][];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    put_limit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "spaylater" | "tiktok_paylater" | "atome";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_limit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "spaylater" | "tiktok_paylater" | "atome";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_transactions: {
+        parameters: {
+            query?: {
+                start?: string | null;
+                end?: string | null;
+                type?: ("income" | "expense" | "savings") | null;
+                category?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionOut"][];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_transaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransactionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_transaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    update_transaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransactionPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    months: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthSummaryOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_items: {
+        parameters: {
+            query?: {
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringOut"][];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    update_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    preview_csv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_preview_csv"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreviewOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    confirm_import: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    preview_plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanPreviewOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_plans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanOut"][];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_plan: {
+        parameters: {
+            query?: {
+                keep_payments?: boolean;
+            };
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    rename_plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    pay_installment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+                seq: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PayIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstalmentOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Already paid, or changed concurrently */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    pay_installments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkPayIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstalmentOut"][];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description An instalment is already paid */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    bills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillsOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
