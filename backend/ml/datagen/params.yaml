@@ -312,6 +312,7 @@ bnpl:
     spaylater: {value: [1, 3], unit: count, source: bnpl_billing_rules_my}
     tiktok_paylater: {value: [1, 6], unit: count, source: bnpl_billing_rules_my}
     atome: {value: [3], unit: count, source: bnpl_billing_rules_my}
+    other: {value: [2, 3], unit: count, assumed: true, why: "Manual-entry providers: short plans assumed fee-free, longer ones at the long-plan rate."}
   long_plan_fee_rate_pct:
     value: 1.5
     unit: percent_per_month
