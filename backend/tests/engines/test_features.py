@@ -189,3 +189,9 @@ def test_features_are_computed_in_exactly_one_module():
             if pattern.search(path.read_text(encoding="utf-8")):
                 offenders.append(str(path.relative_to(root)))
     assert offenders == []
+
+
+def test_the_engine_one_features_are_the_six_forecast_derived_ones():
+    assert FEATURE_NAMES[:6] == features.ENGINE1_FEATURES
+    assert set(features.ENGINE1_FEATURES) <= set(FEATURE_NAMES)
+    assert "instalment_amount" not in features.ENGINE1_FEATURES

@@ -48,9 +48,9 @@ income:
     budget_conscious: {value: 1.0, unit: ratio, assumed: true, why: "Assumed fixed-income persona: regular family allowance."}
     irregular_income: {value: 0.3, unit: ratio, assumed: true, why: "Assumed: gig-income persona mostly self-funded, sometimes topped up by family."}
   allowance_median_sen:
-    frequent_bnpl: {value: 60000, unit: sen, assumed: true, why: "No published distribution of student allowances. Chosen so that spending in the cited RM201-400 modal band (tok_cheah_2024) plus bills is affordable."}
-    budget_conscious: {value: 50000, unit: sen, assumed: true, why: "As above, set a little above the cited modal spending band so the persona is solvent but tight."}
-    irregular_income: {value: 20000, unit: sen, assumed: true, why: "Small occasional top-up only."}
+    frequent_bnpl: {value: 90000, unit: sen, assumed: true, why: "No published distribution of student allowances. Chosen so that spending in the cited RM201-400 modal band (tok_cheah_2024) plus rent, phone and subscriptions is affordable for a typical student of this persona (an earlier value of RM600 left about half of the generated students in deficit before any purchase, which contradicts this intent)."}
+    budget_conscious: {value: 80000, unit: sen, assumed: true, why: "As above: solvent but tight, i.e. the typical outgoings of this persona (discretionary spend, rent, phone, subscriptions) sit a little below the allowance."}
+    irregular_income: {value: 30000, unit: sen, assumed: true, why: "Occasional top-up on top of gig income."}
   allowance_sigma:
     value: 0.25
     unit: ratio

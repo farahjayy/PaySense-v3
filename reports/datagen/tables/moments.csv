@@ -31,8 +31,8 @@ bnpl.provider_weights.spaylater,Share of plans on spaylater,share,assumed,0.5000
 bnpl.provider_weights.tiktok_paylater,Share of plans on tiktok_paylater,share,assumed,0.2000,0.2034,within tolerance,
 bnpl.provider_weights.atome,Share of plans on atome,share,assumed,0.2000,0.1997,within tolerance,
 bnpl.provider_weights.other,Share of plans on other,share,assumed,0.1000,0.0993,within tolerance,
-derived.monthly_income_median.frequent_bnpl,"Median monthly income, frequent_bnpl persona (no cited target)",sen,derived,,89053,no target,
-derived.monthly_income_median.budget_conscious,"Median monthly income, budget_conscious persona (no cited target)",sen,derived,,53681,no target,
-derived.monthly_income_median.irregular_income,"Median monthly income, irregular_income persona (no cited target)",sen,derived,,84979,no target,
+derived.monthly_income_median.frequent_bnpl,"Median monthly income, frequent_bnpl persona (no cited target)",sen,derived,,119054,no target,
+derived.monthly_income_median.budget_conscious,"Median monthly income, budget_conscious persona (no cited target)",sen,derived,,85769,no target,
+derived.monthly_income_median.irregular_income,"Median monthly income, irregular_income persona (no cited target)",sen,derived,,87618,no target,
 purchase.price_to_monthly_income_range,"Smallest and largest proposed price as a multiple of monthly income (range is a coverage choice, not an estimate)",ratio,assumed,3.0000,2.9980,within tolerance,smallest 0.0200 (range starts at 0.02)
-derived.purchase_limit_capped_share,Share of proposed purchases split by a provider limit (no cited target),share,derived,,0.0638,no target,
+derived.purchase_limit_capped_share,Share of proposed purchases split by a provider limit (no cited target),share,derived,,0.0829,no target,

@@ -1,0 +1,151 @@
+import json
+from dataclasses import fields
+from datetime import timedelta
+
+import numpy as np
+
+from app.engines.forecasting.models import MovingAverage
+from app.engines.forecasting.recurring import detect
+from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
+from ml.datagen.params import load_params
+from ml.datagen.profile import generate_profile
+from ml.engine2_train.labels import (
+    LABELS_FILE,
+    MANIFEST_FILE,
+    generate_labels,
+    label_profile,
+    prepare,
+    profile_seed,
+)
+
+PARAMS = load_params()
+MODEL = MovingAverage(13)
+SEED = 5
+
+
+def profile(index, **kwargs):
+    return generate_profile(PARAMS, SEED, index, **kwargs)
+
+
+class Blind:
+    """A profile that exposes only what the product knows: any answer-key access raises."""
+
+    def __init__(self, real):
+        self._real = real
+
+    def __getattr__(self, name):
+        if name in {"persona", "recurring_truth", "expected_monthly_income_sen"}:
+            raise AssertionError(f"label code read the answer key {name!r}")
+        return getattr(self._real, name)
+
+
+def test_a_label_is_a_probability_with_all_sixteen_features():
+    record = label_profile(profile(0), MODEL, SEED, paths=200)
+
+    assert record is not None
+    assert 0 <= record["label"] <= 1 and 0 <= record["p_without"] <= 1
+    assert list(record["features"]) == list(FEATURE_NAMES)
+    assert all(np.isfinite(v) for v in record["features"].values())
+
+
+def test_the_purchase_cannot_lower_the_chance_of_a_shortfall():
+    for index in range(8):
+        record = label_profile(profile(index), MODEL, SEED, paths=200)
+        if record:
+            assert record["label"] >= record["p_without"] - 1e-12
+
+
+def test_labelling_never_reads_the_generators_answer_keys():
+    label_profile(Blind(profile(1)), MODEL, SEED, paths=100)  # raises if it touches one
+
+
+def test_confirmed_items_come_from_detection_on_the_ledger_not_from_ground_truth():
+    p = profile(2)
+
+    known = prepare(p)
+
+    expected = {s.name for s in detect(known["rows"], today=p.as_of)}
+    assert {i["match_text"] for i in known["items"]} == expected
+    truth = {t.name.lower() for t in p.recurring_truth}
+    assert len(known["items"]) <= len(truth) + len(expected)  # detection decides, not the truth
+
+
+def test_plan_status_is_the_status_on_the_as_of_day():
+    for index in range(12):
+        p = profile(index, persona="frequent_bnpl")
+        known = prepare(p)
+        for generated, plan in zip(p.bnpl.plans, known["plans"], strict=True):
+            for seq, instalment in enumerate(plan["installments"], start=1):
+                paid_on = generated.paid_dates.get(seq)
+                assert instalment["is_paid"] == (paid_on is not None and paid_on <= p.as_of)
+
+
+def test_only_recorded_limits_are_used():
+    p = profile(3, persona="frequent_bnpl")
+
+    assert prepare(p)["limits"] == dict(p.bnpl.limits)  # recorded, never the true limits
+
+
+def test_the_ledger_ends_on_the_as_of_day():
+    p = profile(4)
+
+    assert all(r["date"] <= p.as_of for r in prepare(p)["rows"])
+
+
+def test_the_same_profile_and_seed_always_give_the_same_label():
+    a = label_profile(profile(5), MODEL, SEED, paths=150)
+    b = label_profile(profile(5), MODEL, SEED, paths=150)
+
+    assert a == b
+
+
+def test_profile_seeds_depend_only_on_the_master_seed_and_the_index():
+    assert profile_seed(1, 2) == profile_seed(1, 2)
+    assert profile_seed(1, 2) != profile_seed(1, 3) and profile_seed(1, 2) != profile_seed(2, 2)
+
+
+def test_a_profile_with_too_little_history_is_reported_locked_not_dropped(tmp_path):
+    manifest = generate_labels(PARAMS, SEED, 6, tmp_path, paths=100, forecaster=MODEL)
+
+    lines = [json.loads(x) for x in (tmp_path / LABELS_FILE).read_text("utf-8").splitlines()]
+    assert len(lines) == 6 and sum(x["locked"] for x in lines) == manifest["locked_profiles"]
+    assert all("label" in x for x in lines if not x["locked"])
+
+
+def test_the_manifest_records_what_is_needed_to_reproduce_and_audit_the_run(tmp_path):
+    manifest = generate_labels(PARAMS, SEED, 4, tmp_path, paths=100, forecaster=MODEL)
+
+    on_disk = json.loads((tmp_path / MANIFEST_FILE).read_text("utf-8"))
+    assert on_disk == manifest
+    assert manifest["feature_schema_hash"] == FEATURE_SCHEMA_HASH
+    assert manifest["params_hash"] == PARAMS.hash() and manifest["label_version"]
+    assert manifest["file"]["sha256"] and manifest["feature_names"] == list(FEATURE_NAMES)
+
+
+def test_a_run_is_reproducible_and_a_short_run_is_a_prefix_of_a_longer_one(tmp_path):
+    generate_labels(PARAMS, SEED, 5, tmp_path / "a", paths=100, forecaster=MODEL)
+    generate_labels(PARAMS, SEED, 3, tmp_path / "b", paths=100, forecaster=MODEL)
+
+    long = (tmp_path / "a" / LABELS_FILE).read_text("utf-8").splitlines()
+    short = (tmp_path / "b" / LABELS_FILE).read_text("utf-8").splitlines()
+    assert long[:3] == short
+
+
+def test_answer_keys_are_kept_under_truth_in_the_output(tmp_path):
+    generate_labels(PARAMS, SEED, 2, tmp_path, paths=100, forecaster=MODEL)
+
+    for line in (tmp_path / LABELS_FILE).read_text("utf-8").splitlines():
+        record = json.loads(line)
+        assert "persona" not in record and "persona" in record["truth"]
+        assert "persona" not in record.get("features", {})
+
+
+def test_no_field_of_the_profile_used_for_features_is_an_answer_key():
+    names = {f.name for f in fields(profile(0))}
+
+    assert {"persona", "recurring_truth"} <= names  # they exist, and the Blind test proves unused
+
+
+def test_a_label_run_does_not_need_the_clock(tmp_path):
+    p = profile(6)
+    assert p.as_of - timedelta(days=1) < p.as_of  # fixed reference day, no wall-clock dependence

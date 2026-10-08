@@ -2,14 +2,14 @@
   "files": {
     "profiles.jsonl": {
       "rows": 10000,
-      "sha256": "3701bce363df8f122cbd963bde7c091fae08bce5be71df3455b4d5051ce138eb"
+      "sha256": "21f5bbb0da0e8313e5931bad75247ccb4609e35412b3928bc58858092dcfeb87"
     },
     "weekly_series.csv": {
       "rows": 780000,
-      "sha256": "2dec58e89f16c6360528cc0a77eee0468958561e356a7ab4d4134af285fef617"
+      "sha256": "1142a4c27d97f40d2a3087c507320abfee615cf03152b1882e11eba2e9cb747f"
     }
   },
-  "params_hash": "041c6ed3495ee064",
+  "params_hash": "a6ceca23dc942af6",
   "persona_counts": {
     "budget_conscious": 3958,
     "frequent_bnpl": 3482,

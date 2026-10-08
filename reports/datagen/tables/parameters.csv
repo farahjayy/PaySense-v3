@@ -8,9 +8,9 @@ income.ptptn_pay_day,10,day_of_month,assumed,Assumed day of the month a PTPTN lu
 income.allowance_probability.frequent_bnpl,1.0,ratio,assumed,Assumed that this persona receives a regular family allowance.
 income.allowance_probability.budget_conscious,1.0,ratio,assumed,Assumed fixed-income persona: regular family allowance.
 income.allowance_probability.irregular_income,0.3,ratio,assumed,"Assumed: gig-income persona mostly self-funded, sometimes topped up by family."
-income.allowance_median_sen.frequent_bnpl,60000,sen,assumed,No published distribution of student allowances. Chosen so that spending in the cited RM201-400 modal band (tok_cheah_2024) plus bills is affordable.
-income.allowance_median_sen.budget_conscious,50000,sen,assumed,"As above, set a little above the cited modal spending band so the persona is solvent but tight."
-income.allowance_median_sen.irregular_income,20000,sen,assumed,Small occasional top-up only.
+income.allowance_median_sen.frequent_bnpl,90000,sen,assumed,"No published distribution of student allowances. Chosen so that spending in the cited RM201-400 modal band (tok_cheah_2024) plus rent, phone and subscriptions is affordable for a typical student of this persona (an earlier value of RM600 left about half of the generated students in deficit before any purchase, which contradicts this intent)."
+income.allowance_median_sen.budget_conscious,80000,sen,assumed,"As above: solvent but tight, i.e. the typical outgoings of this persona (discretionary spend, rent, phone, subscriptions) sit a little below the allowance."
+income.allowance_median_sen.irregular_income,30000,sen,assumed,Occasional top-up on top of gig income.
 income.allowance_sigma,0.25,ratio,assumed,Log-normal spread of allowance between students; no published figure.
 income.allowance_day_of_month,"[1, 5]",day,assumed,Allowances typically arrive at the start of the month; range assumed.
 income.ptptn_annual_sen,"[309000, 463000, 618000, 333000, 499000, 665000]",sen,cited: ptptn_loan_table,
