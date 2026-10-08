@@ -84,7 +84,7 @@ Confirmed from the founding context documents and the scaffold interview (2026-1
 | Variable series | Weekly (Mon–Sun) sums of (a) expense transactions not linked to a recurring item or BNPL plan and not of type `savings` — discretionary spend — and (b) income transactions not covered by a confirmed recurring income (irregular / gig income). The current, incomplete week is excluded. |
 | Forecast | Served model (P3 winner) forecasts each weekly series for the horizon: 3 months on the dashboard; through the last due date of the plan under evaluation for a risk check, capped at 52 weeks. Weeks that straddle a month boundary are split by days. |
 | Uncertainty | Residual bootstrap: each path resamples the served model's rolling-origin forecast errors (moving-block bootstrap, block = 4 weeks), the same method for every candidate so the comparison is fair. 1,000 paths. |
-| Monthly margin | **No starting balance (D-27).** For each month of the horizon, per path: `margin = income − bills − BNPL instalments (incl. checkout payments) − discretionary spend`. Cumulative margin starts at RM0 today ("no savings assumed") and accumulates month by month. |
+| Monthly margin | **No starting balance (D-27).** For each month of the horizon, per path: `margin = income − bills − BNPL instalments (incl. checkout payments) − discretionary spend`. Cumulative margin starts at RM0 at the start of the current month ("no savings assumed"; D-33) and accumulates month by month, the current month using its actual net so far plus the simulated remainder. |
 | Outputs | P10/P50/P90 monthly and cumulative margin; **P(shortfall)** = share of paths where the cumulative margin at any month-end in the horizon is < RM0, i.e. the plan could not be paid from income alone; the month most likely to go negative. |
 | Health score (dashboard) | `round((1 − P(shortfall over next 3 months, no new purchase)) × 100)`, same Safe/Caution/At Risk bands as Engine 2. |
 | Gate | Fewer than 4 months of history → locked state with an import prompt (supervisor constraint). |
@@ -243,6 +243,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-29 | API money is integer sen (`*_sen`); refunds/transfers are reserved categories; CSV import is stateless with duplicate flagging | No float ever touches a ringgit amount; refunds must not inflate income; Render restarts lose in-memory state |
 | D-30 | A payment is tied to its instalment (unique); ambiguous failures never delete a payment; create-plan logs payments before flipping checkout instalments | No transactions in supabase-py, and a timeout looks the same whether or not the database committed |
 | D-31 | The synthetic population keeps answer keys under `truth`, builds the proposed purchase from the recorded limit only, draws repayment per student, and puts weekly-scale structure (not day-level) in the series | The first version leaked the true limit, applied a holder-level statistic per instalment and over-claimed difficulty; found by audit before any model saw it |
+| D-33 | The cumulative margin starts at RM0 at the start of the current month and includes this month's actual net so far (amends D-27's "RM0 today") | Read literally, income received earlier this month was ignored while the rest of the month's bills were counted, so users looked At Risk on any day after payday |
 
 ---
 

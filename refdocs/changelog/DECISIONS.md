@@ -170,6 +170,13 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** The first version leaked the true limit into the purchase (train/serve skew on `limit_known`), applied a holder-level statistic to instalments (only 37% of holders were fully on time against a cited 88%), and claimed weekly-scale richness it did not have, so a "forecaster beats benchmarks" result on it would have been partly an artefact. Each was found by the ml-auditor and fixed before any model saw the data.
 **Trade-off.** More assumed parameters (105 of 121) and a noisier weekly total than the drawn one; the report says both. The synthetic population remains a stand-in, never evidence about real students.
 
+## D-33 — The cumulative margin starts at the beginning of the current month, not at "today"
+*2026-10-08 · Claude decision while building the P4 simulation (amends the wording of D-27)*
+
+**Decision.** D-27 said the cumulative margin starts at RM0 "today". Read literally, a student paid on the 1st and checked on the 12th would have that income ignored (it is in the past) while the rest of the month's rent and spending is counted, so almost everyone looks At Risk mid-month. The cumulative margin now starts at RM0 at the **start of the current month** ("no savings carried in" is unchanged) and the current month's margin is the **actual net so far this month** (income minus spend, refunds netted, savings excluded; transactions dated today are left to the forecast) plus the simulated remainder. Months before the current one do not enter.
+**Why.** It keeps D-27's principle (no balance, no savings credited, flows only) while making the answer independent of which day of the month the user looks. Found by the first service test: a comfortable, correctly confirmed ledger came out At Risk on the 12th.
+**Trade-off.** Savings from earlier months still do not count (D-27 limitation), and a user who has already spent heavily this month starts the month behind, which is the honest reading. Engine 2's labels use the same function, so training and serving agree.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)
