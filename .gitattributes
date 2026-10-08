@@ -1,2 +1,4 @@
 data/personas/*.csv text eol=lf
 data/synthetic/MANIFEST.json text eol=lf
+reports/datagen/** text eol=lf
+*.png binary
