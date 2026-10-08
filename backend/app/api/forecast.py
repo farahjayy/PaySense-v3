@@ -5,6 +5,7 @@ import zlib
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends
+from pydantic import Field
 
 from app.api.deps import CurrentUser, DbDep, TodayDep
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
@@ -38,7 +39,7 @@ class SimulationOut(ApiModel):
     cumulative_margin_p10_sen: list[int]
     cumulative_margin_p50_sen: list[int]
     cumulative_margin_p90_sen: list[int]
-    p_shortfall: float
+    p_shortfall: float = Field(ge=0, le=1)
     worst_month: str | None
     weeks: int
     horizon_capped: bool
@@ -51,6 +52,7 @@ class ForecastOut(ApiModel):
     model: str
     months_of_history: int
     suspect_months: list[SuspectMonthOut]
+    lock_reason: Literal["needs_four_months", "no_usable_history"] | None
     simulation: SimulationOut | None
     band: Literal["Safe", "Caution", "At Risk"] | None
     health_score: int | None
@@ -64,7 +66,7 @@ def _seed(user_id: str, today: dt.date) -> int:
 @router.get("", response_model=ForecastOut)
 def forecast(user: CurrentUser, db: DbDep, today: TodayDep, model: ForecasterDep) -> ForecastOut:
     result = build_forecast(
-        rows=transactions.list_for_forecast(db, user.id),
+        rows=transactions.list_for_forecast(db, user.id, today),
         items=recurring_items.list_items(db, user.id, active_only=True),
         plans=plans_repo.list_with_instalments(db, user.id),
         today=today,
@@ -72,15 +74,17 @@ def forecast(user: CurrentUser, db: DbDep, today: TodayDep, model: ForecasterDep
         seed=_seed(user.id, today),
     )
     simulation = result.simulation
+    shown = None
+    if simulation is not None:
+        shown = {name: getattr(simulation, name) for name in SimulationOut.model_fields}
     payload = {
         "status": result.status,
         "as_of": today,
         "model": model.name,
         "months_of_history": result.months_of_history,
         "suspect_months": [vars(s) for s in result.suspect_months],
-        "simulation": None
-        if simulation is None
-        else {k: v for k, v in vars(simulation).items() if k != "p_negative_by_month"},
+        "lock_reason": result.lock_reason,
+        "simulation": shown,
         "band": result.band,
         "health_score": result.health_score,
     }

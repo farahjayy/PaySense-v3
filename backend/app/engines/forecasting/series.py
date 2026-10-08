@@ -63,6 +63,7 @@ def build_weekly_series(
     """`covered` holds `(type, merchant text)` of confirmed recurring items; a transaction whose
     own `recurring_item_id` is set is covered as well."""
     keys = {(kind, normalise_merchant(text)) for kind, text in covered}
+    keys = {(kind, text) for kind, text in keys if text}  # a nameless item matches nothing
     events: list[tuple[date, str, int]] = []
     for row in rows:
         day = as_date(row["date"])

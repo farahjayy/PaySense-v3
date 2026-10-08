@@ -112,3 +112,11 @@ def test_suspect_months_are_listed_in_date_order_with_a_readable_detail():
 
     assert [s.month for s in suspects] == ["2025-02", "2025-04"]
     assert all(s.detail for s in suspects)
+
+
+def test_rows_dated_after_today_do_not_count_toward_the_four_month_gate():
+    rows = ledger(FOUR_MONTHS[:1]) + [txn(date(2025, m, 2), 500) for m in (6, 7, 8)]
+
+    result = assess(rows, TODAY)
+
+    assert result.months_of_history == 1 and result.status == "locked"

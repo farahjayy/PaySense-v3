@@ -31,6 +31,7 @@ class Forecast:
     months_of_history: int
     suspect_months: list[SuspectMonth]
     series_weeks: int
+    lock_reason: str | None
     simulation: Simulation | None
     band: str | None
     health_score: int | None
@@ -63,11 +64,18 @@ def build_forecast(
     rows, items, plans = list(rows), list(items), list(plans)
     completeness = assess(rows, today)
     if completeness.status == "locked":
-        return Forecast("locked", completeness.months_of_history, [], 0, None, None, None)
+        return Forecast(
+            "locked", completeness.months_of_history, [], 0, "needs_four_months", None, None, None
+        )
 
     confirmed = [i for i in items if i.get("active", True)]
     covered = [(KIND_TO_TYPE[i["kind"]], i["name"]) for i in confirmed]
     series = build_weekly_series(rows, today, covered)
+    if series.weeks == 0:  # e.g. only savings, plan payments or confirmed items so far
+        return Forecast(
+            "locked", completeness.months_of_history, completeness.suspect_months, 0,
+            "no_usable_history", None, None, None,
+        )  # fmt: skip
     horizon = end or horizon_end(today)
     known = known_flows(confirmed, plans, today, horizon, proposed)
     spend_errors = rolling_errors(series.spend, series.start, forecaster)
@@ -81,6 +89,7 @@ def build_forecast(
         months_of_history=completeness.months_of_history,
         suspect_months=completeness.suspect_months,
         series_weeks=series.weeks,
+        lock_reason=None,
         simulation=simulation,
         band=band(simulation.p_shortfall),
         health_score=health_score(simulation.p_shortfall),

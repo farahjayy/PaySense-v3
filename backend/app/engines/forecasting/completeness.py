@@ -13,7 +13,7 @@ from datetime import date
 from statistics import median
 from typing import Any
 
-from app.domain.flows import classify, month_summary
+from app.domain.flows import as_date, classify, month_summary
 
 MIN_MONTHS = 4  # supervisor constraint: fewer than four months of history locks the forecast
 MIN_REFERENCE_MONTHS = 3  # spending is compared with the median of at least this many months
@@ -35,15 +35,17 @@ class Completeness:
     suspect_months: list[SuspectMonth]
 
 
-def _months_with_history(rows: Iterable[Mapping[str, Any]]) -> set[str]:
+def _months_with_history(rows: Iterable[Mapping[str, Any]], today: date) -> set[str]:
     return {
-        str(row["date"])[:7] for row in rows if classify(row) != "transfer"
-    }  # calendar months holding at least one real transaction
+        as_date(row["date"]).strftime("%Y-%m")
+        for row in rows
+        if classify(row) != "transfer" and as_date(row["date"]) <= today
+    }  # calendar months holding at least one real transaction up to today
 
 
 def assess(rows: Iterable[Mapping[str, Any]], today: date) -> Completeness:
     rows = list(rows)
-    months = len(_months_with_history(rows))
+    months = len(_months_with_history(rows, today))
     status = "ok" if months >= MIN_MONTHS else "locked"
 
     current = today.strftime("%Y-%m")

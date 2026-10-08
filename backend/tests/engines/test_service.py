@@ -178,3 +178,31 @@ def test_month_to_date_income_is_not_forgotten():
 
     assert month_to_date_net(rows, TODAY) == 170000
     assert month_to_date_net([], TODAY) == 0
+
+
+def _four_months_of(kind_row):
+    return [kind_row(date(2025, m, 6)) for m in (1, 2, 3, 4, 5)]
+
+
+def test_a_ledger_that_leaves_no_usable_week_is_locked_instead_of_failing():
+    savings = _four_months_of(lambda d: txn(d, 5000, kind="savings", category="Savings"))
+    plan_payments = _four_months_of(lambda d: txn(d, 5000, category="BNPL", is_bnpl=True))
+    future = [txn(date(2025, m, 6), 5000) for m in (6, 7, 8, 9)]
+    only_a_confirmed_bill = _four_months_of(lambda d: txn(d, 5000, description="Kedai"))
+
+    for rows, items in (
+        (savings, []),
+        (plan_payments, []),
+        (future, []),
+        (only_a_confirmed_bill, [{**RENT, "name": "Kedai"}]),
+    ):
+        result = build_forecast(rows, items, [], TODAY, LastValue())
+
+        assert result.status == "locked" and result.simulation is None
+        assert result.lock_reason in {"needs_four_months", "no_usable_history"}
+
+
+def test_a_lock_says_why():
+    short = build_forecast([txn(date(2025, 5, 6), 100)], [], [], TODAY, LastValue())
+
+    assert short.lock_reason == "needs_four_months"

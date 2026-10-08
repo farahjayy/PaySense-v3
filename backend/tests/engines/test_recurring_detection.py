@@ -127,7 +127,7 @@ def test_refunds_transfers_and_plan_payments_are_never_suggested():
 def test_an_item_the_user_already_confirmed_is_not_suggested_again():
     rows = monthly("Sewa bilik", 45000)
 
-    assert detect(rows, confirmed_names=["Sewa Bilik"]) == []
+    assert detect(rows, confirmed=[("bill", "Sewa Bilik")]) == []
 
 
 def test_income_and_expense_with_the_same_text_are_separate_groups():
@@ -225,3 +225,17 @@ def test_precision_and_recall_against_the_generators_recurring_truth(scored):
     counts = f"tp={true_pos} fp={false_pos} fn={false_neg}"
     print(f"precision={precision:.3f} recall={recall:.3f} ({counts})")
     assert precision >= PRECISION_FLOOR and recall >= RECALL_FLOOR
+
+
+def test_a_bill_with_the_same_text_does_not_suppress_an_income_suggestion():
+    rows = monthly("Salary", 150000, kind="income", category="Salary")
+
+    assert [s.kind for s in detect(rows, confirmed=[("bill", "Salary")])] == ["income"]
+    assert detect(rows, confirmed=[("income", "Salary")]) == []
+
+
+def test_rows_dated_after_today_are_ignored():
+    rows = monthly("Sewa bilik", 45000, months=4)  # Jan to Apr 2025
+
+    assert detect(rows, today=date(2025, 2, 20)) == []  # only two occurrences are in the past
+    assert len(detect(rows, today=date(2025, 12, 1))) == 1

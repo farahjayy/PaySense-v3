@@ -89,18 +89,23 @@ def _amount_stats(amounts: list[int]) -> tuple[int, float, float] | None:
 
 
 def detect(
-    rows: Iterable[Mapping[str, Any]], confirmed_names: Iterable[str] = ()
+    rows: Iterable[Mapping[str, Any]],
+    confirmed: Iterable[tuple[str, str]] = (),
+    today: date | None = None,
 ) -> list[Suggestion]:
-    confirmed = {normalise_merchant(n) for n in confirmed_names}
+    """`confirmed` holds `(kind, name)` of the user's existing items (kind is `income` or `bill`);
+    those are not suggested again. Rows dated after `today` are ignored."""
+    known = {(kind, normalise_merchant(name)) for kind, name in confirmed}
     groups: dict[tuple[str, str], list[tuple[date, int, str]]] = defaultdict(list)
     for row in rows:
-        if _candidate(row):
+        if _candidate(row) and (today is None or as_date(row["date"]) <= today):
             key = (row["type"], normalise_merchant(row["description"]))
             groups[key].append((as_date(row["date"]), int(row["amount_sen"]), row["description"]))
 
     found = []
     for (direction, name), events in groups.items():
-        if len(events) < MIN_OCCURRENCES or name in confirmed:
+        kind = "income" if direction == "income" else "bill"
+        if len(events) < MIN_OCCURRENCES or (kind, name) in known:
             continue
         events.sort(key=lambda e: (e[0], e[1], e[2]))
         dates = [e[0] for e in events]
@@ -115,7 +120,7 @@ def detect(
             Suggestion(
                 name=name,
                 display_name=events[-1][2],
-                kind="income" if direction == "income" else "bill",
+                kind=kind,
                 amount_sen=amount,
                 cadence=label,
                 anchor_date=dates[-1],

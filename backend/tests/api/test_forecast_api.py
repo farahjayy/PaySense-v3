@@ -175,3 +175,57 @@ def test_an_unknown_origin_is_refused(api, amir):
     )  # fmt: skip
 
     assert res.status_code == 422
+
+
+def test_both_users_have_ledgers_and_neither_sees_the_other(api, fake_db, amir, siti):
+    fill(fake_db, "amir", income=300000, weekly=2000)
+    fill(fake_db, "siti", income=30000, weekly=25000)
+    api.post(
+        "/api/recurring-items",
+        json={"kind": "bill", "name": "Sewa", "amount_sen": 90000, "cadence": "monthly",
+              "anchor_date": "2025-05-20"},
+        headers=siti,
+    )  # fmt: skip
+
+    amir_first = api.get("/api/forecast", headers=amir).json()
+    api.post(
+        "/api/recurring-items",
+        json={"kind": "bill", "name": "Sewa", "amount_sen": 900000, "cadence": "monthly",
+              "anchor_date": "2025-05-20"},
+        headers=siti,
+    )  # fmt: skip
+    amir_second = api.get("/api/forecast", headers=amir).json()
+
+    assert amir_first == amir_second  # nothing siti does can move amir's numbers
+    assert (
+        amir_first["health_score"] > api.get("/api/forecast", headers=siti).json()["health_score"]
+    )
+
+
+def test_a_ledger_with_no_usable_week_is_locked_not_a_server_error(api, fake_db, amir):
+    rows = [txn(date(2025, m, 6), 5000, "savings", "Savings") for m in (1, 2, 3, 4, 5)]
+    transactions_repo.bulk_create(fake_db, user_id(fake_db, "amir"), rows, source="seed")
+
+    res = api.get("/api/forecast", headers=amir)
+
+    assert res.status_code == 200
+    assert res.json()["status"] == "locked" and res.json()["lock_reason"] == "no_usable_history"
+
+
+def test_a_recurring_item_name_needs_a_letter(api, amir):
+    res = api.post(
+        "/api/recurring-items",
+        json={"kind": "bill", "name": "123", "amount_sen": 100, "cadence": "monthly",
+              "anchor_date": "2025-05-01"},
+        headers=amir,
+    )  # fmt: skip
+
+    assert res.status_code == 422
+
+
+def test_the_real_served_model_and_clock_work_without_overrides(api, fake_db, amir):
+    api.app.dependency_overrides.clear()  # no pinned date or forecaster: the production wiring
+
+    res = api.get("/api/forecast", headers=amir)
+
+    assert res.status_code == 200 and res.json()["model"] in {"ma13", "ma4", "naive"}

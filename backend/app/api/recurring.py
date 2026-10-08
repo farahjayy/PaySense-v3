@@ -1,12 +1,13 @@
 """Recurring income and bills: CRUD, plus detected suggestions the user may confirm."""
 
 import datetime as dt
-from typing import Literal, Self
+import re
+from typing import Annotated, Literal, Self
 
 from fastapi import APIRouter, Response
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
-from app.api.deps import CurrentUser, DbDep
+from app.api.deps import CurrentUser, DbDep, TodayDep
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
 from app.api.types import AppDate, Sen, reject_explicit_nulls, text
 from app.core.errors import not_found, unprocessable
@@ -17,6 +18,16 @@ from app.engines.forecasting.recurring import detect
 Kind = Literal["income", "bill"]
 Cadence = Literal["weekly", "biweekly", "monthly", "semester", "custom"]
 
+LETTER = re.compile(r"[^\W\d_]")
+
+
+def _needs_letters(name: str) -> str:
+    """Detection and the forecast match items by their letters; "123" would match nothing."""
+    if not LETTER.search(name):
+        raise ValueError("the name must contain at least one letter")
+    return name
+
+
 router = APIRouter(
     prefix="/recurring-items", tags=["recurring-items"], responses=PROTECTED_RESPONSES
 )
@@ -26,7 +37,7 @@ class RecurringIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     kind: Kind
-    name: text(80)
+    name: Annotated[text(80), AfterValidator(_needs_letters)]
     amount_sen: Sen
     cadence: Cadence
     custom_interval_days: int | None = Field(default=None, ge=1, le=366)
@@ -44,7 +55,7 @@ class RecurringIn(BaseModel):
 class RecurringPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: text(80) | None = None
+    name: Annotated[text(80), AfterValidator(_needs_letters)] | None = None
     amount_sen: Sen | None = None
     cadence: Cadence | None = None
     custom_interval_days: int | None = Field(default=None, ge=1, le=366)
@@ -76,7 +87,7 @@ class SuggestionOut(ApiModel):
     amount_sen: int
     cadence: Cadence
     anchor_date: dt.date
-    confidence: float
+    confidence: float = Field(ge=0, le=1)
     occurrences: int
 
 
@@ -93,12 +104,13 @@ def list_items(user: CurrentUser, db: DbDep, active_only: bool = False) -> list[
 
 
 @router.get("/suggestions", response_model=list[SuggestionOut])
-def suggestions(user: CurrentUser, db: DbDep) -> list[SuggestionOut]:
+def suggestions(user: CurrentUser, db: DbDep, today: TodayDep) -> list[SuggestionOut]:
     """Patterns found in the user's own ledger. Nothing is saved: confirming one is a normal
     POST with `origin: "detected"`."""
-    rows = transactions.list_for_forecast(db, user.id)
-    known = [item["name"] for item in repo.list_items(db, user.id)]
-    return [SuggestionOut.model_validate(vars(s)) for s in detect(rows, confirmed_names=known)]
+    rows = transactions.list_for_forecast(db, user.id, today)
+    known = [(item["kind"], item["name"]) for item in repo.list_items(db, user.id)]
+    found = detect(rows, confirmed=known, today=today)
+    return [SuggestionOut.model_validate(vars(s)) for s in found]
 
 
 @router.post("", response_model=RecurringOut, status_code=201)

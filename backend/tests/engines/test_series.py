@@ -145,3 +145,14 @@ def test_money_stays_integer_sen():
 
     assert series.spend.dtype == np.int64
     assert pytest.approx(series.spend[0]) == 12345
+
+
+def test_a_confirmed_item_with_no_letters_in_its_name_swallows_nothing():
+    rows = [
+        row(date(2025, 1, 6), 100, description=None),
+        row(date(2025, 1, 13), 200, description=None),
+    ]
+
+    series = build_weekly_series(rows, TODAY, covered=[("expense", "123"), ("expense", "7-11")])
+
+    assert series.spend.sum() == 300

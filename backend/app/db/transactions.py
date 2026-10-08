@@ -193,13 +193,22 @@ def list_for_summary(db: Database, user_id: str) -> list[dict[str, Any]]:
     return _table(db).list_rows(user_id, order_by="date", columns="date,amount_sen,type,category")
 
 
-def list_for_forecast(db: Database, user_id: str) -> list[dict[str, Any]]:
-    """Every transaction, reduced to the columns recurring detection and the forecast need."""
+FORECAST_WINDOW_MONTHS = 24  # older history adds cost without improving a 3-month forecast
+
+
+def list_for_forecast(db: Database, user_id: str, today: dt.date) -> list[dict[str, Any]]:
+    """The last two years of transactions up to today, reduced to the columns recurring detection
+    and the forecast need. Bounded so a very large ledger cannot make every request slow."""
+    first = dt.date(today.year, today.month, 1)
+    month_index = first.year * 12 + first.month - 1 - FORECAST_WINDOW_MONTHS
+    since = dt.date(month_index // 12, month_index % 12 + 1, 1)
     columns = (
         "date,amount_sen,type,category,description,"
         "bnpl_plan_id,bnpl_installment_id,recurring_item_id,is_bnpl"
     )
-    return _table(db).list_rows(user_id, order_by="date", columns=columns)
+    return _table(db).list_rows(
+        user_id, order_by="date", columns=columns, between={"date": (since, today)}
+    )
 
 
 def get_for_installment(db: Database, user_id: str, installment_id: str) -> dict[str, Any] | None:

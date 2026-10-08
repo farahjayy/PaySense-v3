@@ -519,6 +519,8 @@ export interface components {
             months_of_history: number;
             /** Suspect Months */
             suspect_months: components["schemas"]["SuspectMonthOut"][];
+            /** Lock Reason */
+            lock_reason: ("needs_four_months" | "no_usable_history") | null;
             simulation: components["schemas"]["SimulationOut"] | null;
             /** Band */
             band: ("Safe" | "Caution" | "At Risk") | null;

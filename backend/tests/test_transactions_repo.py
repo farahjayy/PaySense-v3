@@ -279,3 +279,21 @@ def test_isolation_list_for_summary(db, amir, siti):
     make(db, amir)
 
     assert repo.list_for_summary(db, siti) == []
+
+
+def test_isolation_list_for_forecast(db, amir, siti):
+    make(db, amir)
+
+    assert repo.list_for_forecast(db, siti, date(2026, 6, 30)) == []
+
+
+def test_forecast_rows_stop_at_today_and_cover_two_years(db, amir):
+    make(db, amir, day="2026-06-01")
+    make(db, amir, day="2026-07-15")  # after "today"
+    make(db, amir, day="2024-05-31")  # more than 24 months before June 2026
+    make(db, amir, day="2024-06-01")
+
+    rows = repo.list_for_forecast(db, amir, date(2026, 6, 30))
+
+    assert sorted(r["date"] for r in rows) == ["2024-06-01", "2026-06-01"]
+    assert {"description", "recurring_item_id", "bnpl_plan_id", "is_bnpl"} <= set(rows[0])
