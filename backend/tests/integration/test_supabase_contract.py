@@ -5,40 +5,16 @@ constraints (composite foreign keys, checks, unique index, row cap) hold. They c
 users with random usernames and delete them (rows cascade) afterwards.
 """
 
-import secrets
-
 import pytest
 from postgrest import APIError
 
-from app.core.settings import MissingSettingsError, load_settings
 from app.db import user_settings, users
 from app.db.base import PAGE_SIZE, ScopedTable
-from app.db.client import build_client
 
 pytestmark = pytest.mark.integration
 
 FK_VIOLATION = "23503"
 CHECK_VIOLATION = "23514"
-
-
-@pytest.fixture(scope="module")
-def db():
-    try:
-        settings = load_settings()
-    except MissingSettingsError as err:
-        pytest.skip(f"no Supabase credentials configured: {err}")
-    return build_client(settings)
-
-
-@pytest.fixture
-def two_users(db):
-    created = [
-        users.create(db, username=f"it_{secrets.token_hex(6)}", display_name=f"IT {n}")
-        for n in ("A", "B")
-    ]
-    yield created
-    for user in created:
-        db.table("users").delete().eq("id", user["id"]).execute()
 
 
 def _txn(**extra):
@@ -51,7 +27,9 @@ def _plan(**extra):
         "provider": "atome",
         "provider_label": "Atome",
         "total_price_sen": 90000,
+        "financed_sen": 90000,
         "num_installments": 3,
+        "purchase_date": "2026-02-01",
         "first_payment_date": "2026-02-01",
     } | extra
 

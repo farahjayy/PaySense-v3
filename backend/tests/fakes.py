@@ -150,6 +150,7 @@ class FakeQuery:
         self._orders: list[tuple[str, bool]] = []
         self._limit: int | None = None
         self._range: tuple[int, int] | None = None
+        self._conflict: tuple[str, ...] = ()
 
     # -- operations
     def select(self, _columns: str = "*") -> "FakeQuery":
@@ -166,6 +167,10 @@ class FakeQuery:
 
     def delete(self) -> "FakeQuery":
         self._op = "delete"
+        return self
+
+    def upsert(self, payload: dict[str, Any], on_conflict: str = "") -> "FakeQuery":
+        self._op, self._payload, self._conflict = "upsert", payload, tuple(on_conflict.split(","))
         return self
 
     # -- filters / modifiers
@@ -214,6 +219,7 @@ class FakeQuery:
             "insert": self._insert,
             "update": self._update,
             "delete": self._delete,
+            "upsert": self._upsert,
         }[self._op]
         return FakeResponse(copy.deepcopy(run()))
 
@@ -255,6 +261,24 @@ class FakeQuery:
                 row.update(original)
             raise
         return rows
+
+    def _upsert(self) -> list[dict[str, Any]]:
+        row = self._with_defaults(copy.deepcopy(self._payload))
+        existing = next(
+            (
+                r
+                for r in self._db.rows(self._table)
+                if _unique_key(r, self._conflict) == _unique_key(row, self._conflict)
+            ),
+            None,
+        )
+        if existing is None:
+            self._check_foreign_keys(row)
+            self._check_unique(row)
+            self._db.rows(self._table).append(row)
+            return [row]
+        existing.update({k: v for k, v in row.items() if k not in self._conflict})
+        return [existing]
 
     def _delete(self) -> list[dict[str, Any]]:
         rows = self._matching()

@@ -266,3 +266,25 @@ def test_delete_many_of_nothing_removes_nothing(db, two_users):
     amir, _ = two_users
 
     assert ScopedTable(db, "transactions").delete_many(amir, []) == 0
+
+
+def test_update_where_only_applies_when_the_row_still_matches(db, two_users):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+    row = table.insert(amir, _txn(500, is_bnpl=False))
+
+    first = table.update(amir, row["id"], {"amount_sen": 1}, where={"is_bnpl": False})
+    second = table.update(amir, row["id"], {"amount_sen": 2}, where={"is_bnpl": True})
+
+    assert first["amount_sen"] == 1
+    assert second is None
+    assert table.get(amir, row["id"])["amount_sen"] == 1
+
+
+def test_update_where_cannot_name_the_owner_column(db, two_users):
+    amir, siti = two_users
+    table = ScopedTable(db, "transactions")
+    row = table.insert(siti, _txn())
+
+    with pytest.raises(ValueError, match="user_id"):
+        table.update(amir, row["id"], {"amount_sen": 1}, where={"user_id": siti})

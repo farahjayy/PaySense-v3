@@ -124,20 +124,32 @@ class ScopedTable:
         created = self._db.table(self._table).insert({**row, OWNER_COLUMN: uid}).execute().data
         return created[0]
 
-    def update(self, user_id: str, row_id: str, patch: dict[str, Any]) -> dict[str, Any] | None:
+    def update(
+        self,
+        user_id: str,
+        row_id: str,
+        patch: dict[str, Any],
+        *,
+        where: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """Update one of the caller's rows. `where` adds equality conditions that must still hold
+        (e.g. {"is_paid": False}), so a racing second writer matches nothing and gets None."""
         uid = require_user_id(user_id)
         if OWNER_COLUMN in patch or ID_COLUMN in patch:
             raise ValueError("user_id and id cannot be changed by an update")
+        if OWNER_COLUMN in (where or {}):
+            raise ValueError("user_id cannot be passed in where; it is always the first argument")
         if not is_uuid(row_id):
             return None
-        updated = (
+        query = (
             self._db.table(self._table)
             .update(dict(patch))
             .eq(OWNER_COLUMN, uid)
             .eq(ID_COLUMN, row_id)
-            .execute()
-            .data
         )
+        for column, value in (where or {}).items():
+            query = query.eq(column, value)
+        updated = query.execute().data
         return updated[0] if updated else None
 
     def delete(self, user_id: str, row_id: str) -> bool:
