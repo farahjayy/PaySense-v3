@@ -30,6 +30,7 @@ Last updated: 2026-10-08
 | Variable | Default if unset | What it changes |
 |---|---|---|
 | `SESSION_TTL_HOURS` | `12` | Login session length |
+| `SUPABASE_ANON_KEY` | unset → `scripts/check_rls.py` refuses to run | The **anon/publishable** key (same API page as the URL). Used only by `scripts/check_rls.py` to prove it reads nothing; the app never needs it. Not read by `settings.py`. |
 | `MODEL_DIR` | `backend/models` | Where served artefacts are loaded from |
 | `MC_PATHS` | `1000` | Monte Carlo paths per simulation (lower only for local debugging) |
 | `ANTHROPIC_API_KEY` | unset → template explanations only | Enables P10 LLM-phrased explanations. Get it at https://console.anthropic.com/settings/keys. Derived features only are ever sent (PDPA). |
@@ -51,6 +52,10 @@ cp .env.example .env.local    # then set NEXT_PUBLIC_API_BASE_URL
 npm install
 npm run dev
 ```
+
+**Behind a proxy (Render, P8):** the login rate limiter keys on the TCP peer address, so start uvicorn with `--proxy-headers --forwarded-allow-ips=<the proxy's address>` — never `*` (a wildcard lets a client spoof `X-Forwarded-For` and dodge the limit) — and run a **single worker** (the limiter state is per-process). Without the flag every user shares the proxy's bucket and ten mistyped usernames lock everyone out.
+
+**Python tooling note:** `httpx2` is a dev dependency because Starlette's `TestClient` requires it (the older `httpx` path is deprecated); it is not used by app code.
 
 Build-time vs runtime: `NEXT_PUBLIC_API_BASE_URL` is baked in at **build time** on Vercel — changing it needs a redeploy. Every backend variable is **runtime** and lives in the Render dashboard in P8.
 

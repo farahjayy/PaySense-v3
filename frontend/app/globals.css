@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* PaySense design tokens — ported from v1 (warm editorial light theme). */
+@theme {
+  --color-page: #f4f3ef;
+  --color-surface: #ffffff;
+  --color-surface-2: #fafaf7;
+  --color-line: #e3e1d9;
+  --color-ink: #1c1c1a;
+  --color-ink-secondary: #6b6a63;
+  --color-ink-muted: #8a887f;
+  --color-accent: #185fa5;
+  --color-accent-bg: #e6f1fb;
+  --color-success: #3b6d11;
+  --color-success-bg: #eaf3de;
+  --color-warning: #854f0b;
+  --color-warning-bg: #faeeda;
+  --color-danger: #a32d2d;
+  --color-danger-bg: #fcebeb;
+  --color-chart-blue: #85b7eb;
+  --color-chart-red: #e24b4a;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --radius-card: 12px;
+}
+
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Accent focus ring on everything interactive */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
