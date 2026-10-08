@@ -55,3 +55,11 @@ def split_profiles(count: int, seed: int, test_share: float) -> tuple[list[int],
     order = np.random.default_rng(seed).permutation(count)
     test_size = int(round(count * test_share))
     return sorted(int(i) for i in order[test_size:]), sorted(int(i) for i in order[:test_size])
+
+
+def sample_profiles(total: int, seed: int, train: int, test: int) -> tuple[list[int], list[int]]:
+    """A seeded draw of disjoint train and test profile indices out of `total`."""
+    if train + test > total:
+        raise ValueError(f"asked for {train + test} profiles out of {total}")
+    order = np.random.default_rng(seed).permutation(total)
+    return sorted(int(i) for i in order[test : test + train]), sorted(int(i) for i in order[:test])

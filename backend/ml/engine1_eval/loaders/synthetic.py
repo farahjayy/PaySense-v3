@@ -21,6 +21,7 @@ def load_synthetic(
     path: Path = DEFAULT_PATH, profile_ids: Collection[int] | None = None
 ) -> Iterator[Series]:
     """Yield a spend and an income series per profile (optionally only the chosen profiles)."""
+    last_wanted = max(profile_ids) if profile_ids else -1
     current: int | None = None
     weeks: list[date] = []
     spend: list[int] = []
@@ -28,6 +29,8 @@ def load_synthetic(
     with path.open(encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             index = int(row["profile_index"])
+            if profile_ids is not None and index > last_wanted:
+                break  # the file is sorted by profile: nothing wanted remains
             if index != current:
                 if current is not None and weeks:
                     yield from _emit(current, weeks, spend, income)

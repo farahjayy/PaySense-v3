@@ -153,7 +153,11 @@ def evaluate_series(series: Series, model: Forecaster, config: EvalConfig) -> Se
 
 
 def evaluate_pair(
-    spend: Series, income: Series, model: Forecaster, config: EvalConfig
+    spend: Series,
+    income: Series,
+    model: Forecaster,
+    config: EvalConfig,
+    income_model: Forecaster | None = None,
 ) -> list[dict]:
     """Cumulative-margin error: how well the model forecasts the running income-minus-spend."""
     if spend.start != income.start or len(spend) != len(income):
@@ -169,7 +173,7 @@ def evaluate_pair(
         if scale is None:
             continue
         spend_forecast = _forecast(model, spend_history, config.horizon, start)
-        income_forecast = _forecast(model, income_history, config.horizon, start)
+        income_forecast = _forecast(income_model or model, income_history, config.horizon, start)
         spend_actual = spend.values[origin : origin + config.horizon]
         income_actual = income.values[origin : origin + config.horizon]
         row = {

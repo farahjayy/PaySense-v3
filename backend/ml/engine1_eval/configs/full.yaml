@@ -1,0 +1,27 @@
+# Full configuration: the run behind reports/engine1/. Slow models (Prophet, AutoARIMA) are fitted
+# at every origin of every evaluated series, so the evaluated sample is a fixed, seeded subset and
+# the same series are used for every model (paired comparisons).
+name: full
+seed: 20251228
+horizon: 13
+report_horizons: [1, 4, 13]
+stride: 4
+min_train: 26
+models: [naive, ma4, ma13, arima, prophet, lstm]
+synthetic:
+  profiles: 4000
+  train_profiles: 3000
+  test_profiles: 150
+  cutoff_week: 52
+  history_limits: [17, 26, 52]
+moneydata:
+  enabled: true
+  stride: 4
+berka:
+  accounts: 60
+  min_weeks: 104
+  stride: 8
+lstm:
+  hidden: 32
+  epochs: 25
+  window: 26
