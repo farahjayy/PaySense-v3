@@ -244,6 +244,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-30 | A payment is tied to its instalment (unique); ambiguous failures never delete a payment; create-plan logs payments before flipping checkout instalments | No transactions in supabase-py, and a timeout looks the same whether or not the database committed |
 | D-31 | The synthetic population keeps answer keys under `truth`, builds the proposed purchase from the recorded limit only, draws repayment per student, and puts weekly-scale structure (not day-level) in the series | The first version leaked the true limit, applied a holder-level statistic per instalment and over-claimed difficulty; found by audit before any model saw it |
 | D-33 | The cumulative margin starts at RM0 at the start of the current month and includes this month's actual net so far (amends D-27's "RM0 today") | Read literally, income received earlier this month was ignored while the rest of the month's bills were counted, so users looked At Risk on any day after payday |
+| D-34 | Engine 1 serves the global LSTM (per kind), exported to ONNX; torch stays out of the API process | Best literature candidate by the D-06 rule: geometric-mean MASE 0.815 against 1.044 for the best benchmark, p = 2e-37, best on every dataset and history length; about 1 ms per forecast |
 
 ---
 
@@ -253,7 +254,7 @@ Unresolved. Anything marked `ASSUMED:` is a working assumption, not a confirmed 
 
 1. ~~Python 3.12 / Render memory~~ — resolved by the P0 spike (D-23, D-15; `reports/spikes/p0-dependency-spike.md`): 3.12 installs everything; torch must stay out of the served process.
 2. *(was Q2 — resolved, see above)*
-3. `ASSUMED:` The Berka dataset can be obtained as CSV without a paid account (author approved its use as a benchmark, D-25). If not, Engine 1's multi-series benchmark is MoneyData + synthetic cohort only, and the global LSTM trains on the synthetic cohort.
+3. ~~Berka obtainable~~ — resolved in P3: the CTU Relational Repository's public guest database served all 4,500 accounts without a login (checksummed, `data/external/README.md`); Berka remains a benchmark only (D-25), and the global LSTM was not pre-trained on it.
 4. `ASSUMED:` Horizon cap of 52 weeks for risk checks; plans longer than 12 months are scored on their first year with a visible note.
 5. `ASSUMED:` Synthetic population size ~10,000 profiles is enough for stable 5×5 CV; P5 checks learning curves.
 6. Providers other than SPayLater, TikTok PayLater and Atome are not named in the app until the author collects a real checkout example for each; until then they use the manual "Other provider" entry (D-24).

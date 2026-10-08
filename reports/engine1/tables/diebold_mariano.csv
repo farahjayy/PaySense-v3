@@ -1,0 +1,4 @@
+source,literature,benchmark,series_tested,share_literature_better,share_significant_either_way,overlapping_origins
+berka,lstm,ma13,120,0.725,0.725,2
+moneydata,lstm,ma13,2,1.0,1.0,4
+synthetic,lstm,ma13,120,0.075,0.075,13

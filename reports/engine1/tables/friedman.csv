@@ -1,0 +1,5 @@
+source,kind,series,friedman_p,critical_difference,mean_ranks,significant_pairs
+berka,income,60,0.0,0.9735,arima=2.78; lstm=1.10; ma13=3.98; ma4=4.18; naive=4.97; prophet=3.98,arima<>lstm; arima<>ma13; arima<>ma4; arima<>naive; arima<>prophet; lstm<>ma13; lstm<>ma4; lstm<>naive; lstm<>prophet; ma13<>naive; naive<>prophet
+berka,spend,60,0.0,0.9735,arima=2.95; lstm=1.35; ma13=3.25; ma4=3.87; naive=4.92; prophet=4.67,arima<>lstm; arima<>naive; arima<>prophet; lstm<>ma13; lstm<>ma4; lstm<>naive; lstm<>prophet; ma13<>naive; ma13<>prophet; ma4<>naive
+synthetic,income,60,0.0,0.9735,arima=2.88; lstm=1.10; ma13=3.20; ma4=5.02; naive=5.30; prophet=3.50,arima<>lstm; arima<>ma4; arima<>naive; lstm<>ma13; lstm<>ma4; lstm<>naive; lstm<>prophet; ma13<>ma4; ma13<>naive; ma4<>prophet; naive<>prophet
+synthetic,spend,60,0.0,0.9735,arima=2.48; lstm=1.93; ma13=3.05; ma4=4.22; naive=5.85; prophet=3.47,arima<>ma4; arima<>naive; arima<>prophet; lstm<>ma13; lstm<>ma4; lstm<>naive; lstm<>prophet; ma13<>ma4; ma13<>naive; ma4<>naive; naive<>prophet

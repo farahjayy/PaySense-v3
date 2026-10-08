@@ -1,0 +1,4 @@
+history_weeks,best_literature,best_benchmark,served,branch,median_difference,p_holm
+17,lstm,ma13,lstm,literature,-0.0758,0.0
+26,lstm,ma13,lstm,literature,-0.1095,0.0
+52,lstm,ma13,lstm,literature,-0.1095,0.0

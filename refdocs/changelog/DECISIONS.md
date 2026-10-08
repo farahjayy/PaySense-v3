@@ -177,13 +177,21 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** It keeps D-27's principle (no balance, no savings credited, flows only) while making the answer independent of which day of the month the user looks. Found by the first service test: a comfortable, correctly confirmed ledger came out At Risk on the 12th.
 **Trade-off.** Savings from earlier months still do not count (D-27 limitation), and a user who has already spent heavily this month starts the month behind, which is the honest reading. Engine 2's labels use the same function, so training and serving agree.
 
+## D-34 — Engine 1 serves the global LSTM, exported to ONNX
+*2026-10-09 · decided mechanically by the D-06 rule from the P3 evaluation (`reports/engine1/`)*
+
+**Decision.** The forecaster behind Engine 1 is the **global LSTM**: one network per series kind (weekly discretionary spend, weekly income), a 26-week input window scaled by its own mean, a 13-week output, 32 hidden units, L1 loss, trained offline on the synthetic cohort and **served through ONNX Runtime**; torch never enters the API process (D-15). Beyond 13 weeks the forecast is continued recursively (an extension that was not itself evaluated).
+**Evidence.** Rolling-origin evaluation of Naive, 4- and 13-week moving averages, AutoARIMA, Prophet and the LSTM on 60 synthetic profiles per kind (three history lengths), MoneyData (one real UK account) and 60 Berka accounts: geometric-mean MASE at 13 weeks 0.815 for the LSTM against 1.044 for the best benchmark (13-week moving average) and 1.046 for AutoARIMA; median per-series difference -0.110 (95% CI -0.150 to -0.078), Holm-adjusted Wilcoxon p = 2e-37 over 242 series; the LSTM is also the best model on each dataset separately and at each history length (17, 26, 52 weeks). On 13-week cumulative-margin error it ranks first overall, but AutoARIMA is better on the synthetic cohort (2.13 against 2.90).
+**Why this is not unconditional.** The LSTM under-forecasts spend (mean signed error about -0.27 naive-error units on synthetic spend, -0.94 on Berka spend), the synthetic series share one calendar and the generator is the author's own, and the LSTM was trained on synthetic data and applied to the real datasets without fine-tuning. The P4 residual bootstrap resamples the model's own signed past errors, which re-centres paths on the model's record; P4 measures that on the cohort and reports it (`reports/engine1/serving_check.md`).
+**Cost.** About 1 ms per origin against 250-600 ms for Prophet and AutoARIMA, which is what makes a per-request error record affordable.
+**Rejected.** Serving AutoARIMA (better on synthetic margin, but 350 ms per fit, ten fits per request) and the 13-week moving average (the strongest benchmark, 28% worse than the LSTM on MASE).
+
 ---
 
 ## Working assumptions (`ASSUMED:`)
 
 Not decisions — guesses made to keep moving. Each one must be confirmed or killed before anything load-bearing is built on it. When one is resolved, delete it here and write a real ADR above.
 
-1. `ASSUMED:` Berka is obtainable as CSV without a paid account (resolve in P3; fallback in PRD §8 Q3; usage scope fixed by D-25).
 2. `ASSUMED:` 52-week horizon cap for risk checks (resolve in P4).
 3. `ASSUMED:` ~10,000 synthetic profiles suffice (resolve in P5 with learning curves).
 4. `ASSUMED:` (D-27) Shortfall is judged on the cumulative margin from RM0, not on each month alone; P5 reports the per-month version as a sensitivity check.

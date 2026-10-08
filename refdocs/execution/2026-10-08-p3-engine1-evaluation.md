@@ -96,9 +96,9 @@
 
 ## Wrap-up (do not skip)
 
-- [ ] `refdocs/STATUS.md` — phase table, verification ledger
-- [ ] `refdocs/changelog/CHANGELOG.md` — session entry
-- [ ] `refdocs/changelog/DECISIONS.md` — ADR D-32 (winner) and any other decision; PRD §7 one-liners with the same ids
-- [ ] This doc updated to match what actually happened
-- [ ] Datasets that could not be obtained are named in the README and STATUS, with the reason
-- [ ] Next: write `refdocs/plans/<date>-p4-engine1-serving.md` + its execution doc
+- [x] `refdocs/STATUS.md` — phase table, verification ledger
+- [x] `refdocs/changelog/CHANGELOG.md` — session entry
+- [x] `refdocs/changelog/DECISIONS.md` — ADR D-32 (winner) and any other decision; PRD §7 one-liners with the same ids
+- [x] This doc updated to match what actually happened
+- [x] Datasets that could not be obtained are named in the README and STATUS, with the reason
+- [x] Next: write `refdocs/plans/<date>-p4-engine1-serving.md` + its execution doc

@@ -37,6 +37,10 @@ CAVEATS = """\
 - **Prediction intervals** are per-step empirical quantiles of the model's own earlier errors, the
   same for every model, and exist only once eight earlier errors for that step are observed. The
   product's 4-week moving-block bootstrap, which simulates whole paths, is built in P4.
+- **No synthetic series has interval coverage.** The cohort is 78 weeks long and its test origins
+  start at the LSTM's cutoff, so each series has only 13 origins and no origin ever has eight
+  earlier errors for a 13-week step. Coverage evidence comes from MoneyData and Berka only (about
+  0.6-0.75 against a nominal 0.8) and from the serving check in P4.
 - **Income is evaluated as total weekly income.** Splitting it into confirmed and unconfirmed parts
   waits for recurring detection (P4).
 - **Errors are scaled by the naive error of the whole history to date**, whatever history the model

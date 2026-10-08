@@ -1,0 +1,4 @@
+source,best_model,best_literature
+berka,lstm,lstm
+moneydata,lstm,lstm
+synthetic,lstm,lstm
