@@ -317,3 +317,12 @@ def test_path_resampling_gives_bands_of_the_right_order_for_a_drifting_level():
     # series. It is lower for shorter or more persistent series; the serving report says so.
     assert 0.7 < np.mean(spread) / np.std(truth) < 2.0
     assert np.mean(covered) >= 0.6
+
+
+def test_the_simulation_summarises_spend_and_income_for_engine_two():
+    result = run(flows(MONTHS, income=100000, bills=30000))
+
+    # a flat RM60 week with noise: the median week is near RM60 and the 90th percentile above it
+    assert 5000 < result.weekly_spend_p50_sen < 7000
+    assert result.weekly_spend_p90_sen > result.weekly_spend_p50_sen
+    assert result.monthly_income_p10_sen == pytest.approx(100000)  # known income only; no variable

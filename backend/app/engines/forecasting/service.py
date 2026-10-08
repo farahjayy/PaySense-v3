@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
 
+import numpy as np
+
 from app.domain.flows import as_date, month_summary
 from app.domain.merchants import normalise_merchant
 from app.domain.schedule import add_months
@@ -55,6 +57,7 @@ class Forecast:
     data_through: date | None = None  # the last day anything was logged
     stale_days: int | None = None
     unmatched_items: tuple[str, ...] = ()  # confirmed items that match no logged transaction
+    spend_error_std_sen: float = 0.0  # spread of the model's own weekly spend errors
 
 
 def month_to_date_net(rows: list[Mapping[str, Any]], first_day: date, until: date) -> int:
@@ -125,6 +128,7 @@ def build_forecast(
     if fallback:  # too short to score the model: use the series' own spread, never zero noise
         spend_errors = mean_forecast_errors(series.spend)
         income_errors = mean_forecast_errors(series.income)
+    error_std = float(np.std(spend_errors)) if spend_errors.size else 0.0
     spend_errors = widen(spend_errors, ERROR_INFLATION)
     income_errors = widen(income_errors, ERROR_INFLATION)
     first_of_month = date(forecast_from.year, forecast_from.month, 1)
@@ -155,4 +159,5 @@ def build_forecast(
         data_through=latest,
         stale_days=(today - latest).days,
         unmatched_items=_unmatched(rows, confirmed),
+        spend_error_std_sen=error_std,
     )

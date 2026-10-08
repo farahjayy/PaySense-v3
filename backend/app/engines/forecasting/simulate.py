@@ -59,6 +59,12 @@ class Simulation:
     weeks: int
     horizon_capped: bool
     bootstrap: str  # "paths" | "block" | "plain" | "none" | "fallback": how errors were resampled
+    # summaries Engine 2 uses as features (sen): the typical simulated week of discretionary spend
+    # (median and 90th percentile across paths, averaged over the weeks in the horizon) and the
+    # downside monthly income (10th percentile across paths, averaged over the months)
+    weekly_spend_p50_sen: float = 0.0
+    weekly_spend_p90_sen: float = 0.0
+    monthly_income_p10_sen: float = 0.0
 
 
 def forecaster_for(forecaster: Forecaster, kind: str) -> Forecaster:
@@ -199,6 +205,9 @@ def simulate(
     p_negative = negative.mean(axis=0)
     p_shortfall = float(negative.any(axis=1).mean())
 
+    in_horizon = weights.sum(axis=1) > 0
+    spend_weeks = spend[:, in_horizon]
+    monthly_income = np.array([f.income_sen for f in flows], dtype=float) + income @ weights
     monthly = _percentiles(margin)
     running = _percentiles(cumulative)
     worst = months[int(np.argmax(p_negative))] if p_shortfall > 0 else None
@@ -216,6 +225,9 @@ def simulate(
         weeks=weeks,
         horizon_capped=capped,
         bootstrap=_bootstrap_kind(spend_errors, income_errors, fallback=fallback_errors),
+        weekly_spend_p50_sen=float(np.percentile(spend_weeks, 50, axis=0).mean()),
+        weekly_spend_p90_sen=float(np.percentile(spend_weeks, 90, axis=0).mean()),
+        monthly_income_p10_sen=float(np.percentile(monthly_income, 10, axis=0).mean()),
     )
 
 
