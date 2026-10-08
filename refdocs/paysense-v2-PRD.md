@@ -26,7 +26,7 @@ Confirmed from the founding context documents and the scaffold interview (2026-1
 | Hosting | Vercel (frontend) + Render (backend) + Supabase Postgres (supervisor plan) | Backend must fit Render's memory; measure it (D-15). |
 | Terminology | "financial health forecasting" and "BNPL risk classification" (supervisor) | Used consistently in UI text, docs and reports. |
 | Privacy | PDPA 2024 amendment; synthetic personas by default; Supabase Singapore = cross-border transfer | Derived features only to any third-party API; consent text in the UAT kit. |
-| Tooling environment | Windows 11 dev machine; Python 3.14 installed system-wide; Node 24; `uv` and `gh` not yet installed | P0 installs uv and pins a Python version every dependency supports (D-23). |
+| Tooling environment | Windows 11 dev machine; Python 3.14 installed system-wide; Node 24; `uv` installed in P0 | uv pins Python 3.12, the version every dependency supports (D-23, verified by the P0 spike). |
 
 ---
 
@@ -220,7 +220,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-12 | Explanations: SHAP top factors (≥ 0.02) with number-checked templates + exact grid counterfactuals over actionable levers | Literature-reviewed XAI + actionable recourse |
 | D-13 | Input = CSV import + manual entry; PDF parsing out of scope | Supervisor decision |
 | D-14 | No real personal data in the repo; private data only in gitignored `data/private/` | Public repo |
-| D-15 | Hosting Vercel + Render + Supabase Singapore; if the served stack exceeds Render's memory, fall back to Google Cloud Run (1 GiB) and/or serve LSTM via ONNX Runtime | Supervisor plan, with a measured escape hatch |
+| D-15 | Hosting Vercel + Render + Supabase Singapore; the P0 spike showed torch pushes the process to ~607 MB, so the LSTM is served via ONNX Runtime and the backend never imports torch; if the served stack still exceeds ~450 MB, fall back to Google Cloud Run (1 GiB) | Supervisor plan, with a measured escape hatch |
 | D-16 | All money arithmetic in integer sen | v1 lesson, pinned by tests |
 | D-17 | Provider rules served by `GET /api/providers`; the frontend never mirrors them | Removes v1's hand-sync invariant |
 | D-18 | TS API types generated from FastAPI's OpenAPI (`openapi-typescript` + `openapi-fetch`); drift fails the check | Removes v1's hand-mirrored `types.ts` |
@@ -228,7 +228,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-20 | Risk bands pre-registered: Safe < 0.10, Caution 0.10–0.30, At Risk ≥ 0.30 on P(shortfall) | Bands must not be tuned on results |
 | D-21 | Shortfall threshold is RM0 (cannot pay the instalment in full); a RM50 buffer is a UI warning only | Objective, provider-meaningful definition |
 | D-22 | TDD, 80% coverage target, conventional commits; Claude commits at verified phase ends, never pushes | Author's standing rules; pushes are done by the author |
-| D-23 | Python version pinned via uv to one every ML dependency installs on (expected 3.12; verified in P0) | Prophet, PyTorch, LightGBM, SHAP wheels on Windows and Render |
+| D-23 | Python version pinned via uv to one every ML dependency installs on (3.12, verified in P0) | Prophet, PyTorch, LightGBM, SHAP wheels on Windows and Render |
 | D-24 | Only SPayLater, TikTok PayLater and Atome are named providers with schedule rules; every other provider uses a manual "Other provider" entry (user types dates and the checkout instalment amount) | Only these three have rules confirmed from real users; a guessed first due date creates phantom missed payments, and a flat monthly fee rate can't represent other providers' fees (v1 lesson) |
 | D-25 | Berka is used only as a real-transaction benchmark for Engine 1 (and to pre-train the global LSTM), never as a model of the target population | Czech adult accounts from the 1990s; the student population is represented by the cited synthetic generator |
 
@@ -238,8 +238,8 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 
 Unresolved. Anything marked `ASSUMED:` is a working assumption, not a confirmed fact — it must be confirmed before anything load-bearing is built on it.
 
-1. `ASSUMED:` Python 3.12 installs every dependency (Prophet/cmdstan, PyTorch, LightGBM, XGBoost, SHAP, statsforecast) on Windows and Render. P0 spike confirms or picks another version.
-2. `ASSUMED:` The full served stack fits Render's 512 MB; if not, D-15's fallback applies. P0 spike measures it.
+1. ~~Python 3.12 / Render memory~~ — resolved by the P0 spike (D-23, D-15; `reports/spikes/p0-dependency-spike.md`): 3.12 installs everything; torch must stay out of the served process.
+2. *(was Q2 — resolved, see above)*
 3. `ASSUMED:` The Berka dataset can be obtained as CSV without a paid account (author approved its use as a benchmark, D-25). If not, Engine 1's multi-series benchmark is MoneyData + synthetic cohort only, and the global LSTM trains on the synthetic cohort.
 4. `ASSUMED:` Horizon cap of 52 weeks for risk checks; plans longer than 12 months are scored on their first year with a visible note.
 5. `ASSUMED:` Synthetic population size ~10,000 profiles is enough for stable 5×5 CV; P5 checks learning curves.

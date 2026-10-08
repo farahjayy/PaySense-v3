@@ -52,7 +52,7 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Decision.** For each synthetic profile with a proposed purchase, run the served Engine 1 with the proposed plan added and take P(balance < RM0 after any instalment due date within the horizon) as the target.
 **Why.** v1's label was a hand-written formula the model simply re-learned (oracle F1 0.836, every model within 0.02), and the Engine 1 feature carried ≈1.5% of label variance. A simulation-derived label (a) has published precedent — Bijak, Thomas & Mues' dynamic affordability assessment; (b) mirrors BNM's financial-margin stress test; (c) matches the CCA 2025 affordability standard ("repay … without undue financial hardship over the duration"); (d) answers the supervisor's demand to justify how the label is assigned; and (e) makes the forecast genuinely load-bearing.
 **Rejected.** Expert-rule labels and weak supervision (re-encode the author's opinion), transfer from public default datasets (wrong population, no schedule features — used only as a directional sanity check).
-**Open.** Recommend the author shows this design to the supervisor / faculty consultants before P5 (PRD §8 Q8).
+**Open.** Recommend the author shows this design to the supervisor / faculty consultants before P5 (PRD §8 Q7).
 
 ## D-08 — One synthetic population generator
 *2026-10-08 · Claude decision*
@@ -81,10 +81,11 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Trade-off.** The model score alone ignores repayment behaviour; the UI always shows both.
 
 ## D-15 — Hosting with a measured escape hatch
-*2026-10-08 · supervisor plan + Claude fallback*
+*2026-10-08 · supervisor plan + Claude fallback; step 1 triggered by the P0 spike*
 
-**Decision.** Vercel (frontend), Render (backend), Supabase Singapore (DB). P0 measures the backend's resident memory with the full served stack. If it exceeds ~450 MB: serve the LSTM via ONNX Runtime instead of PyTorch, and if still too large, move the backend to Google Cloud Run at 1 GiB.
-**Why.** Render free is 512 MB / 0.1 CPU and sleeps after 15 minutes; PyTorch + Prophet + SHAP can exceed that.
+**Decision.** Vercel (frontend), Render (backend), Supabase Singapore (DB). The P0 spike measured a process with the full stack including PyTorch at **607 MB RSS** (> Render's 512 MB); the served set without torch is ~300–470 MB. So step 1 of the escape hatch is **adopted now**: the backend runtime never imports torch; the global LSTM is trained offline (torch lives in the `ml` dependency group) and served via **ONNX Runtime**. If the real served stack (re-measured at the end of P4 and P6, then on Render in P8) still exceeds ~450 MB, move the backend to Google Cloud Run at 1 GiB.
+**Why.** Render free is 512 MB / 0.1 CPU and sleeps after 15 minutes; torch alone adds ~170 MB.
+**Trade-off.** Exporting the LSTM to ONNX adds a train→export→parity-check step (P3/P4) and a test that the ONNX output matches torch.
 
 ## D-19 — Running-ledger balance by default
 *2026-10-08 · Claude decision*
@@ -93,10 +94,10 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** v1's manually synced balance went stale and its ledger mode was never switched on; Engine 1's simulation starts from this number.
 
 ## D-23 — Python version pinned by uv
-*2026-10-08 · Claude decision, pending P0 verification*
+*2026-10-08 · Claude decision; verified by the P0 spike (`reports/spikes/p0-dependency-spike.md`)*
 
-**Decision.** Use `uv` with a `.python-version` pin. Expected: 3.12. The P0 dependency spike installs the full stack (FastAPI, statsforecast, prophet, torch CPU, onnxruntime, scikit-learn, xgboost, lightgbm, shap, optuna) and records the result.
-**Why.** The dev machine only has 3.14; wheel availability for Prophet/cmdstan and PyTorch on 3.14 (Windows and Render) is unconfirmed.
+**Decision.** Use `uv` with `.python-version` = **3.12**. The spike installed and imported the full stack on 3.12.15: FastAPI, supabase, statsforecast, prophet, torch (CPU index), onnxruntime, scikit-learn, xgboost, lightgbm, shap, optuna, scipy, statsmodels. `requires-python` is bounded to `>=3.12,<3.13`; torch is installed from the PyTorch CPU index with `--index-strategy unsafe-best-match`.
+**Why.** The dev machine only has 3.14; 3.12 is the version every ML wheel supports (Windows verified; Render's Linux uses the same wheels). 3.14 was not tried because 3.12 worked first time.
 
 ## D-24 — Three named providers; everything else is manual "Other"
 *2026-10-08 · author decision; revised same day after the author asked whether to include Grab and Boost (recommendation: exclude)*
@@ -122,8 +123,6 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 
 Not decisions — guesses made to keep moving. Each one must be confirmed or killed before anything load-bearing is built on it. When one is resolved, delete it here and write a real ADR above.
 
-1. `ASSUMED:` Python 3.12 supports the full dependency set (resolve in P0 → D-23).
-2. `ASSUMED:` The served stack fits Render's 512 MB, or the D-15 fallback works (resolve in P0).
-3. `ASSUMED:` Berka is obtainable as CSV without a paid account (resolve in P3; fallback in PRD §8 Q3; usage scope fixed by D-25).
-4. `ASSUMED:` 52-week horizon cap for risk checks (resolve in P4).
-5. `ASSUMED:` ~10,000 synthetic profiles suffice (resolve in P5 with learning curves).
+1. `ASSUMED:` Berka is obtainable as CSV without a paid account (resolve in P3; fallback in PRD §8 Q3; usage scope fixed by D-25).
+2. `ASSUMED:` 52-week horizon cap for risk checks (resolve in P4).
+3. `ASSUMED:` ~10,000 synthetic profiles suffice (resolve in P5 with learning curves).
