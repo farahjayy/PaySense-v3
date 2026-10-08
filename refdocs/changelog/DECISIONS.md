@@ -25,7 +25,7 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 ## D-04 — Engine 1 is a component forecaster with Monte Carlo uncertainty
 *2026-10-08 · approved by author*
 
-**Decision.** Known flows (confirmed recurring income and bills, BNPL instalments, dated savings goals) are placed on their exact dates. Only weekly discretionary spend is forecast. A residual-bootstrap Monte Carlo (1,000 paths, daily resolution, day-of-week spreading) produces P10/P50/P90 balances and P(shortfall). Everything is anchored to today.
+**Decision.** Known flows (confirmed recurring income and bills, BNPL instalments, dated savings goals) are placed on their exact dates. Only weekly variable series are forecast — discretionary spend, and (D-27) income not covered by a confirmed recurring item. A residual-bootstrap Monte Carlo (1,000 paths) produces P10/P50/P90 margins and P(shortfall). Everything is anchored to today. *(D-27 replaced the original daily balance with a monthly margin and removed the starting balance; the original text said "daily resolution, day-of-week spreading" and P10/P50/P90 balances.)*
 **Why.** v1 forecast monthly *net* cash flow as one series: it decayed to zero, back-derived income bars from the net, collapsed to a flat line after one one-off entry, ignored stale logs, and lost to naive baselines. Banks split fixed and variable flows in production (BBVA, Monzo, Yodlee) and alert on P(negative balance) (BBVA, Intuit Mint ODEWS) — research §A.
 **Rejected.** Daily discretionary forecasting (too noisy for a few months of data); per-category forecasting (too few points per category; possible future work); conformal intervals (residual bootstrap gives full paths, which the daily balance and P(shortfall) need).
 
@@ -49,7 +49,7 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 ## D-07 — Engine 2's target is Engine 1's simulated shortfall probability
 *2026-10-08 · approved by author*
 
-**Decision.** For each synthetic profile with a proposed purchase, run the served Engine 1 with the proposed plan added and take P(balance < RM0 after any instalment due date within the horizon) as the target.
+**Decision.** For each synthetic profile with a proposed purchase, run the served Engine 1 with the proposed plan added and take P(cumulative margin < RM0 at any month-end within the horizon) as the target. *(Originally "balance < RM0 after any instalment due date"; changed by D-27.)*
 **Why.** v1's label was a hand-written formula the model simply re-learned (oracle F1 0.836, every model within 0.02), and the Engine 1 feature carried ≈1.5% of label variance. A simulation-derived label (a) has published precedent — Bijak, Thomas & Mues' dynamic affordability assessment; (b) mirrors BNM's financial-margin stress test; (c) matches the CCA 2025 affordability standard ("repay … without undue financial hardship over the duration"); (d) answers the supervisor's demand to justify how the label is assigned; and (e) makes the forecast genuinely load-bearing.
 **Rejected.** Expert-rule labels and weak supervision (re-encode the author's opinion), transfer from public default datasets (wrong population, no schedule features — used only as a directional sanity check).
 **Open.** Recommend the author shows this design to the supervisor / faculty consultants before P5 (PRD §8 Q7).
@@ -87,8 +87,8 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** Render free is 512 MB / 0.1 CPU and sleeps after 15 minutes; torch alone adds ~170 MB.
 **Trade-off.** Exporting the LSTM to ONNX adds a train→export→parity-check step (P3/P4) and a test that the ONNX output matches torch.
 
-## D-19 — Running-ledger balance by default
-*2026-10-08 · Claude decision*
+## D-19 — Running-ledger balance by default — **SUPERSEDED by D-27**
+*2026-10-08 · Claude decision; superseded the same day when the author asked for a flow-based design. Kept for the record; do not implement.*
 
 **Decision.** Every transaction create/edit/delete and every instalment marked paid moves the balance; balance sync records a correction. The persona onboarding sets an opening balance.
 **Why.** v1's manually synced balance went stale and its ledger mode was never switched on; Engine 1's simulation starts from this number.
@@ -124,6 +124,23 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** supabase-py returns `numeric` as a JSON float, which would reintroduce rounding in code that D-16 requires to be integer; storing sen keeps the whole stack integer from disk to engine. The composite keys make "a transaction pointing at someone else's plan" impossible at the database level, not just untested in the repository — defence in depth for hard constraint 4.
 **Trade-off.** The API boundary must convert sen ↔ RM (decided in P1); hand-written SQL in the dashboard shows sen, not ringgit.
 
+## D-27 — Engine 1 forecasts flows, not a balance
+*2026-10-08 · author direction ("predict just by using the income and expenses prediction"); Claude specified the details. Supersedes D-19 and the balance anchor in D-04 / D-07 / D-21.*
+
+**Decision.** There is no starting balance, no running ledger and no balance sync (`user_settings` no longer has balance columns). For each month of the horizon, each Monte Carlo path computes `margin = income − bills − BNPL instalments (incl. any checkout payment) − discretionary spend`. Confirmed recurring income, bills and instalments are *placed*; discretionary spend and any income not covered by a confirmed recurring item are *forecast* as weekly series by the same served model and residual bootstrap. Cumulative margin starts at RM0 today ("no savings assumed"). **Shortfall** = cumulative margin < RM0 at any month-end in the horizon; **P(shortfall)** is the share of paths where that happens, and it is Engine 2's label (D-07). The 4-month history gate stays (supervisor). Incomplete-looking months are warned about and kept (their noise widens the bands); they are never hidden behind a fake-precise number. The balance chart becomes a **margin chart** (monthly margin and cumulative margin bands, with and without the plan).
+**Why.** Most tracking apps — and most students — have no reliable account balance, so a balance anchor (D-19) depended on the user logging every transaction; any gap silently corrupted every forecast and every Engine 2 label. BNM's own household stress test uses a *financial margin* (income − necessities − debt obligations), not a balance, so the flow definition is as citable as the balance one (research §B2). The author's three reference cases come out right without a balance: RM600 over 3 months is Safe on RM2,000 monthly income, At Risk on RM500 monthly income, and At Risk when living on RM2,000 savings with no income (the plan drains it).
+**Consequences.** (1) Engine 2 features `min_balance_p10_without` and `balance_to_monthly_essentials` are replaced by margin- and income-based ones (PRD §3.2); `income_to_due_gap_days` is dropped because the label no longer depends on intra-month timing — timing is shown as a note. (2) P3 must evaluate the forecasters on a second series (weekly unconfirmed income) as well as discretionary spend. (3) The dashboard shows a month summary (income / expenses / net), not a balance. (4) Migration 0001 was edited before it was applied: the balance columns were removed.
+**Trade-off / limitation.** Savings are not credited, so a student with real savings and no income looks At Risk; the UI says "this check assumes you pay from your monthly income, not savings". An optional "savings buffer" input is recorded as future work, not built. Intra-month timing (an instalment due days before the next income) is no longer part of the label.
+**Rejected.** Keeping the running-ledger balance with stronger warnings (fragile to missing entries, the author's concern); an optional dated balance checkpoint with gap simulation (more machinery, and the author preferred flows); a hard completeness gate (testers with messy data would be stuck).
+
+## D-28 — Provider limit caps the financed amount; the excess is paid at checkout
+*2026-10-08 · author-described real checkout behaviour; details assumed (see ASSUMED 5)*
+
+**Decision.** A provider's remaining limit = recorded limit − what is still unpaid on that provider's active plans. For a purchase of price P: `financed = min(P, remaining limit)`, `checkout payment = P − financed` (an immediate outflow in the purchase month, on top of Atome's first-instalment-at-checkout rule). Any monthly fee applies to the financed part only. If the provider carries a fee, the cap applies to the financed **total payable including the fee**, so the financed principal is the largest amount whose principal plus fee fits the remaining limit. No limit recorded = no cap, and the report says the limit was unknown. Engine 2 gets `upfront_to_income`, `limit_utilisation_with_purchase` and `limit_known` (PRD §3.2); the BNPL stack view shows total limit and utilisation across providers. Worked example from the author: limit RM200, price RM300 → RM100 at checkout, RM200 financed.
+**Why.** Real providers do not let a purchase exceed the limit, they require the balance up front; ignoring that either rejects feasible purchases or understates the cash needed this month.
+**Not modelled.** Using spare limit as a cash-flow buffer or credit-card substitute (strategic use of a large limit). That is a behavioural assumption the literature review does not support; the headroom is displayed and counted in utilisation only. Recorded as future work.
+**Open.** Whether real providers cap on principal or on principal plus fee, and how they count used limit, is `ASSUMED:` until the author supplies a real SPayLater / TikTok / Atome example.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)
@@ -133,3 +150,6 @@ Not decisions — guesses made to keep moving. Each one must be confirmed or kil
 1. `ASSUMED:` Berka is obtainable as CSV without a paid account (resolve in P3; fallback in PRD §8 Q3; usage scope fixed by D-25).
 2. `ASSUMED:` 52-week horizon cap for risk checks (resolve in P4).
 3. `ASSUMED:` ~10,000 synthetic profiles suffice (resolve in P5 with learning curves).
+4. `ASSUMED:` (D-27) Shortfall is judged on the cumulative margin from RM0, not on each month alone; P5 reports the per-month version as a sensitivity check.
+5. `ASSUMED:` (D-28) The limit caps the financed total payable including fee, and used limit = sum of unpaid instalment amounts; confirm with a real checkout during P1.
+6. `ASSUMED:` (D-27) Incomplete-month thresholds and the unconfirmed-income series follow the same candidates and protocol as discretionary spend (fix in P3/P4).

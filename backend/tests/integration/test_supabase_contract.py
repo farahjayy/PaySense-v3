@@ -69,11 +69,11 @@ def test_wildcard_usernames_match_nothing(db, two_users):
     assert users.get_by_username(db, "it_%") is None
 
 
-def test_default_settings_row_uses_ledger_mode(db, two_users):
+def test_default_settings_row_has_no_balance_columns(db, two_users):
     settings = user_settings.create_default(db, two_users[0]["id"])
 
-    assert settings["ledger_mode"] is True
-    assert settings["current_balance_sen"] == 0
+    assert settings["onboarding_state"] == "new"
+    assert set(settings) == {"user_id", "onboarding_state"}
 
 
 def test_rows_are_isolated_between_users(db, two_users):

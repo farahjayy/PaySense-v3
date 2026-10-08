@@ -13,7 +13,7 @@
 | Phase | Scope | Status |
 |---|---|---|
 | P0 Foundation | Monorepo skeleton, tooling, Supabase migrations, username login + user scoping, OpenAPI→TS client, dependency & memory spike | 🔶 In progress — everything verified except the live-Supabase steps (migration applied, anon-key RLS check, integration tests, real-DB login) |
-| P1 Ledger & BNPL domain | Port v1 domain + tests, transactions/plans/balance/providers APIs, CSV import, recurring items, provider limits | ⬜ Not started |
+| P1 Ledger & BNPL domain | Port v1 domain + tests, transactions/month-summary/plans/providers APIs, CSV import, recurring items, provider limits with the financed/checkout split (D-28) | ⬜ Not started — plan + execution docs next (balance logic dropped by D-27) |
 | P2 Synthetic population | `ml/datagen`, cited params, persona CSVs, Engine 2 profiles, Engine 1 cohort | ⬜ Not started |
 | P3 Engine 1 evaluation | 5 forecasters × 4 datasets, rolling-origin, MASE + significance, reports | ⬜ Not started |
 | P4 Engine 1 serving | Recurring detection, component forecaster, Monte Carlo, `/api/forecast`, health score | ⬜ Not started |

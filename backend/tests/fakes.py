@@ -28,14 +28,9 @@ UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
 # table -> defaults applied on insert (callables are invoked per row)
 DEFAULTS: dict[str, dict[str, Any]] = {
     "users": {"persona": None},
-    "user_settings": {
-        "current_balance_sen": 0,
-        "ledger_mode": True,
-        "onboarding_state": "new",
-        "balance_synced_at": lambda: _now(),
-    },
+    "user_settings": {"onboarding_state": "new"},
 }
-NO_ID_TABLES = {"user_settings", "provider_limits"}
+NO_ID_TABLES = {"user_settings", "provider_limits"}  # keyed by user_id; no `id`, no `created_at`
 
 
 def _now() -> str:
@@ -173,7 +168,8 @@ class FakeQuery:
     def _with_defaults(self, row: dict[str, Any]) -> dict[str, Any]:
         if self._table not in NO_ID_TABLES:
             row.setdefault("id", str(uuid.uuid4()))
-        row.setdefault("created_at", _now())
+        if self._table not in NO_ID_TABLES:
+            row.setdefault("created_at", _now())
         for key, value in DEFAULTS.get(self._table, {}).items():
             row.setdefault(key, value() if callable(value) else value)
         return row

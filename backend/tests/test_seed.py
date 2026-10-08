@@ -15,7 +15,7 @@ def test_seed_creates_the_user_and_default_settings(db):
 
     assert created is True
     assert user["username"] == "amir"
-    assert user_settings.get(db, user["id"])["ledger_mode"] is True
+    assert user_settings.get(db, user["id"])["onboarding_state"] == "new"
 
 
 def test_seed_is_idempotent(db):

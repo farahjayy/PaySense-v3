@@ -8,11 +8,11 @@ Final Year Project, BSc (Hons) Computer Science, Universiti Teknologi PETRONAS �
 
 ## What it does
 
-- **Financial health forecasting.** Places the student's known income, bills and BNPL instalments on their exact dates, forecasts only their discretionary spending, and simulates 1,000 possible futures to show the projected balance with a P10–P90 band and the probability of running short on any due date.
+- **Financial health forecasting.** Places the student's known income, bills and BNPL instalments on their exact dates, forecasts only their variable spending (and income, when it is irregular), and simulates 1,000 possible futures to show the projected monthly margin with a P10–P90 band and the probability that income alone cannot cover the plan. No account balance is needed.
 - **BNPL risk classification.** Before a purchase, scores the probability that the student will not be able to pay an instalment in full — Safe / Caution / At Risk — using a calibrated classifier trained on simulated shortfall outcomes for a synthetic population of Malaysian students.
 - **Explanations.** The top reasons behind every score (SHAP) and the smallest change that would make the purchase Safe — fewer instalments, waiting until after the next allowance, a lower price, another provider.
 - **BNPL across providers.** SPayLater, TikTok PayLater, Atome and any other provider (entered manually) in one place, with provider-accurate schedules for the three named providers, the total monthly commitment, a due-date timeline and reminders.
-- **Ledger.** Manual entry and CSV import with preview, recurring income and bills, a running balance.
+- **Ledger.** Manual entry and CSV import with preview, recurring income and bills, a monthly income/expense/net summary.
 
 ## Requirements
 

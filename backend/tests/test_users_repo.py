@@ -55,13 +55,14 @@ def test_get_by_id(db):
     assert get_by_id(db, "00000000-0000-0000-0000-000000000000") is None
 
 
-def test_default_settings_are_created_with_ledger_mode_on(db):
+def test_default_settings_are_created_without_any_balance(db):
     user = create(db, username="amir", display_name="Amir")
 
     settings = user_settings.create_default(db, user["id"])
 
-    assert settings["ledger_mode"] is True
-    assert settings["current_balance_sen"] == 0
+    assert settings["onboarding_state"] == "new"
+    # D-27: the forecast runs on flows, so there is no balance to store.
+    assert set(settings) == {"user_id", "onboarding_state"}
     assert user_settings.get(db, user["id"])["onboarding_state"] == "new"
 
 

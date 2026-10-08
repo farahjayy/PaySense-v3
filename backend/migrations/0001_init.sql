@@ -21,12 +21,10 @@ create table users (
 );
 create unique index users_username_lower_key on users (lower(username));
 
+-- D-27: there is deliberately NO balance column. Students rarely keep a reliable account
+-- balance, so forecasting runs on income and expense flows, not on a starting balance.
 create table user_settings (
     user_id uuid primary key references users(id) on delete cascade,
-    current_balance_sen bigint not null default 0,
-    balance_synced_at timestamptz not null default now(),
-    -- D-19: running ledger by default; balance sync is a correction tool.
-    ledger_mode boolean not null default true,
     onboarding_state text not null default 'new'
         check (onboarding_state in ('new', 'history_imported', 'complete'))
 );
