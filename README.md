@@ -48,37 +48,33 @@ cd backend && uv run uvicorn app.main:app --reload --port 8000
 cd frontend && npm run dev   # http://localhost:3000 → log in with the seeded username
 ```
 
-(The commands above are created in phase P0 — they will not work until it is complete.)
+(The backend and frontend commands above exist as of P0. The backend needs `backend/.env` for anything that touches the database; see `refdocs/guides/env_setup.md`.)
 
 ## Project layout
 
-Planned layout; replaced by the real tree once P0 lands.
+Entries marked *(planned)* do not exist yet and arrive with their phase; everything else is built (P0).
 
 ```
 PaySense_v2/
 ├── backend/
 │   ├── app/
-│   │   ├── api/            route handlers (auth, transactions, imports, recurring, plans, forecast, risk, dashboard)
-│   │   ├── core/           settings, security, errors
-│   │   ├── db/             Supabase client + user-scoped repositories
-│   │   ├── domain/         ledger, schedule (sen maths), providers, categorize, recurring detection
-│   │   └── engines/
-│   │       ├── forecasting/   financial health forecasting (component model + Monte Carlo)
-│   │       └── risk/          BNPL risk classification (features.py, model, SHAP, counterfactuals)
-│   ├── ml/
-│   │   ├── datagen/        synthetic Malaysian-student population + persona CSVs
-│   │   ├── engine1_eval/   forecasting candidate comparison
-│   │   └── engine2_train/  classifier training, selection, calibration
-│   ├── models/             served artefacts + metadata
-│   ├── migrations/         numbered SQL migrations
-│   ├── scripts/            seed_users.py, maintenance
-│   └── tests/
-├── frontend/               Next.js app (app/, components/, lib/api generated client, tests/)
-├── data/
-│   ├── personas/           synthetic UAT persona CSVs (committed)
-│   ├── external/           download scripts for public datasets (data itself gitignored)
-│   └── private/            gitignored — never committed
-├── reports/                generated evaluation tables and figures
+│   │   ├── api/            auth, health, deps, rate limiter, response schemas; (planned) transactions, imports, recurring, plans, forecast, risk, dashboard
+│   │   ├── core/           settings (fail-fast env), security (session tokens), errors (envelope)
+│   │   ├── db/             Supabase client; ScopedTable (the user-isolation boundary); users, user_settings
+│   │   ├── domain/         (planned) ledger, schedule (sen maths), providers, categorize, recurring detection
+│   │   ├── engines/        (planned)
+│   │   │   ├── forecasting/   financial health forecasting (component model + Monte Carlo)
+│   │   │   └── risk/          BNPL risk classification (features.py, model, SHAP, counterfactuals)
+│   │   ├── export_openapi.py  writes the OpenAPI document with no credentials (used by `npm run gen:api`)
+│   │   └── seed.py         tester account seeding
+│   ├── ml/                 (planned) datagen/, engine1_eval/, engine2_train/
+│   ├── models/             (planned) served artefacts + metadata
+│   ├── migrations/         0001_init.sql + how to apply it
+│   ├── scripts/            seed_users.py, check_rls.py
+│   └── tests/              unit tests on an in-memory fake (fakes.py); integration/ hits real Supabase; e2e_server.py backs Playwright
+├── frontend/               Next.js app: app/ (login, (app) shell), components/, lib/ (session, api client + generated schema.d.ts), tests/unit + tests/e2e
+├── data/                   (planned) personas/ (committed synthetic CSVs), external/ (download scripts), private/ (gitignored, never committed)
+├── reports/                spikes/ so far; generated evaluation tables and figures later
 └── refdocs/                PRD, status, decisions, plans, guides, context
 ```
 

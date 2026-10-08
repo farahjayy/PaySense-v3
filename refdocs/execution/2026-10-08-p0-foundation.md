@@ -63,12 +63,24 @@
 
 ---
 
+## What actually happened (deviations from the tasks above)
+
+- **Task 2:** torch needed `--index pytorch-cpu=… --index-strategy unsafe-best-match` and a bounded `requires-python`; the 3.11 fallback was not needed.
+- **Task 3:** `httpx2` is the dev dependency Starlette's `TestClient` wants; the module-level `app` is built lazily (and once) via module `__getattr__` so importing `app.main` never needs env vars; the project is installable (hatchling) so `scripts/` can `import app`.
+- **Task 4:** money columns are `bigint` sen and links are composite `(id, user_id)` foreign keys (**D-26**); username check mirrors the app regex; default privileges revoked for future tables. `scripts/check_rls.py` was added (and needs the optional `SUPABASE_ANON_KEY`). **Not applied to any database yet.**
+- **Task 5:** `ScopedTable.list` was renamed `list_rows` and pages past the 1000-row PostgREST cap; ids that are not UUIDs read as "not found". `tests/fakes.py` is a fake of the query builder, so the real repository code runs in unit tests; `tests/integration/` is the contract check against real Supabase (**not yet run**).
+- **Task 6:** added a failed-login rate limiter (per peer address, IPv6 /64, bounded memory), 404/405 enveloping, CORS headers on 500, 503 on upstream outage, `SecretStr` secrets.
+- **Task 7:** `create-next-app` produced Next 16.4 with Cache Components enabled; both flags were switched off (see the comment in `next.config.ts`). `frontend/.env.example` could not be written (permission rule).
+- **Task 8:** `npm run gen:api` uses `uv run python -m app.export_openapi` (no server or env needed) rather than fetching `/openapi.json`.
+- **Task 9:** Playwright runs the real FastAPI app on the in-memory DB (`backend/tests/e2e_server.py`, ports 8100/3100) instead of assuming a seeded Supabase user; it covers desktop Chrome and a Pixel 7 profile.
+
 ## Wrap-up (do not skip)
 
-- [ ] `refdocs/STATUS.md` — phase table updated, verification ledger updated with what was actually run
-- [ ] `refdocs/changelog/CHANGELOG.md` — session entry added
-- [ ] `refdocs/changelog/DECISIONS.md` — D-23 and D-15 resolved from the spike; any new ADR
-- [ ] `refdocs/guides/env_setup.md` + both `.env.example` files agree
-- [ ] README "Project layout" updated to the real tree; a file-structure doc is now worth writing
-- [ ] This doc updated to match what actually happened
+- [x] `refdocs/STATUS.md` — phase table updated, verification ledger updated with what was actually run
+- [x] `refdocs/changelog/CHANGELOG.md` — session entry added
+- [x] `refdocs/changelog/DECISIONS.md` — D-23 and D-15 resolved from the spike; D-26 added
+- [~] `refdocs/guides/env_setup.md` updated; `backend/.env.example` could not be read or edited (permission rule) and `frontend/.env.example` could not be created — the author should check both against env_setup.md
+- [x] README "Project layout" updated to the real tree (a file-structure doc becomes worthwhile once P1 adds the domain layer)
+- [x] This doc updated to match what actually happened
+- [ ] **Live-Supabase verification** (needs the author): apply `0001_init.sql`; `check_rls.py`; `seed_users.py`; `pytest -m integration`; manual login with `curl`
 - [ ] Next: write `refdocs/plans/<date>-p1-ledger-bnpl.md` + its execution doc (`/plan-feature`)
