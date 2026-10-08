@@ -14,9 +14,9 @@ Every measured moment with a target is within its tolerance.
 |---|---|---|---|---|---|---|
 | income.ptptn_annual_sen | cited | 1.0000 | 1.0000 | share | within tolerance | 1395 lump sums |
 | discretionary.monthly_median_sen.budget_conscious | cited | 30000 | 28998 | sen | within tolerance | target is the midpoint of a modal band (RM201-400), not a bound |
-| discretionary.category_weight_food | cited | 0.5190 | 0.5566 | share | within tolerance | food and eating out are one generated category |
+| discretionary.category_weight_food | cited | 0.5190 | 0.5566 | share | within tolerance | food and eating out are one generated category; shares are approximate because a week's total is split across only a few transactions |
 | discretionary.category_weight_eating_out | cited |  |  | share | no target | measured jointly with category_weight_food |
-| discretionary.category_weight_transport | cited | 0.1810 | 0.2298 | share | within tolerance |  |
+| discretionary.category_weight_transport | cited | 0.1810 | 0.2298 | share | within tolerance | approximate for the same reason as food |
 | bnpl.instalment_options.spaylater | cited | 1.0000 | 1.0000 | share | within tolerance | 515 plans |
 | bnpl.instalment_options.tiktok_paylater | cited | 1.0000 | 1.0000 | share | within tolerance | 209 plans |
 | bnpl.instalment_options.atome | cited | 1.0000 | 1.0000 | share | within tolerance | 245 plans |

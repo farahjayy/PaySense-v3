@@ -1,9 +1,9 @@
 param,description,unit,kind,target,measured,status,note
 income.ptptn_annual_sen,PTPTN lump sums (x disbursements per year) equal a cited annual amount,share,cited,1.0000,1.0000,within tolerance,1395 lump sums
 discretionary.monthly_median_sen.budget_conscious,"Median monthly discretionary spend, budget-conscious persona",sen,cited,30000,28998,within tolerance,"target is the midpoint of a modal band (RM201-400), not a bound"
-discretionary.category_weight_food,Food (food plus eating out) share of discretionary spend,share,cited,0.5190,0.5566,within tolerance,food and eating out are one generated category
+discretionary.category_weight_food,Food (food plus eating out) share of discretionary spend,share,cited,0.5190,0.5566,within tolerance,food and eating out are one generated category; shares are approximate because a week's total is split across only a few transactions
 discretionary.category_weight_eating_out,"Eating out (generated together with food, see the row above)",share,cited,,,no target,measured jointly with category_weight_food
-discretionary.category_weight_transport,Transport share of discretionary spend,share,cited,0.1810,0.2298,within tolerance,
+discretionary.category_weight_transport,Transport share of discretionary spend,share,cited,0.1810,0.2298,within tolerance,approximate for the same reason as food
 bnpl.instalment_options.spaylater,spaylater: plans use an instalment count the provider offers,share,cited,1.0000,1.0000,within tolerance,515 plans
 bnpl.instalment_options.tiktok_paylater,tiktok_paylater: plans use an instalment count the provider offers,share,cited,1.0000,1.0000,within tolerance,209 plans
 bnpl.instalment_options.atome,atome: plans use an instalment count the provider offers,share,cited,1.0000,1.0000,within tolerance,245 plans
