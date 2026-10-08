@@ -191,6 +191,11 @@ discretionary:
     unit: ratio
     assumed: true
     why: "Spending falls during exam weeks."
+  exam_months:
+    value: [6, 12]
+    unit: month_of_year
+    assumed: true
+    why: "Assumed end-of-semester exam months; the app is used across institutions with different calendars."
   exam_weeks_per_semester:
     value: 2
     unit: count
