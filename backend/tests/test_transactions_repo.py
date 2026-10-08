@@ -265,3 +265,17 @@ def test_isolation_for_plan_functions(db, amir, siti):
     assert repo.list_for_plan(db, siti, plan_id) == []
     assert repo.delete_for_plan(db, siti, plan_id) == 0
     assert len(db.rows("transactions")) == 1
+
+
+def test_summary_rows_carry_only_the_columns_the_summary_needs(db, amir):
+    make(db, amir, description="private note", account_name="Maybank")
+
+    (row,) = repo.list_for_summary(db, amir)
+
+    assert set(row) == {"date", "amount_sen", "type", "category"}
+
+
+def test_isolation_list_for_summary(db, amir, siti):
+    make(db, amir)
+
+    assert repo.list_for_summary(db, siti) == []

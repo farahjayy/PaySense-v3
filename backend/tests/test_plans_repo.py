@@ -294,28 +294,143 @@ def test_mark_paid_of_an_unknown_plan_or_seq_is_none(db, amir):
     assert db.rows("transactions") == []
 
 
-def test_if_the_flip_loses_a_race_the_logged_payment_is_removed(db, amir, monkeypatch):
+def test_a_payment_is_tied_to_its_instalment(db, amir):
+    created = create(db, amir, provider="spaylater")
+
+    repo.mark_paid(db, amir, created["id"], 1, date(2026, 4, 4))
+
+    (payment,) = transactions.list_for_plan(db, amir, created["id"])
+    first = created["installments"][0]
+    assert payment["bnpl_installment_id"] == first["id"]
+    assert transactions.get_for_installment(db, amir, first["id"])["id"] == payment["id"]
+
+
+def test_losing_a_race_keeps_the_single_shared_payment_and_reports_a_conflict(
+    db, amir, monkeypatch
+):
     created = create(db, amir, provider="spaylater")
     monkeypatch.setattr(repo.ScopedTable, "update", lambda self, *a, **k: None)  # someone else won
 
     with pytest.raises(repo.PlanConflictError):
         repo.mark_paid(db, amir, created["id"], 1, date(2026, 4, 4))
 
-    assert db.rows("transactions") == []  # no orphan payment
+    # The payment is keyed to the instalment, so the winner's logging IS this row: deleting it
+    # here could erase a payment that really was made.
+    assert len(db.rows("transactions")) == 1
 
 
-def test_if_the_flip_errors_the_logged_payment_is_removed(db, amir, monkeypatch):
+def test_if_the_flip_fails_before_committing_the_payment_stays_and_a_retry_completes(
+    db, amir, monkeypatch
+):
     created = create(db, amir, provider="spaylater")
-
-    def boom(self, *args, **kwargs):
-        raise RuntimeError("database went away")
-
-    monkeypatch.setattr(repo.ScopedTable, "update", boom)
+    real_update = repo.ScopedTable.update
+    monkeypatch.setattr(
+        repo.ScopedTable, "update", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("went away"))
+    )
 
     with pytest.raises(RuntimeError, match="went away"):
         repo.mark_paid(db, amir, created["id"], 1, date(2026, 4, 4))
+    assert len(db.rows("transactions")) == 1  # kept: it is tied to the instalment, not orphaned
 
-    assert db.rows("transactions") == []
+    monkeypatch.setattr(repo.ScopedTable, "update", real_update)
+    paid = repo.mark_paid(db, amir, created["id"], 1, date(2026, 4, 4))
+
+    assert paid["is_paid"] is True
+    assert len(db.rows("transactions")) == 1  # the retry reused the payment: no double count
+
+
+def test_if_the_flip_commits_but_the_response_is_lost_the_payment_is_not_deleted(db, amir):
+    """The review's HIGH finding: a timeout AFTER Postgres committed must not erase the payment."""
+    created = create(db, amir, provider="spaylater")
+    db.fail_after_commit("bnpl_installments", "update", TimeoutError("read timed out"))
+
+    paid = repo.mark_paid(db, amir, created["id"], 1, date(2026, 4, 4))
+
+    assert paid["is_paid"] is True  # it did commit, and mark_paid noticed
+    assert len(transactions.list_for_plan(db, amir, created["id"])) == 1
+    stored = repo.get_with_instalments(db, amir, created["id"])["installments"][0]
+    assert stored["is_paid"] is True
+
+
+def test_logging_a_payment_twice_for_one_instalment_is_impossible(db, amir):
+    from postgrest import APIError
+
+    created = create(db, amir, provider="spaylater")
+    instalment_id = created["installments"][0]["id"]
+    make = lambda: transactions.create(  # noqa: E731
+        db,
+        amir,
+        date=date(2026, 4, 4),
+        amount_sen=10000,
+        type="expense",
+        category="BNPL",
+        bnpl_plan_id=created["id"],
+        bnpl_installment_id=instalment_id,
+    )
+    make()
+
+    with pytest.raises(APIError) as err:
+        make()
+
+    assert err.value.code == "23505"
+
+
+def test_if_a_payment_insert_commits_but_the_response_is_lost_creation_leaves_nothing(db, amir):
+    db.fail_after_commit("transactions", "insert", TimeoutError("read timed out"))
+    plan, instalments = plan_input(provider="atome")
+
+    with pytest.raises(TimeoutError):
+        repo.create_plan(db, amir, plan, instalments)
+
+    assert db.rows("bnpl_plans") == []
+    assert db.rows("bnpl_installments") == []
+    assert db.rows("transactions") == []  # even the payment whose id we never saw
+
+
+def test_creating_an_atome_plan_flips_the_checkout_instalment_only_after_logging_its_payment(
+    db, amir
+):
+    order = []
+    real_insert, real_update = repo.ScopedTable.insert, repo.ScopedTable.update
+
+    def spy_insert(self, user_id, row):
+        order.append(f"insert:{self._table}")
+        return real_insert(self, user_id, row)
+
+    def spy_update(self, user_id, row_id, patch, **kw):
+        order.append(f"update:{self._table}")
+        return real_update(self, user_id, row_id, patch, **kw)
+
+    repo.ScopedTable.insert, repo.ScopedTable.update = spy_insert, spy_update
+    try:
+        create(db, amir, provider="atome")
+    finally:
+        repo.ScopedTable.insert, repo.ScopedTable.update = real_insert, real_update
+
+    assert order.index("insert:transactions") < order.index("update:bnpl_installments")
+
+
+def test_cleanup_failures_do_not_mask_the_original_error_or_skip_the_plan_delete(
+    db, amir, monkeypatch
+):
+    real_delete_many = repo.ScopedTable.delete_many
+    monkeypatch.setattr(
+        repo.ScopedTable,
+        "delete_many",
+        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("cleanup broke")),
+    )
+    monkeypatch.setattr(
+        repo.ScopedTable,
+        "insert_many",
+        lambda *a, **k: (_ for _ in ()).throw(ValueError("original problem")),
+    )
+    plan, instalments = plan_input()
+
+    with pytest.raises(ValueError, match="original problem"):
+        repo.create_plan(db, amir, plan, instalments)
+
+    monkeypatch.setattr(repo.ScopedTable, "delete_many", real_delete_many)
+    assert db.rows("bnpl_plans") == []  # the plan delete still ran
 
 
 def test_mark_paid_many_pays_each_in_order(db, amir):

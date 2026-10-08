@@ -187,3 +187,43 @@ def test_bulk_create_survives_more_rows_than_one_request_holds(db, two_users):
 
     assert created == 1203
     assert len(transactions.list_between(db, a, date(2026, 3, 1), date(2026, 3, 1))) == 1203
+
+
+def test_a_payment_is_tied_to_exactly_one_instalment_in_the_database(db, two_users):
+    a = two_users[0]["id"]
+    plan = make_plan(db, a, provider="spaylater")
+    instalment_id = plan["installments"][0]["id"]
+
+    plans_repo.mark_paid(db, a, plan["id"], 1, date(2026, 4, 4))
+
+    with pytest.raises(APIError) as err:
+        transactions.create(
+            db,
+            a,
+            date=date(2026, 4, 5),
+            amount_sen=10000,
+            type="expense",
+            category="BNPL",
+            bnpl_plan_id=plan["id"],
+            bnpl_installment_id=instalment_id,
+        )
+    assert err.value.code == UNIQUE_VIOLATION
+    assert transactions.get_for_installment(db, a, instalment_id)["date"] == "2026-04-04"
+
+
+def test_another_users_instalment_cannot_be_linked_to_my_payment(db, two_users):
+    a, b = (u["id"] for u in two_users)
+    theirs = make_plan(db, b, provider="spaylater")
+
+    with pytest.raises(APIError) as err:
+        transactions.create(
+            db,
+            a,
+            date=PURCHASE,
+            amount_sen=100,
+            type="expense",
+            category="BNPL",
+            bnpl_installment_id=theirs["installments"][0]["id"],
+        )
+
+    assert err.value.code == FK_VIOLATION

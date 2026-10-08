@@ -22,6 +22,8 @@ ID_COLUMN = "id"
 # Supabase caps any single select at 1000 rows (PostgREST `max-rows`) without raising an error,
 # so unbounded reads must page explicitly or they silently return a truncated ledger.
 PAGE_SIZE = 1000
+# `id=in.(...)` travels in the URL; ~100 UUIDs is ~3.7 KB, safely under gateway limits.
+IN_BATCH = 100
 
 
 def require_user_id(user_id: object) -> str:
@@ -54,8 +56,9 @@ class ScopedTable:
         between: Mapping[str, tuple[Any, Any]] | None,
         order_by: str | None,
         descending: bool,
+        columns: str,
     ) -> Any:
-        query = self._db.table(self._table).select("*").eq(OWNER_COLUMN, uid)
+        query = self._db.table(self._table).select(columns).eq(OWNER_COLUMN, uid)
         for column, value in equals.items():
             query = query.eq(column, value)
         for column, (low, high) in (between or {}).items():
@@ -76,6 +79,7 @@ class ScopedTable:
         descending: bool = False,
         limit: int | None = None,
         between: Mapping[str, tuple[Any, Any]] | None = None,
+        columns: str = "*",
         **equals: Any,
     ) -> list[dict[str, Any]]:
         """All of the user's rows matching `equals` and the inclusive `between` ranges
@@ -92,7 +96,7 @@ class ScopedTable:
             start = len(rows)
             size = PAGE_SIZE if limit is None else min(PAGE_SIZE, limit - start)
             page = (
-                self._page_query(uid, equals, between, order_by, descending)
+                self._page_query(uid, equals, between, order_by, descending, columns)
                 .range(start, start + size - 1)
                 .execute()
                 .data
@@ -178,17 +182,19 @@ class ScopedTable:
         return list(self._db.table(self._table).insert(payload).execute().data)
 
     def delete_many(self, user_id: str, row_ids: Sequence[str]) -> int:
-        """Delete the caller's rows with these ids; malformed or foreign ids are ignored."""
+        """Delete the caller's rows with these ids (malformed or foreign ids are ignored), in
+        batches so the request URL stays short."""
         uid = require_user_id(user_id)
         valid = [row_id for row_id in row_ids if is_uuid(row_id)]
-        if not valid:
-            return 0
-        deleted = (
-            self._db.table(self._table)
-            .delete()
-            .eq(OWNER_COLUMN, uid)
-            .in_(ID_COLUMN, valid)
-            .execute()
-            .data
-        )
-        return len(deleted)
+        removed = 0
+        for start in range(0, len(valid), IN_BATCH):
+            deleted = (
+                self._db.table(self._table)
+                .delete()
+                .eq(OWNER_COLUMN, uid)
+                .in_(ID_COLUMN, valid[start : start + IN_BATCH])
+                .execute()
+                .data
+            )
+            removed += len(deleted)
+        return removed

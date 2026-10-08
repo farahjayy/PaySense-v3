@@ -110,6 +110,7 @@ create table bnpl_installments (
     is_paid boolean not null default false,
     paid_date date,
     unique (plan_id, seq),
+    unique (id, user_id),
     foreign key (plan_id, user_id) references bnpl_plans (id, user_id) on delete cascade,
     check (is_paid or paid_date is null)
 );
@@ -128,16 +129,23 @@ create table transactions (
     is_bnpl boolean not null default false,
     source text not null default 'manual' check (source in ('manual', 'csv', 'seed')),
     bnpl_plan_id uuid,
+    -- The instalment this payment settles. Unique (below), so logging a payment is idempotent:
+    -- a retry after an ambiguous failure finds the existing row instead of double-counting.
+    bnpl_installment_id uuid,
     recurring_item_id uuid,
     created_at timestamptz not null default now(),
     foreign key (bnpl_plan_id, user_id) references bnpl_plans (id, user_id)
         on delete set null (bnpl_plan_id),
+    foreign key (bnpl_installment_id, user_id) references bnpl_installments (id, user_id)
+        on delete set null (bnpl_installment_id),
     foreign key (recurring_item_id, user_id) references recurring_items (id, user_id)
         on delete set null (recurring_item_id)
 );
 create index transactions_user_date_idx on transactions (user_id, date desc);
 create index transactions_user_type_idx on transactions (user_id, type);
 create index transactions_plan_idx on transactions (bnpl_plan_id);
+create unique index transactions_installment_key on transactions (bnpl_installment_id)
+    where bnpl_installment_id is not null;
 create index transactions_recurring_idx on transactions (recurring_item_id);
 
 -- ---------------------------------------------------------------- provider limits

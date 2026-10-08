@@ -11,6 +11,7 @@ Integration tests (`-m integration`) are the check that this fake matches the re
 """
 
 import copy
+import json
 import re
 import uuid
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ from typing import Any
 
 from postgrest import APIError
 
+MAX_IN_VALUES = 150  # stands in for the gateway URL-length limit on `id=in.(...)`
 MAX_ROWS = 1000  # Supabase/PostgREST default `max-rows`: larger selects are silently truncated
 UNIQUE_VIOLATION = "23505"
 FOREIGN_KEY_VIOLATION = "23503"
@@ -29,6 +31,7 @@ UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
     "user_settings": [("user_id",)],
     "bnpl_installments": [("plan_id", "seq")],
     "provider_limits": [("user_id", "provider")],
+    "transactions": [("bnpl_installment_id",)],  # partial unique index: NULLs never collide
 }
 # table -> defaults applied on insert (callables are invoked per row)
 DEFAULTS: dict[str, dict[str, Any]] = {
@@ -40,6 +43,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "description": None,
         "account_name": None,
         "bnpl_plan_id": None,
+        "bnpl_installment_id": None,
         "recurring_item_id": None,
     },
     "recurring_items": {"active": True, "custom_interval_days": None},
@@ -60,7 +64,11 @@ HAS_CREATED_AT = {"users", "recurring_items", "risk_checks", "bnpl_plans", "tran
 
 # child table -> [(child column, parent table)]: composite (column, user_id) -> (id, user_id)
 FOREIGN_KEYS: dict[str, list[tuple[str, str]]] = {
-    "transactions": [("bnpl_plan_id", "bnpl_plans"), ("recurring_item_id", "recurring_items")],
+    "transactions": [
+        ("bnpl_plan_id", "bnpl_plans"),
+        ("bnpl_installment_id", "bnpl_installments"),
+        ("recurring_item_id", "recurring_items"),
+    ],
     "bnpl_installments": [("plan_id", "bnpl_plans")],
     "bnpl_plans": [("risk_check_id", "risk_checks")],
 }
@@ -69,6 +77,7 @@ ON_DELETE_SET_NULL: dict[str, list[tuple[str, str]]] = {
     "recurring_items": [("transactions", "recurring_item_id")],
     "bnpl_plans": [("transactions", "bnpl_plan_id")],
     "risk_checks": [("bnpl_plans", "risk_check_id")],
+    "bnpl_installments": [("transactions", "bnpl_installment_id")],
 }
 ON_DELETE_CASCADE: dict[str, list[tuple[str, str]]] = {
     "bnpl_plans": [("bnpl_installments", "plan_id")],
@@ -104,6 +113,18 @@ def _unique_key(row: dict[str, Any], cols: tuple[str, ...]) -> tuple[Any, ...]:
 class FakeSupabase:
     def __init__(self) -> None:
         self.tables: dict[str, list[dict[str, Any]]] = {}
+        self._injected: list[tuple[str, str, Exception]] = []
+
+    def fail_after_commit(self, table: str, op: str, error: Exception) -> None:
+        """Make the next `op` on `table` APPLY and then raise: the "committed, but the client saw
+        a timeout" outcome that no unit test of a plain failure can reproduce."""
+        self._injected.append((table, op, error))
+
+    def raise_if_injected(self, table: str, op: str) -> None:
+        for index, (t, o, error) in enumerate(self._injected):
+            if (t, o) == (table, op):
+                del self._injected[index]
+                raise error
 
     def table(self, name: str) -> "FakeQuery":
         return FakeQuery(self, name)
@@ -151,10 +172,12 @@ class FakeQuery:
         self._limit: int | None = None
         self._range: tuple[int, int] | None = None
         self._conflict: tuple[str, ...] = ()
+        self._columns: list[str] | None = None
 
     # -- operations
-    def select(self, _columns: str = "*") -> "FakeQuery":
+    def select(self, columns: str = "*") -> "FakeQuery":
         self._op = "select"
+        self._columns = None if columns.strip() == "*" else [c.strip() for c in columns.split(",")]
         return self
 
     def insert(self, payload: dict[str, Any] | list[dict[str, Any]]) -> "FakeQuery":
@@ -194,6 +217,8 @@ class FakeQuery:
         return self
 
     def in_(self, column: str, values: list[Any]) -> "FakeQuery":
+        if len(values) > MAX_IN_VALUES:  # PostgREST puts these in the URL; gateways cap its length
+            raise RuntimeError(f"request URI too long: {len(values)} values in one in() filter")
         self._filters.append(lambda r: r.get(column) in values)
         return self
 
@@ -221,7 +246,11 @@ class FakeQuery:
             "delete": self._delete,
             "upsert": self._upsert,
         }[self._op]
-        return FakeResponse(copy.deepcopy(run()))
+        if self._op in ("insert", "update", "upsert"):
+            json.dumps(self._payload)  # httpx would fail on a date/Decimal the fake would accept
+        result = copy.deepcopy(run())
+        self._db.raise_if_injected(self._table, self._op)
+        return FakeResponse(result)
 
     def _select(self) -> list[dict[str, Any]]:
         rows = self._matching()
@@ -232,7 +261,10 @@ class FakeQuery:
             rows = rows[start : end + 1]
         if self._limit is not None:
             rows = rows[: self._limit]
-        return rows[:MAX_ROWS]
+        rows = rows[:MAX_ROWS]
+        if self._columns is not None:  # like PostgREST: only the asked-for columns come back
+            rows = [{c: r[c] for c in self._columns if c in r} for r in rows]
+        return rows
 
     def _insert(self) -> list[dict[str, Any]]:
         payload = self._payload if isinstance(self._payload, list) else [self._payload]
@@ -315,5 +347,7 @@ class FakeQuery:
     ) -> None:
         others = [r for r in self._db.rows(self._table) if r is not ignore] + (extra or [])
         for cols in UNIQUE_KEYS.get(self._table, []):
+            if any(row.get(c) is None for c in cols):
+                continue  # in SQL, a NULL never collides with another NULL
             if any(_unique_key(r, cols) == _unique_key(row, cols) for r in others):
                 raise APIError({"message": "unique violation", "code": UNIQUE_VIOLATION})

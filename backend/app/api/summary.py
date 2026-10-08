@@ -6,7 +6,7 @@ from fastapi import APIRouter
 
 from app.api.deps import CurrentUser, DbDep, TodayDep
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
-from app.db.base import ScopedTable
+from app.db import transactions
 from app.domain.flows import history_span, month_summary
 
 router = APIRouter(prefix="/summary", tags=["summary"], responses=PROTECTED_RESPONSES)
@@ -36,7 +36,7 @@ class MonthSummaryOut(ApiModel):
 
 @router.get("/months", response_model=MonthSummaryOut)
 def months(user: CurrentUser, db: DbDep, today: TodayDep) -> MonthSummaryOut:
-    rows = ScopedTable(db, "transactions").list_rows(user.id, order_by="date")
+    rows = transactions.list_for_summary(db, user.id)
     span = history_span(rows, today)
     return MonthSummaryOut(
         months=[MonthOut(**vars(m)) for m in month_summary(rows)],

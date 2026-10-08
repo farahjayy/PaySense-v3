@@ -288,3 +288,26 @@ def test_update_where_cannot_name_the_owner_column(db, two_users):
 
     with pytest.raises(ValueError, match="user_id"):
         table.update(amir, row["id"], {"amount_sen": 1}, where={"user_id": siti})
+
+
+def test_delete_many_sends_ids_in_small_batches(db, two_users):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+    ids = [f"{n:08d}-0000-4000-8000-000000000000" for n in range(1, 451)]
+    for row_id in ids:
+        db.rows("transactions").append({"id": row_id, "user_id": amir, **_txn()})
+
+    removed = table.delete_many(amir, ids)  # the fake refuses a single in() of more than 150
+
+    assert removed == 450
+    assert db.rows("transactions") == []
+
+
+def test_list_rows_can_ask_for_only_some_columns(db, two_users):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+    table.insert(amir, _txn(777, description="secret words"))
+
+    (row,) = table.list_rows(amir, columns="date,amount_sen")
+
+    assert row == {"date": "2026-01-05", "amount_sen": 777}

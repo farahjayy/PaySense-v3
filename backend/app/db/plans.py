@@ -15,6 +15,8 @@ import logging
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from postgrest import APIError
+
 from app.db import transactions
 from app.db.base import ScopedTable
 from app.db.client import Database
@@ -30,6 +32,7 @@ PLANS = "bnpl_plans"
 INSTALMENTS = "bnpl_installments"
 SCHEDULE_SOURCES = frozenset({"provider_rule", "manual"})
 ITEM_NAME_LIMIT = 120
+UNIQUE_VIOLATION = "23505"
 SUFFIX_SEPARATOR = " — "
 
 
@@ -125,6 +128,7 @@ def _log_payment(
     amount_sen: int,
     day: dt.date | str,
     description: str,
+    installment_id: str | None = None,
 ) -> dict[str, Any]:
     return transactions.create(
         db,
@@ -136,22 +140,76 @@ def _log_payment(
         description=description,
         is_bnpl=True,
         bnpl_plan_id=plan["id"],
+        bnpl_installment_id=installment_id,
     )
+
+
+def _ensure_payment(
+    db: Database,
+    user_id: str,
+    plan: Mapping[str, Any],
+    instalment: Mapping[str, Any],
+    day: dt.date | str,
+) -> dict[str, Any]:
+    """The payment settling this instalment, logging it only if it is not already there.
+
+    A payment is tied to its instalment by a unique key, so this is idempotent: a retry after an
+    ambiguous failure (the database committed but the answer was lost) finds the existing row
+    instead of counting the money twice, and a racing second writer cannot double-log it.
+    """
+    existing = transactions.get_for_installment(db, user_id, instalment["id"])
+    if existing is not None:
+        return existing
+    try:
+        return _log_payment(
+            db,
+            user_id,
+            plan,
+            amount_sen=instalment["amount_sen"],
+            day=day,
+            description=instalment_description(plan, instalment["seq"]),
+            installment_id=instalment["id"],
+        )
+    except APIError as err:
+        if err.code != UNIQUE_VIOLATION:
+            raise
+        found = transactions.get_for_installment(db, user_id, instalment["id"])
+        if found is None:
+            raise
+        return found
+
+
+def _best_effort(description: str, action: Any, *args: Any) -> None:
+    """Run one cleanup step; log and carry on if it fails, so the original error is the one raised
+    and the remaining cleanup steps still run."""
+    try:
+        action(*args)
+    except Exception:
+        logger.exception("Cleanup step failed: %s", description)
 
 
 def create_plan(
     db: Database, user_id: str, plan: Mapping[str, Any], instalments: Sequence[Instalment]
 ) -> dict[str, Any]:
     """Create a plan with its schedule and log what was paid at checkout (an Atome first
-    instalment, and any excess over the provider limit). All or nothing."""
+    instalment, and any excess over the provider limit). All or nothing, as far as the database
+    allows without transactions:
+
+      1. insert the plan; 2. insert every instalment as UNPAID; 3. log the checkout payments (the
+      excess, and each checkout instalment's payment, tied to that instalment); 4. only then flip
+      the checkout instalments to paid.
+
+    A crash between steps leaves a plan whose checkout instalments are unpaid with their payments
+    already logged, which a later `mark_paid` completes without double-counting. On an error the
+    plan and everything linked to it are removed, each cleanup step independent of the others.
+    """
     row = _validate(plan, instalments)
     plans = ScopedTable(db, PLANS)
-    logged: list[str] = []
     created: dict[str, Any] | None = None
     try:
         created = plans.insert(user_id, row)
         purchase_day = row["purchase_date"]
-        ScopedTable(db, INSTALMENTS).insert_many(
+        stored = ScopedTable(db, INSTALMENTS).insert_many(
             user_id,
             [
                 {
@@ -159,14 +217,15 @@ def create_plan(
                     "seq": i.seq,
                     "due_date": i.due_date.isoformat(),
                     "amount_sen": i.amount_sen,
-                    "is_paid": i.paid_at_checkout,
-                    "paid_date": purchase_day if i.paid_at_checkout else None,
+                    "is_paid": False,
+                    "paid_date": None,
                 }
                 for i in instalments
             ],
         )
+        by_seq = {r["seq"]: r for r in stored}
         if row["upfront_sen"] > 0:
-            payment = _log_payment(
+            _log_payment(
                 db,
                 user_id,
                 created,
@@ -174,22 +233,27 @@ def create_plan(
                 day=purchase_day,
                 description=_checkout_description(created),
             )
-            logged.append(payment["id"])
-        for instalment in instalments:
-            if instalment.paid_at_checkout:
-                payment = _log_payment(
-                    db,
-                    user_id,
-                    created,
-                    amount_sen=instalment.amount_sen,
-                    day=purchase_day,
-                    description=instalment_description(created, instalment.seq),
-                )
-                logged.append(payment["id"])
+        checkout = [i for i in instalments if i.paid_at_checkout]
+        for instalment in checkout:
+            _ensure_payment(db, user_id, created, by_seq[instalment.seq], purchase_day)
+        for instalment in checkout:
+            ScopedTable(db, INSTALMENTS).update(
+                user_id,
+                by_seq[instalment.seq]["id"],
+                {"is_paid": True, "paid_date": purchase_day},
+            )
     except Exception:
-        ScopedTable(db, "transactions").delete_many(user_id, logged)
         if created is not None:
-            plans.delete(user_id, created["id"])  # instalments cascade
+            # Everything linked to the plan, including a payment whose id we never saw because
+            # its response was lost; then the plan (instalments cascade).
+            _best_effort(
+                "delete the plan's payments",
+                transactions.delete_for_plan,
+                db,
+                user_id,
+                created["id"],
+            )
+            _best_effort("delete the plan", plans.delete, user_id, created["id"])
         raise
     result = get_with_instalments(db, user_id, created["id"])
     assert result is not None  # noqa: S101 - we just created it
@@ -260,7 +324,14 @@ def delete(db: Database, user_id: str, plan_id: str, *, keep_payments: bool = Tr
 def mark_paid(
     db: Database, user_id: str, plan_id: str, seq: int, paid_date: dt.date
 ) -> dict[str, Any] | None:
-    """Mark one instalment paid and log it as an expense. None if the plan or seq is not found."""
+    """Mark one instalment paid and log it as an expense. None if the plan or seq is not found.
+
+    The payment is logged first (idempotently, tied to the instalment), then the instalment is
+    flipped with a conditional update. A failure never deletes the payment: if the outcome is
+    unknown (a timeout after the database committed) the instalment is re-read, and a retry finds
+    the payment already there. The worst case is a logged payment against a still-unpaid
+    instalment, which one retry repairs — never a paid instalment with no payment.
+    """
     plan = ScopedTable(db, PLANS).get(user_id, plan_id)
     if plan is None:
         return None
@@ -271,14 +342,7 @@ def mark_paid(
     instalment = rows[0]
     if instalment["is_paid"]:
         raise AlreadyPaidError(f"instalment {seq} is already paid")
-    payment = _log_payment(
-        db,
-        user_id,
-        plan,
-        amount_sen=instalment["amount_sen"],
-        day=paid_date,
-        description=instalment_description(plan, seq),
-    )
+    _ensure_payment(db, user_id, plan, instalment, paid_date)
     try:
         flipped = instalments.update(
             user_id,
@@ -287,10 +351,15 @@ def mark_paid(
             where={"is_paid": False},
         )
     except Exception:
-        transactions.delete(db, user_id, payment["id"])
+        # Did the flip commit before the error? If so, this call succeeded.
+        try:
+            current = instalments.get(user_id, instalment["id"])
+        except Exception:
+            current = None
+        if current is not None and current["is_paid"]:
+            return current
         raise
     if flipped is None:
-        transactions.delete(db, user_id, payment["id"])
         raise PlanConflictError(f"instalment {seq} changed while it was being paid")
     return flipped
 
@@ -298,7 +367,13 @@ def mark_paid(
 def mark_paid_many(
     db: Database, user_id: str, plan_id: str, seqs: Sequence[int], paid_date: dt.date
 ) -> list[dict[str, Any]]:
-    """Mark several instalments paid, in order. Everything is checked before anything is paid."""
+    """Mark several instalments paid, in order.
+
+    Everything is validated before anything is paid (unknown or already-paid instalments are
+    refused up front), but the payments themselves are sequential and NOT atomic: if one fails
+    part-way, the earlier ones stay paid and the error is raised. Each instalment is individually
+    consistent, and retrying the call pays the rest.
+    """
     if ScopedTable(db, PLANS).get(user_id, plan_id) is None:
         return []
     existing = {

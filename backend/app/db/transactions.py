@@ -64,6 +64,7 @@ def _clean_row(row: Mapping[str, Any], *, source: str) -> dict[str, Any]:
         "is_bnpl": bool(row.get("is_bnpl", False)),
         "source": source,
         "bnpl_plan_id": row.get("bnpl_plan_id"),
+        "bnpl_installment_id": row.get("bnpl_installment_id"),
         "recurring_item_id": row.get("recurring_item_id"),
     }
 
@@ -81,6 +82,7 @@ def create(
     is_bnpl: bool = False,
     source: str = "manual",
     bnpl_plan_id: str | None = None,
+    bnpl_installment_id: str | None = None,
     recurring_item_id: str | None = None,
 ) -> dict[str, Any]:
     row = _clean_row(
@@ -93,6 +95,7 @@ def create(
             "account_name": account_name,
             "is_bnpl": is_bnpl,
             "bnpl_plan_id": bnpl_plan_id,
+            "bnpl_installment_id": bnpl_installment_id,
             "recurring_item_id": recurring_item_id,
         },
         source=source,
@@ -175,12 +178,27 @@ def delete(db: Database, user_id: str, transaction_id: str) -> bool:
 
 def fingerprints_between(db: Database, user_id: str, start: dt.date, end: dt.date) -> list[str]:
     """Duplicate-detection fingerprints of the stored rows in a date range (one per row, so
-    multiplicity is preserved)."""
-    rows = _table(db).list_rows(user_id, between={"date": (start, end)})
+    multiplicity is preserved). Selects only the four columns a fingerprint needs."""
+    rows = _table(db).list_rows(
+        user_id, between={"date": (start, end)}, columns="date,amount_sen,type,description"
+    )
     return [
         fingerprint(as_date(r["date"]), r["amount_sen"], r["type"], r.get("description"))
         for r in rows
     ]
+
+
+def list_for_summary(db: Database, user_id: str) -> list[dict[str, Any]]:
+    """Every transaction, reduced to the columns the month summary needs."""
+    return _table(db).list_rows(user_id, order_by="date", columns="date,amount_sen,type,category")
+
+
+def get_for_installment(db: Database, user_id: str, installment_id: str) -> dict[str, Any] | None:
+    """The payment that settles this instalment, if one has been logged."""
+    if not is_uuid(installment_id):
+        return None
+    rows = _table(db).list_rows(user_id, bnpl_installment_id=installment_id, limit=1)
+    return rows[0] if rows else None
 
 
 def list_for_plan(db: Database, user_id: str, plan_id: str) -> list[dict[str, Any]]:
