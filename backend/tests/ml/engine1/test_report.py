@@ -158,9 +158,7 @@ def test_the_readme_states_the_rule_that_fired_and_the_caveats(stored, tmp_path)
 
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
     selection = json.loads((tmp_path / "selection.json").read_text(encoding="utf-8"))
-    assert f"served model: `{selection['served']}`" in readme.lower().replace(
-        "served model: ", "served model: "
-    )
+    assert f"**Served model: `{selection['served']}`**" in readme
     assert selection["branch"] in {"literature", "benchmark"}
     assert "circular" in readme.lower()
     assert "not available" in readme.lower() or "unavailable" in readme.lower()
@@ -168,9 +166,47 @@ def test_the_readme_states_the_rule_that_fired_and_the_caveats(stored, tmp_path)
 
 
 def test_failures_are_surfaced_in_the_readme(stored, tmp_path):
+    import shutil
+
+    broken = tmp_path / "broken_run"
+    shutil.copytree(stored, broken)
+    (broken / "failures.csv").write_text(
+        "source,series_id,model,error\nsynthetic,syn-1,arima,ValueError: boom\n", encoding="utf-8"
+    )
+
+    build_report(broken, tmp_path / "out")
+
+    assert "Model failures recorded: 1" in (tmp_path / "out" / "README.md").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_a_series_a_model_failed_on_is_dropped_for_every_model_before_averaging():
+    rows = []
+    for i in range(10):
+        rows += [("synthetic", f"s{i}", "spend", m, v) for m, v in (("ma4", 1.0), ("arima", 0.5))]
+    rows += [("synthetic", "hard", "spend", "ma4", 9.0)]  # arima failed on the hard series
+
+    choice = select_model(scores(rows))
+
+    assert choice.dropped_series == 1 and choice.n_series == 10
+    assert choice.metric["ma4"] == pytest.approx(1.0)  # the hard series did not inflate it
+
+
+def test_a_comparison_with_no_series_scored_by_every_model_is_rejected():
+    rows = [("synthetic", "a", "spend", "ma4", 1.0), ("synthetic", "b", "spend", "arima", 1.0)]
+
+    with pytest.raises(ValueError, match="every model"):
+        select_model(scores(rows))
+
+
+def test_the_readme_reports_the_margin_rank_of_the_served_model_and_the_bias(stored, tmp_path):
     build_report(stored, tmp_path)
 
-    assert "failures" in (tmp_path / "README.md").read_text(encoding="utf-8").lower()
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "cumulative-margin error" in readme and "ranks" in readme
+    assert (tmp_path / "tables" / "bias.csv").is_file()
+    assert (tmp_path / "tables" / "selection_by_history.csv").is_file()
 
 
 def test_regenerating_gives_identical_files(stored, tmp_path):

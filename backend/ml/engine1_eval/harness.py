@@ -1,9 +1,11 @@
 """Expanding-window rolling-origin evaluation (plan P3, task B4).
 
-At each origin the model is handed `values[:origin]` as a read-only array and nothing else, so it
-cannot read the future. Intervals are built identically for every model from that model's own
-earlier errors, using only errors whose target week is already observed at the origin.
-(The 4-week moving-block bootstrap in the product is for simulating whole paths in P4; for
+At each origin the model is handed `values[:origin]` (or its last `history_limit` weeks) as a
+read-only array and nothing else, so it cannot read the future. Errors are scaled by the naive
+error of the *whole* history to date, whatever the model is shown, so runs with different history
+limits are scored against the same yardstick. Intervals are built identically for every model from
+that model's own earlier errors, using only errors whose target week is already observed at the
+origin. (The 4-week moving-block bootstrap in the product simulates whole paths in P4; for
 comparing marginal coverage across models the per-step empirical error quantile is the standard,
 simpler choice.)
 """
@@ -44,6 +46,7 @@ class SeriesEvaluation:
     rows: list[dict] = field(default_factory=list)
     skipped: int = 0  # origins whose history had no variation, so no scaled error exists
     seconds: float = 0.0  # wall-clock spent in the model (kept out of the rows: not reproducible)
+    forecasts: dict[int, np.ndarray] = field(default_factory=dict)  # origin -> point forecasts
 
 
 def rolling_origins(
@@ -109,6 +112,8 @@ def _forecast(model: Forecaster, history: np.ndarray, horizon: int, start: date)
     forecast = np.asarray(model.forecast(history, horizon, start), dtype=float)
     if forecast.shape != (horizon,):
         raise ValueError(f"{model.name} returned {forecast.shape}, expected ({horizon},)")
+    if not np.all(np.isfinite(forecast)):
+        raise ValueError(f"{model.name} returned a non-finite forecast")
     return forecast
 
 
@@ -123,11 +128,13 @@ def evaluate_series(series: Series, model: Forecaster, config: EvalConfig) -> Se
             model, history, config.horizon, _history_start(series.start, origin, history)
         )
         result.seconds += time.perf_counter() - began
+        result.forecasts[origin] = forecast
         actual = series.values[origin : origin + config.horizon]
         bounds = ledger.bounds(origin, forecast, config.interval_level, config.min_interval_errors)
         ledger.add(origin, actual - forecast)
 
-        scale = naive_scale(history)
+        everything_so_far = series.values[:origin]
+        scale = naive_scale(everything_so_far)
         if scale is None:
             result.skipped += 1
             continue
@@ -142,7 +149,8 @@ def evaluate_series(series: Series, model: Forecaster, config: EvalConfig) -> Se
         }
         for h in config.report_horizons:
             row[f"mase_{h}"] = mase(actual[:h], forecast[:h], scale)
-        row[f"rmsse_{last}"] = rmsse(actual, forecast, history)
+        row[f"rmsse_{last}"] = rmsse(actual, forecast, everything_so_far)
+        row[f"bias_{last}"] = float(np.mean(forecast - actual)) / scale  # >0: over-forecast
         if bounds is None:
             row[f"coverage_{last}"] = row[f"width_{last}"] = float("nan")
         else:
@@ -152,6 +160,44 @@ def evaluate_series(series: Series, model: Forecaster, config: EvalConfig) -> Se
     return result
 
 
+def margin_rows(
+    spend: Series,
+    income: Series,
+    spend_eval: SeriesEvaluation,
+    income_eval: SeriesEvaluation,
+    model_name: str,
+    config: EvalConfig,
+) -> list[dict]:
+    """Cumulative-margin error from forecasts already made: how well the model forecasts the
+    running income-minus-spend total. Reuses the stored forecasts, so nothing is refitted."""
+    if spend.start != income.start or len(spend) != len(income):
+        raise ValueError("spend and income series must cover the same weeks")
+    rows = []
+    for origin in sorted(spend_eval.forecasts.keys() & income_eval.forecasts.keys()):
+        scale = naive_scale(income.values[:origin] - spend.values[:origin])
+        if scale is None:
+            continue
+        window = slice(origin, origin + config.horizon)
+        row = {
+            "series_id": spend.series_id,
+            "source": spend.source,
+            "model": model_name,
+            "origin": origin,
+            "scale": scale,
+        }
+        for h in config.report_horizons:
+            error = cumulative_margin_error(
+                income.values[window],
+                income_eval.forecasts[origin],
+                spend.values[window],
+                spend_eval.forecasts[origin],
+                h,
+            )
+            row[f"margin_{h}"] = error / scale
+        rows.append(row)
+    return rows
+
+
 def evaluate_pair(
     spend: Series,
     income: Series,
@@ -159,34 +205,7 @@ def evaluate_pair(
     config: EvalConfig,
     income_model: Forecaster | None = None,
 ) -> list[dict]:
-    """Cumulative-margin error: how well the model forecasts the running income-minus-spend."""
-    if spend.start != income.start or len(spend) != len(income):
-        raise ValueError("spend and income series must cover the same weeks")
-    rows = []
-    for origin in _origins(len(spend), spend.start, config):
-        spend_history, income_history = (
-            _history(spend.values, origin, config.history_limit),
-            _history(income.values, origin, config.history_limit),
-        )
-        start = _history_start(spend.start, origin, spend_history)
-        scale = naive_scale(income_history - spend_history)
-        if scale is None:
-            continue
-        spend_forecast = _forecast(model, spend_history, config.horizon, start)
-        income_forecast = _forecast(income_model or model, income_history, config.horizon, start)
-        spend_actual = spend.values[origin : origin + config.horizon]
-        income_actual = income.values[origin : origin + config.horizon]
-        row = {
-            "series_id": spend.series_id,
-            "source": spend.source,
-            "model": model.name,
-            "origin": origin,
-            "scale": scale,
-        }
-        for h in config.report_horizons:
-            error = cumulative_margin_error(
-                income_actual, income_forecast, spend_actual, spend_forecast, h
-            )
-            row[f"margin_{h}"] = error / scale
-        rows.append(row)
-    return rows
+    """Fit both series and score the running margin (the runner reuses forecasts instead)."""
+    spend_eval = evaluate_series(spend, model, config)
+    income_eval = evaluate_series(income, income_model or model, config)
+    return margin_rows(spend, income, spend_eval, income_eval, model.name, config)

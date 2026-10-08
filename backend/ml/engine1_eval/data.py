@@ -15,7 +15,7 @@ import numpy as np
 DAYS_PER_WEEK = 7
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)  # holds an array: compare by identity, not by value
 class Series:
     series_id: str
     kind: str  # "spend" | "income"

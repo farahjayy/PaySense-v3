@@ -21,7 +21,12 @@ import yaml
 
 from ml.engine1_eval.data import Series, sample_profiles
 from ml.engine1_eval.forecaster import Forecaster
-from ml.engine1_eval.harness import EvalConfig, evaluate_pair, evaluate_series
+from ml.engine1_eval.harness import (
+    EvalConfig,
+    SeriesEvaluation,
+    evaluate_series,
+    margin_rows,
+)
 from ml.engine1_eval.loaders import berka, moneydata, synthetic
 from ml.engine1_eval.models.arima import AutoArima
 from ml.engine1_eval.models.benchmarks import MovingAverage, Naive
@@ -31,6 +36,9 @@ from ml.engine1_eval.models.prophet_model import ProphetModel
 CONFIG_DIR = Path(__file__).resolve().parent / "configs"
 DEFAULT_OUT_ROOT = Path(__file__).resolve().parents[3] / "data" / "engine1"
 KINDS = ("spend", "income")
+# A model failing to fit one series is data (recorded in failures.csv). A bug such as a TypeError,
+# KeyError or ImportError is not, and is allowed to stop the run.
+EXPECTED_FAILURES = (ValueError, RuntimeError, ArithmeticError, np.linalg.LinAlgError)
 BENCHMARKS = ("naive", "ma4", "ma13")
 LITERATURE = ("arima", "prophet", "lstm")
 
@@ -87,7 +95,7 @@ def result_columns(config: RunConfig) -> list[str]:
     return [
         "history_limit", "series_id", "kind", "source", "model", "origin", "train_len", "scale",
         *(f"mase_{h}" for h in config.report_horizons),
-        f"rmsse_{last}", f"coverage_{last}", f"width_{last}",
+        f"rmsse_{last}", f"bias_{last}", f"coverage_{last}", f"width_{last}",
     ]  # fmt: skip
 
 
@@ -172,6 +180,8 @@ def run(config: RunConfig, out_root: Path, paths: DataPaths | None = None) -> di
     lstm_models: dict[str, GlobalLstm] = {}
     try:
         train, test_pairs = _synthetic_series(config, paths)
+        if "lstm" in config.models and not (train and test_pairs):
+            raise ValueError("the LSTM needs synthetic training and test profiles")
         if train and test_pairs:
             cutoff = train[0].start + timedelta(weeks=config.synthetic["cutoff_week"])
             if "lstm" in config.models:
@@ -208,38 +218,42 @@ def _score_pair(
 ) -> None:
     """Score one student's / account's spend and income series with every model.
 
-    Spend and income each get their own LSTM; every other model is the same for both kinds.
+    Spend and income each get their own LSTM; every other model is the same for both kinds. Each
+    series is fitted once; the running-margin error reuses the stored forecasts.
     """
     models = {kind: build_forecasters(config.models, kind, lstm) for kind in KINDS}
-    for kind in KINDS:
-        for model in models[kind]:
-            _score_series(out, pair[kind], model, eval_config, limit)
-    for spend_model, income_model in zip(models["spend"], models["income"], strict=True):
-        try:
-            rows = evaluate_pair(
-                pair["spend"], pair["income"], spend_model, eval_config, income_model
+    for position in range(len(models["spend"])):
+        evaluations: dict[str, SeriesEvaluation | None] = {}
+        for kind in KINDS:
+            evaluations[kind] = _score_series(
+                out, pair[kind], models[kind][position], eval_config, limit
             )
-        except Exception as error:  # noqa: BLE001 - recorded, never swallowed
-            _record_failure(out, pair["spend"], spend_model, error)
+        spend_eval, income_eval = evaluations["spend"], evaluations["income"]
+        if spend_eval is None or income_eval is None:
             continue
+        rows = margin_rows(
+            pair["spend"], pair["income"], spend_eval, income_eval,
+            models["spend"][position].name, eval_config,
+        )  # fmt: skip
         for row in rows:
             out.margin.writerow({**row, "history_limit": limit})
 
 
 def _score_series(
     out: _Output, series: Series, model: Forecaster, eval_config: EvalConfig, limit: str
-) -> None:
+) -> SeriesEvaluation | None:
     try:
         evaluation = evaluate_series(series, model, eval_config)
-    except Exception as error:  # noqa: BLE001 - recorded, never swallowed
+    except EXPECTED_FAILURES as error:
         _record_failure(out, series, model, error)
-        return
+        return None
     for row in evaluation.rows:
         out.results.writerow({**row, "history_limit": limit})
         out.row_count += 1
     bucket = out.seconds.setdefault((series.source, limit, model.name), [0.0, 0.0])
     bucket[0] += evaluation.seconds
     bucket[1] += len(evaluation.rows) + evaluation.skipped
+    return evaluation
 
 
 def _record_failure(out: _Output, series: Series, model: Forecaster, error: Exception) -> None:
@@ -267,19 +281,16 @@ def _run_real(
         groups.append((pairs, config.moneydata["stride"]))
     if config.berka.get("accounts", 0) > 0:
         loaded = berka.load_berka(
-            paths.berka_account, paths.berka_trans, min_weeks=config.berka["min_weeks"]
+            paths.berka_account,
+            paths.berka_trans,
+            min_weeks=config.berka["min_weeks"],
+            sample=(config.berka["accounts"], config.seed),
         )
-        chosen = _sample(list(_pairs(loaded)), config.berka["accounts"], config.seed)
-        groups.append((chosen, config.berka["stride"]))
+        groups.append((list(_pairs(loaded)), config.berka["stride"]))
     for pairs, stride in groups:
         eval_config = replace(base, stride=stride)
         for pair in pairs:
             _score_pair(out, pair, config, lstm, eval_config, "")
-
-
-def _sample(pairs: list[dict[str, Series]], count: int, seed: int) -> list[dict[str, Series]]:
-    order = np.random.default_rng(seed).permutation(len(pairs))[:count]
-    return [pairs[i] for i in sorted(order)]
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -290,6 +301,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     config = load_config(args.config)
     summary = run(config, args.out or DEFAULT_OUT_ROOT / config.name)
     print(f"{config.name}: {summary['rows']} rows, {summary['failures']} failures")  # noqa: T201
+    if summary["failures"]:
+        raise SystemExit(f"{summary['failures']} model failures: see failures.csv")
 
 
 if __name__ == "__main__":

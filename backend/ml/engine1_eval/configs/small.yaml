@@ -3,13 +3,13 @@ name: small
 seed: 20251228
 horizon: 13
 report_horizons: [1, 4, 13]
-stride: 4
+stride: 1
 min_train: 26
 models: [naive, ma4, ma13, arima, prophet, lstm]
 synthetic:
   profiles: 400
   train_profiles: 300      # the global LSTM learns from these, before the cutoff week only
-  test_profiles: 20        # every model is evaluated on these, after the cutoff week
+  test_profiles: 12        # every model is evaluated on these, after the cutoff week
   cutoff_week: 52          # weeks after the cohort's first week
   history_limits: [26, 52] # weeks of history each model is shown (short-history study)
 moneydata:

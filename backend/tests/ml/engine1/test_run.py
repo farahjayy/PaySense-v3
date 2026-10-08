@@ -159,3 +159,58 @@ def test_the_lstm_is_trained_per_kind_and_used_in_a_run(cohort, tmp_path):
     data = rows(tmp_path / "results.csv")
     assert {r["model"] for r in data} == {"naive", "lstm"}
     assert {r["kind"] for r in data if r["model"] == "lstm"} == {"spend", "income"}
+
+
+def test_the_lstm_without_synthetic_training_data_is_a_clear_error(cohort, tmp_path):
+    bad = config(models=["naive", "lstm"], synthetic={**config().synthetic, "test_profiles": 0})
+
+    with pytest.raises(ValueError, match="LSTM needs"):
+        run(bad, tmp_path, DataPaths(synthetic=cohort))
+
+
+def test_a_programming_error_stops_the_run_instead_of_being_recorded_as_a_result(
+    cohort, tmp_path, monkeypatch
+):
+    from ml.engine1_eval import run as run_module
+
+    class Buggy:
+        name = "buggy"
+
+        def forecast(self, history, horizon, start):
+            raise TypeError("a real bug")
+
+    original = run_module.build_forecasters
+    monkeypatch.setattr(
+        run_module,
+        "build_forecasters",
+        lambda names, kind, lstm: [*original(names, kind, lstm), Buggy()],
+    )
+
+    with pytest.raises(TypeError, match="real bug"):
+        run(config(), tmp_path, DataPaths(synthetic=cohort))
+
+
+def test_each_series_is_fitted_once_per_model_even_though_margin_error_is_reported(
+    cohort, tmp_path, monkeypatch
+):
+    from ml.engine1_eval import run as run_module
+
+    calls = []
+
+    class Counting:
+        name = "counting"
+
+        def forecast(self, history, horizon, start):
+            calls.append(len(history))
+            return np.full(horizon, 1.0)
+
+    monkeypatch.setattr(run_module, "build_forecasters", lambda names, kind, lstm: [Counting()])
+    cfg = config(synthetic={**config().synthetic, "history_limits": [12], "test_profiles": 3})
+
+    run(cfg, tmp_path, DataPaths(synthetic=cohort))
+
+    from ml.engine1_eval.harness import rolling_origins
+
+    origins = len(rolling_origins(80, 40, cfg.horizon, cfg.stride))
+    assert len(calls) == 3 * 2 * origins  # profiles x kinds x origins: no second pass for margin
+    assert len(rows(tmp_path / "margin.csv")) > 0

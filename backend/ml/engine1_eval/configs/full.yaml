@@ -5,13 +5,13 @@ name: full
 seed: 20251228
 horizon: 13
 report_horizons: [1, 4, 13]
-stride: 4
+stride: 1
 min_train: 26
 models: [naive, ma4, ma13, arima, prophet, lstm]
 synthetic:
   profiles: 4000
   train_profiles: 3000
-  test_profiles: 150
+  test_profiles: 60
   cutoff_week: 52
   history_limits: [17, 26, 52]
 moneydata:

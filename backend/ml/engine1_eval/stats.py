@@ -31,7 +31,7 @@ CI_LEVEL = 0.95
 
 
 @dataclass(frozen=True)
-class TestResult:
+class TestOutcome:
     statistic: float
     p_value: float
     median_difference: float = 0.0
@@ -57,8 +57,14 @@ def holm_adjust(p_values: list[float]) -> list[float]:
     return adjusted
 
 
-def dm_hln(loss_a: np.ndarray, loss_b: np.ndarray, horizon: int) -> TestResult:
+def dm_hln(loss_a: np.ndarray, loss_b: np.ndarray, horizon: int) -> TestOutcome:
     """Diebold-Mariano test with the Harvey-Leybourne-Newbold small-sample correction.
+
+    `horizon` is the number of consecutive loss differences that share the same future weeks:
+    1 when each origin's forecast window is disjoint from the previous one, and
+    ceil(forecast_weeks / stride) when windows overlap. The long-run variance uses Bartlett
+    weights, which keep it positive (a plain rectangular window can return zero or less, and a
+    "perfect separation" result would be a false alarm).
 
     A negative statistic means model A has the lower loss. Two-sided p-value from Student's t with
     n - 1 degrees of freedom.
@@ -71,28 +77,27 @@ def dm_hln(loss_a: np.ndarray, loss_b: np.ndarray, horizon: int) -> TestResult:
     centred = d - mean
     variance = float(np.sum(centred**2) / n)
     for lag in range(1, horizon):
-        variance += 2 * float(np.sum(centred[lag:] * centred[:-lag]) / n)
-    if variance <= 0:
-        return (
-            TestResult(0.0, 1.0, float(np.median(d)))
-            if mean == 0
-            else TestResult(math.copysign(math.inf, mean), 0.0, float(np.median(d)))
-        )
+        weight = 1 - lag / horizon
+        variance += 2 * weight * float(np.sum(centred[lag:] * centred[:-lag]) / n)
+    if variance <= 0:  # no variation at all (identical or constant-gap losses)
+        if mean == 0:
+            return TestOutcome(0.0, 1.0, float(np.median(d)))
+        return TestOutcome(math.copysign(math.inf, mean), 0.0, float(np.median(d)))
     dm = mean / math.sqrt(variance / n)
     correction = math.sqrt((n + 1 - 2 * horizon + horizon * (horizon - 1) / n) / n)
     statistic = dm * correction
     p_value = float(2 * stats.t.sf(abs(statistic), df=n - 1))
-    return TestResult(float(statistic), p_value, float(np.median(d)))
+    return TestOutcome(float(statistic), p_value, float(np.median(d)))
 
 
-def wilcoxon_paired(a: np.ndarray, b: np.ndarray) -> TestResult:
+def wilcoxon_paired(a: np.ndarray, b: np.ndarray) -> TestOutcome:
     """Paired Wilcoxon signed-rank test on per-series scores; negative median means A is lower."""
     diff = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
     median = float(np.median(diff))
     if np.all(diff == 0):
-        return TestResult(0.0, 1.0, 0.0)
+        return TestOutcome(0.0, 1.0, 0.0)
     result = stats.wilcoxon(diff, zero_method="wilcox")
-    return TestResult(float(result.statistic), float(result.pvalue), median)
+    return TestOutcome(float(result.statistic), float(result.pvalue), median)
 
 
 def friedman_nemenyi(scores: np.ndarray, names: list[str]) -> FriedmanResult:

@@ -97,3 +97,15 @@ def test_bootstrap_ci_brackets_the_sample_median_and_is_reproducible():
 
     assert low < np.median(diffs) < high
     assert bootstrap_median_ci(diffs, seed=1) == (low, high)
+
+
+def test_dm_hln_with_overlapping_windows_never_reports_perfect_separation_by_accident():
+    """A rectangular lag window can return a non-positive variance for noisy, autocorrelated gaps;
+    Bartlett weights keep it positive, so a noisy comparison does not become p = 0."""
+    infinite = 0
+    for seed in range(100):
+        e = np.random.default_rng(seed).normal(size=31)
+        d = e[1:] - 0.9 * e[:-1] + 0.1
+        outcome = dm_hln(d, np.zeros(30), horizon=13)
+        infinite += math.isinf(outcome.statistic)
+    assert infinite == 0

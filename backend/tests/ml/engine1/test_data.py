@@ -141,7 +141,7 @@ def test_moneydata_becomes_weekly_spend_and_income_leaving_savings_out(tmp_path)
         ],
     )
 
-    series = {s.kind: s for s in load_moneydata(path)}
+    series = {s.kind: s for s in load_moneydata(path, expected_sha256=None)}
 
     assert series["spend"].start == date(2025, 1, 6)
     assert list(series["spend"].values) == [1000, 0, 550]  # pence; last partial week dropped
@@ -206,3 +206,81 @@ def test_berka_skips_accounts_with_too_few_weeks(tmp_path):
     )
 
     assert list(load_berka(account, trans, min_weeks=10)) == []
+
+
+def test_moneydata_refuses_a_file_that_does_not_match_the_published_checksum(tmp_path):
+    path = tmp_path / "money.xlsx"
+    make_workbook(path, [("06/01/2025", 10.0, None, "Groceries")])
+
+    with pytest.raises(ValueError, match="checksum"):
+        list(load_moneydata(path))
+
+
+def test_berka_sampling_keeps_a_seeded_subset_of_eligible_accounts(tmp_path):
+    account = tmp_path / "account.csv"
+    trans = tmp_path / "trans.csv"
+    account.write_text("account_id\n1\n2\n3\n4\n", encoding="utf-8")
+    with trans.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(
+            [
+                "trans_id",
+                "account_id",
+                "date",
+                "type",
+                "operation",
+                "amount",
+                "balance",
+                "k_symbol",
+                "bank",
+                "account",
+            ]
+        )
+        n = 0
+        for acct in (1, 2, 3):  # account 4 has no transactions at all
+            for week in range(12):
+                n += 1
+                writer.writerow(
+                    [
+                        n,
+                        acct,
+                        date(1995, 1, 2)
+                        .fromordinal(date(1995, 1, 2).toordinal() + 7 * week)
+                        .isoformat(),
+                        "VYDAJ",
+                        "",
+                        10,
+                        0,
+                        "",
+                        "",
+                        "",
+                    ]
+                )
+
+    chosen = {s.series_id for s in load_berka(account, trans, min_weeks=5, sample=(2, 7))}
+    again = {s.series_id for s in load_berka(account, trans, min_weeks=5, sample=(2, 7))}
+    other = {s.series_id for s in load_berka(account, trans, min_weeks=5, sample=(2, 8))}
+
+    assert chosen == again and len(chosen) == 2 and chosen <= {"berka-1", "berka-2", "berka-3"}
+    assert other <= {"berka-1", "berka-2", "berka-3"}
+
+
+def test_berka_rejects_a_non_finite_or_negative_amount(tmp_path):
+    account, trans = write_berka(
+        tmp_path, [("1995-01-02", "VYDAJ", float("nan"), ""), ("1995-01-12", "VYDAJ", 5, "")]
+    )
+
+    with pytest.raises(ValueError, match="unusable amount"):
+        list(load_berka(account, trans, min_weeks=1))
+
+
+def test_the_synthetic_loader_rejects_a_file_that_is_not_sorted_by_profile(tmp_path):
+    path = tmp_path / "weekly_series.csv"
+    path.write_text(
+        "profile_index,week_start,discretionary_sen,income_sen\n"
+        "1,2025-01-06,1,1\n0,2025-01-06,1,1\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="not sorted"):
+        list(load_synthetic(path))

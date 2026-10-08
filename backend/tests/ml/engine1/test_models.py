@@ -127,3 +127,27 @@ def test_training_with_no_usable_window_is_an_error_not_a_silent_untrained_model
 
     with pytest.raises(ValueError, match="no training windows"):
         GlobalLstm.train(short, FAST)
+
+
+def test_without_validation_windows_the_lstm_still_trains_every_epoch():
+    one_series = make_cohort(count=1, weeks=80)
+    config = LstmConfig(window=12, horizon=4, hidden=8, epochs=4, batch_size=64, window_stride=3)
+
+    trained = GlobalLstm.train(one_series, config).state()
+    untrained_like = GlobalLstm.train(
+        one_series, LstmConfig(**{**config.__dict__, "epochs": 1})
+    ).state()
+
+    assert any(not torch.equal(trained[k], untrained_like[k]) for k in trained)
+
+
+def test_a_mid_week_cutoff_rounds_up_for_training_windows_too():
+    series = make_cohort(count=1, weeks=60)
+    mid_week = START + timedelta(weeks=30, days=3)  # whole weeks strictly before it: 31
+
+    x, _ = build_windows(series, FAST, until=mid_week)
+    exact, _ = build_windows(series, FAST, until=START + timedelta(weeks=30))
+
+    assert len(x) >= len(exact)
+    limit = 31
+    assert len(x) == len(range(FAST.window, limit - FAST.horizon + 1, FAST.window_stride))

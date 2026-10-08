@@ -31,6 +31,10 @@ def load_synthetic(
             index = int(row["profile_index"])
             if profile_ids is not None and index > last_wanted:
                 break  # the file is sorted by profile: nothing wanted remains
+            if current is not None and index < current:
+                raise ValueError(
+                    f"profile {index} appears after profile {current}: file not sorted"
+                )
             if index != current:
                 if current is not None and weeks:
                     yield from _emit(current, weeks, spend, income)

@@ -118,13 +118,12 @@ class GlobalLstm:
                 optimiser.zero_grad()
                 loss_fn(network(x), y).backward()
                 optimiser.step()
+            if not len(valid_x):
+                continue  # nothing to validate on: train every epoch rather than stop at once
             network.eval()
             with torch.no_grad():
-                if len(valid_x):
-                    x = torch.from_numpy(valid_x).unsqueeze(-1)
-                    score = float(loss_fn(network(x), torch.from_numpy(valid_y)))
-                else:
-                    score = 0.0
+                x = torch.from_numpy(valid_x).unsqueeze(-1)
+                score = float(loss_fn(network(x), torch.from_numpy(valid_y)))
             if score < best - 1e-6:
                 best, stale = score, 0
                 best_state = {k: v.clone() for k, v in network.state_dict().items()}

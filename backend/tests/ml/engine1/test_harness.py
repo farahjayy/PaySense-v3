@@ -8,6 +8,7 @@ from ml.engine1_eval.harness import (
     EvalConfig,
     evaluate_pair,
     evaluate_series,
+    margin_rows,
     rolling_origins,
 )
 from ml.engine1_eval.models.benchmarks import MovingAverage, Naive
@@ -160,3 +161,75 @@ def test_a_history_limit_shows_the_model_only_the_most_recent_weeks():
     evaluate_series(series(np.arange(1.0, 30.0)), Recorder(), config)
 
     assert seen == [(6, date(2025, 1, 6) + timedelta(weeks=4))]
+
+
+def test_a_mid_week_cutoff_rounds_up_so_no_origin_precedes_it():
+    config = EvalConfig(
+        horizon=4,
+        report_horizons=(1, 4),
+        min_train=2,
+        stride=1,
+        first_origin_date=date(2025, 3, 3) + timedelta(days=3),  # a Thursday, 8 weeks and 3 days in
+    )
+
+    rows = evaluate_series(series(np.arange(1.0, 40.0)), Naive(), config).rows
+
+    # week 8 starts on 3 March, before the cutoff; the first whole week at or after it is week 9
+    assert min(r["origin"] for r in rows) == 9
+
+
+def test_a_non_finite_forecast_is_an_error_not_a_scored_nan():
+    class Broken:
+        name = "broken"
+
+        def forecast(self, history, horizon, start):
+            return np.full(horizon, np.nan)
+
+    with pytest.raises(ValueError, match="non-finite"):
+        evaluate_series(series(np.arange(1.0, 40.0)), Broken(), CONFIG)
+
+
+def test_errors_are_scaled_by_the_whole_history_whatever_the_model_is_shown():
+    values = np.concatenate([np.random.default_rng(6).uniform(0, 100, 30), np.full(30, 5.0)])
+    full = EvalConfig(horizon=4, report_horizons=(4,), min_train=40, stride=100)
+    short = EvalConfig(horizon=4, report_horizons=(4,), min_train=40, stride=100, history_limit=10)
+
+    a = evaluate_series(series(values), Naive(), full).rows[0]
+    b = evaluate_series(series(values), Naive(), short).rows[0]
+
+    assert a["scale"] == pytest.approx(b["scale"])  # a 10-week view does not rescale the error
+    assert b["train_len"] == 10 and a["train_len"] == 40
+
+
+def test_the_signed_bias_is_positive_for_a_model_that_over_forecasts():
+    class High:
+        name = "high"
+
+        def forecast(self, history, horizon, start):
+            return np.full(horizon, 1000.0)
+
+    row = evaluate_series(series(np.random.default_rng(7).uniform(1, 10, 40)), High(), CONFIG).rows[
+        0
+    ]
+
+    assert row["bias_4"] > 0
+
+
+def test_margin_rows_reuse_stored_forecasts_instead_of_refitting():
+    calls = []
+
+    class Counting:
+        name = "counting"
+
+        def forecast(self, history, horizon, start):
+            calls.append(len(history))
+            return np.full(horizon, 5.0)
+
+    spend, income = series(np.tile([3.0, 4.0], 20)), series(np.tile([10.0, 0.0], 20), kind="income")
+    s_eval = evaluate_series(spend, Counting(), CONFIG)
+    i_eval = evaluate_series(income, Counting(), CONFIG)
+    fits = len(calls)
+
+    rows = margin_rows(spend, income, s_eval, i_eval, "counting", CONFIG)
+
+    assert len(calls) == fits and rows
