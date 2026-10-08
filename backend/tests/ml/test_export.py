@@ -46,18 +46,11 @@ def test_a_profile_line_carries_everything_engine_two_needs(run):
     out, _ = run
     profile = jsonl(out / PROFILES_FILE)[0]
 
-    for key in (
-        "persona",
-        "as_of",
-        "expected_monthly_income_sen",
-        "transactions",
-        "plans",
-        "limits",
-        "actual_limits",
-        "purchase",
-        "recurring_truth",
-    ):
+    for key in ("as_of", "transactions", "plans", "limits", "purchase", "truth"):
         assert key in profile, key
+    # answer keys live only under "truth", never beside the inputs
+    for key in ("persona", "expected_monthly_income_sen", "actual_limits", "recurring_truth"):
+        assert key in profile["truth"] and key not in profile, key
     assert date.fromisoformat(profile["as_of"])
     first = profile["transactions"][0]
     assert date.fromisoformat(first["date"]) and isinstance(first["amount_sen"], int)
@@ -160,3 +153,33 @@ def test_the_command_line_entry_point_writes_a_run(tmp_path):
 def test_a_non_positive_profile_count_is_rejected(tmp_path):
     with pytest.raises(ValueError, match="count"):
         export_synthetic(PARAMS, seed=1, count=0, out_dir=tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("as_of", "months", "first_monday", "last_monday"),
+    [
+        (
+            date(2025, 12, 17),
+            1,
+            date(2025, 12, 1),
+            date(2025, 12, 8),
+        ),  # Wednesday: last week partial
+        (
+            date(2025, 12, 15),
+            1,
+            date(2025, 12, 1),
+            date(2025, 12, 8),
+        ),  # Monday: that week is partial
+        (date(2025, 12, 21), 1, date(2025, 12, 1), date(2025, 12, 15)),  # Sunday: week is complete
+        (
+            date(2025, 12, 28),
+            2,
+            date(2025, 11, 3),
+            date(2025, 12, 22),
+        ),  # starts mid-week (Sat 1 Nov)
+    ],
+)
+def test_weekly_series_trims_partial_weeks_at_both_ends(as_of, months, first_monday, last_monday):
+    series = weekly_series(generate_profile(PARAMS, 9, 0, history_months=months, as_of=as_of))
+
+    assert (series[0].week_start, series[-1].week_start) == (first_monday, last_monday)

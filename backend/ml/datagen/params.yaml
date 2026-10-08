@@ -38,6 +38,11 @@ history:
     why: "Supervisor-mandated length of the UAT persona histories (academic-constraints.md section 3) - a design constraint, not an empirical figure."
 
 income:
+  ptptn_pay_day:
+    value: 10
+    unit: day_of_month
+    assumed: true
+    why: "Assumed day of the month a PTPTN lump sum lands; the PTPTN page gives no dates."
   allowance_probability:
     frequent_bnpl: {value: 1.0, unit: ratio, assumed: true, why: "Assumed that this persona receives a regular family allowance."}
     budget_conscious: {value: 1.0, unit: ratio, assumed: true, why: "Assumed fixed-income persona: regular family allowance."}
@@ -126,6 +131,16 @@ income:
     why: "Job volume multiplier during a dry spell."
 
 bills:
+  max_subscriptions:
+    value: 2
+    unit: count
+    assumed: true
+    why: "Most streaming / cloud subscriptions one profile carries; no published figure."
+  subscription_day_range:
+    value: [1, 28]
+    unit: day_of_month
+    assumed: true
+    why: "Day of month a subscription renews; drawn uniformly, kept to 28 so every month has the day."
   rent_probability:
     value: 0.8
     unit: ratio
@@ -168,6 +183,62 @@ bills:
     why: "Small month-to-month variation in phone/utility bills."
 
 discretionary:
+  min_txn_share_of_typical:
+    value: 0.3
+    unit: ratio
+    assumed: true
+    why: "No single purchase is smaller than this fraction of its category's typical size (a RM2 burger meal is not generated)."
+  min_txn_sen:
+    value: 100
+    unit: sen
+    assumed: true
+    why: "Smallest discretionary transaction (RM1); smaller amounts are folded into the week's biggest category."
+  weekly_ar1_phi:
+    value: 0.5
+    unit: ratio
+    assumed: true
+    why: "Week-to-week persistence of a student's spending level (AR(1) coefficient). No published figure; gives the weekly series temporal structure so benchmarks that ignore it are not unfairly favoured."
+  weekly_ar1_sigma:
+    value: 0.12
+    unit: ratio
+    assumed: true
+    why: "Innovation scale of the weekly spending-level drift (log scale); no published figure."
+  payday_week_total_bump_ratio:
+    value: 0.1
+    unit: ratio
+    assumed: true
+    why: "Lift in a whole week's spending when an income payment lands in it; no published figure."
+  category_allocation_concentration:
+    value: 25
+    unit: count
+    assumed: true
+    why: "How tightly a week's spend follows the cited category shares (Dirichlet concentration; higher is tighter). No published figure."
+  category_typical_txn_sen:
+    food: {value: 1200, unit: sen, assumed: true, why: "Typical size of one food or eating-out transaction (RM12). No published transaction-level sizes."}
+    transport: {value: 600, unit: sen, assumed: true, why: "Typical transport transaction (RM6)."}
+    shopping: {value: 6000, unit: sen, assumed: true, why: "Typical shopping transaction (RM60)."}
+    entertainment: {value: 4000, unit: sen, assumed: true, why: "Typical entertainment transaction (RM40)."}
+    education: {value: 8000, unit: sen, assumed: true, why: "Typical education transaction (RM80)."}
+  payday_window_days:
+    value: 3
+    unit: count
+    assumed: true
+    why: "Days after an income credit in which spending runs higher (see payday_bump_ratio); no published figure."
+  txn_amount_gamma_shape:
+    value: 3.0
+    unit: ratio
+    assumed: true
+    why: "Gamma shape of transaction sizes within a week; higher means fewer very small purchases. Chosen so persona CSVs read plausibly to testers."
+  refund_amount_sen_range:
+    value: [2000, 15000]
+    unit: sen
+    assumed: true
+    why: "Refund size, drawn uniformly (RM20-150); no published figure."
+  transfer_amount_sen_range:
+    value: [2000, 10000]
+    unit: sen
+    assumed: true
+    why: "Own-account top-up size, drawn uniformly (RM20-100); no published figure."
   monthly_median_sen:
     budget_conscious:
       value: 30000
@@ -221,11 +292,6 @@ discretionary:
     unit: ratio
     assumed: true
     why: "Size of such a week relative to normal."
-  transactions_per_week_mean:
-    value: 5
-    unit: count
-    assumed: true
-    why: "Mean number of discretionary transactions per week (Poisson). With the cited RM201-400 monthly spend this makes a typical transaction around RM14; more transactions per week would imply a typical meal of a few ringgit, which testers would find implausible."
   category_weight_food:
     value: 16.3
     unit: percent_of_household_spending
@@ -258,12 +324,6 @@ discretionary:
     unit: ratio
     assumed: true
     why: "As above."
-  category_size_weight:
-    food: {value: 1.0, unit: ratio, assumed: true, why: "Relative typical size of one transaction by category (food = 1). No published transaction-level sizes; chosen so a shopping or education purchase is several times a meal or a bus fare. Category spend shares still follow the cited household weights; only the number of transactions per category changes."}
-    transport: {value: 0.6, unit: ratio, assumed: true, why: "As above."}
-    shopping: {value: 3.0, unit: ratio, assumed: true, why: "As above."}
-    entertainment: {value: 2.0, unit: ratio, assumed: true, why: "As above."}
-    education: {value: 3.0, unit: ratio, assumed: true, why: "As above."}
   unrecognisable_description_share:
     value: 0.08
     unit: ratio
@@ -281,6 +341,21 @@ discretionary:
     why: "Chance of an own-account move (e-wallet top-up), so the reserved Transfer category is exercised."
 
 bnpl:
+  limit_floor_sen:
+    value: 1000
+    unit: sen
+    assumed: true
+    why: "Smallest limit a provider grants (RM10)."
+  history_lookback_days:
+    value: 60
+    unit: count
+    assumed: true
+    why: "Existing plans may have started up to this many days before the visible history, so early instalments fall inside it."
+  first_payment_slack_days:
+    value: 3
+    unit: count
+    assumed: true
+    why: "A manually typed first payment date is rarely exactly one month after purchase; up to this many days later."
   ownership_probability:
     frequent_bnpl: {value: 0.85, unit: ratio, assumed: true, why: "Defines the persona. No published share of students using BNPL (bnpl_billing_rules_my and bnm_fsr_2h2022 describe users, not students)."}
     budget_conscious: {value: 0.25, unit: ratio, assumed: true, why: "Defines the persona (uses BNPL rarely)."}
@@ -343,6 +418,11 @@ bnpl:
     why: "Share of users who record their limit in the app (the limit_known feature)."
 
 repayment:
+  late_payer_late_instalment_share:
+    value: 0.5
+    unit: ratio
+    assumed: true
+    why: "Among students who pay late at all, the share of their instalments that are late (at least one always is). The cited study reports holders, not instalments."
   on_time_share:
     value: 0.88
     unit: ratio
@@ -363,6 +443,21 @@ repayment:
     why: "How late a late payment is; no published distribution."
 
 purchase:
+  income_floor_sen:
+    value: 10000
+    unit: sen
+    assumed: true
+    why: "RM100: a student with no visible income still gets a priced purchase."
+  price_floor_sen:
+    value: 1000
+    unit: sen
+    assumed: true
+    why: "Smallest proposed price (RM10)."
+  price_cap_sen:
+    value: 5000000
+    unit: sen
+    assumed: true
+    why: "Largest proposed price (RM50,000)."
   price_to_monthly_income_range:
     value: [0.02, 3.0]
     unit: ratio

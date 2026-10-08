@@ -6,7 +6,7 @@ import pytest
 
 from ml.datagen.bnpl import BnplResult, generate_bnpl
 from ml.datagen.params import load_params
-from ml.datagen.purchase import MIN_INCOME_FLOOR_SEN, sample_purchase
+from ml.datagen.purchase import sample_purchase
 from ml.datagen.rng import profile_rng
 
 PARAMS = load_params()
@@ -72,6 +72,8 @@ def test_an_income_of_nothing_uses_the_floor_instead_of_a_zero_price():
 
     assert (
         p.price_sen
-        >= MIN_INCOME_FLOOR_SEN * PARAMS["purchase.price_to_monthly_income_range"][0] * 0.99
+        >= PARAMS["purchase.income_floor_sen"]
+        * PARAMS["purchase.price_to_monthly_income_range"][0]
+        * 0.99
     )
     assert p.proposal.total_price_sen > 0

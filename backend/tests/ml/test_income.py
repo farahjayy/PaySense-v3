@@ -161,12 +161,17 @@ def test_the_irregular_persona_mostly_has_no_allowance():
 
 
 def test_a_window_shorter_than_a_month_still_works():
-    result = generate_income(
-        PARAMS,
-        "budget_conscious",
-        date(2025, 3, 10),
-        date(2025, 3, 16),
-        profile_rng(1, 0, "income"),
-    )
+    events = [
+        e
+        for index in range(60)
+        for e in generate_income(
+            PARAMS,
+            "budget_conscious",
+            date(2025, 3, 10),
+            date(2025, 3, 16),
+            profile_rng(1, index, "income"),
+        ).events
+    ]
 
-    assert all(date(2025, 3, 10) <= e.date <= date(2025, 3, 16) for e in result.events)
+    assert events  # the check below must not pass on an empty list
+    assert all(date(2025, 3, 10) <= e.date <= date(2025, 3, 16) for e in events)

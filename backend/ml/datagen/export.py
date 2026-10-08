@@ -31,7 +31,7 @@ from ml.datagen.profile import StudentProfile, generate_profile
 PROFILES_FILE = "profiles.jsonl"
 COHORT_FILE = "weekly_series.csv"
 MANIFEST_FILE = "MANIFEST.json"
-COHORT_COLUMNS = ("profile_index", "persona", "week_start", "discretionary_sen", "income_sen")
+COHORT_COLUMNS = ("profile_index", "week_start", "discretionary_sen", "income_sen")
 DEFAULT_OUT_DIR = Path(__file__).resolve().parents[3] / "data" / "synthetic"
 DEFAULT_SEED = 20251228
 DEFAULT_PROFILES = 10_000
@@ -89,16 +89,20 @@ def to_jsonable(value: Any) -> Any:
 def profile_record(profile: StudentProfile) -> dict[str, Any]:
     return {
         "index": profile.index,
-        "persona": profile.persona,
         "start": profile.start.isoformat(),
         "as_of": profile.as_of.isoformat(),
-        "expected_monthly_income_sen": profile.expected_monthly_income_sen,
         "transactions": to_jsonable(profile.transactions),
         "plans": to_jsonable(profile.bnpl.plans),
         "limits": to_jsonable(profile.bnpl.limits),
-        "actual_limits": to_jsonable(profile.bnpl.actual_limits),
         "purchase": to_jsonable(profile.purchase),
-        "recurring_truth": to_jsonable(profile.recurring_truth),
+        # Answer keys the generator knows and the app cannot see. Training and serving code must
+        # never read this block (a test in P5 enforces it); evaluation code may.
+        "truth": {
+            "persona": profile.persona,
+            "expected_monthly_income_sen": profile.expected_monthly_income_sen,
+            "actual_limits": to_jsonable(profile.bnpl.actual_limits),
+            "recurring_truth": to_jsonable(profile.recurring_truth),
+        },
     }
 
 
@@ -114,6 +118,9 @@ def export_synthetic(params: Params, seed: int, count: int, out_dir: Path) -> di
     if count < 1:
         raise ValueError("count must be at least 1")
     out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / MANIFEST_FILE).unlink(
+        missing_ok=True
+    )  # a failed run must not leave a stale manifest
     persona_counts: dict[str, int] = {}
     cohort_rows = 0
     with (
@@ -131,7 +138,6 @@ def export_synthetic(params: Params, seed: int, count: int, out_dir: Path) -> di
                 cohort.writerow(
                     [
                         index,
-                        profile.persona,
                         point.week_start.isoformat(),
                         point.discretionary_sen,
                         point.income_sen,

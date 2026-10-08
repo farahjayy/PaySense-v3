@@ -16,7 +16,7 @@ from app.domain.schedule import add_months
 from ml.datagen.bills import generate_bills
 from ml.datagen.bnpl import BnplResult, generate_bnpl
 from ml.datagen.discretionary import generate_discretionary
-from ml.datagen.income import generate_income
+from ml.datagen.income import PTPTN_DESCRIPTION, generate_income
 from ml.datagen.params import Params
 from ml.datagen.purchase import PurchaseProposal, sample_purchase
 from ml.datagen.rng import profile_rng
@@ -53,6 +53,15 @@ def _window_start(as_of: date, history_months: int) -> date:
     return add_months(first_of_month, -(history_months - 1))
 
 
+def _expected_monthly_income(events: tuple, start: date, as_of: date) -> int:
+    """Typical monthly income from regular sources only. PTPTN lump sums are left out: whether one
+    falls inside a short window is calendar luck, and pricing a purchase off it would make the
+    purchase size depend on the month the history happens to end in."""
+    span_days = (as_of - start).days + 1
+    regular = sum(t.amount_sen for t in events if t.description != PTPTN_DESCRIPTION)
+    return int(round(regular * DAYS_PER_MONTH / span_days))
+
+
 def generate_profile(
     params: Params,
     master_seed: int,
@@ -63,7 +72,9 @@ def generate_profile(
 ) -> StudentProfile:
     if persona is not None and persona not in PERSONAS:
         raise ValueError(f"persona must be one of {PERSONAS}, got {persona!r}")
-    months = history_months or int(params["history.default_months"])
+    months = int(params["history.default_months"]) if history_months is None else history_months
+    if months < 1:
+        raise ValueError(f"history_months must be at least 1, got {months}")
     persona = persona or _choose_persona(params, master_seed, index)
     start = _window_start(as_of, months)
 
@@ -81,9 +92,7 @@ def generate_profile(
         [*income.events, *bills.events, *spending, *bnpl.payments],
         key=lambda t: (t.date, t.type, t.description, t.amount_sen),
     )
-    total_income = sum(t.amount_sen for t in income.events)
-    span_days = (as_of - start).days + 1
-    monthly_income = int(round(total_income * DAYS_PER_MONTH / span_days))
+    monthly_income = _expected_monthly_income(income.events, start, as_of)
     purchase = sample_purchase(params, monthly_income, as_of, bnpl, stream("purchase"))
 
     return StudentProfile(

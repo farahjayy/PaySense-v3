@@ -23,7 +23,6 @@ SUBSCRIPTION_TEMPLATES = (
     "Astro subscription",
     "iCloud storage",
 )
-MAX_SUBSCRIPTIONS = 2
 
 
 @dataclass
@@ -84,10 +83,10 @@ def generate_bills(params: Params, start: date, end: date, rng: np.random.Genera
     )
 
     if rng.random() < params["bills.subscription_probability"]:
-        count = int(rng.integers(1, MAX_SUBSCRIPTIONS + 1))
+        count = int(rng.integers(1, params["bills.max_subscriptions"] + 1))
         for index in rng.choice(len(SUBSCRIPTION_TEMPLATES), size=count, replace=False):
             price = _between(rng, params["bills.subscription_monthly_sen_range"])
-            day = int(rng.integers(1, 29))
+            day = _between(rng, params["bills.subscription_day_range"])
             _monthly(
                 start,
                 end,

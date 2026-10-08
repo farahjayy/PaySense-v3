@@ -4,6 +4,7 @@ population.persona_weights.budget_conscious,0.4,ratio,assumed,As above.
 population.persona_weights.irregular_income,0.25,ratio,assumed,As above.
 history.default_months,18,count,assumed,Long enough for rolling-origin evaluation (minimum 26 training weeks plus test windows); the app itself only requires 4 months.
 history.persona_months,4,count,assumed,"Supervisor-mandated length of the UAT persona histories (academic-constraints.md section 3) - a design constraint, not an empirical figure."
+income.ptptn_pay_day,10,day_of_month,assumed,Assumed day of the month a PTPTN lump sum lands; the PTPTN page gives no dates.
 income.allowance_probability.frequent_bnpl,1.0,ratio,assumed,Assumed that this persona receives a regular family allowance.
 income.allowance_probability.budget_conscious,1.0,ratio,assumed,Assumed fixed-income persona: regular family allowance.
 income.allowance_probability.irregular_income,0.3,ratio,assumed,"Assumed: gig-income persona mostly self-funded, sometimes topped up by family."
@@ -30,6 +31,8 @@ income.gig_pay_median_sen,7000,sen,assumed,Median pay per gig job; no published 
 income.gig_pay_sigma,0.5,ratio,assumed,Log-normal spread of gig pay.
 income.gig_dry_spell_probability_per_month,0.15,ratio,assumed,"Chance a month has far fewer jobs (exams, holidays); the irregularity this persona exists to test."
 income.gig_dry_spell_job_multiplier,0.2,ratio,assumed,Job volume multiplier during a dry spell.
+bills.max_subscriptions,2,count,assumed,Most streaming / cloud subscriptions one profile carries; no published figure.
+bills.subscription_day_range,"[1, 28]",day_of_month,assumed,"Day of month a subscription renews; drawn uniformly, kept to 28 so every month has the day."
 bills.rent_probability,0.8,ratio,assumed,Share of students paying hostel/rent themselves; no official figure.
 bills.rent_monthly_sen_range,"[15000, 45000]",sen,assumed,"Hostel/shared-room range. Only a commercial budgeting site gives figures (hostel-based total RM650-1,080), with no stated method, so it is not cited."
 bills.rent_day_of_month,"[1, 5]",day,assumed,Rent due at the start of the month.
@@ -38,6 +41,21 @@ bills.phone_day_of_month,"[10, 20]",day,assumed,Assumed billing-day range.
 bills.subscription_probability,0.6,ratio,assumed,Share with a streaming/music subscription.
 bills.subscription_monthly_sen_range,"[1500, 4000]",sen,assumed,Assumed price range per subscription.
 bills.variable_bill_jitter_ratio,0.03,ratio,assumed,Small month-to-month variation in phone/utility bills.
+discretionary.min_txn_share_of_typical,0.3,ratio,assumed,No single purchase is smaller than this fraction of its category's typical size (a RM2 burger meal is not generated).
+discretionary.min_txn_sen,100,sen,assumed,Smallest discretionary transaction (RM1); smaller amounts are folded into the week's biggest category.
+discretionary.weekly_ar1_phi,0.5,ratio,assumed,Week-to-week persistence of a student's spending level (AR(1) coefficient). No published figure; gives the weekly series temporal structure so benchmarks that ignore it are not unfairly favoured.
+discretionary.weekly_ar1_sigma,0.12,ratio,assumed,Innovation scale of the weekly spending-level drift (log scale); no published figure.
+discretionary.payday_week_total_bump_ratio,0.1,ratio,assumed,Lift in a whole week's spending when an income payment lands in it; no published figure.
+discretionary.category_allocation_concentration,25,count,assumed,How tightly a week's spend follows the cited category shares (Dirichlet concentration; higher is tighter). No published figure.
+discretionary.category_typical_txn_sen.food,1200,sen,assumed,Typical size of one food or eating-out transaction (RM12). No published transaction-level sizes.
+discretionary.category_typical_txn_sen.transport,600,sen,assumed,Typical transport transaction (RM6).
+discretionary.category_typical_txn_sen.shopping,6000,sen,assumed,Typical shopping transaction (RM60).
+discretionary.category_typical_txn_sen.entertainment,4000,sen,assumed,Typical entertainment transaction (RM40).
+discretionary.category_typical_txn_sen.education,8000,sen,assumed,Typical education transaction (RM80).
+discretionary.payday_window_days,3,count,assumed,Days after an income credit in which spending runs higher (see payday_bump_ratio); no published figure.
+discretionary.txn_amount_gamma_shape,3.0,ratio,assumed,Gamma shape of transaction sizes within a week; higher means fewer very small purchases. Chosen so persona CSVs read plausibly to testers.
+discretionary.refund_amount_sen_range,"[2000, 15000]",sen,assumed,"Refund size, drawn uniformly (RM20-150); no published figure."
+discretionary.transfer_amount_sen_range,"[2000, 10000]",sen,assumed,"Own-account top-up size, drawn uniformly (RM20-100); no published figure."
 discretionary.monthly_median_sen.budget_conscious,30000,sen,cited: tok_cheah_2024,
 discretionary.monthly_median_sen.frequent_bnpl,45000,sen,assumed,tok_cheah_2024 reports spending rises with income but gives no number; set above the modal band.
 discretionary.monthly_median_sen.irregular_income,35000,sen,assumed,Between the other two personas.
@@ -50,7 +68,6 @@ discretionary.exam_months,"[6, 12]",month_of_year,assumed,Assumed end-of-semeste
 discretionary.exam_weeks_per_semester,2,count,assumed,Assumed length of exam periods.
 discretionary.outlier_probability_per_week,0.04,ratio,assumed,"Occasional unusually large week (event, trip, repair)."
 discretionary.outlier_multiplier,2.5,ratio,assumed,Size of such a week relative to normal.
-discretionary.transactions_per_week_mean,5,count,assumed,"Mean number of discretionary transactions per week (Poisson). With the cited RM201-400 monthly spend this makes a typical transaction around RM14; more transactions per week would imply a typical meal of a few ringgit, which testers would find implausible."
 discretionary.category_weight_food,16.3,percent_of_household_spending,cited: dosm_hes_2022,
 discretionary.category_weight_eating_out,16.1,percent_of_household_spending,cited: dosm_hes_2022,
 discretionary.category_weight_transport,11.3,percent_of_household_spending,cited: dosm_hes_2022,
@@ -58,14 +75,12 @@ discretionary.category_other_share,0.3,ratio,assumed,"Share of discretionary spe
 discretionary.other_split_shopping,0.5,ratio,assumed,Split of the 'other' discretionary share into shopping / entertainment / education; the DOSM page gave no shares for these groups.
 discretionary.other_split_entertainment,0.3,ratio,assumed,As above.
 discretionary.other_split_education,0.2,ratio,assumed,As above.
-discretionary.category_size_weight.food,1.0,ratio,assumed,Relative typical size of one transaction by category (food = 1). No published transaction-level sizes; chosen so a shopping or education purchase is several times a meal or a bus fare. Category spend shares still follow the cited household weights; only the number of transactions per category changes.
-discretionary.category_size_weight.transport,0.6,ratio,assumed,As above.
-discretionary.category_size_weight.shopping,3.0,ratio,assumed,As above.
-discretionary.category_size_weight.entertainment,2.0,ratio,assumed,As above.
-discretionary.category_size_weight.education,3.0,ratio,assumed,As above.
 discretionary.unrecognisable_description_share,0.08,ratio,assumed,Share of merchant descriptions the keyword categoriser cannot place (the importer's real-world miss rate is unknown).
 discretionary.refund_probability_per_month,0.15,ratio,assumed,"Chance of a refund in a month, so the reserved Refund category is exercised."
 discretionary.transfer_probability_per_month,0.4,ratio,assumed,"Chance of an own-account move (e-wallet top-up), so the reserved Transfer category is exercised."
+bnpl.limit_floor_sen,1000,sen,assumed,Smallest limit a provider grants (RM10).
+bnpl.history_lookback_days,60,count,assumed,"Existing plans may have started up to this many days before the visible history, so early instalments fall inside it."
+bnpl.first_payment_slack_days,3,count,assumed,A manually typed first payment date is rarely exactly one month after purchase; up to this many days later.
 bnpl.ownership_probability.frequent_bnpl,0.85,ratio,assumed,"Defines the persona. No published share of students using BNPL (bnpl_billing_rules_my and bnm_fsr_2h2022 describe users, not students)."
 bnpl.ownership_probability.budget_conscious,0.25,ratio,assumed,Defines the persona (uses BNPL rarely).
 bnpl.ownership_probability.irregular_income,0.55,ratio,assumed,Defines the persona.
@@ -96,8 +111,12 @@ bnpl.limit_median_sen.tiktok_paylater,100000,sen,assumed,"As above (documented: 
 bnpl.limit_median_sen.atome,80000,sen,assumed,Documented: new users get lower limits.
 bnpl.limit_sigma,0.6,ratio,assumed,Log-normal spread of limits.
 bnpl.limit_known_probability,0.8,ratio,assumed,Share of users who record their limit in the app (the limit_known feature).
+repayment.late_payer_late_instalment_share,0.5,ratio,assumed,"Among students who pay late at all, the share of their instalments that are late (at least one always is). The cited study reports holders, not instalments."
 repayment.on_time_share,0.88,ratio,cited: ccob_repayment_2024,
 repayment.late_but_paid_share,0.12,ratio,cited: ccob_repayment_2024,
 repayment.missed_share,0.004,ratio,assumed,The source says 'fewer than 0.5%' could not repay; 0.4% is chosen within that bound. The three shares are renormalised by the generator.
 repayment.late_days_range,"[1, 14]",days,assumed,How late a late payment is; no published distribution.
+purchase.income_floor_sen,10000,sen,assumed,RM100: a student with no visible income still gets a priced purchase.
+purchase.price_floor_sen,1000,sen,assumed,Smallest proposed price (RM10).
+purchase.price_cap_sen,5000000,sen,assumed,"Largest proposed price (RM50,000)."
 purchase.price_to_monthly_income_range,"[0.02, 3.0]",ratio,assumed,"Proposed-purchase price as a multiple of expected monthly income, sampled log-uniformly so Engine 2 sees clearly safe, borderline and clearly unaffordable cases. Chosen for coverage, not realism."

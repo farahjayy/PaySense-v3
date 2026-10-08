@@ -3,7 +3,13 @@ from datetime import date
 import pytest
 
 from app.domain.categorize import guess_category
-from ml.datagen.bills import PHONE_TEMPLATES, SUBSCRIPTION_TEMPLATES, generate_bills
+from ml.datagen.bills import (
+    PHONE_TEMPLATES,
+    SUBSCRIPTION_TEMPLATES,
+    BillsResult,
+    _monthly,
+    generate_bills,
+)
 from ml.datagen.params import load_params
 from ml.datagen.rng import profile_rng
 
@@ -73,9 +79,15 @@ def test_subscriptions_follow_the_stated_probability_and_are_at_most_two():
 
 
 def test_a_month_end_day_is_clamped_in_short_months():
-    for index in range(60):
-        for e in bills(index).events:
-            assert e.date.day <= 31 and e.date.month in range(1, 13)  # never an invalid date
+    result = BillsResult()
+    _monthly(date(2025, 1, 1), date(2025, 4, 30), 31, "Rent", "Rent", 1000, lambda: 1000, result)
+
+    assert [e.date for e in result.events] == [
+        date(2025, 1, 31),
+        date(2025, 2, 28),
+        date(2025, 3, 31),
+        date(2025, 4, 30),
+    ]
 
 
 def test_ground_truth_lists_each_monthly_bill_with_its_anchor():
@@ -88,6 +100,11 @@ def test_ground_truth_lists_each_monthly_bill_with_its_anchor():
 
 
 def test_a_window_without_a_full_month_only_contains_bills_that_fall_inside_it():
-    result = bills(2, start=date(2025, 3, 6), end=date(2025, 3, 20))
+    events = [
+        e
+        for index in range(60)
+        for e in bills(index, start=date(2025, 3, 6), end=date(2025, 3, 20)).events
+    ]
 
-    assert all(date(2025, 3, 6) <= e.date <= date(2025, 3, 20) for e in result.events)
+    assert events
+    assert all(date(2025, 3, 6) <= e.date <= date(2025, 3, 20) for e in events)

@@ -22,11 +22,6 @@ from ml.datagen.bnpl import (
 )
 from ml.datagen.params import Params
 
-MIN_INCOME_FLOOR_SEN = (
-    10_000  # RM100: a student with no visible income still gets a priced purchase
-)
-MIN_PRICE_SEN = 1_000
-MAX_PRICE_SEN = 5_000_000
 MAX_ATTEMPTS = 6  # redraw if the chosen provider has no limit left, then fall back to "other"
 
 
@@ -43,10 +38,14 @@ def sample_purchase(
     bnpl: BnplResult,
     rng: np.random.Generator,
 ) -> PurchaseProposal:
-    income = max(expected_monthly_income_sen, MIN_INCOME_FLOOR_SEN)
+    income = max(expected_monthly_income_sen, params["purchase.income_floor_sen"])
     low, high = params["purchase.price_to_monthly_income_range"]
     ratio = float(np.exp(rng.uniform(np.log(low), np.log(high))))
-    price = int(np.clip(income * ratio, MIN_PRICE_SEN, MAX_PRICE_SEN))
+    price = int(
+        np.clip(
+            income * ratio, params["purchase.price_floor_sen"], params["purchase.price_cap_sen"]
+        )
+    )
     weights = np.array([params[f"bnpl.provider_weights.{p}"] for p in PROVIDERS])
     weights = weights / weights.sum()
 
@@ -54,9 +53,9 @@ def sample_purchase(
         provider = "other" if attempt == MAX_ATTEMPTS - 1 else str(rng.choice(PROVIDERS, p=weights))
         count = int(rng.choice(params[f"bnpl.instalment_options.{provider}"]))
         remaining = None
-        if provider in NAMED_PROVIDERS and provider in bnpl.actual_limits:
-            used = unpaid_total_on(bnpl.plans, provider, as_of)
-            remaining = max(bnpl.actual_limits[provider] - used, 0)
+        recorded = bnpl.limits.get(provider) if provider in NAMED_PROVIDERS else None
+        if recorded is not None:  # the app only caps on a limit the user has recorded (D-28)
+            remaining = max(recorded - unpaid_total_on(bnpl.plans, provider, as_of), 0)
         try:
             proposal = build_proposal(params, provider, as_of, count, price, remaining, rng)
         except ProposalError:

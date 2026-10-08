@@ -22,7 +22,7 @@ from ml.datagen.profile import PERSONAS, generate_profile  # noqa: E402
 from ml.datagen.report_stats import Collector, moments  # noqa: E402
 
 DEFAULT_OUT_DIR = Path(__file__).resolve().parents[3] / "reports" / "datagen"
-DEFAULT_PROFILES = 1000
+DEFAULT_PROFILES = 10_000  # the size of the exported population (MANIFEST.json)
 BAND_LOW_RM, BAND_HIGH_RM = 201, 400  # the cited modal monthly spending band
 FIGURE_DPI = 110
 PERSONA_COLOURS = {
@@ -38,17 +38,34 @@ LIMITATIONS = """\
 - **There are no real students here.** Every profile is synthetic, so every result trained or
   evaluated on it describes the generator as much as it describes the models.
 - **The data is partly circular by construction.** The generator and the forecasters are written
-  by the same author. To limit this, the generator is deliberately richer than any forecaster it
-  will test (day-of-week and payday effects, exam-week dips, outlier weeks) and each of its random
-  components uses its own stream, but a forecaster that happens to match those effects will look
-  better than it would on real data. Real-data benchmarks (Berka, if obtainable) are used only as
+  by the same author. To limit this, the weekly series carries structure the forecasters are not
+  told about (AR(1) drift in the spending level, a payday-week lift, exam-week dips, occasional
+  very large weeks; day-of-week effects only reshuffle spending inside a week and do not reach the
+  weekly series), but a forecaster that happens to match those effects will look better than it
+  would on real data. Real-data benchmarks (Berka, if obtainable) are used only as
   a sanity check, never as the headline result.
 - **Most parameters are assumptions.** Published figures about Malaysian student finances are
   scarce, so the majority of parameters are assumed; the cited ones are listed with their source in
   `tables/parameters.csv`. Assumed values are chosen to be plausible and to span the range the
   models must handle, then stress-tested rather than defended.
+- **The spending band is an interpretation.** The cited study reports that many students spend
+  RM201-400 a month, most naturally their total spending. The generator applies it to
+  *discretionary* spending only and adds rent, phone and subscriptions on top, so total
+  spending is higher than the band. This is a modelling choice, not something the source says.
+- **Provider rules are simplified.** SPayLater's 6-month plan (fee disputed in the billing-rules
+  note) is left out, and the 3-month 0% plan, which applies to Shopee marketplace checkouts, is
+  modelled as available on every SPayLater purchase.
+- **Many "cited" rows are wiring checks.** Rows marked `cited (wiring check)` hold by construction
+  (an instalment count drawn from the provider's own list is in that list). They show the cited
+  rules were applied, not that the population matches reality. The distribution comparisons are the
+  spend level, the category shares and the per-holder repayment shares.
 - **Cited targets are checked, not proven.** A generated moment landing near its target shows the
-  generator is wired correctly; it does not show the population is realistic.
+  generator is wired correctly; it does not show the population is realistic. The cited repayment
+  figures describe account holders (not instalments) and are compared per holder.
+- **Reproducibility is verified on one software stack.** Regeneration is byte-identical on the
+  machine and package versions recorded in `data/synthetic/MANIFEST.json`. A different numpy
+  version or CPU could change a transaction by a sen (exp/log are CPU-dispatched), and a different
+  matplotlib build changes figure bytes; the tables are the record, the figures are illustrations.
 - **Labels are simulated.** Engine 2's label is Engine 1's simulated shortfall probability, so the
   risk model inherits whatever the forecaster and the simulation get wrong.
 """
@@ -99,17 +116,23 @@ def _fig_monthly_spend(c: Collector, path: Path) -> None:
 
 
 def _fig_repayment(c: Collector, path: Path) -> None:
-    total = c.on_time + c.late + c.unpaid
+    holders = c.holders_on_time + c.holders_late + c.holders_missed
     fig, ax = plt.subplots(figsize=(5.5, 3.4))
-    labels = ["on time", "late", "unpaid"]
-    generated = [x / total if total else 0 for x in (c.on_time, c.late, c.unpaid)]
-    cited = [c.params["repayment.on_time_share"], c.params["repayment.late_but_paid_share"], 0]
+    labels = ["all on time", "paid late", "missed one"]
+    generated = [
+        x / holders if holders else 0 for x in (c.holders_on_time, c.holders_late, c.holders_missed)
+    ]
+    cited = [
+        c.params["repayment.on_time_share"],
+        c.params["repayment.late_but_paid_share"],
+        c.params["repayment.missed_share"],
+    ]
     xs = range(len(labels))
     ax.bar([x - 0.2 for x in xs], cited, width=0.4, color="#94a3b8", label="cited")
     ax.bar([x + 0.2 for x in xs], generated, width=0.4, color="#1d4ed8", label="generated")
     ax.set_xticks(list(xs), labels)
-    ax.set_ylabel("Share of instalments")
-    ax.set_title("Repayment behaviour")
+    ax.set_ylabel("Share of account holders")
+    ax.set_title("Repayment behaviour, per holder")
     ax.legend()
     _save(fig, path)
 

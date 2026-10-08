@@ -120,3 +120,25 @@ def test_the_assumed_list_is_printable_and_non_empty():
 
     assert params.assumed()
     assert all(p.path in text for p in params.assumed())
+
+
+def test_a_repeated_key_in_the_parameter_file_is_rejected(tmp_path):
+    from ml.datagen.params import ParamError, load_params
+
+    path = tmp_path / "p.yaml"
+    path.write_text(
+        "a:\n  x: {value: 1, unit: count, assumed: true, why: one}\n"
+        "  x: {value: 2, unit: count, assumed: true, why: two}\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ParamError, match="duplicate"):
+        load_params(path)
+
+
+def test_list_parameters_cannot_be_mutated_through_the_accessor():
+    from ml.datagen.params import load_params
+
+    value = load_params()["income.ptptn_months"]
+
+    assert isinstance(value, tuple)

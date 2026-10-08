@@ -120,3 +120,35 @@ def test_existing_bnpl_payments_are_part_of_the_transactions():
         assert paid >= len([t for t in p.transactions if t.bnpl_plan_key])
         seen = seen or paid > 0
     assert seen
+
+
+@pytest.mark.parametrize("bad", [0, -1])
+def test_a_history_shorter_than_one_month_is_rejected(bad):
+    with pytest.raises(ValueError, match="history_months"):
+        profile(0, history_months=bad)
+
+
+def test_expected_income_leaves_out_ptptn_so_it_does_not_depend_on_the_window_month():
+    from statistics import median
+
+    september = [
+        profile(i, persona="budget_conscious", history_months=4, as_of=date(2025, 12, 28))
+        for i in range(150)
+    ]
+    january = [
+        profile(i, persona="budget_conscious", history_months=4, as_of=date(2026, 1, 28))
+        for i in range(150)
+    ]
+
+    a = median(p.expected_monthly_income_sen for p in september)
+    b = median(p.expected_monthly_income_sen for p in january)
+    assert a == pytest.approx(b, rel=0.2)
+
+
+@pytest.mark.parametrize("as_of", [date(2025, 12, 17), date(2025, 12, 15), date(2025, 12, 21)])
+@pytest.mark.parametrize("months", [1, 2])
+def test_profiles_work_for_short_windows_ending_on_any_weekday(as_of, months):
+    p = profile(1, history_months=months, as_of=as_of)
+
+    assert p.transactions
+    assert all(p.start <= t.date <= as_of for t in p.transactions)

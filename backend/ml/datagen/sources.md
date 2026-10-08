@@ -15,6 +15,7 @@
 - **Reference:** Tok & Cheah (2024), *International Journal of Banking and Finance* 19(1), 107–132, Universiti Utara Malaysia — https://e-journal.uum.edu.my/index.php/ijbf/article/view/20396 (abstract read; the open full text was truncated in retrieval, so only the abstract is used).
 - **States:** primary survey, n = 454 students; "a large proportion of students spent between RM201 and RM400 per month"; spending corresponds to education level and income; higher spending is linked to being younger and male and to peer influence.
 - **Used for:** the centre of the monthly discretionary-spend distribution for the budget-conscious persona (midpoint of the modal band, RM300) and the direction "spending rises with income".
+- **Interpretation made here (assumption, not the source):** the band is most naturally *total* monthly spending; the generator applies it to discretionary spending only (rent, phone and subscriptions are added separately).
 - **Does NOT state (in the part read):** a mean, median, other bands, or income bands. The band is the *modal* band, not a population bound — students outside it exist.
 
 ## dosm_hes_2022
@@ -29,6 +30,7 @@
 - **Reference:** RinggitPlus (Samuel Chua), "Over 168,000 BNPL accounts had overdue balances as at June 2025", 8 Aug 2025 — https://ringgitplus.com/en/blog/personal-finance-news/over-168000-bnpl-accounts-had-overdue-balances-as-at-june-2025.html , reporting the Deputy Finance Minister's Dewan Rakyat reply and a 2024 Consumer Credit Oversight Board Task Force study.
 - **States:** among **21,000** active BNPL account holders, "almost **88%** made all payments on time", **12%** paid late but in full, "fewer than **0.5%**" could not repay in full. At 30 June 2025: 168,967 of 6.5 million BNPL customers (**2.6%**) had overdue balances totalling RM121.8 million (3.2% of the RM3.8 billion BNPL balance).
 - **Used for:** the payment-behaviour mix of simulated instalments (on time / late but paid / missed). It feeds only the repayment-history *flag* demonstrations, never a model label (D-11).
+- **Level:** the shares are of account holders (88% of holders paid *everything* on time), so the generator draws a payer type once per student; they are not per-instalment probabilities.
 - **Does NOT state:** the study's publication date; whether the 21,000 are students.
 
 ## bnm_fsr_2h2022

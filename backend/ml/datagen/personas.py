@@ -11,7 +11,7 @@ import io
 from collections.abc import Callable
 from pathlib import Path
 
-from app.domain.categorize import REFUND, TRANSFER
+from app.domain.categorize import BNPL, REFUND, TRANSFER
 from ml.datagen.params import Params, load_params
 from ml.datagen.profile import StudentProfile, generate_profile
 
@@ -38,10 +38,10 @@ def _net_sen(profile: StudentProfile) -> int:
 
 
 SHOWCASE: dict[str, Callable[[StudentProfile], bool]] = {
-    "frequent_bnpl": lambda p: _count(p, "BNPL") >= MIN_SHOWCASE_ROWS,
+    "frequent_bnpl": lambda p: _count(p, BNPL) >= MIN_SHOWCASE_ROWS,
     # solvent but tight: no BNPL, no gigs, and the four months end no worse than break-even
     "budget_conscious": lambda p: (
-        _count(p, "BNPL") == 0 and _count(p, "Gig") == 0 and _net_sen(p) >= 0
+        _count(p, BNPL) == 0 and _count(p, "Gig") == 0 and _net_sen(p) >= 0
     ),
     "irregular_income": lambda p: _count(p, "Gig") >= MIN_SHOWCASE_ROWS,
 }

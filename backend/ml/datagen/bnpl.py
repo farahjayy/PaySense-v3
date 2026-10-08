@@ -33,8 +33,6 @@ ITEM_NAMES = (
     "Jacket",
 )
 OTHER_PROVIDER_LABELS = ("Grab PayLater", "Boost PayFlex", "Kredivo", "Pace")
-LOOKBACK_DAYS = 60  # plans can start before the visible history
-MAX_FIRST_PAYMENT_SLACK_DAYS = 3  # a typed first date is rarely exactly one month out
 
 
 @dataclass(frozen=True)
@@ -77,13 +75,13 @@ def _true_limits(
                 params[f"bnpl.limit_cap_sen.{provider}"],
             )
         )
-        actual[provider] = max(limit, 1000)
+        actual[provider] = max(limit, params["bnpl.limit_floor_sen"])
         known = rng.random() < params["bnpl.limit_known_probability"]
         recorded[provider] = actual[provider] if known else None
     return actual, recorded
 
 
-def _outcome_shares(params: Params) -> np.ndarray:
+def _payer_shares(params: Params) -> np.ndarray:
     shares = np.array(
         [
             params["repayment.on_time_share"],
@@ -124,7 +122,7 @@ def build_proposal(
     if provider == "other":
         total = int(round(price * (1 + fee * count / 100)))
         first = add_months(purchase, 1) + timedelta(
-            days=int(rng.integers(0, MAX_FIRST_PAYMENT_SLACK_DAYS + 1))
+            days=int(rng.integers(0, params["bnpl.first_payment_slack_days"] + 1))
         )
         return propose_plan(
             provider="other",
@@ -144,11 +142,21 @@ def build_proposal(
     )
 
 
+@dataclass
+class _Payer:
+    """How one student behaves, drawn once: the cited 88 / 12 / <0.5 split is of account HOLDERS
+    (all payments on time / paid late but in full / could not repay), not of instalments."""
+
+    kind: int  # 0 always on time, 1 sometimes late, 2 misses one
+    flagged: bool = False  # the one guaranteed late / missed instalment has been used
+
+
 def _settle(
-    params: Params, proposal: PlanProposal, end: date, shares: np.ndarray, rng: np.random.Generator
+    params: Params, proposal: PlanProposal, end: date, payer: _Payer, rng: np.random.Generator
 ) -> dict[int, date]:
     """When each instalment was actually paid (absent = not paid by `end`)."""
     low, high = params["repayment.late_days_range"]
+    late_share = params["repayment.late_payer_late_instalment_share"]
     paid: dict[int, date] = {}
     for seq, instalment in enumerate(proposal.instalments, start=1):
         if instalment.paid_at_checkout:
@@ -156,13 +164,14 @@ def _settle(
             continue
         if instalment.due_date > end:
             continue
-        outcome = int(rng.choice(3, p=shares))
-        if outcome == 0:
-            when = instalment.due_date
-        elif outcome == 1:
-            when = instalment.due_date + timedelta(days=int(rng.integers(low, high + 1)))
-        else:
-            continue  # missed: still unpaid
+        first = payer.kind != 0 and not payer.flagged
+        payer.flagged = payer.flagged or payer.kind != 0
+        late = payer.kind == 1 and (first or rng.random() < late_share)
+        if payer.kind == 2 and first:
+            continue  # the missed instalment: still unpaid
+        when = instalment.due_date
+        if late:
+            when += timedelta(days=int(rng.integers(low, high + 1)))
         if when <= end:
             paid[seq] = when
     return paid
@@ -201,13 +210,14 @@ def generate_bnpl(
     actual, result.limits = _true_limits(params, rng)
     result.actual_limits = actual
     count = 1 + int(rng.poisson(params[f"bnpl.active_plans_extra_mean.{persona}"]))
-    span = (end - start).days + LOOKBACK_DAYS
+    lookback = params["bnpl.history_lookback_days"]
+    span = (end - start).days + lookback
     purchases = sorted(
-        start - timedelta(days=LOOKBACK_DAYS) + timedelta(days=int(rng.integers(0, span + 1)))
+        start - timedelta(days=lookback) + timedelta(days=int(rng.integers(0, span + 1)))
         for _ in range(count)
     )
     weights = [params[f"bnpl.provider_weights.{p}"] for p in PROVIDERS]
-    shares = _outcome_shares(params)
+    payer = _Payer(int(rng.choice(3, p=_payer_shares(params))))
     low, high = params["bnpl.price_range_sen"]
 
     for index, purchase in enumerate(purchases):
@@ -232,7 +242,7 @@ def generate_bnpl(
             continue  # no limit left for this one: the student simply did not buy it
         key = f"plan-{index}"
         item = ITEM_NAMES[int(rng.integers(len(ITEM_NAMES)))]
-        plan = GeneratedPlan(key, item, proposal, _settle(params, proposal, end, shares, rng))
+        plan = GeneratedPlan(key, item, proposal, _settle(params, proposal, end, payer, rng))
         result.plans.append(plan)
         result.payments += _payment_events(key, item, plan, start, end)
 

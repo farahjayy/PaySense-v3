@@ -137,10 +137,15 @@ def test_category_spend_shares_follow_the_cited_household_weights():
     other = PARAMS["discretionary.category_other_share"]
     scale = (1 - other) / (food + eat + transport)
 
-    # Approximate on purpose: a week's total is fixed first and then split across a handful of
-    # transactions, so weeks with one or two transactions pull shares towards the commoner category.
-    assert spent["Food"] / total == pytest.approx((food + eat) * scale, abs=0.08)
-    assert spent["Transport"] / total == pytest.approx(transport * scale, abs=0.08)
+    assert spent["Food"] / total == pytest.approx((food + eat) * scale, rel=0.12)
+    assert spent["Transport"] / total == pytest.approx(transport * scale, rel=0.12)
+    other_split = {
+        n: PARAMS[f"discretionary.other_split_{n}"]
+        for n in ("shopping", "entertainment", "education")
+    }
+    for name, weight in other_split.items():
+        target = other * weight / sum(other_split.values())
+        assert spent[name.title()] / total == pytest.approx(target, rel=0.2), name
 
 
 def test_a_shopping_or_education_purchase_is_typically_bigger_than_a_bus_fare():

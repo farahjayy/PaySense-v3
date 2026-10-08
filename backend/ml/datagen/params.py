@@ -89,7 +89,8 @@ class Params:
         self._params = params
 
     def __getitem__(self, path: str) -> Any:
-        return self.param(path).value
+        value = self.param(path).value
+        return tuple(value) if isinstance(value, list) else value  # callers cannot mutate it
 
     def param(self, path: str) -> Param:
         try:
@@ -118,6 +119,19 @@ class Params:
         return "\n".join(f"- {p.path} = {p.value!r} {p.unit}: {p.why}" for p in self.assumed())
 
 
+class _UniqueKeyLoader(yaml.SafeLoader):
+    """SafeLoader that refuses a repeated key instead of silently keeping the last one."""
+
+    def construct_mapping(self, node, deep=False):
+        seen: set[Any] = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise ParamError(f"duplicate key in parameter file: {key!r}")
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
 def parse_params(data: dict[str, Any], keys: set[str]) -> Params:
     out: dict[str, Param] = {}
     _walk("", data, keys, out)
@@ -127,5 +141,5 @@ def parse_params(data: dict[str, Any], keys: set[str]) -> Params:
 def load_params(
     params_path: Path = DEFAULT_PARAMS_PATH, sources_path: Path = DEFAULT_SOURCES_PATH
 ) -> Params:
-    data = yaml.safe_load(params_path.read_text(encoding="utf-8"))
+    data = yaml.load(params_path.read_text(encoding="utf-8"), Loader=_UniqueKeyLoader)  # noqa: S506 - SafeLoader subclass
     return parse_params(data, source_keys(sources_path))

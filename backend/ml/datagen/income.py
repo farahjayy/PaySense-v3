@@ -25,7 +25,6 @@ PTPTN_DESCRIPTION = "PTPTN disbursement"
 # read as Food, which sits earlier in its keyword order).
 PARTTIME_TEMPLATES = ("Salary - part time", "Gaji part time", "Salary - weekend job")
 GIG_TEMPLATES = ("Freelance payout", "Gig payout", "Event crew payout", "Delivery payout")
-PTPTN_PAY_DAY = 10
 MIN_SEN = 100  # nothing below RM1
 
 
@@ -78,7 +77,7 @@ def _ptptn(params: Params, persona: str, start: date, end: date, rng, out: Incom
     first = None
     for year in range(start.year, end.year + 1):
         for month in months:
-            when = day_in_month(year, month, PTPTN_PAY_DAY)
+            when = day_in_month(year, month, params["income.ptptn_pay_day"])
             if _in_window(when, start, end):
                 out.events.append(Txn(when, lump, "income", "Allowance", PTPTN_DESCRIPTION))
                 first = first or when

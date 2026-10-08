@@ -79,13 +79,22 @@ def test_measured_values_are_reported_next_to_their_targets_even_when_they_miss(
         assert r["status"] in {"within tolerance", "outside tolerance"}, r
 
 
-def test_the_repayment_shares_land_near_the_cited_figures(report_dir):
+def test_the_repayment_shares_are_compared_per_account_holder(report_dir):
     rows = {r["param"]: r for r in read_csv(report_dir / "tables" / "moments.csv")}
 
     on_time = float(rows["repayment.on_time_share"]["measured"])
     late = float(rows["repayment.late_but_paid_share"]["measured"])
-    assert on_time == pytest.approx(0.88, abs=0.06)
-    assert late == pytest.approx(0.12, abs=0.06)
+    assert on_time == pytest.approx(0.88, abs=0.08)
+    assert late == pytest.approx(0.12, abs=0.08)
+    assert "holders" in rows["repayment.on_time_share"]["note"]
+
+
+def test_wiring_checks_are_labelled_as_such(report_dir):
+    rows = {r["param"]: r for r in read_csv(report_dir / "tables" / "moments.csv")}
+
+    for param in ("bnpl.instalment_options.atome", "bnpl.limit_cap_sen.spaylater"):
+        assert rows[param]["kind"] == "cited (wiring check)"
+    assert rows["repayment.on_time_share"]["kind"] == "cited"
 
 
 def test_regenerating_gives_byte_identical_output(report_dir, tmp_path):
@@ -100,3 +109,10 @@ def test_regenerating_gives_byte_identical_output(report_dir, tmp_path):
 def test_a_non_positive_profile_count_is_rejected(tmp_path):
     with pytest.raises(ValueError, match="count"):
         build_report(PARAMS, SEED, 0, tmp_path)
+
+
+def test_no_cited_parameter_is_left_unmeasured_without_saying_so(report_dir):
+    rows = {r["param"]: r for r in read_csv(report_dir / "tables" / "moments.csv")}
+
+    for param in PARAMS.cited():
+        assert rows[param.path]["status"] != "not measured", param.path

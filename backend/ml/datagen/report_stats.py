@@ -15,13 +15,14 @@ from typing import Any
 from app.domain.categorize import REFUND, TRANSFER
 from ml.datagen.bnpl import NAMED_PROVIDERS, PROVIDERS
 from ml.datagen.export import WeekPoint, weekly_series
+from ml.datagen.income import PTPTN_DESCRIPTION
 from ml.datagen.params import Params
 from ml.datagen.profile import PERSONAS, StudentProfile
 
 RELATIVE_TOLERANCE = 0.15  # for amounts with a cited target (spend level)
-SHARE_TOLERANCE = 0.08  # for shares of spend or counts, before sampling noise
+SHARE_TOLERANCE = 0.05  # absolute, for shares that have no sampling-noise allowance
+SPEND_SHARE_TOLERANCE = 0.15  # relative, for category shares of spend
 NOISE_SIGMAS = 3  # sampling-noise allowance on proportions
-PTPTN_DESCRIPTION = "PTPTN disbursement"
 ROUNDING_SEN = 1  # a lump times its disbursement count may be a sen away from the table value
 
 
@@ -33,9 +34,12 @@ class Collector:
     monthly_spend: dict[str, list[int]] = field(default_factory=dict)
     monthly_income: dict[str, list[int]] = field(default_factory=dict)
     category_spend: Counter = field(default_factory=Counter)
-    on_time: int = 0
+    on_time: int = 0  # instalment level (context only)
     late: int = 0
     unpaid: int = 0
+    holders_on_time: int = 0  # holder level: what the cited study measured
+    holders_late: int = 0
+    holders_missed: int = 0
     provider_plans: Counter = field(default_factory=Counter)
     option_ok: Counter = field(default_factory=Counter)
     fee_ok: Counter = field(default_factory=Counter)
@@ -59,7 +63,8 @@ class Collector:
         self._plans(profile)
         self._purchase(profile)
         self._ptptn(profile)
-        self.examples.setdefault(persona, weekly_series(profile))
+        if persona not in self.examples:
+            self.examples[persona] = weekly_series(profile)
 
     def _monthly(self, profile: StudentProfile) -> None:
         spend: dict[tuple[int, int], int] = {}
@@ -108,9 +113,29 @@ class Collector:
                     self.on_time += 1
                 else:
                     self.late += 1
+        self._holder(profile)
         for provider, limit in profile.bnpl.limits.items():
             if limit is not None:
                 self.max_limit[provider] = max(self.max_limit.get(provider, 0), limit)
+
+    def _holder(self, profile: StudentProfile) -> None:
+        """One verdict per account holder, over instalments whose outcome is already known."""
+        _, high = self.params["repayment.late_days_range"]
+        cutoff = profile.as_of - timedelta(days=high)
+        outcomes = [
+            (plan.paid_dates.get(seq), instalment.due_date)
+            for plan in profile.bnpl.plans
+            for seq, instalment in enumerate(plan.proposal.instalments, start=1)
+            if not instalment.paid_at_checkout and instalment.due_date <= cutoff
+        ]
+        if not outcomes:
+            return
+        if any(paid is None for paid, _ in outcomes):
+            self.holders_missed += 1
+        elif any(paid != due for paid, due in outcomes):
+            self.holders_late += 1
+        else:
+            self.holders_on_time += 1
 
     def _purchase(self, profile: StudentProfile) -> None:
         income = max(profile.expected_monthly_income_sen, 1)
@@ -159,6 +184,8 @@ def _row(
     note: str = "",
 ) -> dict[str, Any]:
     status = "no target"
+    if target is not None and measured is None:
+        status = "not measured"  # a cited figure the run never exercised: flagged, not hidden
     if target is not None and measured is not None:
         if upper_bound:
             ok = measured <= target
@@ -193,16 +220,24 @@ def _share(part: int, whole: int) -> float | None:
 
 def moments(c: Collector) -> list[dict[str, Any]]:
     """Every cited parameter first, then the assumed ones whose effect can be measured."""
+    return [
+        *_level_rows(c),
+        *_category_rows(c),
+        *_bnpl_rows(c),
+        *_repayment_rows(c),
+        *_assumed_rows(c),
+    ]
+
+
+def _level_rows(c: Collector) -> list[dict[str, Any]]:
     p = c.params
     rows: list[dict[str, Any]] = []
-
-    settled = c.on_time + c.late + c.unpaid
     rows.append(
         _row(
             "income.ptptn_annual_sen",
             "PTPTN lump sums (x disbursements per year) equal a cited annual amount",
             "share",
-            "cited",
+            "cited (wiring check)",
             1.0,
             _share(c.ptptn_matches, c.ptptn_lumps),
             tolerance=0.0,
@@ -223,23 +258,43 @@ def moments(c: Collector) -> list[dict[str, Any]]:
             note="target is the midpoint of a modal band (RM201-400), not a bound",
         )
     )
-    total_spend = sum(c.category_spend.values())
+    return rows
+
+
+def _category_rows(c: Collector) -> list[dict[str, Any]]:
+    p = c.params
+    total = sum(c.category_spend.values())
     food_w = p["discretionary.category_weight_food"] + p["discretionary.category_weight_eating_out"]
     transport_w = p["discretionary.category_weight_transport"]
-    scale = (1 - p["discretionary.category_other_share"]) / (food_w + transport_w)
-    rows.append(
-        _row(
-            "discretionary.category_weight_food",
-            "Food (food plus eating out) share of discretionary spend",
-            "share",
-            "cited",
-            food_w * scale,
-            _share(c.category_spend["Food"], total_spend),
-            note="food and eating out are one generated category; shares are approximate because a "
-            "week's total is split across only a few transactions",
-        )
+    other = p["discretionary.category_other_share"]
+    scale = (1 - other) / (food_w + transport_w)
+    split_total = sum(
+        p[f"discretionary.other_split_{n}"] for n in ("shopping", "entertainment", "education")
     )
-    rows.append(
+
+    def row(param: str, text: str, target: float | None, name: str, kind: str, note: str = ""):
+        measured = _share(c.category_spend[name], total) if name else None
+        return _row(
+            param,
+            text,
+            "share",
+            kind,
+            target,
+            measured,
+            tolerance=SPEND_SHARE_TOLERANCE,
+            relative=True,
+            note=note,
+        )
+
+    rows = [
+        row(
+            "discretionary.category_weight_food",
+            "Food (food plus eating out) share of spend",
+            food_w * scale,
+            "Food",
+            "cited",
+            "food and eating out are one generated category",
+        ),
         _row(
             "discretionary.category_weight_eating_out",
             "Eating out (generated together with food, see the row above)",
@@ -248,19 +303,46 @@ def moments(c: Collector) -> list[dict[str, Any]]:
             None,
             None,
             note="measured jointly with category_weight_food",
+        ),
+        row(
+            "discretionary.category_weight_transport",
+            "Transport share of spend",
+            transport_w * scale,
+            "Transport",
+            "cited",
+        ),
+    ]
+    for name in ("shopping", "entertainment", "education"):
+        target = other * p[f"discretionary.other_split_{name}"] / split_total
+        rows.append(
+            row(
+                f"discretionary.other_split_{name}",
+                f"{name.title()} share of spend",
+                target,
+                name.title(),
+                "assumed",
+            )
         )
-    )
+    ratio_target = food_w / transport_w
+    ratio = _share(c.category_spend["Food"], c.category_spend["Transport"])
     rows.append(
         _row(
-            "discretionary.category_weight_transport",
-            "Transport share of discretionary spend",
-            "share",
-            "cited",
-            transport_w * scale,
-            _share(c.category_spend["Transport"], total_spend),
-            note="approximate for the same reason as food",
+            "derived.food_to_transport_spend_ratio",
+            "Food to transport spend ratio (cited weights imply this ratio)",
+            "ratio",
+            "derived",
+            round(ratio_target, 4),
+            None if ratio is None else round(ratio, 4),
+            tolerance=SPEND_SHARE_TOLERANCE,
+            relative=True,
         )
     )
+    return rows
+
+
+def _bnpl_rows(c: Collector) -> list[dict[str, Any]]:
+    p = c.params
+    rows: list[dict[str, Any]] = []
     for provider in NAMED_PROVIDERS:
         n = c.provider_plans[provider]
         rows.append(
@@ -268,7 +350,7 @@ def moments(c: Collector) -> list[dict[str, Any]]:
                 f"bnpl.instalment_options.{provider}",
                 f"{provider}: plans use an instalment count the provider offers",
                 "share",
-                "cited",
+                "cited (wiring check)",
                 1.0,
                 _share(c.option_ok[provider], n),
                 tolerance=0.0,
@@ -282,7 +364,7 @@ def moments(c: Collector) -> list[dict[str, Any]]:
                 f"bnpl.zero_fee_instalments.{provider}",
                 f"{provider}: fee is zero on zero-fee counts and the long-plan rate otherwise",
                 "share",
-                "cited",
+                "cited (wiring check)",
                 1.0,
                 _share(c.fee_ok[provider], n),
                 tolerance=0.0,
@@ -295,7 +377,7 @@ def moments(c: Collector) -> list[dict[str, Any]]:
             "bnpl.long_plan_fee_rate_pct",
             "Long plans carry the cited monthly fee rate (checked together with the zero-fee rows)",
             "share",
-            "cited",
+            "cited (wiring check)",
             1.0,
             _share(sum(c.fee_ok.values()), named_plans),
             tolerance=0.0,
@@ -308,41 +390,60 @@ def moments(c: Collector) -> list[dict[str, Any]]:
                 f"bnpl.limit_cap_sen.{provider}",
                 f"{provider}: largest recorded limit never exceeds the documented cap",
                 "sen",
-                "cited",
+                "cited (wiring check)",
                 cap,
                 c.max_limit.get(provider),
                 upper_bound=True,
             )
         )
-    on_time_share = _share(c.on_time, settled)
-    late_share = _share(c.late, settled)
-    tolerance = max(
-        0.03, _noise(p["repayment.on_time_share"], settled) if settled else SHARE_TOLERANCE
+    return rows
+
+
+def _repayment_rows(c: Collector) -> list[dict[str, Any]]:
+    """The cited figures describe account HOLDERS, so they are compared with holder shares."""
+    p = c.params
+    holders = c.holders_on_time + c.holders_late + c.holders_missed
+    norm = (
+        p["repayment.on_time_share"]
+        + p["repayment.late_but_paid_share"]
+        + p["repayment.missed_share"]
     )
+    note = f"{holders} holders with a settled instalment; the generator adds an assumed miss share"
+    rows = []
+    for param, text, count in (
+        ("repayment.on_time_share", "Holders who paid every instalment on time", c.holders_on_time),
+        ("repayment.late_but_paid_share", "Holders who paid late but in full", c.holders_late),
+        (
+            "repayment.missed_share",
+            "Holders with an unpaid instalment (cited: under 0.5%)",
+            c.holders_missed,
+        ),
+    ):
+        target = p[param] / norm  # what the generator should produce once the miss share is added
+        rows.append(
+            _row(
+                param,
+                text,
+                "share",
+                "assumed" if param.endswith("missed_share") else "cited",
+                p[param] if param != "repayment.missed_share" else p[param],
+                _share(count, holders),
+                tolerance=max(0.03, _noise(target, holders)) if holders else SHARE_TOLERANCE,
+                note=note,
+            )
+        )
+    inst = c.on_time + c.late + c.unpaid
     rows.append(
         _row(
-            "repayment.on_time_share",
-            "Instalments paid on the due date",
+            "derived.instalment_on_time_share",
+            "Instalments paid on the due date (not what the study measured; context only)",
             "share",
-            "cited",
-            p["repayment.on_time_share"],
-            on_time_share,
-            tolerance=tolerance,
-            note=f"{settled} instalments; the generator adds an assumed missed share",
+            "derived",
+            None,
+            _share(c.on_time, inst),
+            note=f"{inst} instalments",
         )
     )
-    rows.append(
-        _row(
-            "repayment.late_but_paid_share",
-            "Instalments paid late",
-            "share",
-            "cited",
-            p["repayment.late_but_paid_share"],
-            late_share,
-            tolerance=tolerance,
-        )
-    )
-    rows += _assumed_rows(c)
     return rows
 
 

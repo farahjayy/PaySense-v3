@@ -34,6 +34,8 @@ def exam_weeks(
     start: date, end: date, *, exam_months: Iterable[int], per_semester: int
 ) -> set[date]:
     """Mondays of the last `per_semester` weeks (by their Monday) of each exam month in range."""
+    if per_semester < 0:
+        raise ValueError("per_semester must not be negative")
     months = set(exam_months)
     found: set[date] = set()
     for month_start in iter_month_starts(start, end):
@@ -45,5 +47,5 @@ def exam_weeks(
             for d in iter_weeks(month_start, last_day)
             if d.month == month_start.month and d.year == month_start.year
         ]
-        found.update(mondays[-per_semester:])
+        found.update(mondays[len(mondays) - per_semester :])
     return found

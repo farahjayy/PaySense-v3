@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -137,34 +137,59 @@ def test_payments_fall_inside_the_history_window_and_are_linked_bnpl_expenses():
             assert t.bnpl_plan_key in keys
 
 
-def test_payment_behaviour_follows_the_cited_repayment_shares():
-    on_time = late = unpaid = 0
-    for index in range(500):
+def test_repayment_behaviour_follows_the_cited_shares_of_account_holders():
+    """The cited 88 / 12 / <0.5 split is of holders (CCOB), so it is checked per student."""
+    _, high = PARAMS["repayment.late_days_range"]
+    settled = {"on_time": 0, "late": 0, "missed": 0}
+    for index in range(1200):
         result = bnpl("frequent_bnpl", index)
-        for plan in result.plans:
-            for seq, instalment in enumerate(plan.proposal.instalments, start=1):
-                if (
-                    instalment.paid_at_checkout
-                    or instalment.due_date > END
-                    or instalment.due_date < START
-                ):
-                    continue
-                paid_on = plan.paid_dates.get(seq)
-                if paid_on is None:
-                    unpaid += 1
-                elif paid_on == instalment.due_date:
-                    on_time += 1
-                else:
-                    late += 1
-    total = on_time + late + unpaid
-    shares = (on_time / total, late / total, unpaid / total)
-    cited_on_time = PARAMS["repayment.on_time_share"]
-    cited_late = PARAMS["repayment.late_but_paid_share"]
+        due = [
+            (plan, seq, instalment)
+            for plan in result.plans
+            for seq, instalment in enumerate(plan.proposal.instalments, start=1)
+            if not instalment.paid_at_checkout
+            and instalment.due_date <= END - timedelta(days=high)  # outcome is known by END
+        ]
+        if not due:
+            continue
+        paid = [plan.paid_dates.get(seq) for plan, seq, _ in due]
+        if any(p is None for p in paid):
+            settled["missed"] += 1
+        elif any(p != i.due_date for p, (_, _, i) in zip(paid, due, strict=True)):
+            settled["late"] += 1
+        else:
+            settled["on_time"] += 1
+    total = sum(settled.values())
+    norm = (
+        PARAMS["repayment.on_time_share"]
+        + PARAMS["repayment.late_but_paid_share"]
+        + PARAMS["repayment.missed_share"]
+    )
 
-    assert total > 2000
-    assert shares[0] == pytest.approx(cited_on_time, abs=0.03)
-    assert shares[1] == pytest.approx(cited_late, abs=0.03)
-    assert shares[2] < 0.03
+    assert total > 700
+    assert settled["on_time"] / total == pytest.approx(
+        PARAMS["repayment.on_time_share"] / norm, abs=0.04
+    )
+    assert settled["late"] / total == pytest.approx(
+        PARAMS["repayment.late_but_paid_share"] / norm, abs=0.04
+    )
+    assert settled["missed"] / total < 0.02
+
+
+def test_a_student_who_pays_late_pays_late_at_least_once_and_not_always():
+    always_late = sometimes = 0
+    for index in range(600):
+        result = bnpl("frequent_bnpl", index)
+        flags = [
+            plan.paid_dates.get(seq) not in (None, i.due_date)
+            for plan in result.plans
+            for seq, i in enumerate(plan.proposal.instalments, start=1)
+            if not i.paid_at_checkout and i.due_date <= END - timedelta(days=30)
+        ]
+        if len(flags) >= 4 and any(flags):
+            sometimes += not all(flags)
+            always_late += all(flags)
+    assert sometimes > 0 and sometimes > always_late
 
 
 def test_an_atome_plan_pays_its_first_instalment_at_checkout():

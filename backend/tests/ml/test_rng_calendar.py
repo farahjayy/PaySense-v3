@@ -120,3 +120,16 @@ def test_exam_weeks_in_a_range_without_exam_months_is_empty():
         exam_weeks(date(2026, 2, 1), date(2026, 3, 31), exam_months=(6, 12), per_semester=2)
         == set()
     )
+
+
+def test_zero_exam_weeks_per_semester_means_no_exam_weeks():
+    assert (
+        exam_weeks(date(2025, 6, 1), date(2025, 6, 30), exam_months=(6,), per_semester=0) == set()
+    )
+
+
+def test_a_negative_exam_length_is_rejected():
+    import pytest
+
+    with pytest.raises(ValueError, match="per_semester"):
+        exam_weeks(date(2025, 6, 1), date(2025, 6, 30), exam_months=(6,), per_semester=-1)
