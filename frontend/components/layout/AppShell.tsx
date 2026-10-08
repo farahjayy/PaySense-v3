@@ -6,16 +6,13 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { isActive } from "@/lib/nav";
 import { clearSession, type Session } from "@/lib/session";
 
 type NavItem = { href: string; label: string; icon: string };
 
 // Grows with each phase: screens are added here as their backend lands.
 const NAV_ITEMS: readonly NavItem[] = [{ href: "/", label: "Dashboard", icon: "◫" }];
-
-function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
-}
 
 function navLinkClass(active: boolean): string {
   return active

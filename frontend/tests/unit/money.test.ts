@@ -51,6 +51,13 @@ describe("formatRm", () => {
     expect(formatRm(sen)).toBe(text);
   });
 
+  it.each([12.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53])(
+    "refuses %s: money is a whole, safe number of sen",
+    (sen) => {
+      expect(() => formatRm(sen)).toThrow(RangeError);
+    },
+  );
+
   it.each([0, 1, 99, 100, 123456, 987654321])("round-trips %i sen through parseRm", (sen) => {
     expect(parseRm(formatRm(sen))).toBe(sen);
   });

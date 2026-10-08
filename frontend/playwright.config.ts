@@ -33,7 +33,7 @@ export default defineConfig({
     {
       command: "npm run dev -- --port 3100",
       url: FRONTEND_URL,
-      env: { NEXT_PUBLIC_API_BASE_URL: API_URL },
+      env: { NEXT_PUBLIC_API_BASE_URL: API_URL, NEXT_DIST_DIR: ".next-e2e" },
       reuseExistingServer: false,
       timeout: 180_000,
     },

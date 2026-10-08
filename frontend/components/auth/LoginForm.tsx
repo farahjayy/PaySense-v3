@@ -35,6 +35,8 @@ export function LoginForm() {
         setError(errorMessage(apiError));
         return;
       }
+      // If sessionStorage is blocked the session is kept in memory: login still works for this
+      // tab, it just will not survive a reload.
       saveSession({
         token: data.access_token,
         expiresAt: Date.now() + data.expires_in * 1000,
@@ -49,7 +51,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate aria-busy={isPending}>
       <TextField
         label="Username"
         name="username"
@@ -59,10 +61,14 @@ export function LoginForm() {
         spellCheck={false}
         maxLength={64}
         value={username}
-        onChange={(event) => setUsername(event.target.value)}
+        onChange={(event) => {
+          setUsername(event.target.value);
+          if (error) setError(null);
+        }}
         hint="The username you were given for this study."
         error={error}
-        disabled={isPending}
+        // read-only, not disabled: a disabled input drops keyboard focus to <body>.
+        readOnly={isPending}
       />
       <Button type="submit" variant="accent" disabled={!trimmed || isPending}>
         {isPending ? "Signing in…" : "Continue"}

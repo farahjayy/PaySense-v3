@@ -8,7 +8,7 @@
   --color-line: #e3e1d9;
   --color-ink: #1c1c1a;
   --color-ink-secondary: #6b6a63;
-  --color-ink-muted: #8a887f;
+  --color-ink-muted: #6e6c64; /* 4.7:1 on the page background, 5.3:1 on white (WCAG AA) */
   --color-accent: #185fa5;
   --color-accent-bg: #e6f1fb;
   --color-success: #3b6d11;

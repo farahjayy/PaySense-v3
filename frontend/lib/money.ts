@@ -24,6 +24,9 @@ export function parseRm(text: string): number | null {
 
 /** Integer sen -> "RM 1,234.56" (negative: "-RM 2.50"). */
 export function formatRm(sen: number): string {
+  if (!Number.isSafeInteger(sen)) {
+    throw new RangeError(`money must be a whole, safe number of sen, got ${sen}`);
+  }
   const absolute = Math.abs(sen);
   const whole = Math.floor(absolute / SEN_PER_RM);
   const cents = String(absolute % SEN_PER_RM).padStart(2, "0");

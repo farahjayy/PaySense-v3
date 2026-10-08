@@ -13,6 +13,17 @@ describe("errorMessage", () => {
     expect(errorMessage(new TypeError("Failed to fetch"))).toBe(NETWORK_ERROR_MESSAGE);
   });
 
+  it("only treats fetch-style failures as network errors, not any TypeError from a bug", () => {
+    expect(errorMessage(new TypeError("Failed to fetch"))).toBe(NETWORK_ERROR_MESSAGE);
+    expect(errorMessage(new TypeError("fetch failed"))).toBe(NETWORK_ERROR_MESSAGE);
+    expect(errorMessage(new TypeError("NetworkError when attempting to fetch resource."))).toBe(
+      NETWORK_ERROR_MESSAGE,
+    );
+    expect(errorMessage(new TypeError("Cannot read properties of undefined"))).toMatch(
+      /something went wrong/i,
+    );
+  });
+
   it("falls back for anything it does not recognise", () => {
     expect(errorMessage(undefined)).toMatch(/something went wrong/i);
     expect(errorMessage({ detail: "plain string" })).toMatch(/something went wrong/i);

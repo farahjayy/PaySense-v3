@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createApiClient } from "@/lib/api/client";
+import { createApiClient, resolveApiBaseUrl } from "@/lib/api/client";
 import { getSession, saveSession } from "@/lib/session";
 
 const USER = { id: "u1", username: "amir", display_name: "Amir", persona: null };
@@ -63,5 +63,39 @@ describe("api client", () => {
     await api.POST("/api/auth/login", { body: { username: "ghost" } });
 
     expect(getSession()).not.toBeNull();
+  });
+});
+
+describe("a late 401 for an old token", () => {
+  it("does not wipe a session that was created after the request was sent", async () => {
+    saveSession({ token: "old-token", expiresAt: Date.now() + 60_000, user: USER });
+    const fetchMock2 = vi.fn<(request: Request) => Promise<Response>>(async () => {
+      // while the request is in flight the user logs in again
+      saveSession({ token: "new-token", expiresAt: Date.now() + 60_000, user: USER });
+      return jsonResponse(401, { detail: { code: "invalid_token", message: "expired" } });
+    });
+    const api = createApiClient("http://api.test", fetchMock2);
+
+    await api.GET("/api/auth/me");
+
+    expect(getSession()?.token).toBe("new-token");
+  });
+});
+
+describe("resolveApiBaseUrl", () => {
+  it("uses the configured URL and trims trailing slashes", () => {
+    expect(resolveApiBaseUrl("https://api.example.com///", "production")).toBe(
+      "https://api.example.com",
+    );
+  });
+
+  it("falls back to localhost outside production", () => {
+    expect(resolveApiBaseUrl(undefined, "development")).toBe("http://localhost:8000");
+    expect(resolveApiBaseUrl("", "test")).toBe("http://localhost:8000");
+  });
+
+  it("refuses to build a production bundle without the variable, naming it", () => {
+    expect(() => resolveApiBaseUrl(undefined, "production")).toThrow(/NEXT_PUBLIC_API_BASE_URL/);
+    expect(() => resolveApiBaseUrl("  ", "production")).toThrow(/NEXT_PUBLIC_API_BASE_URL/);
   });
 });

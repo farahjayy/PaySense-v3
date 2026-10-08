@@ -81,3 +81,41 @@ describe("session storage", () => {
     spy.mockRestore();
   });
 });
+
+describe("when sessionStorage cannot be written", () => {
+  it("still lets the user log in for this tab, and reports that it did not persist", () => {
+    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("quota / private mode");
+    });
+
+    const persisted = saveSession(sample());
+
+    expect(persisted).toBe(false);
+    expect(getSession(NOW)).toEqual(sample()); // held in memory, not bounced back to /login
+    spy.mockRestore();
+  });
+
+  it("reports success when storage works", () => {
+    expect(saveSession(sample())).toBe(true);
+  });
+
+  it("forgets the in-memory session on clear", () => {
+    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    saveSession(sample());
+    spy.mockRestore();
+
+    clearSession();
+
+    expect(getSession(NOW)).toBeNull();
+  });
+});
+
+describe("persona handling", () => {
+  it("accepts a persona the frontend does not know about yet", () => {
+    saveSession(sample({ user: { id: "u", username: "x", display_name: "X", persona: "new_persona" } }));
+
+    expect(getSession(NOW)?.user.persona).toBe("new_persona");
+  });
+});

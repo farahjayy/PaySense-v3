@@ -42,3 +42,6 @@ next-env.d.ts
 
 # keep the committed template (the real .env.local stays ignored)
 !.env.example
+
+# separate build directory for the Playwright run (never collides with `next dev`)
+.next-e2e/

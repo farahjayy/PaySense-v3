@@ -99,4 +99,53 @@ describe("LoginForm", () => {
     resolve(LOGIN_OK);
     await waitFor(() => expect(replace).toHaveBeenCalled());
   });
+
+  it("keeps keyboard focus on the field while signing in (read-only, not disabled)", async () => {
+    post.mockReturnValue(new Promise(() => {}));
+    render(<LoginForm />);
+    const input = screen.getByLabelText(/username/i);
+
+    await userEvent.type(input, "amir{enter}");
+
+    expect(input).toHaveAttribute("readonly");
+    expect(input).not.toBeDisabled();
+    expect(input).toHaveFocus();
+  });
+
+  it("ties the hint and the error to the field for screen readers", async () => {
+    post.mockResolvedValue({
+      data: undefined,
+      error: { detail: { code: "unknown_username", message: "No account with that username." } },
+    });
+    render(<LoginForm />);
+    const input = screen.getByLabelText(/username/i);
+
+    const before = input.getAttribute("aria-describedby") ?? "";
+    expect(document.getElementById(before)).toHaveTextContent(/username you were given/i);
+
+    await userEvent.type(input, "ghost");
+    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await screen.findByRole("alert");
+
+    const ids = (input.getAttribute("aria-describedby") ?? "").split(" ");
+    const described = ids.map((id) => document.getElementById(id)?.textContent ?? "").join(" ");
+    expect(described).toMatch(/username you were given/i);
+    expect(described).toMatch(/no account with that username/i);
+    expect(input).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("clears the error as soon as the user edits the field", async () => {
+    post.mockResolvedValue({
+      data: undefined,
+      error: { detail: { code: "unknown_username", message: "No account with that username." } },
+    });
+    render(<LoginForm />);
+    await userEvent.type(screen.getByLabelText(/username/i), "ghost");
+    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await screen.findByRole("alert");
+
+    await userEvent.type(screen.getByLabelText(/username/i), "x");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });

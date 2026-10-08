@@ -15,7 +15,9 @@ const SessionSchema = z.object({
     id: z.string(),
     username: z.string(),
     display_name: z.string(),
-    persona: z.enum(["frequent_bnpl", "budget_conscious", "irregular_income"]).nullable(),
+    // A plain string: the allowed values belong to the backend, and a value this build does not
+    // know about must not silently invalidate a valid login.
+    persona: z.string().nullable(),
   }),
 });
 
@@ -24,6 +26,9 @@ export type Session = z.infer<typeof SessionSchema>;
 const STORAGE_KEY = "paysense.session";
 const listeners = new Set<() => void>();
 let cache: { raw: string | null; value: Session | null } = { raw: null, value: null };
+// Set only when sessionStorage refused the write (private mode, quota): the session then lives in
+// memory so login still works for this tab instead of bouncing back to /login.
+let memoryOnly: Session | null = null;
 
 function readRaw(): string | null {
   try {
@@ -51,20 +56,26 @@ function notify(): void {
 export function getSession(now: number = Date.now()): Session | null {
   const raw = readRaw();
   if (raw !== cache.raw) cache = { raw, value: parse(raw) };
-  const { value } = cache;
+  const value = cache.value ?? (raw === null ? memoryOnly : null);
   return value !== null && value.expiresAt > now ? value : null;
 }
 
-export function saveSession(session: Session): void {
+/** Stores the session. Returns false if it could not be persisted (it still works until reload). */
+export function saveSession(session: Session): boolean {
+  let persisted = true;
   try {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    memoryOnly = null;
   } catch {
-    /* storage blocked: the session simply will not survive a reload */
+    persisted = false;
+    memoryOnly = session;
   }
   notify();
+  return persisted;
 }
 
 export function clearSession(): void {
+  memoryOnly = null;
   try {
     window.sessionStorage.removeItem(STORAGE_KEY);
   } catch {
