@@ -164,6 +164,8 @@ def update(
             cleaned[field] = _clean_text(patch[field], field, required=False)
     if "recurring_item_id" in patch:
         cleaned["recurring_item_id"] = patch["recurring_item_id"]
+    if not cleaned:
+        return _table(db).get(user_id, transaction_id)
     return _table(db).update(user_id, transaction_id, cleaned)
 
 

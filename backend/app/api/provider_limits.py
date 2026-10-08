@@ -3,7 +3,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.api.deps import CurrentUser, DbDep
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
@@ -23,6 +23,8 @@ router = APIRouter(
 
 
 class LimitIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     limit_sen: Sen
 
 

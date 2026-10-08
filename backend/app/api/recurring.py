@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.api.deps import CurrentUser, DbDep
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
-from app.api.types import Sen
+from app.api.types import AppDate, Sen, reject_explicit_nulls, text
 from app.core.errors import not_found, unprocessable
 from app.db import recurring_items as repo
 
@@ -24,11 +24,11 @@ class RecurringIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     kind: Kind
-    name: str = Field(min_length=1, max_length=80)
+    name: text(80)
     amount_sen: Sen
     cadence: Cadence
     custom_interval_days: int | None = Field(default=None, ge=1, le=366)
-    anchor_date: dt.date
+    anchor_date: AppDate
     active: bool = True
 
     @model_validator(mode="after")
@@ -41,12 +41,17 @@ class RecurringIn(BaseModel):
 class RecurringPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: str | None = Field(default=None, min_length=1, max_length=80)
+    name: text(80) | None = None
     amount_sen: Sen | None = None
     cadence: Cadence | None = None
     custom_interval_days: int | None = Field(default=None, ge=1, le=366)
-    anchor_date: dt.date | None = None
+    anchor_date: AppDate | None = None
     active: bool | None = None
+
+    @model_validator(mode="after")
+    def _required_fields_cannot_be_null(self) -> Self:
+        reject_explicit_nulls(self, ("name", "amount_sen", "cadence", "anchor_date", "active"))
+        return self
 
 
 class RecurringOut(ApiModel):

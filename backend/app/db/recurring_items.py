@@ -102,6 +102,8 @@ def update(
     if "cadence" in patch or "custom_interval_days" in patch:
         cadence, interval = _check_cadence(merged["cadence"], merged.get("custom_interval_days"))
         cleaned["cadence"], cleaned["custom_interval_days"] = cadence, interval
+    if not cleaned:  # an empty PATCH would otherwise become an unconditional update
+        return current
     return _table(db).update(user_id, item_id, cleaned)
 
 

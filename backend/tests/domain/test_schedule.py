@@ -339,3 +339,36 @@ def test_manual_schedule_rejects_impossible_inputs(count, instalment, total):
         build_manual_schedule(
             date(2026, 1, 1), count, instalment_sen=instalment, total_payable_sen=total
         )
+
+
+# ------------------------------------------------ review fix: no drift past month ends
+def test_pay_later_dates_do_not_drift_after_a_short_month():
+    # Bought on the 31st: due on the last day of each month it fits, never stuck on the 28th.
+    schedule = build_schedule("spaylater", 40000, 0, 4, date(2026, 1, 31))
+
+    assert [s.due_date for s in schedule] == [
+        date(2026, 2, 28),
+        date(2026, 3, 31),
+        date(2026, 4, 30),
+        date(2026, 5, 31),
+    ]
+
+
+def test_atome_dates_keep_the_purchase_day_of_month():
+    schedule = build_schedule("atome", 30000, 0, 3, date(2026, 1, 30))
+
+    assert [s.due_date for s in schedule] == [
+        date(2026, 1, 30),
+        date(2026, 2, 28),
+        date(2026, 3, 30),
+    ]
+
+
+def test_a_user_typed_first_date_becomes_the_anchor_day():
+    schedule = build_schedule("spaylater", 30000, 0, 3, date(2026, 1, 5), date(2026, 1, 31))
+
+    assert [s.due_date for s in schedule] == [
+        date(2026, 1, 31),
+        date(2026, 2, 28),
+        date(2026, 3, 31),
+    ]

@@ -70,3 +70,8 @@ def test_percent_to_hundredths_rounds_half_up_to_0_01_percent(rate, hundredths):
 def test_percent_to_hundredths_rejects_negative_rates():
     with pytest.raises(ValueError, match="rate"):
         percent_to_hundredths("-1")
+
+
+def test_absurdly_long_numbers_are_rejected_not_turned_into_huge_integers():
+    with pytest.raises(ValueError, match="amount"):
+        parse_rm("9" * 4000)

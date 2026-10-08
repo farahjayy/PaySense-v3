@@ -45,6 +45,10 @@ class PlanConflictError(PlanError):
     """Someone else changed the instalment while this request was in flight."""
 
 
+class UnknownInstalmentError(PlanError, ValueError):
+    """The plan has no instalment with that sequence number."""
+
+
 def instalment_description(plan: Mapping[str, Any], seq: int) -> str:
     return (
         f"{plan['provider_label']} instalment {seq}/{plan['num_installments']}"
@@ -303,7 +307,7 @@ def mark_paid_many(
     wanted = sorted(set(seqs))
     missing = [seq for seq in wanted if seq not in existing]
     if missing:
-        raise ValueError(f"seq {missing} not found in this plan")
+        raise UnknownInstalmentError(f"seq {missing} not found in this plan")
     already = [seq for seq in wanted if existing[seq]["is_paid"]]
     if already:
         raise AlreadyPaidError(f"instalments {already} are already paid")

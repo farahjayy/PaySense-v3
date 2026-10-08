@@ -79,7 +79,7 @@ def test_an_unsigned_file_is_assumed_to_be_expenses_unless_the_words_say_income(
     assert dinner.type == "expense"
     assert "no sign" in dinner.issues[0]
     assert salary.type == "income"
-    assert salary.issues == ()
+    assert salary.issues  # a guessed income is flagged for review too (it would inflate income)
 
 
 def test_iso_dates_with_times_and_month_names_parse():
@@ -229,3 +229,78 @@ def test_duplicates_respect_how_many_copies_are_already_stored():
     flagged = flag_duplicates(rows, one_copy_stored)
 
     assert [r.duplicate for r in flagged] == [True, False]
+
+
+# ---------------------------------------------------------------- review fixes (P1)
+def test_debit_amount_and_credit_amount_headers_are_a_debit_credit_layout():
+    text = (
+        "Date,Description,Debit Amount,Credit Amount\n"
+        "01/03/2026,Mamak,12.50,\n"
+        "02/03/2026,Salary March,,1500.00\n"
+    )
+
+    preview = parse_csv(text)
+
+    assert [(r.type, r.amount_sen) for r in preview.rows] == [("expense", 1250), ("income", 150000)]
+    assert preview.skipped == ()
+
+
+def test_an_unsigned_file_flags_every_row_it_guessed_to_be_income():
+    text = "Date,Description,Amount\n01/03/2026,Salary March,2000.00\n02/03/2026,Mamak,5.00\n"
+
+    salary, mamak = parse_csv(text).rows
+
+    assert salary.type == "income"
+    assert any("assumed income" in issue for issue in salary.issues)
+    assert mamak.type == "expense"
+    assert any("no sign" in issue for issue in mamak.issues)
+
+
+def test_an_amount_above_the_api_limit_is_skipped_with_a_reason():
+    from app.domain.money import MAX_AMOUNT_SEN
+
+    over = f"{MAX_AMOUNT_SEN // 100 + 1}.00"
+    text = f"Date,Description,Amount\n01/03/2026,Huge,-{over}\n02/03/2026,Fine,-1.00\n"
+
+    preview = parse_csv(text)
+
+    assert [r.description for r in preview.rows] == ["Fine"]
+    assert "too large" in preview.skipped[0].reason
+
+
+def test_a_field_beyond_the_csv_modules_limit_is_a_coded_error_not_a_crash():
+    text = "Date,Description,Amount\n01/03/2026," + "x" * 200_000 + ",-1.00\n"
+
+    with pytest.raises(CsvImportError) as err:
+        parse_csv(text)
+
+    assert err.value.code == "CSV_PARSE_FAILED"
+
+
+def test_a_very_wide_header_is_refused_quickly():
+    text = (
+        ",".join(f"col{i}" for i in range(5000)) + "\n" + ",".join("1" for _ in range(5000)) + "\n"
+    )
+
+    with pytest.raises(CsvImportError) as err:
+        parse_csv(text)
+
+    assert err.value.code == "CSV_PARSE_FAILED"
+
+
+def test_a_file_of_millions_of_blank_looking_rows_stops_at_the_row_limit():
+    text = "Date,Description,Amount\n" + "01/03/2026,x,-1.00\n" * (MAX_ROWS + 10)
+
+    with pytest.raises(CsvImportError) as err:
+        parse_csv(text)
+
+    assert err.value.code == "CSV_TOO_MANY_ROWS"
+
+
+def test_a_pathologically_long_date_cell_is_just_an_unparseable_date():
+    text = "Date,Description,Amount\n" + "1" * 5000 + ",x,-1.00\n02/03/2026,Fine,-1.00\n"
+
+    preview = parse_csv(text)
+
+    assert [r.description for r in preview.rows] == ["Fine"]
+    assert "date" in preview.skipped[0].reason

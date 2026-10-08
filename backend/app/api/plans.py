@@ -8,12 +8,17 @@ import datetime as dt
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Response
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import CurrentUser, DbDep, TodayDep
 from app.api.providers import ProviderKey
-from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
-from app.api.types import Sen
+from app.api.schemas import (
+    CONFLICT_RESPONSE,
+    NOT_FOUND_RESPONSE,
+    PROTECTED_RESPONSES,
+    ApiModel,
+)
+from app.api.types import AppDate, Sen, text
 from app.core.errors import api_error, not_found, unprocessable
 from app.db import plans as plans_repo
 from app.db import provider_limits as limits_repo
@@ -22,7 +27,7 @@ from app.domain.plans import enrich_plan, remaining_limit_sen
 from app.domain.providers import get_provider
 from app.domain.schedule import MAX_INSTALMENTS
 
-ItemName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
+ItemName = text(120)
 PlanStatus = Literal["active", "completed", "overdue"]
 
 router = APIRouter(prefix="/plans", tags=["plans"], responses=PROTECTED_RESPONSES)
@@ -37,12 +42,12 @@ class PlanIn(BaseModel):
 
     provider: ProviderKey
     item_name: ItemName
-    purchase_date: dt.date
+    purchase_date: AppDate
     num_installments: int = Field(ge=1, le=MAX_INSTALMENTS)
     total_price_sen: Sen | None = None
     monthly_fee_rate_pct: float = Field(default=0, ge=0, le=30)
-    first_payment_date: dt.date | None = None
-    provider_label: Annotated[str, StringConstraints(max_length=40)] | None = None
+    first_payment_date: AppDate | None = None
+    provider_label: text(40, required=False) | None = None
     instalment_sen: Sen | None = None
     total_payable_sen: Sen | None = None
 
@@ -56,7 +61,7 @@ class PlanPatch(BaseModel):
 class PayIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    paid_date: dt.date | None = Field(default=None, description="Defaults to today")
+    paid_date: AppDate | None = Field(default=None, description="Defaults to today")
 
 
 class BulkPayIn(PayIn):
@@ -257,7 +262,7 @@ def delete_plan(plan_id: str, user: CurrentUser, db: DbDep, keep_payments: bool 
 @router.post(
     "/{plan_id}/installments/{seq}/pay",
     response_model=InstalmentOut,
-    responses={**NOT_FOUND_RESPONSE, 409: {"description": "Already paid, or changed concurrently"}},
+    responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
 )
 def pay_installment(
     plan_id: str,
@@ -286,7 +291,7 @@ def pay_installment(
 @router.post(
     "/{plan_id}/pay",
     response_model=list[InstalmentOut],
-    responses={**NOT_FOUND_RESPONSE, 409: {"description": "An instalment is already paid"}},
+    responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
 )
 def pay_installments(
     plan_id: str, body: BulkPayIn, user: CurrentUser, db: DbDep, today: TodayDep
@@ -303,6 +308,6 @@ def pay_installments(
         raise api_error(
             409, "plan_conflict", "An instalment just changed. Refresh and retry."
         ) from err
-    except ValueError as err:
+    except plans_repo.UnknownInstalmentError as err:
         raise _instalment_missing() from err
     return [InstalmentOut.model_validate(row) for row in paid]

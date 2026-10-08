@@ -45,3 +45,15 @@ def set_onboarding_state(db: Database, user_id: str, state: str) -> dict[str, An
         .data
     )
     return updated[0]
+
+
+def advance_onboarding_state(db: Database, user_id: str, state: str) -> dict[str, Any]:
+    """Move onboarding forward to `state`; never backwards (a later import must not send a
+    finished user back to the start)."""
+    uid = require_user_id(user_id)
+    if state not in ONBOARDING_STATES:
+        raise ValueError(f"onboarding_state must be one of {list(ONBOARDING_STATES)}")
+    current = create_default(db, uid)
+    if ONBOARDING_STATES.index(state) <= ONBOARDING_STATES.index(current["onboarding_state"]):
+        return current
+    return set_onboarding_state(db, uid, state)

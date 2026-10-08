@@ -58,3 +58,38 @@ def test_a_bare_incoming_transfer_is_not_assumed_to_be_an_own_account_move():
 
 def test_bnpl_category_is_never_guessed_from_text():
     assert guess_category("BNPL instalment") != BNPL
+
+
+# ---------------------------------------------------------------- review fixes (P1)
+@pytest.mark.parametrize(
+    ("description", "not_category"),
+    [
+        ("DuitNow QR Merchant Kopitiam", "Allowance"),
+        ("Digital Ocean invoice", "Bills"),
+        ("Business class upgrade", "Transport"),
+    ],
+)
+def test_short_keywords_match_whole_words_only(description, not_category):
+    assert guess_category(description) != not_category
+
+
+@pytest.mark.parametrize(
+    ("description", "category"),
+    [("Bus fare", "Transport"), ("Digi postpaid", "Bills"), ("Duit raya", "Allowance")],
+)
+def test_the_whole_word_versions_still_match(description, category):
+    assert guess_category(description) == category
+
+
+def test_a_duitnow_payment_is_not_guessed_to_be_income():
+    assert guess_type("DuitNow QR Merchant", 0) == "expense"
+
+
+def test_a_credit_card_payment_is_not_income_but_a_credited_salary_is():
+    assert guess_type("Credit card payment", 0) == "expense"
+    assert guess_type("Salary credited", 0) == "income"
+
+
+@pytest.mark.parametrize("description", ["Payment reversal", "Cashback Touch n Go", "Chargeback"])
+def test_refund_like_words_are_income_when_there_is_no_sign(description):
+    assert guess_type(description, 0) == "income"

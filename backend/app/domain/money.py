@@ -8,6 +8,8 @@ import re
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 SEN_PER_RM = 100
+MAX_AMOUNT_SEN = 100_000_000_000  # RM 1 billion: the API refuses (and imports skip) anything larger
+MAX_AMOUNT_TEXT = 40  # characters; longer text is never a real amount
 _HUNDREDTH = Decimal("0.01")
 # Optional "RM", then 1,234 / 1234, then an optional .5 or .50 — nothing else (no sign, no
 # parentheses, no third decimal), because a silently guessed amount is worse than a rejected one.
@@ -16,7 +18,8 @@ _RM_TEXT = re.compile(r"^(?:RM\s*)?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?$", r
 
 def parse_rm(text: str) -> int:
     """Ringgit text -> integer sen. Raises ValueError for anything ambiguous."""
-    match = _RM_TEXT.match(text.strip()) if isinstance(text, str) else None
+    short = isinstance(text, str) and len(text) <= MAX_AMOUNT_TEXT
+    match = _RM_TEXT.match(text.strip()) if short else None
     if match is None:
         raise ValueError(f"not a valid amount: {text!r} (use e.g. 12.50 or RM 1,234.50)")
     whole = int(match.group(1).replace(",", ""))

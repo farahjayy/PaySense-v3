@@ -44,6 +44,11 @@ NOT_FOUND_RESPONSE: dict[int | str, dict] = {
 }
 
 
+CONFLICT_RESPONSE: dict[int | str, dict] = {
+    409: {"model": ErrorEnvelope, "description": "The request conflicts with the current state"}
+}
+
+
 class HealthOut(BaseModel):
     status: Literal["ok"]
 

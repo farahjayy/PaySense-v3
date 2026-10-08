@@ -1,8 +1,9 @@
 """Shared FastAPI dependencies. Auth and database access live here, never in handlers."""
 
-from datetime import date
+from datetime import UTC, date, datetime
 from threading import Lock
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -37,9 +38,18 @@ def get_login_limiter(request: Request) -> LoginRateLimiter:
     return request.app.state.login_limiter
 
 
+MALAYSIA = ZoneInfo("Asia/Kuala_Lumpur")
+
+
+def malaysia_today(now: datetime | None = None) -> date:
+    """Today's date in Malaysia. The server runs in UTC, which is yesterday for the first eight
+    hours of every Malaysian day, so "today" must never come from the server clock directly."""
+    return (now or datetime.now(UTC)).astimezone(MALAYSIA).date()
+
+
 def get_today() -> date:
-    """Today's date. A dependency so tests can pin the clock with `dependency_overrides`."""
-    return date.today()
+    """A dependency so tests can pin the clock with `dependency_overrides`."""
+    return malaysia_today()
 
 
 TodayDep = Annotated[date, Depends(get_today)]

@@ -131,7 +131,9 @@ def _rule_driven(
         raise ProposalError("price_required", "Enter the price.")
     rate = monthly_fee_rate_pct if config.monthly_fee_applies else 0
     split = split_for_limit(total_price_sen, remaining_limit_sen, rate, num_instalments)
-    if split.financed_sen == 0:
+    if split.financed_sen == 0 or (
+        split.limit_applied and split.total_payable_sen < num_instalments
+    ):  # nothing, or too little to give each instalment a sen
         raise ProposalError(
             "limit_exhausted",
             f"There is no {config.label} limit left for this purchase. Pay it up front or "

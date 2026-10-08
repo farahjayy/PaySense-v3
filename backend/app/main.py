@@ -4,6 +4,7 @@
 lazily (and once) so that importing this module never requires a configured environment.
 """
 
+import logging
 import sys
 from typing import Any
 
@@ -13,6 +14,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from postgrest import APIError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import (
@@ -28,6 +30,7 @@ from app.api import (
     transactions,
 )
 from app.api.rate_limit import LoginRateLimiter
+from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
 
@@ -40,7 +43,18 @@ _STATUS_CODES = {
     409: "conflict",
     429: "too_many_requests",
 }
-_STATUS_MESSAGES = {404: "Not found.", 405: "Method not allowed."}
+_STATUS_MESSAGES = {
+    404: "Not found.",
+    405: "Method not allowed.",
+    413: "That request is too large.",
+}
+_STATUS_CODES[413] = "payload_too_large"
+
+logger = logging.getLogger("paysense")
+
+# Postgres error classes a user's input can legitimately trigger. Anything else is our bug: a 500.
+_CONFLICT_CODES = frozenset({"23505", "23503"})  # unique / foreign-key violation
+_INVALID_VALUE_CODES = frozenset({"22P05", "22021", "22001", "22003", "22007", "22008", "23514"})
 
 
 def _envelope(
@@ -78,6 +92,8 @@ def create_app(
     app.state.db = db  # built lazily on first use when None (see api/deps.py)
     app.state.login_limiter = login_limiter or LoginRateLimiter()
 
+    # Added first, so it sits *inside* CORS: its 413 responses still carry CORS headers.
+    app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -100,6 +116,16 @@ def create_app(
     @app.exception_handler(RequestValidationError)
     async def _validation_handler(_: Request, err: RequestValidationError) -> JSONResponse:
         return _envelope(422, "validation_error", _validation_message(err))
+
+    @app.exception_handler(APIError)
+    async def _database_handler(_: Request, err: APIError) -> JSONResponse:
+        # Never echo the database's own message: it can name tables, columns and values.
+        if err.code in _CONFLICT_CODES:
+            return _envelope(409, "conflict", "That conflicts with data that already exists.")
+        if err.code in _INVALID_VALUE_CODES:
+            return _envelope(422, "invalid_value", "One of the values could not be stored.")
+        logger.error("Unexpected database error %s: %s", err.code, err.message)
+        return _envelope(500, "internal_error", "Something went wrong on our side.")
 
     @app.exception_handler(httpx.HTTPError)
     async def _upstream_handler(_: Request, __: httpx.HTTPError) -> JSONResponse:

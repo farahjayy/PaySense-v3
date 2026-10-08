@@ -206,3 +206,10 @@ def test_an_unknown_provider_is_refused():
         propose_plan(provider="grab_paylater", purchase_date=PURCHASE, num_instalments=3)
 
     assert err.value.code == "unknown_provider"
+
+
+def test_a_remaining_limit_too_small_to_split_is_reported_as_an_exhausted_limit():
+    with pytest.raises(ProposalError) as err:
+        rule("spaylater", 30000, 3, remaining_limit_sen=2)
+
+    assert err.value.code == "limit_exhausted"

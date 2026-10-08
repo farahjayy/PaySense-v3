@@ -125,10 +125,18 @@ CATEGORY_KEYWORDS = {
 }
 
 
+# Short keywords that are also the start of unrelated words: "duit" would match "DuitNow", "digi"
+# "digital", "bus" "business". These must match as whole words.
+WHOLE_WORD_KEYWORDS = frozenset({"duit", "digi", "bus", "zus"})
+
+
 def _matches(keyword: str, text: str) -> bool:
     # Prefix word-boundary: "rent" matches "rental" but not "parents"; "print" still matches
-    # "printing".
-    return re.search(r"\b" + re.escape(keyword), text) is not None
+    # "printing". Keywords in WHOLE_WORD_KEYWORDS must also end at a word boundary.
+    pattern = r"\b" + re.escape(keyword)
+    if keyword in WHOLE_WORD_KEYWORDS:
+        pattern += r"\b"
+    return re.search(pattern, text) is not None
 
 
 def guess_category(description: str | None) -> str:
@@ -148,9 +156,11 @@ def guess_type(description: str | None, amount_sign: int) -> str:
     if amount_sign < 0:
         return "expense"
     text = (description or "").lower()
+    # "credited" (a salary credited), but not bare "credit": "credit card payment" is money out.
     income_words = (
         CATEGORY_KEYWORDS["Salary"]
         + CATEGORY_KEYWORDS["Allowance"]
-        + ["refund", "transfer in", "credit"]
+        + CATEGORY_KEYWORDS[REFUND]
+        + ["transfer in", "credited"]
     )
     return "income" if any(_matches(word, text) for word in income_words) else "expense"

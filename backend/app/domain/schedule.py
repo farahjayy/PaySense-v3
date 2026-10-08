@@ -94,8 +94,16 @@ def generate_schedule(
     num_instalments: int,
     first_payment_date: date,
     checkout_instalments: int = 0,
+    *,
+    anchor: date | None = None,
+    anchor_offset_months: int = 0,
 ) -> list[Instalment]:
-    """Instalments whose amounts sum to the total payable exactly."""
+    """Instalments whose amounts sum to the total payable exactly.
+
+    Due dates are `add_months(anchor, anchor_offset_months + seq - 1)`, so the day of month is
+    re-applied each month and never drifts after a short one (bought on the 31st: due 28 Feb,
+    31 Mar, 30 Apr, 31 May — not stuck on the 28th). `anchor` defaults to the first payment date.
+    """
     _check_count(num_instalments)
     if price_sen <= 0:
         raise ValueError("price must be positive")
@@ -106,7 +114,7 @@ def generate_schedule(
     return [
         Instalment(
             seq=seq,
-            due_date=add_months(first_payment_date, seq - 1),
+            due_date=add_months(anchor or first_payment_date, anchor_offset_months + seq - 1),
             amount_sen=amounts[seq - 1],
             paid_at_checkout=seq <= checkout_instalments,
         )
@@ -130,13 +138,26 @@ def build_schedule(
     config = get_provider(provider_key)
     rate = monthly_rate_pct if config.monthly_fee_applies else 0
     first_due = first_payment_date or default_first_payment_date(provider_key, purchase_date)
+    # The day-of-month anchor is the date the user typed, or else the purchase date plus the
+    # provider's offset, so later dates keep the right day after a short month.
+    if first_payment_date is not None:
+        anchor, offset = first_payment_date, 0
+    else:
+        anchor = purchase_date
+        offset = config.start_offset_months if config.start_rule == "months_after_purchase" else 0
     checkout = (
         config.checkout_instalments
         if is_paid_at_checkout(provider_key, first_due, purchase_date)
         else 0
     )
     return generate_schedule(
-        price_sen, rate, num_instalments, first_due, checkout_instalments=checkout
+        price_sen,
+        rate,
+        num_instalments,
+        first_due,
+        checkout_instalments=checkout,
+        anchor=anchor,
+        anchor_offset_months=offset,
     )
 
 

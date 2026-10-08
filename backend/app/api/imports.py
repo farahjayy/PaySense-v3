@@ -5,6 +5,7 @@ restart cannot lose an upload and one user's preview can never be confirmed by a
 """
 
 import datetime as dt
+import logging
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, UploadFile
@@ -12,11 +13,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import CurrentUser, DbDep
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
-from app.api.types import Sen
+from app.api.types import AppDate, Sen, text
 from app.core.errors import unprocessable
 from app.db import transactions, user_settings
 from app.domain.csv_import import MAX_ROWS, CsvImportError, flag_duplicates, parse_csv
 
+logger = logging.getLogger("paysense")
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 TxnType = Literal["income", "expense", "savings"]
 
@@ -48,11 +50,11 @@ class ImportPreviewOut(ApiModel):
 class ConfirmRow(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    date: dt.date
+    date: AppDate
     amount_sen: Sen
     type: TxnType
-    category: str = Field(min_length=1, max_length=60)
-    description: str | None = Field(default=None, max_length=200)
+    category: text(60)
+    description: text(200, required=False) | None = None
 
 
 class ConfirmIn(BaseModel):
@@ -105,5 +107,9 @@ def confirm_import(body: ConfirmIn, user: CurrentUser, db: DbDep) -> ConfirmOut:
     created = transactions.bulk_create(
         db, user.id, [row.model_dump() for row in body.rows], source="csv"
     )
-    user_settings.set_onboarding_state(db, user.id, "history_imported")
+    try:
+        user_settings.advance_onboarding_state(db, user.id, "history_imported")
+    except Exception:
+        # The rows are already saved; failing the request now would invite a duplicate retry.
+        logger.exception("Could not record onboarding progress for user %s", user.id)
     return ConfirmOut(created=created)

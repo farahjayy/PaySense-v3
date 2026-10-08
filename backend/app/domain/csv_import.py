@@ -16,9 +16,12 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime
 
 from app.domain.categorize import guess_category, guess_type
-from app.domain.money import parse_rm
+from app.domain.money import MAX_AMOUNT_SEN, parse_rm
 
 MAX_ROWS = 5000
+MAX_COLUMNS = 64
+MAX_DATE_CELL = 40  # characters; a longer "date" is junk and not worth 27 parse attempts
+SNIFF_CHARS = 4096
 MIN_YEAR = 2000
 DESCRIPTION_LIMIT = 200
 
@@ -40,6 +43,7 @@ _DATE_FORMATS = (
     "%Y/%m/%d",
 )
 _NO_SIGN_ISSUE = "no sign on amount — assumed expense, please review"
+_ASSUMED_INCOME_ISSUE = "no sign on amount — assumed income from the description, please review"
 
 
 class CsvImportError(ValueError):
@@ -120,6 +124,8 @@ def _find_column(headers: Sequence[str], candidates: Sequence[str], taken: set[i
 
 def _parse_date(raw: str) -> date | None:
     text = raw.strip()
+    if len(text) > MAX_DATE_CELL:
+        return None
     attempts = [text, text.split("T")[0], text.split()[0] if text.split() else text]
     for attempt in attempts:
         for fmt in _DATE_FORMATS:
@@ -176,9 +182,12 @@ def _locate_columns(header: Sequence[str]) -> _Columns:
     columns = {}
     for name, candidates in (
         ("date", DATE_COLUMNS),
-        ("amount", AMOUNT_COLUMNS),
-        ("debit", DEBIT_COLUMNS),
+        (
+            "debit",
+            DEBIT_COLUMNS,
+        ),  # before "amount": "Debit Amount" is a debit column, not THE amount
         ("credit", CREDIT_COLUMNS),
+        ("amount", AMOUNT_COLUMNS),
         ("description", DESC_COLUMNS),
     ):
         index = _find_column(headers, candidates, taken)
@@ -196,18 +205,34 @@ def _locate_columns(header: Sequence[str]) -> _Columns:
 
 
 def _data_rows(text: str) -> tuple[list[str], list[tuple[int, list[str]]]]:
+    """Header plus numbered data rows. Reading stops as soon as a limit is crossed, so a 5 MB file
+    of one-character rows costs a few thousand rows of memory, not millions."""
     text = text.lstrip("﻿")
-    reader = csv.reader(io.StringIO(text), delimiter=_sniff_delimiter(text))
-    rows = [fields for fields in reader if any(cell.strip() for cell in fields)]
+    reader = csv.reader(io.StringIO(text), delimiter=_sniff_delimiter(text[:SNIFF_CHARS]))
+    rows: list[list[str]] = []
+    try:
+        for fields in reader:
+            if not any(cell.strip() for cell in fields):
+                continue
+            rows.append(fields)
+            if len(rows) > MAX_ROWS + 1:
+                raise CsvImportError(
+                    "CSV_TOO_MANY_ROWS",
+                    f"The file has more than {MAX_ROWS:,} rows — import a shorter date range.",
+                )
+    except csv.Error as err:  # e.g. a single field over the csv module's size limit
+        raise CsvImportError(
+            "CSV_PARSE_FAILED", "Couldn't parse this file — is it a valid CSV export?"
+        ) from err
     if len(rows) < 2:
         raise CsvImportError(
             "CSV_NO_ROWS", "No usable rows found — check the file has date and amount columns."
         )
     header, body = rows[0], rows[1:]
-    if len(body) > MAX_ROWS:
+    if len(header) > MAX_COLUMNS:
         raise CsvImportError(
-            "CSV_TOO_MANY_ROWS",
-            f"The file has more than {MAX_ROWS:,} rows — import a shorter date range.",
+            "CSV_PARSE_FAILED",
+            f"The file has more than {MAX_COLUMNS} columns; is it a bank export?",
         )
     return header, list(enumerate(body, start=1))
 
@@ -250,13 +275,15 @@ def parse_csv(text: str) -> ImportPreview:
         if sen == 0:
             skipped.append(SkippedRow(number, "missing or zero amount"))
             continue
+        if sen > MAX_AMOUNT_SEN:
+            skipped.append(SkippedRow(number, "amount too large"))
+            continue
         issues: tuple[str, ...] = ()
         if split_amounts or signed_file:
             kind = guess_type(description, sign)
         else:
             kind = guess_type(description, 0)  # unsigned file: only the words can say "income"
-            if kind == "expense":
-                issues = (_NO_SIGN_ISSUE,)
+            issues = (_NO_SIGN_ISSUE,) if kind == "expense" else (_ASSUMED_INCOME_ISSUE,)
         rows.append(
             ImportRow(
                 row=number,
