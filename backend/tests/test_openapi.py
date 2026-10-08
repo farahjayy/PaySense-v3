@@ -1,5 +1,7 @@
 """The OpenAPI document is the contract the frontend types are generated from (ADR D-18)."""
 
+import re
+
 import pytest
 
 
@@ -8,10 +10,13 @@ def spec(client):
     return client.get("/openapi.json").json()
 
 
-def test_operation_ids_are_plain_function_names(spec):
-    ids = {op["operationId"] for path in spec["paths"].values() for op in path.values()}
+def test_operation_ids_are_unique_plain_function_names(spec):
+    ids = [op["operationId"] for path in spec["paths"].values() for op in path.values()]
 
-    assert ids == {"health", "login", "me"}
+    assert len(ids) == len(set(ids)), "operation ids must be unique (they become TypeScript names)"
+    # FastAPI's auto-generated ids look like "login_api_auth_login_post": too long and path-shaped.
+    assert all(re.fullmatch(r"[a-z][a-z0-9_]*", i) and "_api_" not in i for i in ids)
+    assert {"health", "login", "me"} <= set(ids)
 
 
 def test_response_fields_the_server_always_sends_are_required(spec):
