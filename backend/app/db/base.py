@@ -11,6 +11,8 @@ Tables without an `id` primary key (`user_settings`, `provider_limits`) get thei
 """
 
 import uuid
+from collections.abc import Mapping, Sequence
+from datetime import date
 from typing import Any
 
 from app.db.client import Database
@@ -26,6 +28,10 @@ def require_user_id(user_id: object) -> str:
     if not isinstance(user_id, str) or not user_id.strip():
         raise ValueError("user_id is required for every user-scoped query")
     return user_id
+
+
+def _wire(value: Any) -> Any:
+    return value.isoformat() if isinstance(value, date) else value
 
 
 def is_uuid(value: object) -> bool:
@@ -45,12 +51,18 @@ class ScopedTable:
         self,
         uid: str,
         equals: dict[str, Any],
+        between: Mapping[str, tuple[Any, Any]] | None,
         order_by: str | None,
         descending: bool,
     ) -> Any:
         query = self._db.table(self._table).select("*").eq(OWNER_COLUMN, uid)
         for column, value in equals.items():
             query = query.eq(column, value)
+        for column, (low, high) in (between or {}).items():
+            if low is not None:
+                query = query.gte(column, _wire(low))
+            if high is not None:
+                query = query.lte(column, _wire(high))
         if order_by:
             query = query.order(order_by, desc=descending)
         return query.order(ID_COLUMN)  # tie-break so pages never overlap or skip rows
@@ -63,9 +75,11 @@ class ScopedTable:
         order_by: str | None = None,
         descending: bool = False,
         limit: int | None = None,
+        between: Mapping[str, tuple[Any, Any]] | None = None,
         **equals: Any,
     ) -> list[dict[str, Any]]:
-        """All of the user's rows matching `equals`, paged internally past the 1000-row cap."""
+        """All of the user's rows matching `equals` and the inclusive `between` ranges
+        ({column: (low, high)}, either end may be None), paged internally past the 1000-row cap."""
         uid = require_user_id(user_id)
         if OWNER_COLUMN in equals:
             raise ValueError(
@@ -78,7 +92,7 @@ class ScopedTable:
             start = len(rows)
             size = PAGE_SIZE if limit is None else min(PAGE_SIZE, limit - start)
             page = (
-                self._page_query(uid, equals, order_by, descending)
+                self._page_query(uid, equals, between, order_by, descending)
                 .range(start, start + size - 1)
                 .execute()
                 .data
@@ -139,3 +153,30 @@ class ScopedTable:
             .data
         )
         return bool(deleted)
+
+    def insert_many(self, user_id: str, rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Insert rows in one request; every row is stamped with the caller's id. All rows are
+        checked before anything is written."""
+        uid = require_user_id(user_id)
+        if any(row.get(OWNER_COLUMN, uid) != uid for row in rows):
+            raise ValueError("row user_id does not match the user_id argument")
+        if not rows:
+            return []
+        payload = [{**row, OWNER_COLUMN: uid} for row in rows]
+        return list(self._db.table(self._table).insert(payload).execute().data)
+
+    def delete_many(self, user_id: str, row_ids: Sequence[str]) -> int:
+        """Delete the caller's rows with these ids; malformed or foreign ids are ignored."""
+        uid = require_user_id(user_id)
+        valid = [row_id for row_id in row_ids if is_uuid(row_id)]
+        if not valid:
+            return 0
+        deleted = (
+            self._db.table(self._table)
+            .delete()
+            .eq(OWNER_COLUMN, uid)
+            .in_(ID_COLUMN, valid)
+            .execute()
+            .data
+        )
+        return len(deleted)

@@ -181,3 +181,88 @@ def test_list_rows_refuses_a_none_filter(db, two_users):
 
     with pytest.raises(ValueError, match="None"):
         ScopedTable(db, "transactions").list_rows(amir, category=None)
+
+
+# ------------------------------------------------------------------ range filters and batches
+def _dated(day: str, amount: int = 100) -> dict:
+    return _txn(amount, date=day)
+
+
+def test_between_filters_inclusively_and_either_end_may_be_open(db, two_users):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+    for day in ("2026-01-05", "2026-01-10", "2026-01-15", "2026-01-20", "2026-01-25"):
+        table.insert(amir, _dated(day))
+
+    both = table.list_rows(amir, between={"date": ("2026-01-10", "2026-01-20")}, order_by="date")
+    from_only = table.list_rows(amir, between={"date": ("2026-01-20", None)}, order_by="date")
+    to_only = table.list_rows(amir, between={"date": (None, "2026-01-10")}, order_by="date")
+
+    assert [r["date"] for r in both] == ["2026-01-10", "2026-01-15", "2026-01-20"]
+    assert [r["date"] for r in from_only] == ["2026-01-20", "2026-01-25"]
+    assert [r["date"] for r in to_only] == ["2026-01-05", "2026-01-10"]
+
+
+def test_between_accepts_date_objects(db, two_users):
+    from datetime import date
+
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+    table.insert(amir, _dated("2026-01-10"))
+
+    rows = table.list_rows(amir, between={"date": (date(2026, 1, 10), date(2026, 1, 10))})
+
+    assert len(rows) == 1
+
+
+def test_between_never_leaks_another_users_rows(db, two_users):
+    amir, siti = two_users
+    table = ScopedTable(db, "transactions")
+    table.insert(siti, _dated("2026-01-10"))
+
+    assert table.list_rows(amir, between={"date": ("2026-01-01", "2026-12-31")}) == []
+
+
+def test_insert_many_stamps_every_row_and_returns_them_in_order(db, two_users):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+
+    created = table.insert_many(amir, [_txn(100), _txn(200), _txn(300)])
+
+    assert [r["amount_sen"] for r in created] == [100, 200, 300]
+    assert {r["user_id"] for r in created} == {amir}
+
+
+def test_insert_many_rejects_a_row_for_another_user_before_writing_anything(db, two_users):
+    amir, siti = two_users
+    table = ScopedTable(db, "transactions")
+
+    with pytest.raises(ValueError, match="user_id"):
+        table.insert_many(amir, [_txn(100), _txn(200, user_id=siti)])
+
+    assert db.rows("transactions") == []
+
+
+def test_insert_many_of_nothing_is_a_no_op(db, two_users):
+    amir, _ = two_users
+
+    assert ScopedTable(db, "transactions").insert_many(amir, []) == []
+
+
+def test_delete_many_only_removes_the_callers_rows_and_ignores_junk_ids(db, two_users):
+    amir, siti = two_users
+    table = ScopedTable(db, "transactions")
+    mine = [table.insert(amir, _txn(n))["id"] for n in (1, 2, 3)]
+    theirs = table.insert(siti, _txn(9))["id"]
+
+    removed = table.delete_many(amir, [mine[0], mine[1], theirs, "not-a-uuid"])
+
+    assert removed == 2
+    assert table.get(siti, theirs) is not None
+    assert [r["id"] for r in table.list_rows(amir)] == [mine[2]]
+
+
+def test_delete_many_of_nothing_removes_nothing(db, two_users):
+    amir, _ = two_users
+
+    assert ScopedTable(db, "transactions").delete_many(amir, []) == 0

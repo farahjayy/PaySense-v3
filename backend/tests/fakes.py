@@ -1,9 +1,12 @@
 """In-memory stand-in for the supabase-py client.
 
-It implements just the query-builder surface the repositories use (`table().select/insert/
-update/delete` + `eq`, `ilike`, `order`, `limit`, `execute`) so the *real* repository code runs
-in unit tests. Behaviour that matters for isolation is mimicked: unique constraints and
-foreign keys raise `postgrest.APIError` with Postgres error codes, rows are copied in and out.
+It implements the query-builder surface the repositories use (`table().select/insert/update/
+delete` + `eq`, `ilike`, `gte`, `lte`, `in_`, `order`, `range`, `limit`, `execute`) so the *real*
+repository code runs in unit tests. It also mimics the parts of the schema that matter for
+isolation and consistency (migrations/0001_init.sql): unique constraints, composite
+`(id, user_id)` foreign keys, `on delete cascade` / `set null`, all-or-nothing multi-row inserts,
+and PostgREST's silent 1000-row cap. Violations raise `postgrest.APIError` with Postgres codes.
+It does NOT enforce check constraints — repositories validate in Python first.
 Integration tests (`-m integration`) are the check that this fake matches the real service.
 """
 
@@ -20,17 +23,56 @@ MAX_ROWS = 1000  # Supabase/PostgREST default `max-rows`: larger selects are sil
 UNIQUE_VIOLATION = "23505"
 FOREIGN_KEY_VIOLATION = "23503"
 
-# table -> columns whose combined value must be unique (value is lower-cased for text)
+# table -> columns whose combined value must be unique (text is compared case-insensitively)
 UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
     "users": [("username",)],
     "user_settings": [("user_id",)],
+    "bnpl_installments": [("plan_id", "seq")],
+    "provider_limits": [("user_id", "provider")],
 }
 # table -> defaults applied on insert (callables are invoked per row)
 DEFAULTS: dict[str, dict[str, Any]] = {
     "users": {"persona": None},
     "user_settings": {"onboarding_state": "new"},
+    "transactions": {
+        "is_bnpl": False,
+        "source": "manual",
+        "description": None,
+        "account_name": None,
+        "bnpl_plan_id": None,
+        "recurring_item_id": None,
+    },
+    "recurring_items": {"active": True, "custom_interval_days": None},
+    "bnpl_plans": {
+        "upfront_sen": 0,
+        "schedule_source": "provider_rule",
+        "monthly_fee_rate_pct": 0,
+        "status": "active",
+        "risk_score_at_creation": None,
+        "risk_check_id": None,
+        "risk_check_type": None,
+    },
+    "bnpl_installments": {"is_paid": False, "paid_date": None},
+    "provider_limits": {"updated_at": lambda: _now()},
 }
-NO_ID_TABLES = {"user_settings", "provider_limits"}  # keyed by user_id; no `id`, no `created_at`
+NO_ID_TABLES = {"user_settings", "provider_limits"}  # keyed by user_id; no `id`
+HAS_CREATED_AT = {"users", "recurring_items", "risk_checks", "bnpl_plans", "transactions"}
+
+# child table -> [(child column, parent table)]: composite (column, user_id) -> (id, user_id)
+FOREIGN_KEYS: dict[str, list[tuple[str, str]]] = {
+    "transactions": [("bnpl_plan_id", "bnpl_plans"), ("recurring_item_id", "recurring_items")],
+    "bnpl_installments": [("plan_id", "bnpl_plans")],
+    "bnpl_plans": [("risk_check_id", "risk_checks")],
+}
+# parent table -> [(child table, child column)]
+ON_DELETE_SET_NULL: dict[str, list[tuple[str, str]]] = {
+    "recurring_items": [("transactions", "recurring_item_id")],
+    "bnpl_plans": [("transactions", "bnpl_plan_id")],
+    "risk_checks": [("bnpl_plans", "risk_check_id")],
+}
+ON_DELETE_CASCADE: dict[str, list[tuple[str, str]]] = {
+    "bnpl_plans": [("bnpl_installments", "plan_id")],
+}
 
 
 def _now() -> str:
@@ -55,6 +97,10 @@ def _like_to_regex(pattern: str) -> re.Pattern[str]:
     return re.compile("^" + "".join(out) + "$", re.IGNORECASE | re.DOTALL)
 
 
+def _unique_key(row: dict[str, Any], cols: tuple[str, ...]) -> tuple[Any, ...]:
+    return tuple(row[c].lower() if isinstance(row.get(c), str) else row.get(c) for c in cols)
+
+
 class FakeSupabase:
     def __init__(self) -> None:
         self.tables: dict[str, list[dict[str, Any]]] = {}
@@ -64,6 +110,34 @@ class FakeSupabase:
 
     def rows(self, name: str) -> list[dict[str, Any]]:
         return self.tables.setdefault(name, [])
+
+    def delete_rows(self, table: str, doomed: list[dict[str, Any]]) -> None:
+        """Remove rows, then apply `on delete cascade` / `set null` to dependants."""
+        ids = {id(r) for r in doomed}
+        self.tables[table] = [r for r in self.rows(table) if id(r) not in ids]
+        if table == "users":  # every user-owned table cascades from users
+            for name in list(self.tables):
+                gone = {r["id"] for r in doomed}
+                keep = [r for r in self.rows(name) if r.get("user_id") not in gone]
+                self.tables[name] = keep
+        for child, column in ON_DELETE_SET_NULL.get(table, []):
+            for row in self.rows(child):
+                if any(
+                    row.get(column) == d["id"] and row.get("user_id") == d["user_id"]
+                    for d in doomed
+                ):
+                    row[column] = None
+        for child, column in ON_DELETE_CASCADE.get(table, []):
+            dependants = [
+                row
+                for row in self.rows(child)
+                if any(
+                    row.get(column) == d["id"] and row.get("user_id") == d["user_id"]
+                    for d in doomed
+                )
+            ]
+            if dependants:
+                self.delete_rows(child, dependants)
 
 
 class FakeQuery:
@@ -106,6 +180,18 @@ class FakeQuery:
         )
         return self
 
+    def gte(self, column: str, value: Any) -> "FakeQuery":
+        self._filters.append(lambda r: r.get(column) is not None and r[column] >= value)
+        return self
+
+    def lte(self, column: str, value: Any) -> "FakeQuery":
+        self._filters.append(lambda r: r.get(column) is not None and r[column] <= value)
+        return self
+
+    def in_(self, column: str, values: list[Any]) -> "FakeQuery":
+        self._filters.append(lambda r: r.get(column) in values)
+        return self
+
     def order(self, column: str, *, desc: bool = False) -> "FakeQuery":
         self._orders.append((column, desc))
         return self
@@ -144,46 +230,66 @@ class FakeQuery:
 
     def _insert(self) -> list[dict[str, Any]]:
         payload = self._payload if isinstance(self._payload, list) else [self._payload]
-        inserted = []
-        for raw in payload:
+        staged: list[dict[str, Any]] = []
+        for raw in payload:  # like Postgres, a multi-row insert is all-or-nothing
             row = self._with_defaults(copy.deepcopy(raw))
-            self._check_foreign_key(row)
-            self._check_unique(row)
-            self._db.rows(self._table).append(row)
-            inserted.append(row)
-        return inserted
+            self._check_foreign_keys(row)
+            self._check_unique(row, extra=staged)
+            staged.append(row)
+        self._db.rows(self._table).extend(staged)
+        return staged
 
     def _update(self) -> list[dict[str, Any]]:
         rows = self._matching()
+        patch = copy.deepcopy(self._payload)
+        before = [dict(r) for r in rows]
         for row in rows:
-            row.update(copy.deepcopy(self._payload))
+            row.update(patch)
+        try:
+            for row in rows:
+                self._check_foreign_keys(row)
+                self._check_unique(row, ignore=row)
+        except APIError:
+            for row, original in zip(rows, before, strict=True):
+                row.clear()
+                row.update(original)
+            raise
         return rows
 
     def _delete(self) -> list[dict[str, Any]]:
         rows = self._matching()
-        ids = {id(r) for r in rows}
-        self._db.tables[self._table] = [r for r in self._db.rows(self._table) if id(r) not in ids]
+        self._db.delete_rows(self._table, rows)
         return rows
 
     def _with_defaults(self, row: dict[str, Any]) -> dict[str, Any]:
         if self._table not in NO_ID_TABLES:
             row.setdefault("id", str(uuid.uuid4()))
-        if self._table not in NO_ID_TABLES:
+        if self._table in HAS_CREATED_AT:
             row.setdefault("created_at", _now())
         for key, value in DEFAULTS.get(self._table, {}).items():
             row.setdefault(key, value() if callable(value) else value)
         return row
 
-    def _check_foreign_key(self, row: dict[str, Any]) -> None:
-        if self._table == "users" or "user_id" not in row:
-            return
-        if not any(u["id"] == row["user_id"] for u in self._db.rows("users")):
+    def _check_foreign_keys(self, row: dict[str, Any]) -> None:
+        owner_missing = self._table != "users" and "user_id" in row
+        if owner_missing and not any(u["id"] == row["user_id"] for u in self._db.rows("users")):
             raise APIError({"message": "foreign key violation", "code": FOREIGN_KEY_VIOLATION})
+        for column, parent in FOREIGN_KEYS.get(self._table, []):
+            value = row.get(column)
+            if value is None:
+                continue  # MATCH SIMPLE: a null link is not checked
+            if not any(
+                p["id"] == value and p["user_id"] == row["user_id"] for p in self._db.rows(parent)
+            ):
+                raise APIError({"message": "foreign key violation", "code": FOREIGN_KEY_VIOLATION})
 
-    def _check_unique(self, row: dict[str, Any]) -> None:
-        def key(r: dict[str, Any], cols: tuple[str, ...]) -> tuple[Any, ...]:
-            return tuple(r[c].lower() if isinstance(r.get(c), str) else r.get(c) for c in cols)
-
+    def _check_unique(
+        self,
+        row: dict[str, Any],
+        extra: list[dict[str, Any]] | None = None,
+        ignore: dict[str, Any] | None = None,
+    ) -> None:
+        others = [r for r in self._db.rows(self._table) if r is not ignore] + (extra or [])
         for cols in UNIQUE_KEYS.get(self._table, []):
-            if any(key(r, cols) == key(row, cols) for r in self._db.rows(self._table)):
+            if any(_unique_key(r, cols) == _unique_key(row, cols) for r in others):
                 raise APIError({"message": "unique violation", "code": UNIQUE_VIOLATION})

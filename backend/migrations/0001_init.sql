@@ -78,9 +78,14 @@ create table bnpl_plans (
     provider_label text not null check (length(btrim(provider_label)) > 0),
     schedule_source text not null default 'provider_rule'
         check (schedule_source in ('provider_rule', 'manual')),
+    -- D-28: the full price splits into the part the provider finances (limited by the remaining
+    -- limit) and the part paid at checkout. Manual ('other') plans finance the whole typed total.
     total_price_sen bigint not null check (total_price_sen > 0),
+    financed_sen bigint not null check (financed_sen > 0),
+    upfront_sen bigint not null default 0 check (upfront_sen >= 0),
     monthly_fee_rate_pct numeric(5,2) not null default 0 check (monthly_fee_rate_pct >= 0),
     num_installments int not null check (num_installments between 1 and 36),
+    purchase_date date not null,
     first_payment_date date not null,
     status text not null default 'active' check (status in ('active', 'completed', 'overdue')),
     risk_score_at_creation int check (risk_score_at_creation between 0 and 100),
@@ -88,6 +93,7 @@ create table bnpl_plans (
     risk_check_type text check (risk_check_type in ('before_purchase', 'current_state')),
     created_at timestamptz not null default now(),
     unique (id, user_id),
+    check (financed_sen + upfront_sen = total_price_sen),
     foreign key (risk_check_id, user_id) references risk_checks (id, user_id)
         on delete set null (risk_check_id)
 );
