@@ -8,6 +8,7 @@ from app.db.base import require_user_id
 from app.db.client import Database
 
 UNIQUE_VIOLATION = "23505"
+ONBOARDING_STATES = ("new", "history_imported", "complete")
 
 
 def get(db: Database, user_id: str) -> dict[str, Any] | None:
@@ -28,3 +29,19 @@ def create_default(db: Database, user_id: str) -> dict[str, Any]:
         if err.code != UNIQUE_VIOLATION:
             raise
         return get(db, uid)  # lost a race with a concurrent create
+
+
+def set_onboarding_state(db: Database, user_id: str, state: str) -> dict[str, Any]:
+    """Record how far the user has got; creates the settings row if it is somehow missing."""
+    uid = require_user_id(user_id)
+    if state not in ONBOARDING_STATES:
+        raise ValueError(f"onboarding_state must be one of {list(ONBOARDING_STATES)}")
+    create_default(db, uid)
+    updated = (
+        db.table("user_settings")
+        .update({"onboarding_state": state})
+        .eq("user_id", uid)
+        .execute()
+        .data
+    )
+    return updated[0]

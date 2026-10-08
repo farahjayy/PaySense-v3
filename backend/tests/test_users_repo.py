@@ -74,3 +74,33 @@ def test_create_default_settings_is_idempotent(db):
 
     assert first["user_id"] == second["user_id"]
     assert len(db.rows("user_settings")) == 1
+
+
+def test_onboarding_state_can_advance_and_rejects_unknown_states(db):
+    user = create(db, username="amir", display_name="Amir")
+    user_settings.create_default(db, user["id"])
+
+    updated = user_settings.set_onboarding_state(db, user["id"], "history_imported")
+
+    assert updated["onboarding_state"] == "history_imported"
+    with pytest.raises(ValueError, match="onboarding_state"):
+        user_settings.set_onboarding_state(db, user["id"], "finished")
+
+
+def test_setting_the_onboarding_state_creates_the_row_if_it_is_missing(db):
+    user = create(db, username="amir", display_name="Amir")
+
+    updated = user_settings.set_onboarding_state(db, user["id"], "history_imported")
+
+    assert updated["onboarding_state"] == "history_imported"
+    assert len(db.rows("user_settings")) == 1
+
+
+def test_setting_the_onboarding_state_only_touches_that_user(db):
+    amir = create(db, username="amir", display_name="Amir")
+    siti = create(db, username="siti", display_name="Siti")
+    user_settings.create_default(db, siti["id"])
+
+    user_settings.set_onboarding_state(db, amir["id"], "complete")
+
+    assert user_settings.get(db, siti["id"])["onboarding_state"] == "new"

@@ -9,6 +9,7 @@ dependencies = [
     "pydantic-settings>=2.6",
     "supabase>=2.32",
     "pyjwt>=2.15",
+    "python-multipart>=0.0.32",
 ]
 
 [build-system]

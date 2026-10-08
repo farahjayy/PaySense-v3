@@ -18,6 +18,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api import (
     auth,
     health,
+    imports,
     provider_limits,
     providers,
     recurring,
@@ -122,6 +123,7 @@ def create_app(
     app.include_router(transactions.router, prefix="/api")
     app.include_router(summary.router, prefix="/api")
     app.include_router(recurring.router, prefix="/api")
+    app.include_router(imports.router, prefix="/api")
     return app
 
 
