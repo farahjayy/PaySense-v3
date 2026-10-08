@@ -1,5 +1,6 @@
 """Shared FastAPI dependencies. Auth and database access live here, never in handlers."""
 
+from datetime import date
 from threading import Lock
 from typing import Annotated
 
@@ -36,6 +37,12 @@ def get_login_limiter(request: Request) -> LoginRateLimiter:
     return request.app.state.login_limiter
 
 
+def get_today() -> date:
+    """Today's date. A dependency so tests can pin the clock with `dependency_overrides`."""
+    return date.today()
+
+
+TodayDep = Annotated[date, Depends(get_today)]
 SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
 DbDep = Annotated[Database, Depends(get_db)]
 

@@ -15,7 +15,15 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api import auth, health, provider_limits, providers
+from app.api import (
+    auth,
+    health,
+    provider_limits,
+    providers,
+    recurring,
+    summary,
+    transactions,
+)
 from app.api.rate_limit import LoginRateLimiter
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
@@ -111,6 +119,9 @@ def create_app(
     app.include_router(auth.router, prefix="/api")
     app.include_router(providers.router, prefix="/api")
     app.include_router(provider_limits.router, prefix="/api")
+    app.include_router(transactions.router, prefix="/api")
+    app.include_router(summary.router, prefix="/api")
+    app.include_router(recurring.router, prefix="/api")
     return app
 
 
