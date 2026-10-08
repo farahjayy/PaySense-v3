@@ -141,6 +141,16 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Not modelled.** Using spare limit as a cash-flow buffer or credit-card substitute (strategic use of a large limit). That is a behavioural assumption the literature review does not support; the headroom is displayed and counted in utilisation only. Recorded as future work.
 **Open.** Whether real providers cap on principal or on principal plus fee, and how they count used limit, is `ASSUMED:` until the author supplies a real SPayLater / TikTok / Atome example.
 
+## D-29 — API money is integer sen; refunds/transfers are reserved categories; import is stateless
+*2026-10-08 · Claude decision (P1 plan)*
+
+**Decision.**
+1. **Money over the wire is integer sen** (`*_sen` fields), never floating-point RM and never decimal strings. Request fields use a strict integer type, so `100.5`, `"100"` and `true` are rejected; a test fails if any OpenAPI property named `*_sen` is not an integer or any money-looking property is a float. D-16's "convert at the API boundary" is read as "convert at the *presentation* boundary": the frontend formats sen as `RM 1,234.56` and parses what a person types from the text (`parse_rm` / a `lib/money.ts` twin), so no float ever touches a ringgit amount.
+2. **Refunds and own-account transfers use two reserved categories**, `Refund` and `Transfer` — no schema change. A refund is stored as income but never counts as income: it nets against spend in its month. A transfer is ignored in both directions. `domain/flows.classify` is the only place this is decided; Engine 1 (P4) imports it. `Transfer` keywords are limited to explicit own-account wording because a bare "transfer in" on a statement is usually an allowance.
+3. **CSV import is stateless.** Preview returns rows; confirm receives the user's edited rows and re-validates them. Nothing is held server-side between the two calls. Rows that match already-stored transactions (same day, amount, direction, normalised description; multiplicity-aware) are flagged as duplicates and unchecked by default.
+**Why.** v1 stored RM floats and converted at the edges; rounding bugs there are what the sen discipline exists to prevent. Refunds netting against spend keeps the discretionary series honest; counting them as income would inflate the income forecast. Render restarts and sleeps, so in-memory preview state would lose uploads.
+**Rejected.** RM floats (v1); RM decimal strings (every client must parse them, no benefit over sen); negative transaction amounts (the `amount_sen > 0` invariant is load-bearing); a new transaction column for refunds (not needed yet); a server-side preview store.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)

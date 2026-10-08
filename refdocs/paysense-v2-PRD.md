@@ -240,6 +240,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-26 | Money columns are bigint sen; user-owned tables link through composite (id, user_id) foreign keys | supabase-py returns numeric as float; the database itself should refuse cross-user links |
 | D-27 | Engine 1 forecasts income and expense flows; there is no starting balance, no running ledger, no balance sync. Shortfall = cumulative margin < RM0 at a month-end | Students rarely keep a reliable balance and incomplete logs corrupted a balance anchor; BNM's own household stress test is margin-based |
 | D-28 | A provider limit caps the financed amount; the excess is paid at checkout and counted in the purchase month | Author-confirmed real checkout behaviour; a purchase above the limit is otherwise impossible |
+| D-29 | API money is integer sen (`*_sen`); refunds/transfers are reserved categories; CSV import is stateless with duplicate flagging | No float ever touches a ringgit amount; refunds must not inflate income; Render restarts lose in-memory state |
 
 ---
 

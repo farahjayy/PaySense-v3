@@ -27,6 +27,23 @@ ERROR_RESPONSES: dict[int | str, dict] = {
 }
 
 
+class ApiModel(BaseModel):
+    """Base for response models: fields with defaults are still always sent, so mark them
+    required in the generated OpenAPI (TypeScript then does not make them optional)."""
+
+    model_config = _ALWAYS_SENT
+
+
+# For routes that need login but have no brute-force limiter (everything except /auth/login).
+PROTECTED_RESPONSES: dict[int | str, dict] = {
+    401: ERROR_RESPONSES[401],
+    422: ERROR_RESPONSES[422],
+}
+NOT_FOUND_RESPONSE: dict[int | str, dict] = {
+    404: {"model": ErrorEnvelope, "description": "No such record for this user"}
+}
+
+
 class HealthOut(BaseModel):
     status: Literal["ok"]
 
