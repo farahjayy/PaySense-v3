@@ -12,8 +12,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import health
+from app.api import auth, health
+from app.api.rate_limit import LoginRateLimiter
 from app.core.settings import MissingSettingsError, Settings, get_settings
+from app.db.client import Database
 
 
 def _envelope(status_code: int, code: str, message: str) -> JSONResponse:
@@ -30,9 +32,15 @@ def _validation_message(err: RequestValidationError) -> str:
     return "; ".join(parts)
 
 
-def create_app(settings: Settings) -> FastAPI:
+def create_app(
+    settings: Settings,
+    db: Database | None = None,
+    login_limiter: LoginRateLimiter | None = None,
+) -> FastAPI:
     app = FastAPI(title="PaySense API", version="0.1.0")
     app.state.settings = settings
+    app.state.db = db  # built lazily on first use when None (see api/deps.py)
+    app.state.login_limiter = login_limiter or LoginRateLimiter()
 
     app.add_middleware(
         CORSMiddleware,
@@ -50,6 +58,7 @@ def create_app(settings: Settings) -> FastAPI:
         return _envelope(500, "internal_error", "Something went wrong on our side.")
 
     app.include_router(health.router, prefix="/api")
+    app.include_router(auth.router, prefix="/api")
     return app
 
 

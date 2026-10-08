@@ -117,6 +117,13 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** PaySense targets Malaysian university students with a bank/debit account and e-wallets and usually no credit card. Berka is real, account-level, transaction-level data — rare and valuable for evaluating forecasting — but its account holders are Czech adults in the 1990s. The student population is represented by the cited synthetic generator (D-08).
 **Trade-off.** Engine 1 results on Berka show how the methods behave on real household series, not on students; the dissertation reports them separately from the synthetic-student cohort.
 
+## D-26 — Money stored as bigint sen; cross-user links blocked by composite foreign keys
+*2026-10-08 · Claude decision (P0, migration 0001)*
+
+**Decision.** Every money column is `bigint` integer sen (`amount_sen`, `current_balance_sen`, `total_price_sen`, `limit_sen`) — v1's `numeric(12,2)` is not carried over. Every table except `users` has `user_id`; every link between user-owned tables is a composite `(child_id, user_id) → parent (id, user_id)` foreign key (`unique (id, user_id)` on the parents), with `ON DELETE SET NULL (col)` (Postgres 15+) where a link is optional. Provider keys: `spaylater`, `tiktok_paylater`, `atome`, `other`, with a typed `provider_label` and a `schedule_source` of `provider_rule` or `manual` (D-24). `transactions.source` drops v1's `pdf` (out of scope).
+**Why.** supabase-py returns `numeric` as a JSON float, which would reintroduce rounding in code that D-16 requires to be integer; storing sen keeps the whole stack integer from disk to engine. The composite keys make "a transaction pointing at someone else's plan" impossible at the database level, not just untested in the repository — defence in depth for hard constraint 4.
+**Trade-off.** The API boundary must convert sen ↔ RM (decided in P1); hand-written SQL in the dashboard shows sen, not ringgit.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)

@@ -231,6 +231,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-23 | Python version pinned via uv to one every ML dependency installs on (3.12, verified in P0) | Prophet, PyTorch, LightGBM, SHAP wheels on Windows and Render |
 | D-24 | Only SPayLater, TikTok PayLater and Atome are named providers with schedule rules; every other provider uses a manual "Other provider" entry (user types dates and the checkout instalment amount) | Only these three have rules confirmed from real users; a guessed first due date creates phantom missed payments, and a flat monthly fee rate can't represent other providers' fees (v1 lesson) |
 | D-25 | Berka is used only as a real-transaction benchmark for Engine 1 (and to pre-train the global LSTM), never as a model of the target population | Czech adult accounts from the 1990s; the student population is represented by the cited synthetic generator |
+| D-26 | Money columns are bigint sen; user-owned tables link through composite (id, user_id) foreign keys | supabase-py returns numeric as float; the database itself should refuse cross-user links |
 
 ---
 
