@@ -12,7 +12,7 @@ from typing import Any
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 
-from ml.engine2_train.cv import CvResult, cross_validate, nadeau_bengio, nadeau_bengio_interval
+from ml.engine2_train.cv import cross_validate, nadeau_bengio, nadeau_bengio_interval
 from ml.engine2_train.data import Dataset
 from ml.engine2_train.metrics import band_agreement, brier
 from ml.engine2_train.models import fit_soft
@@ -58,12 +58,14 @@ def learning_curve(
 
 
 def monotonicity_cost(
-    name: str, data: Dataset, constrained: CvResult, repeats: int, folds: int, trials: int,
-    seed: int,
-) -> dict[str, Any]:  # fmt: skip
-    """The winner without monotone constraints, tuned the same nested way on the same folds."""
+    name: str, data: Dataset, repeats: int, folds: int, trials: int, seed: int
+) -> dict[str, Any]:
+    """The winner with and without monotone constraints. BOTH arms are computed here, tuned the
+    same nested way on the same (fresh) folds: neither is the winner's model-comparison run, which
+    was selected for being the best and would carry a winner's curse the other arm lacks."""
     if name == "logistic":
         return {"applicable": False, "reason": "the logistic benchmark has no monotone constraints"}
+    constrained = cross_validate(name, data, repeats, folds, trials, seed)
     free = cross_validate(name, data, repeats, folds, trials, seed, constrained=False)
     delta, low, high = nadeau_bengio_interval(free, constrained)
     _, t, p = nadeau_bengio(free, constrained)
@@ -75,6 +77,7 @@ def monotonicity_cost(
         "delta_ci": [low, high],
         "t": t,
         "p": p,
+        "fresh_folds_seed": seed,
     }
 
 

@@ -19,22 +19,23 @@ def test_a_learning_curve_grows_the_training_set_and_scores_the_same_test_folds(
     assert curve[-1]["brier"] <= curve[0]["brier"] + 0.01  # more data does not hurt much
 
 
-def test_the_cost_of_monotonicity_is_measured_against_the_free_model_on_the_same_folds():
+def test_the_cost_of_monotonicity_is_measured_with_both_arms_computed_fresh_on_the_same_folds():
     data = synthetic(240)
-    constrained = cross_validate("xgboost", data, 1, 3, trials=2, seed=0)
 
-    out = monotonicity_cost("xgboost", data, constrained, 1, 3, 2, 0)
+    out = monotonicity_cost("xgboost", data, 1, 3, 2, 0)
 
-    assert out["applicable"] and out["brier_constrained"] == constrained.mean("brier")
+    again = cross_validate("xgboost", data, 1, 3, trials=2, seed=0)  # what the constrained arm is
+    free = cross_validate("xgboost", data, 1, 3, trials=2, seed=0, constrained=False)
+    assert out["applicable"] and out["brier_constrained"] == again.mean("brier")
+    assert out["brier_unconstrained"] == free.mean("brier")
     assert out["delta_ci"][0] <= out["delta_brier"] <= out["delta_ci"][1]
     assert np.isfinite(out["brier_unconstrained"]) and 0 <= out["p"] <= 1
 
 
 def test_the_logistic_benchmark_has_nothing_to_unconstrain():
     data = synthetic(120)
-    constrained = cross_validate("logistic", data, 1, 3, trials=0)
 
-    assert monotonicity_cost("logistic", data, constrained, 1, 3, 0, 0)["applicable"] is False
+    assert monotonicity_cost("logistic", data, 1, 3, 0, 0)["applicable"] is False
 
 
 def test_the_per_month_definition_is_compared_with_the_cumulative_one():

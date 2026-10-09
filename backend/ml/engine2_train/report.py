@@ -191,7 +191,7 @@ def lockbox_table(record: dict[str, Any]) -> pd.DataFrame:
             {
                 "model": f"{record['winner']} (uncalibrated)",
                 "brier_all": box["raw"]["brier"],
-                f"brier_{LOW_BASELINE}": None,
+                f"brier_{LOW_BASELINE}": groups.get("brier_raw"),
             },
             {
                 "model": "logistic (benchmark)",
@@ -199,11 +199,119 @@ def lockbox_table(record: dict[str, Any]) -> pd.DataFrame:
                 f"brier_{LOW_BASELINE}": groups.get("brier_benchmark"),
             },
             {
-                "model": "constant (the development mean label)",
+                "model": "constant (development mean label; the subgroup's own mean there)",
                 "brier_all": box["constant_brier"],
                 f"brier_{LOW_BASELINE}": groups.get("brier_constant"),
             },
         ]
+    )
+
+
+def lockbox_subgroup_table(record: dict[str, Any]) -> pd.DataFrame:
+    """The subgroup in full: Brier of each model, its own constant, and the calibration, ranking
+    and band-agreement measures for the raw and the calibrated model."""
+    rows = []
+    for group, g in record["lockbox"].get("subgroups", {}).items():
+        for kind, key in (("calibrated", "calibrated"), ("uncalibrated", "raw")):
+            m = g[key]
+            rows.append(
+                {
+                    "subgroup": group,
+                    "model": f"{record['winner']} ({kind})",
+                    "profiles": g["profiles"],
+                    "brier": m["brier"],
+                    "ece": m["ece"],
+                    "calibration_slope": m["calibration_slope"],
+                    "auc_at_030": m["auc_at_030"],
+                    "band_agreement": g["band_agreement"] if kind == "calibrated" else None,
+                }
+            )
+        rows.append(
+            {"subgroup": group, "model": "logistic (benchmark)", "profiles": g["profiles"],
+             "brier": g["brier_benchmark"]}
+        )  # fmt: skip
+        rows.append(
+            {
+                "subgroup": group,
+                "model": f"constant ({g['constant_value']:.4f}, the subgroup's development mean)",
+                "profiles": g["profiles"],
+                "brier": g["brier_constant"],
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+CLASS_LABELS = {
+    "label_exactly_0": "label exactly 0",
+    "label_between_0_and_1": "label strictly between 0 and 1",
+    "label_exactly_1": "label exactly 1",
+    "p_without_between_0_and_1": "baseline strictly between 0 and 1 (0 < p_without < 1)",
+    "p_without_exactly_0_or_1": "baseline exactly 0 or exactly 1",
+}
+
+
+def lockbox_class_table(record: dict[str, Any]) -> pd.DataFrame:
+    """Descriptive Brier by label class and by baseline class, lockbox only."""
+    rows = []
+    for key, row in record["lockbox"].get("brier_by_class", {}).items():
+        rows.append(
+            {
+                "lockbox profiles": CLASS_LABELS.get(key, key),
+                "profiles": row["profiles"],
+                "share_of_lockbox": row["share_of_lockbox"],
+                "brier_calibrated": row["brier_calibrated"],
+                "brier_uncalibrated": row["brier_raw"],
+                "brier_logistic": row["brier_benchmark"],
+                "brier_constant": row["brier_constant"],
+                "share_of_squared_error": row["share_of_squared_error"],
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def logistic_signs_table(record: dict[str, Any]) -> pd.DataFrame:
+    rows = record["logistic_signs"]["features"]
+    return pd.DataFrame(
+        [
+            {
+                "feature": r["feature"],
+                "coefficient_standardised": r["coefficient"],
+                "monotone_direction": r["direction"],
+                "agrees": "" if r["agrees"] is None else ("yes" if r["agrees"] else "NO"),
+            }
+            for r in rows
+        ]
+    )
+
+
+def _signs_text(record: dict[str, Any]) -> str:
+    signs = record["logistic_signs"]
+    if record["served_model_has_monotone_constraints"]:
+        served = f"Here the winner is {record['winner']}, so its monotone constraints apply."
+    else:
+        served = (
+            "Here the logistic regression won, so the served model has no monotone constraints "
+            "and the sign check below is the only evidence that its coefficients point the way "
+            "the constraints would force."
+        )
+    return (
+        "**Logistic coefficients against the monotone directions.** Of "
+        f"{signs['constrained_features']} features with a known direction of effect, "
+        f"{signs['agree']} have a standardised logistic coefficient with that sign and "
+        f"{signs['disagree']} do not. If the logistic regression wins, the served model has no "
+        f"monotone constraints. {served} The logistic benchmark itself is never constrained.\n"
+    )
+
+
+def _scoring_sentence(record: dict[str, Any]) -> str:
+    n = record.get("lockbox_scorings")
+    if n is None:
+        return "The number of times the lockbox has been scored was not recorded."
+    times = "time" if n == 1 else "times"
+    return (
+        "According to the append-only log beside the run directories, the lockbox has been "
+        f"scored {n} {times} (counted from the log's first line; a scoring made before the log "
+        "existed would not be in it)."
     )
 
 
@@ -216,7 +324,26 @@ def _lockbox_text(record: dict[str, Any]) -> str:
         "calibrated model was scored "
         f"on them once. Brier {c['brier']:.4f}, log-loss {c['log_loss']:.4f}, calibration slope "
         f"{c['calibration_slope']:.3f}, ECE {c['ece']:.4f}; the model puts "
-        f"{box['band_agreement']:.1%} of them in the same pre-registered band as the label.\n"
+        f"{box['band_agreement']:.1%} of them in the same pre-registered band as the label. "
+        f"{_scoring_sentence(record)}\n"
+    )
+
+
+def _subgroup_text(record: dict[str, Any]) -> str:
+    classes = record["lockbox"].get("brier_by_class", {})
+    zero = classes.get("label_exactly_0", {}).get("share_of_lockbox")
+    one = classes.get("label_exactly_1", {}).get("share_of_lockbox")
+    trivial = ""
+    if zero is not None and one is not None:
+        trivial = f"On the lockbox {zero:.1%} of labels are exactly 0 and {one:.1%} exactly 1. "
+    return (
+        "**Where the plan decides the band.** The subgroup whose baseline (no purchase) is under "
+        "0.10 is scored in full below, beside its own constant benchmark (the subgroup's "
+        "development mean label, not the overall one). Its labels are dominated by profiles "
+        "whose label is exactly 0, which any model gets nearly right, so its Brier, ECE, "
+        "calibration slope and band agreement look better than the subgroup deserves; the "
+        "breakdown by label class shows how much of every score is those trivial profiles. "
+        f"{trivial}The breakdown is descriptive: nothing was chosen or tuned on it.\n"
     )
 
 
@@ -274,8 +401,11 @@ def _limitations(
             f"by under 0.01 for {facts['share_purchase_changes_label_by_under_001']:.1%}. The "
             "headline Brier "
             "therefore mostly measures how well the model reproduces the baseline; the subgroup "
-            "where the baseline is under 0.10 is where the plan decides the band, and is reported "
-            "separately everywhere."
+            "where the baseline is under 0.10 is where the plan decides the band. It is reported "
+            "separately in the cross-validation table (Brier), the ablation (every row), and the "
+            "lockbox (Brier, calibration, band agreement, reliability and a breakdown by label "
+            "class). It is NOT reported separately in the stress tests, the learning curve, the "
+            "monotonicity run, the per-month definition run or the calibration choice."
         )
     floor = facts["monte_carlo_noise_floor_brier"]
     floor = "unknown (no manifest)" if floor is None else f"{floor:.5f}"
@@ -311,7 +441,9 @@ def _limitations(
 - **Stress tests re-run the whole pipeline** on perturbed ledgers of the lockbox profiles and score
   the final calibrated model against the new simulated label.
 - **Bands were fixed before training** (Safe below 0.10, Caution below 0.30, At Risk from 0.30) and
-  are not tuned on these results.
+  are not tuned on these results. The lockbox rule (every tenth profile) and the 0.10 subgroup
+  threshold were fixed before the full run, after the first harness and a 3-fold logistic sanity
+  check on version-2 development labels (CHANGELOG), not before every model had been looked at.
 """
 
 
@@ -407,6 +539,11 @@ def build_report(run_dir: Path, out_dir: Path, labels_path: Path = LABELS_PATH) 
     lockbox = lockbox_table(record)
     _write(lockbox, tables / "lockbox.csv")
     _write(pd.DataFrame(record["lockbox"]["reliability"]), tables / "lockbox_reliability.csv")
+    subgroup, classes = lockbox_subgroup_table(record), lockbox_class_table(record)
+    signs = logistic_signs_table(record)
+    _write(subgroup, tables / "lockbox_subgroup.csv")
+    _write(classes, tables / "lockbox_by_class.csv")
+    _write(signs, tables / "logistic_signs.csv")
     _write(pd.DataFrame(record["sensitivity"]["learning_curve"]), tables / "learning_curve.csv")
     analysis = analysis_frame(labels_path)
     by_persona, by_price = label_by_persona(analysis), label_by_price_ratio(analysis)
@@ -420,7 +557,8 @@ def build_report(run_dir: Path, out_dir: Path, labels_path: Path = LABELS_PATH) 
     sections = _sections(
         record, data, facts, manifest, shares,
         {"cv": cv, "ablation": ablation, "calibration": calibration, "lockbox": lockbox,
-         "persona": by_persona, "price": by_price, "stress": stress_table},
+         "subgroup": subgroup, "classes": classes, "signs": signs, "persona": by_persona,
+         "price": by_price, "stress": stress_table},
     )  # fmt: skip
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "README.md").write_text("\n".join(sections), encoding="utf-8", newline="\n")
@@ -457,7 +595,8 @@ def _headline(record: dict[str, Any]) -> str:
         f"{record['models'][record['winner']]['brier_mean']:.4f} against "
         f"{record['constant_baseline_brier']:.4f} for always predicting the mean label; on the "
         f"untouched lockbox {box['calibrated']['brier']:.4f} against {box['constant_brier']:.4f}. "
-        f"Removing the six Engine 1 features changes the cross-validated Brier by "
+        f"Removing the {len(a['removed_features'])} Engine 1 features changes the "
+        "cross-validated Brier by "
         f"{a['delta_brier']:+.4f} (95% CI {a['delta_ci'][0]:+.4f} to {a['delta_ci'][1]:+.4f}, "
         f"corrected p = {a['p']:.3g}): "
         + (
@@ -498,6 +637,10 @@ def _sections(
         "## The final model on the lockbox\n",
         _lockbox_text(record),
         _md(tables["lockbox"]),
+        _subgroup_text(record),
+        _md(tables["subgroup"]),
+        "**Brier by label class** (lockbox, descriptive).\n",
+        _md(tables["classes"]),
         "![Reliability](figures/reliability.png)\n",
         "## The labels\n",
         "Share of profiles in each pre-registered band: "
@@ -519,12 +662,19 @@ def _sections(
         _md(tables["price"]),
         "## Calibration\n\n"
         f"Chosen by cross-validation on the {record['calibration']['fitted_on']}, then fitted on "
-        "all of them and stored with the model.\n",
+        "all of them and stored with the model. The calibrator is fitted on out-of-fold "
+        "predictions of the fold models but applied to a different model: "
+        f"{record['calibration']['applied_to']}. Its correction is therefore approximate for the "
+        "served model, which the lockbox reliability table checks. Explanations (SHAP, phase P6) "
+        "will be computed on the raw scores of the model, while the number a student sees is the "
+        "calibrated one, so a factor's contribution is on the raw scale.\n",
         _md(tables["calibration"]),
         "## Ablation: the contribution of the Engine 1 features\n",
         f"{record['ablation']['tuning']}; interval: {record['ablation']['ci_method']}.\n",
         _md(tables["ablation"]),
         _sensitivity_text(record),
+        _signs_text(record),
+        _md(tables["signs"]),
         "## Stress tests (lockbox profiles)\n",
         _md(tables["stress"]) if tables["stress"] is not None else "Not run.\n",
         _limitations(data, facts, record, manifest),

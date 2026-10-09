@@ -30,15 +30,22 @@ from app.domain.categorize import REFUND, TRANSFER
 from app.domain.schedule import add_months
 from app.engines.forecasting.flows import SEMESTER_MONTHS, occurrences
 from app.engines.forecasting.serving import served_forecaster
-from app.engines.forecasting.simulate import Forecaster
+from app.engines.forecasting.simulate import RISK_CHECK_MAX_WEEKS, Forecaster
 from app.engines.forecasting.summary import build_feature_inputs
 from app.engines.risk.features import FEATURE_SCHEMA_HASH, as_vector, compute_features
 from ml.datagen.params import Params, load_params
 from ml.datagen.profile import generate_dated_profile
 from ml.engine2_train.calibrate import Calibrator
 from ml.engine2_train.data import LABELS_PATH, load_labels, split_lockbox
-from ml.engine2_train.labels import DEFAULT_SEED, MANIFEST_FILE, prepare, profile_seed
+from ml.engine2_train.labels import (
+    LABEL_VERSION,
+    MANIFEST_FILE,
+    prepare,
+    profile_seed,
+    served_model_files,
+)
 from ml.engine2_train.metrics import band_agreement, brier
+from ml.engine2_train.provenance import sha256_file
 from ml.engine2_train.train import RUNS_DIR
 
 Rows = list[dict[str, Any]]
@@ -166,14 +173,34 @@ def evaluate_variant(
     return run_variant(params, master_seed, indices, variant, forecaster, paths).summary(predict)
 
 
-def check_provenance(manifest: dict[str, Any], results: dict[str, Any], params: Params) -> None:
+def live_state(forecaster: Forecaster, labels_path: Path) -> dict[str, Any]:
+    """What the code and files on this machine are NOW, to compare with what the labels recorded."""
+    return {
+        "label_version": LABEL_VERSION,
+        "horizon_max_weeks": RISK_CHECK_MAX_WEEKS,
+        "served_model_files": served_model_files(forecaster),
+        "labels_sha256": sha256_file(labels_path),
+    }
+
+
+def check_provenance(
+    manifest: dict[str, Any], results: dict[str, Any], params: Params, live: dict[str, Any]
+) -> None:
     """Refuse to stress a model against labels or code it was not made with."""
     if manifest["params_hash"] != params.hash():
         raise ValueError("the labels were made with different generator parameters")
     if manifest["feature_schema_hash"] != FEATURE_SCHEMA_HASH:
         raise ValueError("the labels were made with a different feature schema")
+    if manifest["label_version"] != live["label_version"]:
+        raise ValueError("the labels were made under a different label version")
+    if manifest["horizon_max_weeks"] != live["horizon_max_weeks"]:
+        raise ValueError("the labels were made with a different simulation horizon")
+    if manifest["served_model_files"] != live["served_model_files"]:
+        raise ValueError("the labels were made with a different served model")
     if manifest["file"]["sha256"] != results["labels_sha256"]:
         raise ValueError("the stored run was trained on different labels than the manifest names")
+    if live["labels_sha256"] != manifest["file"]["sha256"]:
+        raise ValueError("the labels file has changed since its manifest was written")
 
 
 def run(config_name: str, out: Path, paths: int | None = None, limit: int | None = None) -> dict:
@@ -181,8 +208,10 @@ def run(config_name: str, out: Path, paths: int | None = None, limit: int | None
     results = json.loads((run_dir / "results.json").read_text(encoding="utf-8"))
     manifest = json.loads((LABELS_PATH.parent / MANIFEST_FILE).read_text(encoding="utf-8"))
     params = load_params()
-    check_provenance(manifest, results, params)
+    forecaster = served_forecaster()
+    check_provenance(manifest, results, params, live_state(forecaster, LABELS_PATH))
     paths = paths or int(manifest["paths"])
+    master_seed = int(manifest["seed"])
     model = joblib.load(run_dir / "final_model.joblib")
     stored = json.loads((run_dir / "calibrator.json").read_text(encoding="utf-8"))
     calibrator = Calibrator.from_dict(stored)
@@ -192,9 +221,8 @@ def run(config_name: str, out: Path, paths: int | None = None, limit: int | None
 
     _, lockbox = split_lockbox(load_labels(LABELS_PATH))
     indices = [int(i) for i in lockbox.index][:limit]
-    forecaster = served_forecaster()
     runs = {
-        name: run_variant(params, DEFAULT_SEED, indices, variant, forecaster, paths)
+        name: run_variant(params, master_seed, indices, variant, forecaster, paths)
         for name, variant in VARIANTS.items()
     }
     stored_labels = dict(zip(lockbox.index.tolist(), lockbox.y.tolist(), strict=True))
@@ -204,6 +232,7 @@ def run(config_name: str, out: Path, paths: int | None = None, limit: int | None
         "calibration": results["calibration"]["chosen"],
         "lockbox_profiles": len(indices),
         "paths": paths,
+        "master_seed": master_seed,
         "stored_labels": {
             "profiles": len(lockbox),
             "brier": brier(predict(lockbox.x), lockbox.y),

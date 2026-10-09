@@ -198,3 +198,20 @@ def test_a_run_refuses_to_resume_under_different_settings(tmp_path):
 
     with pytest.raises(ValueError, match="different"):
         generate_labels(PARAMS, SEED, 4, tmp_path, paths=200, forecaster=MODEL, resume=True)
+
+
+def test_the_settings_a_run_is_resumed_under_include_the_code_it_was_made_with(tmp_path):
+    generate_labels(PARAMS, SEED, 2, tmp_path, paths=100, forecaster=MODEL)
+
+    sidecar = json.loads((tmp_path / "labels.run.json").read_text("utf-8"))
+    assert "git_commit" in sidecar and sidecar["profiles"] == 2
+
+
+def test_a_run_refuses_to_resume_with_fewer_profiles_than_are_already_written(tmp_path):
+    generate_labels(PARAMS, SEED, 4, tmp_path, paths=100, forecaster=MODEL)
+    before = (tmp_path / LABELS_FILE).read_bytes()
+
+    with pytest.raises(ValueError, match="already holds"):
+        generate_labels(PARAMS, SEED, 2, tmp_path, paths=100, forecaster=MODEL, resume=True)
+
+    assert (tmp_path / LABELS_FILE).read_bytes() == before  # nothing was cut

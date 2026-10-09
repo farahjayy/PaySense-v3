@@ -175,3 +175,21 @@ def tune(
     study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(seed=seed))
     study.optimize(objective, n_trials=trials)
     return dict(study.best_params)
+
+
+def logistic_sign_check(fitted: Fitted) -> list[dict[str, Any]]:
+    """Each logistic coefficient (on standardised features) beside the monotone direction the other
+    candidates are held to. `agrees` is None where no direction is imposed (direction 0)."""
+    coefficients = fitted.model.named_steps["logisticregression"].coef_[0]
+    rows = []
+    for name, coefficient in zip(fitted.features, coefficients, strict=True):
+        direction = MONOTONE_DIRECTIONS[name]
+        rows.append(
+            {
+                "feature": name,
+                "coefficient": float(coefficient),
+                "direction": direction,
+                "agrees": None if direction == 0 else bool(np.sign(coefficient) == direction),
+            }
+        )
+    return rows

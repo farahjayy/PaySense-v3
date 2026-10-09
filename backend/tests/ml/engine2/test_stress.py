@@ -7,13 +7,15 @@ from app.engines.forecasting.models import MovingAverage
 from app.engines.risk.features import FEATURE_SCHEMA_HASH
 from ml.datagen.params import load_params
 from ml.datagen.profile import generate_dated_profile, generate_profile
-from ml.engine2_train.labels import label_profile, prepare
+from ml.engine2_train.labels import LABEL_VERSION, label_profile, prepare
+from ml.engine2_train.provenance import sha256_file
 from ml.engine2_train.stress import (
     VARIANTS,
     Variant,
     check_provenance,
     evaluate_variant,
     income_down,
+    live_state,
     missing_month,
     ptptn_delayed,
     run_variant,
@@ -159,14 +161,18 @@ def test_a_variant_run_scores_the_model_against_the_new_simulated_label():
 
 
 # ---------------------------------------------------------------- provenance checks
+LIVE = {"label_version": "2", "horizon_max_weeks": 180, "served_model_files": ["a.onnx"],
+        "labels_sha256": "abc"}  # fmt: skip
+
+
 def manifest(**overrides):
     base = {"params_hash": PARAMS.hash(), "feature_schema_hash": FEATURE_SCHEMA_HASH,
-            "file": {"sha256": "abc"}}  # fmt: skip
+            "file": {"sha256": "abc"}, **LIVE}  # fmt: skip
     return base | overrides
 
 
 def test_a_matching_manifest_passes():
-    check_provenance(manifest(), {"labels_sha256": "abc"}, PARAMS)
+    check_provenance(manifest(), {"labels_sha256": "abc"}, PARAMS, LIVE)
 
 
 @pytest.mark.parametrize(
@@ -175,8 +181,28 @@ def test_a_matching_manifest_passes():
         ({"params_hash": "0" * 16}, "different generator parameters"),
         ({"feature_schema_hash": "0" * 16}, "different feature schema"),
         ({"file": {"sha256": "other"}}, "different labels"),
+        ({"label_version": "1"}, "label version"),
+        ({"horizon_max_weeks": 52}, "horizon"),
+        ({"served_model_files": ["b.onnx"]}, "served model"),
     ],
 )
 def test_stress_testing_refuses_labels_or_code_the_model_was_not_made_with(override, message):
     with pytest.raises(ValueError, match=message):
-        check_provenance(manifest(**override), {"labels_sha256": "abc"}, PARAMS)
+        check_provenance(manifest(**override), {"labels_sha256": "abc"}, PARAMS, LIVE)
+
+
+def test_stress_testing_refuses_a_labels_file_that_has_changed_on_disk():
+    with pytest.raises(ValueError, match="changed since"):
+        check_provenance(
+            manifest(), {"labels_sha256": "abc"}, PARAMS, LIVE | {"labels_sha256": "z"}
+        )
+
+
+def test_the_live_state_names_the_label_version_horizon_served_files_and_file_hash(tmp_path):
+    labels = tmp_path / "labels.jsonl"
+    labels.write_bytes(b"x")
+
+    live = live_state(MODEL, labels)
+
+    assert live["label_version"] == LABEL_VERSION and live["horizon_max_weeks"] >= 160
+    assert live["labels_sha256"] == sha256_file(labels) and "served_model_files" in live

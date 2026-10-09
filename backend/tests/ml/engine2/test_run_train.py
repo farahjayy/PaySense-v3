@@ -5,8 +5,9 @@ import pytest
 from scipy import stats
 
 from app.engines.risk.features import ENGINE1_FEATURES, FEATURE_NAMES
-from ml.engine2_train import report
-from ml.engine2_train.data import LOW_BASELINE
+from ml.engine2_train import report, train
+from ml.engine2_train.cv import cross_validate
+from ml.engine2_train.data import LOW_BASELINE, load_labels, split_lockbox
 from ml.engine2_train.models import CANDIDATES
 from ml.engine2_train.provenance import sha256_file
 from ml.engine2_train.train import CONFIGS, TrainConfig, run
@@ -142,6 +143,87 @@ def test_a_run_is_reproducible(tiny, tmp_path):
     assert a["lockbox"] == b["lockbox"]
 
 
+# ---------------------------------------------------------------- audit M1-M3, L1, L6
+def test_both_arms_of_the_ablation_and_of_the_monotonicity_run_are_fresh_on_fresh_folds(tiny):
+    root, record = tiny
+    dev, _ = split_lockbox(load_labels(root / "labels.jsonl"))
+    fresh = TINY.seed + train.FRESH_FOLDS_OFFSET
+    winner = record["winner"]
+
+    with_engine1 = cross_validate(winner, dev, TINY.repeats, TINY.folds, TINY.trials, fresh)
+
+    assert record["ablation"]["brier_with_engine1"] == with_engine1.mean("brier")
+    assert record["ablation"]["fresh_folds_seed"] == fresh
+    mono = record["sensitivity"]["monotonicity"]
+    if mono["applicable"]:
+        assert mono["brier_constrained"] == with_engine1.mean("brier")
+        assert mono["fresh_folds_seed"] == fresh
+
+
+def test_the_lockbox_record_carries_the_subgroup_in_full_and_the_label_class_breakdown(tiny):
+    _, record = tiny
+
+    box = record["lockbox"]
+    group = box["subgroups"][LOW_BASELINE]
+    assert {"band_agreement", "reliability", "constant_value", "raw", "calibrated"} <= set(group)
+    assert group["constant_basis"].startswith("development mean of the subgroup")
+    classes = box["brier_by_class"]
+    assert {"label_exactly_0", "label_between_0_and_1", "p_without_between_0_and_1"} <= set(classes)
+    json.dumps(box, allow_nan=False)
+
+
+def test_every_lockbox_scoring_is_logged_and_counted_in_the_record(tiny, tmp_path):
+    root, record = tiny
+    log = root / "lockbox_log.jsonl"
+
+    lines = [json.loads(x) for x in log.read_text(encoding="utf-8").splitlines()]
+
+    assert record["lockbox_scorings"] == len(lines) == 1
+    assert lines[0]["winner"] == record["winner"]
+    assert lines[0]["labels_sha256"] == record["labels_sha256"]
+    assert lines[0]["lockbox_brier_calibrated"] == record["lockbox"]["calibrated"]["brier"]
+    assert {"run_id", "git_commit", "scoring"} <= set(lines[0])
+    again = run(TINY, root / "labels.jsonl", tmp_path / "again")
+    assert again["lockbox_scorings"] == 1  # its own log, beside its own output
+    second = run(TINY, root / "labels.jsonl", tmp_path / "again")
+    assert second["lockbox_scorings"] == 2
+
+
+def test_a_run_that_fails_before_the_lockbox_has_not_used_it(tmp_path, monkeypatch):
+    write_labels(tmp_path / "labels.jsonl")
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("ablation failed")
+
+    monkeypatch.setattr(train, "_ablation", boom)
+    with pytest.raises(RuntimeError):
+        run(TINY, tmp_path / "labels.jsonl", tmp_path / "run")
+
+    assert not (tmp_path / "lockbox_log.jsonl").exists()
+
+
+def test_the_logistic_signs_against_the_monotone_directions_are_recorded(tiny):
+    _, record = tiny
+
+    signs = record["logistic_signs"]
+    assert [r["feature"] for r in signs["features"]] == list(FEATURE_NAMES)
+    assert signs["agree"] + signs["disagree"] == signs["constrained_features"]
+    assert record["served_model_has_monotone_constraints"] == (record["winner"] != "logistic")
+
+
+def test_the_constants_serving_will_need_are_copied_into_the_record(tiny):
+    _, record = tiny
+
+    constants = record["serving_constants"]
+    assert set(constants) == {
+        "RISK_CHECK_MAX_WEEKS", "DASHBOARD_MONTHS", "ERROR_INFLATION", "BOOTSTRAP_BLOCK"
+    }  # fmt: skip
+    assert constants["RISK_CHECK_MAX_WEEKS"] >= 160
+    assert {"label_version", "horizon_max_weeks", "served_model_files"} <= set(
+        record["labels_manifest"]
+    )
+
+
 # ---------------------------------------------------------------- the report
 def test_the_report_is_built_from_a_stored_run_and_states_what_it_computed(tiny, tmp_path):
     root, record = tiny
@@ -164,6 +246,15 @@ def test_the_report_is_built_from_a_stored_run_and_states_what_it_computed(tiny,
     ablation = (tmp_path / "out" / "tables" / "ablation.csv").read_text(encoding="utf-8")
     assert LOW_BASELINE in ablation  # the subgroup is reported beside the whole
     assert record["winner"] in readme
+    assert "reported separately everywhere" not in readme  # said exactly where it appears instead
+    assert "Brier by label class" in readme and "exactly 0" in readme
+    assert "coefficient" in readme and "no monotone constraints" in readme
+    assert "fitted on out-of-fold predictions of the fold models" in readme
+    assert "SHAP" in readme and "raw scores" in readme
+    assert "scored 1 time" in readme  # the lockbox log, in words
+    assert "the six Engine 1 features" not in readme  # the count comes from the record
+    for name in ("lockbox_by_class", "lockbox_subgroup", "logistic_signs"):
+        assert (tmp_path / "out" / "tables" / f"{name}.csv").is_file(), name
 
 
 def test_the_report_regenerates_identically(tiny, tmp_path):

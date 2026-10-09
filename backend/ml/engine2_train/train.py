@@ -8,11 +8,12 @@ Order:
    `select.py`;
 3. final hyperparameters tuned on the development profiles;
 4. calibration chosen, and fitted, on single-repeat out-of-fold predictions of the development set;
-5. the final calibrated winner scored once on the lockbox (with the logistic benchmark and the
-   constant beside it);
-6. ablation without the Engine 1 features (both arms tuned inside every fold, same folds), the
-   same model without monotone constraints, a learning curve and the per-month shortfall
-   definition as sensitivity runs.
+5. ablation without the Engine 1 features and the same model without monotone constraints (both
+   arms of each computed fresh, on folds the model comparison never used), a learning curve and
+   the per-month shortfall definition as sensitivity runs;
+6. LAST, the final calibrated winner scored once on the lockbox (with the logistic benchmark and
+   the constants beside it), and that scoring appended to `data/engine2/runs/lockbox_log.jsonl`.
+   Everything that can fail is done before step 6, so a crash cannot spend the lockbox.
 """
 
 import argparse
@@ -25,20 +26,28 @@ from typing import Any
 import joblib
 import numpy as np
 
+from app.engines.forecasting.service import DASHBOARD_MONTHS, ERROR_INFLATION
+from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEEKS
 from app.engines.risk.features import ENGINE1_FEATURES, FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from ml.engine2_train.calibrate import choose_calibration, fit_calibrator
 from ml.engine2_train.cv import CvResult, cross_validate, nadeau_bengio, nadeau_bengio_interval
 from ml.engine2_train.data import LABELS_PATH, Dataset, load_labels, split_lockbox
 from ml.engine2_train.labelstats import baseline_facts
-from ml.engine2_train.metrics import all_metrics, band_agreement, brier
-from ml.engine2_train.models import CANDIDATES, fit_soft, tune
+from ml.engine2_train.lockbox import LOG_FILE as LOCKBOX_LOG
+from ml.engine2_train.lockbox import append_log, score_lockbox
+from ml.engine2_train.metrics import brier
+from ml.engine2_train.models import CANDIDATES, Fitted, fit_soft, logistic_sign_check, tune
 from ml.engine2_train.provenance import git_commit, library_versions, sha256_file
 from ml.engine2_train.select import choose
 from ml.engine2_train.sensitivity import learning_curve, monotonicity_cost, shortfall_definition
 
 RUNS_DIR = Path(__file__).resolve().parents[3] / "data" / "engine2" / "runs"
-RELIABILITY_BINS = 10
+FRESH_FOLDS_OFFSET = 1000  # the ablation and monotonicity arms use folds selection never saw
 CALIBRATION_BASIS = "single-repeat out-of-fold predictions of the development set"
+CALIBRATION_APPLIED_TO = (
+    "the final model, which has other hyperparameters (tuned on all development profiles) and "
+    "more training data than the fold models whose predictions fitted the calibrator"
+)
 
 
 @dataclass(frozen=True)
@@ -81,13 +90,16 @@ def _ablation_row(without: CvResult, full: CvResult, key: str) -> dict[str, Any]
     }
 
 
-def _ablation(dev: Dataset, winner: str, full: CvResult, config: TrainConfig) -> dict[str, Any]:
-    """Winner with and without the Engine 1 features. Both arms are tuned inside every training
-    fold on the same folds: `full` IS the winner's nested CV from the model comparison (same data,
-    folds, seed and trials), so it is reused rather than recomputed."""
+def _ablation(dev: Dataset, winner: str, config: TrainConfig) -> dict[str, Any]:
+    """Winner with and without the Engine 1 features. BOTH arms are computed here, tuned inside
+    every training fold, on the same fresh folds: neither is the model comparison's run of the
+    winner, which was selected for being the best and would carry a winner's curse that the other
+    arm lacks."""
     keep = tuple(n for n in FEATURE_NAMES if n not in ENGINE1_FEATURES)
+    seed = config.seed + FRESH_FOLDS_OFFSET
+    full = cross_validate(winner, dev, config.repeats, config.folds, config.trials, seed)
     without = cross_validate(
-        winner, dev.subset(keep), config.repeats, config.folds, config.trials, config.seed
+        winner, dev.subset(keep), config.repeats, config.folds, config.trials, seed
     )
     row = _ablation_row(without, full, "brier")
     subgroups = {group: _ablation_row(without, full, f"brier@{group}") for group in dev.subgroups()}
@@ -96,65 +108,86 @@ def _ablation(dev: Dataset, winner: str, full: CvResult, config: TrainConfig) ->
         "subgroups": subgroups,
         "removed_features": list(ENGINE1_FEATURES),
         "tuning": "nested in every fold, both arms",
+        "arms": "both computed fresh on the same folds, which the model comparison did not use",
+        "fresh_folds_seed": seed,
         "ci_method": "Nadeau-Bengio corrected, t critical value for J - 1 degrees of freedom",
     }
 
 
-def _reliability(pred: np.ndarray, target: np.ndarray) -> list[dict[str, float]]:
-    edges = np.linspace(0, 1, RELIABILITY_BINS + 1)
-    which = np.clip(np.searchsorted(edges, pred, side="right") - 1, 0, RELIABILITY_BINS - 1)
-    return [
-        {
-            "bin": b,
-            "profiles": int((which == b).sum()),
-            "mean_prediction": float(pred[which == b].mean()),
-            "mean_label": float(target[which == b].mean()),
-        }
-        for b in range(RELIABILITY_BINS)
-        if (which == b).any()
-    ]
+def _manifest(labels_path: Path) -> dict[str, Any]:
+    """The label manifest recorded beside the labels, or {} if there is none."""
+    path = labels_path.parent / "MANIFEST.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
-def _score_lockbox(
-    lockbox: Dataset, raw: np.ndarray, calibrated: np.ndarray, benchmark: np.ndarray, base: float
-) -> dict[str, Any]:
-    """The one and only scoring of the final model on the lockbox."""
-    agreement, confusion = band_agreement(calibrated, lockbox.y)
-    groups = {
-        group: {
-            "profiles": int(mask.sum()),
-            "brier_calibrated": brier(calibrated[mask], lockbox.y[mask]),
-            "brier_benchmark": brier(benchmark[mask], lockbox.y[mask]),
-            "brier_constant": brier(np.full(int(mask.sum()), base), lockbox.y[mask]),
-        }
-        for group, mask in lockbox.subgroups().items()
-        if mask.any()
-    }
+def _group_bases(dev: Dataset) -> dict[str, float]:
+    """The development mean label of each subgroup: that subgroup's own constant benchmark."""
     return {
-        "profiles": len(lockbox),
-        "raw": all_metrics(raw, lockbox.y),
-        "calibrated": all_metrics(calibrated, lockbox.y),
-        "logistic_benchmark_brier": brier(benchmark, lockbox.y),
-        "constant_brier": brier(np.full(len(lockbox), base), lockbox.y),
-        "band_agreement": agreement,
-        "band_confusion_label_rows_model_columns": confusion.tolist(),
-        "reliability": _reliability(calibrated, lockbox.y),
-        "subgroups": groups,
+        group: float(dev.y[mask].mean()) for group, mask in dev.subgroups().items() if mask.any()
     }
 
 
-def _label_paths(labels_path: Path) -> int | None:
-    """The Monte Carlo path count recorded beside the labels, if there is a manifest."""
-    manifest = labels_path.parent / "MANIFEST.json"
-    if not manifest.exists():
-        return None
-    return json.loads(manifest.read_text(encoding="utf-8")).get("paths")
+def _serving_facts(manifest: dict[str, Any]) -> dict[str, Any]:
+    """What a serving artefact's metadata needs from the labels and the code (P6)."""
+    keys = ("label_version", "horizon_max_weeks", "served_model_files", "paths", "seed")
+    return {
+        "labels_manifest": {key: manifest.get(key) for key in keys},
+        "serving_constants": {
+            "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
+            "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
+            "ERROR_INFLATION": ERROR_INFLATION,
+            "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
+        },
+    }
+
+
+def _signs(benchmark: Fitted) -> dict[str, Any]:
+    """Do the logistic coefficients point the way the monotone constraints force the others?"""
+    rows = logistic_sign_check(benchmark)
+    verdicts = [r["agrees"] for r in rows if r["agrees"] is not None]
+    return {
+        "features": rows,
+        "constrained_features": len(verdicts),
+        "agree": int(sum(verdicts)),
+        "disagree": int(len(verdicts) - sum(verdicts)),
+    }
+
+
+def _sensitivity(
+    dev: Dataset, winner: str, final_params: dict[str, Any], oof: np.ndarray, config: TrainConfig
+) -> dict[str, Any]:
+    fresh = config.seed + FRESH_FOLDS_OFFSET
+    return {
+        "monotonicity": monotonicity_cost(
+            winner, dev, config.repeats, config.folds, config.trials, fresh
+        ),
+        "learning_curve": learning_curve(winner, dev, final_params, config.folds, config.seed),
+        "shortfall_definition": shortfall_definition(oof, dev),
+    }
+
+
+def _log_scoring(out_dir: Path, record: dict[str, Any], scores: dict[str, Any]) -> int:
+    """Append this scoring to the log beside the run directories; return how many it holds."""
+    commit = record["git_commit"]
+    run_id = f"{record['config']['name']}-{record['labels_sha256'][:12]}-{str(commit)[:12]}"
+    return append_log(
+        out_dir.parent / LOCKBOX_LOG,
+        {
+            "run_id": run_id,
+            "git_commit": commit,
+            "labels_sha256": record["labels_sha256"],
+            "winner": record["winner"],
+            "lockbox_brier_calibrated": scores["calibrated"]["brier"],
+            "lockbox_brier_raw": scores["raw"]["brier"],
+        },
+    )
 
 
 def run(config: TrainConfig, labels_path: Path, out_dir: Path) -> dict[str, Any]:
     data = load_labels(labels_path)
     dev, lockbox = split_lockbox(data)
-    paths = _label_paths(labels_path)
+    manifest = _manifest(labels_path)
+    paths = manifest.get("paths")
     results = {
         name: cross_validate(name, dev, config.repeats, config.folds, config.trials, config.seed)
         for name in CANDIDATES
@@ -173,10 +206,6 @@ def run(config: TrainConfig, labels_path: Path, out_dir: Path) -> dict[str, Any]
     calibrator = fit_calibrator(calibration, oof, dev.y)
     final = fit_soft(choice.winner, final_params, dev.x, dev.y, dev.names, config.seed)
     benchmark = fit_soft("logistic", tuned("logistic"), dev.x, dev.y, dev.names, config.seed)
-    raw = final.predict(lockbox.x)
-    lockbox_scores = _score_lockbox(
-        lockbox, raw, calibrator.apply(raw), benchmark.predict(lockbox.x), float(dev.y.mean())
-    )
 
     record = {
         "config": asdict(config),
@@ -192,6 +221,7 @@ def run(config: TrainConfig, labels_path: Path, out_dir: Path) -> dict[str, Any]
         "labels_sha256": sha256_file(labels_path),
         "git_commit": git_commit(),
         "versions": library_versions(),
+        **_serving_facts(manifest),
         "label_quantiles": {
             str(q): float(np.quantile(dev.y, q / 100)) for q in (5, 25, 50, 75, 95)
         },
@@ -210,21 +240,23 @@ def run(config: TrainConfig, labels_path: Path, out_dir: Path) -> dict[str, Any]
             "chosen": calibration,
             "held_out_brier": calibration_scores,
             "fitted_on": CALIBRATION_BASIS,
+            "applied_to": CALIBRATION_APPLIED_TO,
             "parameters": calibrator.to_dict(),
         },
-        "lockbox": lockbox_scores,
-        "ablation": _ablation(dev, choice.winner, winner, config),
-        "sensitivity": {
-            "monotonicity": monotonicity_cost(
-                choice.winner, dev, winner, config.repeats, config.folds, config.trials, config.seed
-            ),
-            "learning_curve": learning_curve(
-                choice.winner, dev, final_params, config.folds, config.seed
-            ),
-            "shortfall_definition": shortfall_definition(oof, dev),
-        },
+        "logistic_signs": _signs(benchmark),
+        "served_model_has_monotone_constraints": choice.winner != "logistic",
+        "ablation": _ablation(dev, choice.winner, config),
+        "sensitivity": _sensitivity(dev, choice.winner, final_params, oof, config),
         "constant_baseline_brier": brier(np.full(len(dev), dev.y.mean()), dev.y),
     }
+    # the last step: the one scoring of the final model on the lockbox, then its log line
+    raw = final.predict(lockbox.x)
+    scores = score_lockbox(
+        lockbox, raw, calibrator.apply(raw), benchmark.predict(lockbox.x),
+        float(dev.y.mean()), _group_bases(dev),
+    )  # fmt: skip
+    record["lockbox"] = scores
+    record["lockbox_scorings"] = _log_scoring(out_dir, record, scores)
     _save(out_dir, record, final, calibrator.to_dict(), oof)
     return record
 
@@ -252,6 +284,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     chosen = record["calibration"]["chosen"]
     print(f"winner: {record['winner']} ({record['reason']}); calibration: {chosen}")  # noqa: T201
     print(f"lockbox Brier (calibrated): {record['lockbox']['calibrated']['brier']:.4f}")  # noqa: T201
+    print(f"lockbox scorings logged: {record['lockbox_scorings']}")  # noqa: T201
 
 
 if __name__ == "__main__":

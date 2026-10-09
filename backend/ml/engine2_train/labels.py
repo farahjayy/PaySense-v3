@@ -175,8 +175,17 @@ def iter_labels(
             yield {**record, "locked": False, "truth": _truth(profile)}
 
 
-def _settings(params: Params, master_seed: int, paths: int, forecaster: Forecaster) -> dict:
-    """Everything a label depends on besides the profile index: two runs agree only if these do."""
+def served_model_files(forecaster: Forecaster) -> Any:
+    """The artefact files (with hashes) of the served model, as its metadata names them."""
+    return getattr(forecaster, "metadata", {}).get("files")
+
+
+def _settings(
+    params: Params, master_seed: int, paths: int, forecaster: Forecaster, count: int
+) -> dict:
+    """Everything a label depends on besides the profile index: two runs agree only if these do.
+    `profiles` (the count asked for) is recorded but not compared on resume: a run may be extended,
+    never shortened."""
     return {
         "label_version": LABEL_VERSION,
         "seed": master_seed,
@@ -185,15 +194,23 @@ def _settings(params: Params, master_seed: int, paths: int, forecaster: Forecast
         "feature_schema_hash": FEATURE_SCHEMA_HASH,
         "horizon_max_weeks": RISK_CHECK_MAX_WEEKS,
         "served_model": getattr(forecaster, "name", "unknown"),
-        "served_model_files": getattr(forecaster, "metadata", {}).get("files"),
+        "served_model_files": served_model_files(forecaster),
+        "git_commit": git_commit(),
+        "profiles": count,
     }
+
+
+def _comparable(settings: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in settings.items() if k != "profiles"}
 
 
 def _resume_point(target: Path, sidecar: Path, settings: dict[str, Any]) -> int:
     """How many complete, in-order records `target` holds; a torn last line is cut off."""
     if not target.exists():
         return 0
-    if not sidecar.exists() or json.loads(sidecar.read_text(encoding="utf-8")) != settings:
+    if not sidecar.exists() or _comparable(json.loads(sidecar.read_text(encoding="utf-8"))) != (
+        _comparable(settings)
+    ):
         raise ValueError(f"{target} was made with different settings; start a fresh run")
     kept = good_bytes = 0
     with target.open("rb") as handle:
@@ -241,8 +258,12 @@ def generate_labels(
     forecaster = forecaster or served_forecaster()
     out_dir.mkdir(parents=True, exist_ok=True)
     target, sidecar = out_dir / LABELS_FILE, out_dir / RUN_FILE
-    settings = _settings(params, master_seed, paths, forecaster)
+    settings = _settings(params, master_seed, paths, forecaster, count)
     first = _resume_point(target, sidecar, settings) if resume else 0
+    if first > count:
+        raise ValueError(
+            f"{target} already holds {first} profiles; refusing to shorten it to {count}"
+        )
     if not resume:
         target.write_bytes(b"")
     sidecar.write_text(json.dumps(settings, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
