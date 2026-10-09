@@ -11,7 +11,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.deps import CurrentUser, DbDep
+from app.api.deps import CurrentUser, DbDep, rate_limited
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
 from app.api.types import AppDate, Sen, text
 from app.core.errors import unprocessable
@@ -67,7 +67,9 @@ class ConfirmOut(ApiModel):
     created: int
 
 
-@router.post("/csv", response_model=ImportPreviewOut)
+@router.post(
+    "/csv", response_model=ImportPreviewOut, dependencies=[rate_limited("import-preview", 20, 60)]
+)
 def preview_csv(file: UploadFile, user: CurrentUser, db: DbDep) -> ImportPreviewOut:
     if not (file.filename or "").lower().endswith(".csv"):
         raise unprocessable("wrong_file_type", "Please upload a .csv file.")
@@ -102,7 +104,9 @@ def preview_csv(file: UploadFile, user: CurrentUser, db: DbDep) -> ImportPreview
     )
 
 
-@router.post("/confirm", response_model=ConfirmOut)
+@router.post(
+    "/confirm", response_model=ConfirmOut, dependencies=[rate_limited("import-confirm", 10, 60)]
+)
 def confirm_import(body: ConfirmIn, user: CurrentUser, db: DbDep) -> ConfirmOut:
     created = transactions.bulk_create(
         db, user.id, [row.model_dump() for row in body.rows], source="csv"

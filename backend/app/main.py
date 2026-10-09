@@ -30,7 +30,7 @@ from app.api import (
     summary,
     transactions,
 )
-from app.api.rate_limit import LoginRateLimiter
+from app.api.rate_limit import LoginRateLimiter, RequestRateLimiter
 from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
@@ -92,6 +92,7 @@ def create_app(
     app.state.settings = settings
     app.state.db = db  # built lazily on first use when None (see api/deps.py)
     app.state.login_limiter = login_limiter or LoginRateLimiter()
+    app.state.request_limiter = RequestRateLimiter()
 
     # Added first, so it sits *inside* CORS: its 413 responses still carry CORS headers.
     app.add_middleware(BodySizeLimitMiddleware)

@@ -65,3 +65,6 @@ data/engine1/
 uat/data/*
 !uat/data/example/
 uat/testers.csv
+# UAT reports of real runs stay local too; only the report made from the invented example is committed
+reports/uat/*
+!reports/uat/example*

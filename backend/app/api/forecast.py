@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends
 from pydantic import Field
 
-from app.api.deps import CurrentUser, DbDep, TodayDep
+from app.api.deps import CurrentUser, DbDep, TodayDep, rate_limited
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
 from app.db import plans as plans_repo
 from app.db import recurring_items, transactions
@@ -67,7 +67,8 @@ def _seed(user_id: str, today: dt.date) -> int:
     return zlib.crc32(f"{user_id}:{today.isoformat()}".encode())
 
 
-@router.get("", response_model=ForecastOut)
+# Each call runs the forecaster and 1,000 simulated futures, so one user may not loop on it.
+@router.get("", response_model=ForecastOut, dependencies=[rate_limited("forecast", 30, 60)])
 def forecast(user: CurrentUser, db: DbDep, today: TodayDep, model: ForecasterDep) -> ForecastOut:
     result = build_forecast(
         rows=transactions.list_for_forecast(db, user.id, today),

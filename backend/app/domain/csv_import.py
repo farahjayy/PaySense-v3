@@ -18,6 +18,7 @@ from datetime import date, datetime
 from app.domain.categorize import guess_category, guess_type
 from app.domain.money import MAX_AMOUNT_SEN, parse_rm
 
+ECHO_LIMIT = 40  # longest piece of a bad cell repeated back in a skip reason
 MAX_ROWS = 5000
 MAX_COLUMNS = 64
 MAX_DATE_CELL = 40  # characters; a longer "date" is junk and not worth 27 parse attempts
@@ -159,7 +160,7 @@ def _signed_amount(raw: str) -> tuple[int, int]:
     try:
         sen = parse_rm(cleaned.strip())
     except ValueError as err:
-        raise ValueError(f"invalid amount {text!r}") from err
+        raise ValueError(f"invalid amount {text[:ECHO_LIMIT]!r}") from err
     return (-1 if negative else 1), sen
 
 

@@ -8,9 +8,9 @@ from zoneinfo import ZoneInfo
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.api.rate_limit import LoginRateLimiter
+from app.api.rate_limit import LoginRateLimiter, RequestRateLimiter
 from app.api.schemas import UserOut
-from app.core.errors import unauthorized
+from app.core.errors import api_error, unauthorized
 from app.core.security import InvalidTokenError, decode_access_token
 from app.core.settings import Settings
 from app.db import users
@@ -80,3 +80,26 @@ def current_user(
 
 
 CurrentUser = Annotated[UserOut, Depends(current_user)]
+
+
+def get_request_limiter(request: Request) -> RequestRateLimiter:
+    return request.app.state.request_limiter
+
+
+def rate_limited(bucket: str, max_requests: int, window_seconds: float):
+    """A route dependency: at most `max_requests` per user per window on this bucket."""
+
+    def check(
+        user: CurrentUser,
+        limiter: Annotated[RequestRateLimiter, Depends(get_request_limiter)],
+    ) -> None:
+        allowed, wait = limiter.allow(f"{bucket}:{user.id}", max_requests, window_seconds)
+        if not allowed:
+            raise api_error(
+                429,
+                "too_many_requests",
+                f"You are doing that too quickly. Try again in {wait} seconds.",
+                headers={"Retry-After": str(wait)},
+            )
+
+    return Depends(check)

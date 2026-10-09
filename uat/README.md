@@ -14,7 +14,7 @@ Everything needed to run a short usability and decision study with a handful of 
 
 ## Running a study
 
-1. Copy `testers.template.csv` to `testers.csv` (gitignored), list your testers with participant codes and a persona each (`frequent_bnpl`, `budget_conscious`, `irregular_income`).
+1. Copy `testers.template.csv` to `testers.csv` (gitignored), list your testers with participant codes and a persona each. **Make every username unguessable** (a participant code plus a few random characters, like the template's `p01-k7q2xm`): login takes only a username, so a guessable one lets anyone who finds the URL sign in as that tester. The roster check rejects plain `tester01`-style names. Delete the accounts when the study ends (`frequent_bnpl`, `budget_conscious`, `irregular_income`).
 2. `cd backend && uv run python scripts/seed_testers.py --roster ../uat/testers.csv --dry-run`, then again without `--dry-run`. This needs `backend/.env` (see `refdocs/guides/env_setup.md`).
 3. Run each session with `task-script.md`. The persona CSVs are in `data/personas/`.
 4. Copy `templates/*.csv` into `uat/data/<run>/` and type each tester's answers in. This folder is gitignored; real answers never leave your machine unless you decide so.
