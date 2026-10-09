@@ -161,7 +161,7 @@ describe("PlansScreen", () => {
     const save = within(dialog).getByRole("button", { name: "Save plan" });
     expect(save).toBeDisabled();
 
-    await userEvent.type(within(dialog).getByLabelText(/what did you buy/i), "Phone case");
+    await userEvent.type(within(dialog).getByLabelText(/what are you buying/i), "Phone case");
     await userEvent.clear(within(dialog).getByLabelText(/number of instalments/i));
     await userEvent.type(within(dialog).getByLabelText(/number of instalments/i), "2");
     await userEvent.type(within(dialog).getByLabelText(/^price/i), "300");

@@ -7,10 +7,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { RiskResult } from "@/components/risk/RiskResult";
 import { DashboardScreen } from "@/components/screens/DashboardScreen";
 import { ImportScreen } from "@/components/screens/ImportScreen";
 import { ModelScreen } from "@/components/screens/ModelScreen";
@@ -207,6 +208,79 @@ describe("accessibility (axe)", () => {
     await screen.findByText("Lunch");
     await userEvent.click(screen.getByRole("button", { name: "Add transaction" }));
     await screen.findByRole("dialog");
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("a risk result with reasons, a suggestion and a repayment warning has no detectable violations", async () => {
+    const plan: ComponentProps<typeof RiskResult>["check"]["plan"] = {
+      provider: "spaylater",
+      provider_label: "SPayLater",
+      schedule_source: "provider_rule",
+      total_price_sen: 60000,
+      financed_sen: 60000,
+      upfront_sen: 0,
+      total_payable_sen: 60000,
+      cash_at_purchase_sen: 0,
+      monthly_fee_rate_pct: 0,
+      num_installments: 2,
+      purchase_date: "2026-10-09",
+      first_payment_date: "2026-11-09",
+      limit_known: false,
+      remaining_limit_sen: null,
+      installments: [
+        { seq: 1, due_date: "2026-11-09", amount_sen: 30000, paid_at_checkout: false },
+        { seq: 2, due_date: "2026-12-09", amount_sen: 30000, paid_at_checkout: false },
+      ],
+    };
+    const curve = {
+      months: ["2026-10", "2026-11"],
+      cumulative_p10_sen: [-5000, -20000],
+      cumulative_p50_sen: [20000, 35000],
+      cumulative_p90_sen: [40000, 80000],
+    };
+    const { container } = render(
+      <RiskResult
+        onTrySuggestion={() => {}}
+        check={{
+          status: "ok",
+          lock_reason: null,
+          months_of_history: 6,
+          stale_days: 30,
+          unmatched_items: [],
+          suspect_months: [],
+          plan,
+          probability: 0.42,
+          band: "At Risk",
+          score: 58,
+          simulated_probability: 0.45,
+          probability_without_purchase: 0.1,
+          factors: [
+            { feature: "dsr_with_purchase", text: "About 40% of income.", contribution: 0.08 },
+          ],
+          suggestion: {
+            status: "found",
+            changes: [{ kind: "instalments", label: "Spread it over 6 instalments" }],
+            probability: 0.07,
+            band: "Safe",
+            request: null,
+            evaluated: 3,
+          },
+          repayment: {
+            level: "warning",
+            overdue_count: 3,
+            overdue_sen: 15000,
+            late_paid_count: 0,
+            longest_miss_run: 3,
+            reason: "Three missed in a row.",
+          },
+          with_plan_curve: curve,
+          without_curve: curve,
+          versions: { model: "m", feature_schema_hash: "h" },
+          check_id: null,
+        }}
+      />,
+      { wrapper },
+    );
     expect(await violations(container)).toEqual([]);
   });
 });

@@ -25,6 +25,8 @@ export type ProviderInfo = Schemas["ProviderOut"];
 export type ProviderLimit = Schemas["LimitOut"];
 export type ImportPreview = Schemas["ImportPreviewOut"];
 export type ConfirmRow = Schemas["ConfirmRow"];
+export type RiskCheck = Schemas["RiskCheckOut"];
+export type RiskConfirm = Schemas["RiskConfirmOut"];
 
 /** A failed API call, with the server's own sentence when it sent one. */
 export class ApiError extends Error {
@@ -342,6 +344,34 @@ export function usePayInstalments() {
       // active query (the forecast simulation included) has been fetched again.
       void invalidate();
     },
+  });
+}
+
+/** Stateless: runs the whole check and stores nothing. */
+export function useRiskCheck() {
+  return useMutation({
+    mutationFn: async (body: PlanInput) => unwrap(api.POST("/api/risk/check", { body })),
+  });
+}
+
+/** Go ahead with the purchase: the server freezes the check and creates the linked plan. */
+export function useConfirmRisk() {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async (body: PlanInput) => unwrap(api.POST("/api/risk/confirm", { body })),
+    onSuccess: () => {
+      void invalidate();
+    },
+  });
+}
+
+/** A frozen report never changes, so it is fetched once. */
+export function useRiskReport(id: string) {
+  return useQuery({
+    queryKey: ["risk-report", id],
+    queryFn: async () =>
+      unwrap(api.GET("/api/risk/checks/{check_id}", { params: { path: { check_id: id } } })),
+    staleTime: Infinity,
   });
 }
 
