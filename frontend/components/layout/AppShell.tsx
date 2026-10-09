@@ -63,7 +63,7 @@ function Sidebar({ pathname }: { pathname: string }) {
 function MobileNav({ pathname }: { pathname: string }) {
   return (
     <nav
-      aria-label="Main navigation"
+      aria-label="Quick navigation"
       className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface md:hidden"
     >
       {NAV_ITEMS.filter((item) => item.mobile).map((item) => {
