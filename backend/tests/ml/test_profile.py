@@ -4,8 +4,15 @@ import pytest
 
 from app.db.transactions import _clean_row
 from app.domain.flows import classify, history_span, month_summary
+from app.domain.schedule import add_months
+from ml.datagen.income import PTPTN_DESCRIPTION
 from ml.datagen.params import load_params
-from ml.datagen.profile import DEFAULT_AS_OF, generate_profile
+from ml.datagen.profile import (
+    DEFAULT_AS_OF,
+    draw_as_of,
+    generate_dated_profile,
+    generate_profile,
+)
 
 PARAMS = load_params()
 PERSONAS = ("frequent_bnpl", "budget_conscious", "irregular_income")
@@ -152,3 +159,48 @@ def test_profiles_work_for_short_windows_ending_on_any_weekday(as_of, months):
 
     assert p.transactions
     assert all(p.start <= t.date <= as_of for t in p.transactions)
+
+
+# ------------------------------------------------- the as-of day drawn per profile (ADR D-31 note)
+def test_the_as_of_day_depends_only_on_the_seed_and_the_index():
+    assert draw_as_of(PARAMS, 5, 3) == draw_as_of(PARAMS, 5, 3)
+    days = {draw_as_of(PARAMS, 5, i) for i in range(50)}
+    assert len(days) > 25  # not a constant, not a handful of values
+
+
+def test_the_drawn_as_of_days_cover_the_whole_year_evenly():
+    days = [draw_as_of(PARAMS, 7, i) for i in range(2400)]
+
+    months = [d.month for d in days]
+    assert set(months) == set(range(1, 13))
+    assert min(months.count(m) for m in range(1, 13)) > 120  # 200 expected per month
+    start = date.fromisoformat(PARAMS["calendar.as_of_window_start"])
+    assert all(0 <= (d - start).days < PARAMS["calendar.as_of_window_days"] for d in days)
+
+
+def test_a_dated_profile_ends_its_history_on_its_own_as_of_day():
+    for i in range(6):
+        p = generate_dated_profile(PARAMS, 5, i)
+
+        assert p.as_of == draw_as_of(PARAMS, 5, i)
+        assert max(t.date for t in p.transactions) <= p.as_of
+        months = int(PARAMS["history.default_months"])
+        assert p.start == add_months(p.as_of.replace(day=1), -(months - 1))
+
+
+def test_a_dated_profile_keeps_its_persona_and_its_other_draws():
+    fixed = profile(4)
+    dated = generate_dated_profile(PARAMS, 5, 4)
+
+    assert dated.persona == fixed.persona  # the persona has its own stream
+
+
+def test_the_calendar_position_of_ptptn_varies_across_dated_profiles():
+    gaps = set()
+    for i in range(120):
+        p = generate_dated_profile(PARAMS, 5, i)
+        lumps = [t.date for t in p.transactions if t.description == PTPTN_DESCRIPTION]
+        if lumps:
+            gaps.add(((p.as_of - max(lumps)).days) // 30)
+
+    assert len(gaps) >= 4  # as-of days fall at different points of the PTPTN cycle

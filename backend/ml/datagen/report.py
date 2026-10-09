@@ -68,6 +68,9 @@ LIMITATIONS = """\
   matplotlib build changes figure bytes; the tables are the record, the figures are illustrations.
 - **Labels are simulated.** Engine 2's label is Engine 1's simulated shortfall probability, so the
   risk model inherits whatever the forecaster and the simulation get wrong.
+- **Two calendars.** This export and the Engine 1 cohort use the fixed as-of day 2025-12-28.
+  Engine 2 labels draw each profile's as-of day uniformly over one year (`calendar.*` parameters),
+  so the PTPTN position, the semester and the plan horizon differ between labels (ADR D-31 note).
 """
 
 

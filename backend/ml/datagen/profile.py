@@ -8,7 +8,7 @@ persona, and are never features (PRD 3.1).
 """
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 
@@ -107,4 +107,24 @@ def generate_profile(
         bnpl=bnpl,
         purchase=purchase,
         expected_monthly_income_sen=monthly_income,
+    )
+
+
+def draw_as_of(params: Params, master_seed: int, index: int) -> date:
+    """A profile's own as-of day, spread evenly over the calendar window (`calendar.*` params).
+
+    Engine 2's labels use this so the PTPTN position, the semester and the horizon differ from
+    profile to profile. It has its own stream, so no other component of the profile shifts.
+    """
+    start = date.fromisoformat(str(params["calendar.as_of_window_start"]))
+    offset = int(
+        profile_rng(master_seed, index, "as_of").integers(params["calendar.as_of_window_days"])
+    )
+    return start + timedelta(days=offset)
+
+
+def generate_dated_profile(params: Params, master_seed: int, index: int) -> StudentProfile:
+    """`generate_profile` with the profile's own drawn as-of day instead of the fixed one."""
+    return generate_profile(
+        params, master_seed, index, as_of=draw_as_of(params, master_seed, index)
     )

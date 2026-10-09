@@ -2,6 +2,8 @@ path,value,unit,provenance,why
 population.persona_weights.frequent_bnpl,0.35,ratio,assumed,No published split of students into BNPL-usage personas. The three personas are the supervisor's UAT groups; weights are chosen so every group has thousands of training profiles.
 population.persona_weights.budget_conscious,0.4,ratio,assumed,As above.
 population.persona_weights.irregular_income,0.25,ratio,assumed,As above.
+calendar.as_of_window_start,2025-01-01,date,assumed,"First day on which an Engine 2 training profile may be checked. The Engine 1 cohort keeps the fixed day 2025-12-28; Engine 2 labels draw each profile's day across the whole window so the calendar (PTPTN position, semester, horizon) is not the same for every label."
+calendar.as_of_window_days,365,days,assumed,"A full year, so every month and every point of the PTPTN cycle (March and September) is represented."
 history.default_months,18,count,assumed,Long enough for rolling-origin evaluation (minimum 26 training weeks plus test windows); the app itself only requires 4 months.
 history.persona_months,4,count,assumed,"Supervisor-mandated length of the UAT persona histories (academic-constraints.md section 3) - a design constraint, not an empirical figure."
 income.ptptn_pay_day,10,day_of_month,assumed,Assumed day of the month a PTPTN lump sum lands; the PTPTN page gives no dates.
