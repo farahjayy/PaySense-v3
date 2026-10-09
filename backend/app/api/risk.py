@@ -9,6 +9,9 @@ touching the live ledger.
 
 import datetime as dt
 import logging
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import asdict
 from typing import Annotated, Any, Literal
 
@@ -29,6 +32,7 @@ from app.api.schemas import (
     NOT_FOUND_RESPONSE,
     PROTECTED_RESPONSES,
     ApiModel,
+    ErrorEnvelope,
 )
 from app.core.errors import api_error, not_found, unprocessable
 from app.db import plans as plans_repo
@@ -44,9 +48,83 @@ from app.engines.risk.repayment import RepaymentFlag, assess_repayment
 
 logger = logging.getLogger("paysense")
 router = APIRouter(prefix="/risk", tags=["risk"], responses=PROTECTED_RESPONSES)
+CHECK_RESPONSES: dict[int | str, dict[str, Any]] = {
+    429: {"model": ErrorEnvelope, "description": "Too many requests; see Retry-After"},
+    503: {
+        "model": ErrorEnvelope,
+        "description": "No trained model is loaded, or too many checks are running",
+    },
+}
+CONFLICT_ENVELOPE: dict[str, Any] = {
+    "model": ErrorEnvelope,
+    "description": "The same purchase was just added",
+}
 
 Band = Literal["Safe", "Caution", "At Risk"]
 CHECKS_PER_MINUTE = 10
+# A check is 0.3-1 s of CPU and a transient memory spike, and a small host runs one worker, so how
+# many run at once is capped across all users. Beyond that a request is turned away at once with a
+# retry hint instead of queueing behind the others (and starving the health check).
+MAX_CONCURRENT = 2
+ADMISSION = threading.BoundedSemaphore(MAX_CONCURRENT)
+# Purchase dates a check accepts: a little in the past (a purchase just made) to a year ahead.
+DAYS_BACK = 31
+DAYS_AHEAD = 366
+# The same user, provider, item, date, price and instalments within this many seconds is a
+# double-submit, not a second purchase.
+DUPLICATE_WINDOW_SECONDS = 120
+_CONFIRM_LOCKS: dict[str, threading.Lock] = {}
+_CONFIRM_LOCKS_GUARD = threading.Lock()
+
+
+@contextmanager
+def admitted() -> Iterator[None]:
+    if not ADMISSION.acquire(blocking=False):
+        raise api_error(
+            503,
+            "risk_check_busy",
+            "Several checks are running right now. Try again in a couple of seconds.",
+            headers={"Retry-After": "2"},
+        )
+    try:
+        yield
+    finally:
+        ADMISSION.release()
+
+
+def _confirm_lock(user_id: str) -> threading.Lock:
+    with _CONFIRM_LOCKS_GUARD:
+        return _CONFIRM_LOCKS.setdefault(user_id, threading.Lock())
+
+
+def _check_purchase_date(body: PlanIn, today: dt.date) -> None:
+    low, high = today - dt.timedelta(days=DAYS_BACK), today + dt.timedelta(days=DAYS_AHEAD)
+    if not low <= body.purchase_date <= high:
+        raise unprocessable(
+            "purchase_date_out_of_range",
+            f"The purchase date must be within {DAYS_BACK} days before and {DAYS_AHEAD} days "
+            "after today.",
+        )
+
+
+def _is_duplicate(plans: list[dict[str, Any]], body: PlanIn, now: dt.datetime) -> bool:
+    for plan in plans:
+        created = plan.get("created_at")
+        if not created:
+            continue
+        stamp = dt.datetime.fromisoformat(str(created).replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            stamp = stamp.replace(tzinfo=dt.UTC)
+        if (now - stamp).total_seconds() > DUPLICATE_WINDOW_SECONDS:
+            continue
+        if (
+            plan["item_name"] == body.item_name
+            and plan["provider"] == body.provider
+            and str(plan["purchase_date"]) == body.purchase_date.isoformat()
+            and plan["num_installments"] == body.num_installments
+        ):
+            return True
+    return False
 
 
 # ------------------------------------------------------------------ response models
@@ -173,6 +251,11 @@ def _suggestion(found: Counterfactual | None) -> ChangeSuggestionOut | None:
     )
 
 
+def _stored(value: float | None) -> float | None:
+    """Probabilities are stored to six decimals; show exactly what would be stored."""
+    return None if value is None else round(value, 6)
+
+
 def _out(
     result: CheckResult,
     factors: list[ExplainedFactor],
@@ -189,11 +272,11 @@ def _out(
         unmatched_items=list(result.unmatched_items),
         suspect_months=[SuspectMonthOut(**vars(s)) for s in result.suspect_months],
         plan=preview_out(result.proposal),
-        probability=result.probability,
+        probability=_stored(result.probability),
         band=result.band,  # type: ignore[arg-type]
         score=result.score,
-        simulated_probability=result.p_simulated,
-        probability_without_purchase=result.p_without,
+        simulated_probability=_stored(result.p_simulated),
+        probability_without_purchase=_stored(result.p_without),
         factors=[
             FactorOut(feature=f.feature, text=f.text, contribution=min(f.contribution, 1.0))
             for f in factors
@@ -252,8 +335,8 @@ def _frozen_row(out: RiskCheckOut, request: PlanIn, features: dict[str, float]) 
         "features": features,
         "feature_schema_hash": out.versions.feature_schema_hash,
         "model_version": out.versions.model,
-        "p": round(out.probability, 6),
-        "p_simulated": round(out.simulated_probability, 6),
+        "p": out.probability,
+        "p_simulated": out.simulated_probability,
         "score": out.score,
         "label": risk_checks.LABELS[out.band],
         "factors": [f.model_dump(mode="json") for f in out.factors],
@@ -302,7 +385,7 @@ def _from_row(row: dict[str, Any]) -> RiskCheckOut:
     "/check",
     response_model=RiskCheckOut,
     dependencies=[rate_limited("risk-check", CHECKS_PER_MINUTE, 60)],
-    responses={503: {"description": "No trained model is loaded"}},
+    responses=CHECK_RESPONSES,
 )
 def check_risk(
     body: PlanIn,
@@ -313,7 +396,12 @@ def check_risk(
     predictor: PredictorDep,
 ) -> RiskCheckOut:
     """Stateless: nothing is stored. A ledger that is too short returns `status: locked`."""
-    return _evaluate(body, user.id, db, today, forecaster, predictor)[0]
+    _check_purchase_date(body, today)
+    with admitted():
+        out, result = _evaluate(body, user.id, db, today, forecaster, predictor)
+    if result.gap is not None:  # drift watch: no user data, only the size of the disagreement
+        logger.info("risk_check gap=%.3f model=%s band=%s", result.gap, predictor.version, out.band)
+    return out
 
 
 @router.post(
@@ -321,7 +409,7 @@ def check_risk(
     response_model=RiskConfirmOut,
     status_code=201,
     dependencies=[rate_limited("risk-confirm", CHECKS_PER_MINUTE, 60)],
-    responses={503: {"description": "No trained model is loaded"}},
+    responses={**CHECK_RESPONSES, 409: CONFLICT_ENVELOPE},
 )
 def confirm_risk(
     body: PlanIn,
@@ -332,16 +420,36 @@ def confirm_risk(
     predictor: PredictorDep,
 ) -> RiskConfirmOut:
     """Go ahead with the purchase: freeze this check and create the plan linked to it."""
-    out, result = _evaluate(body, user.id, db, today, forecaster, predictor)
-    if out.status != "ok" or result.features is None:
-        raise unprocessable(
-            "forecast_locked", "There is not enough history yet to check this purchase."
-        )
-    stored = risk_checks.create(db, user.id, _frozen_row(out, body, result.features))
+    _check_purchase_date(body, today)
+    with _confirm_lock(user.id), admitted():
+        # one confirm at a time per user, and the duplicate test reads the plans after the lock
+        if _is_duplicate(plans_repo.list_with_instalments(db, user.id), body, _now()):
+            raise api_error(
+                409,
+                "duplicate_confirm",
+                "This purchase was just added. Check your plans before adding it again.",
+            )
+        out, result = _evaluate(body, user.id, db, today, forecaster, predictor)
+        if out.status != "ok" or result.features is None:
+            raise unprocessable(
+                "forecast_locked", "There is not enough history yet to check this purchase."
+            )
+        return _freeze_and_create(out, result, body, user.id, db, today)
+
+
+def _now() -> dt.datetime:
+    return dt.datetime.now(dt.UTC)
+
+
+def _freeze_and_create(
+    out: RiskCheckOut, result: CheckResult, body: PlanIn, user_id: str, db: Any, today: dt.date
+) -> RiskConfirmOut:
+    """Save the report, then the plan linked to it; if the plan fails, remove the report."""
+    stored = risk_checks.create(db, user_id, _frozen_row(out, body, result.features))
     try:
         plan = store_plan(
             db,
-            user.id,
+            user_id,
             body.item_name,
             result.proposal,
             risk={
@@ -350,8 +458,12 @@ def confirm_risk(
                 "risk_score_at_creation": out.score,
             },
         )
-    except BaseException:
-        risk_checks.delete(db, user.id, stored["id"])
+    except Exception:
+        try:
+            risk_checks.delete(db, user_id, stored["id"])
+        except Exception:
+            # the original failure is what the caller must see; the leftover report is unreachable
+            logger.exception("could not remove an unused risk check %s", stored["id"])
         raise
     return RiskConfirmOut(
         check_id=stored["id"],

@@ -13,6 +13,8 @@ exact forecast network files must all equal what is running now. Any difference 
 
 import hashlib
 import json
+import logging
+import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -27,6 +29,8 @@ from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEE
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from app.engines.risk.shapley import baseline_shapley
 
+logger = logging.getLogger("paysense")
+
 MODEL_ROOT = Path(__file__).resolve().parents[3] / "models" / "engine2"
 MODEL_FILE = "model.onnx"
 METADATA_FILE = "metadata.json"
@@ -37,6 +41,11 @@ LIVE_CONSTANTS = {
     "ERROR_INFLATION": ERROR_INFLATION,
     "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
 }
+
+
+def clamp_probability(value: float) -> float:
+    """A probability must be in [0, 1]; float32 trees can land a hair outside."""
+    return float(min(1.0, max(0.0, value)))
 
 
 class ArtefactError(RuntimeError):
@@ -144,7 +153,7 @@ class OnnxPredictor:
         return self._calibrate(self._raw(np.asarray(batch, dtype=float)))
 
     def predict(self, vector: Sequence[float]) -> float:
-        return float(self.predict_batch(np.asarray([vector], dtype=float))[0])
+        return clamp_probability(float(self.predict_batch(np.asarray([vector], dtype=float))[0]))
 
     # ------------------------------------------------------------------ explanation
     def contributions(self, vector: Sequence[float]) -> list[float]:
@@ -159,20 +168,29 @@ def load_engine2(folder: Path) -> OnnxPredictor:
     """Load one version folder, or raise `ArtefactError` saying what is wrong."""
     meta = _read_metadata(folder)
     _check_matches_running_code(meta, folder)
-    return OnnxPredictor(folder, meta)
+    try:
+        return OnnxPredictor(folder, meta)
+    except ArtefactError:
+        raise
+    except (KeyError, TypeError, ValueError, RuntimeError) as err:
+        raise ArtefactError(f"the model at {folder} could not be loaded: {err!r}") from err
 
 
 def load_if_present(root: Path = MODEL_ROOT) -> OnnxPredictor | None:
     """The newest version under `root`; None when nothing is deployed there (the risk check then
     says it is unavailable). A version that is there but wrong stops start-up."""
-    if not root.is_dir():
-        return None
-    versions = sorted(p for p in root.iterdir() if p.is_dir() and (p / METADATA_FILE).exists())
+    versions = (
+        [p for p in root.iterdir() if p.is_dir() and (p / METADATA_FILE).exists()]
+        if root.is_dir()
+        else []
+    )
     if not versions:
+        logger.warning("no risk model found under %s: the risk check will answer 503", root)
         return None
     return load_engine2(max(versions, key=_version_key))
 
 
-def _version_key(folder: Path) -> tuple[int, str]:
-    digits = "".join(ch for ch in folder.name if ch.isdigit())
-    return (int(digits) if digits else -1, folder.name)
+def _version_key(folder: Path) -> tuple[tuple[int, ...], str]:
+    """v2 beats v1 and v10 beats v9; v1.1 is between v1 and v2."""
+    numbers = tuple(int(n) for n in re.findall(r"\d+", folder.name))
+    return (numbers or (-1,), folder.name)

@@ -178,3 +178,18 @@ def test_the_app_factory_carries_the_predictor_it_is_given(settings, tmp_path):
     predictor = load_engine2(write(tmp_path / "v1"))
     assert create_app(settings, predictor=predictor).state.predictor is predictor
     assert create_app(settings).state.predictor is None
+
+
+def test_version_folders_sort_as_numbers_not_as_digit_strings(tmp_path):
+    for name in ("v9", "v10", "v2", "v1.1"):
+        write(tmp_path / "engine2" / name, version=name)
+    assert load_if_present(tmp_path / "engine2").version == "v10"
+
+
+def test_a_metadata_file_missing_a_field_is_an_artefact_error_not_a_key_error(tmp_path):
+    folder = write(tmp_path / "v1")
+    meta = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
+    del meta["baseline"]
+    (folder / "metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+    with pytest.raises(ArtefactError, match="could not be loaded"):
+        load_engine2(folder)

@@ -256,7 +256,8 @@ def create_plan(
             _best_effort("delete the plan", plans.delete, user_id, created["id"])
         raise
     result = get_with_instalments(db, user_id, created["id"])
-    assert result is not None  # noqa: S101 - we just created it
+    if result is None:  # created a moment ago: only a read failure or a racing delete
+        raise RuntimeError("the plan was created but could not be read back")
     return result
 
 

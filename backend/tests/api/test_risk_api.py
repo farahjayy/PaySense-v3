@@ -302,3 +302,130 @@ def test_the_check_route_is_limited_per_user(api, amir, siti, fake_db):
     ]
     assert statuses[:10] == [200] * 10 and statuses[10] == 429
     assert api.post("/api/risk/check", json=body(), headers=siti).status_code == 200
+
+
+# --------------------------------------------------------------------- review follow-ups
+def test_too_many_checks_at_once_are_turned_away_with_a_retry_hint_not_queued(
+    api, amir, fake_db, monkeypatch
+):
+    import app.api.risk as risk_module
+
+    fill(fake_db, "amir")
+    held = [
+        risk_module.ADMISSION.acquire(blocking=False) for _ in range(risk_module.MAX_CONCURRENT)
+    ]
+    assert all(held)
+    try:
+        res = api.post("/api/risk/check", json=body(), headers=amir)
+        confirm = api.post("/api/risk/confirm", json=body(), headers=amir)
+    finally:
+        for _ in held:
+            risk_module.ADMISSION.release()
+
+    assert res.status_code == 503 and res.json()["detail"]["code"] == "risk_check_busy"
+    assert int(res.headers["Retry-After"]) >= 1
+    assert confirm.status_code == 503
+    assert fake_db.rows("risk_checks") == []
+    # and the slot comes back: the next request runs normally
+    assert api.post("/api/risk/check", json=body(), headers=amir).status_code == 200
+
+
+def test_a_failed_check_still_releases_its_slot(api, amir, fake_db):
+    import app.api.risk as risk_module
+
+    fill(fake_db, "amir")
+    for _ in range(risk_module.MAX_CONCURRENT + 2):
+        bad = api.post(
+            "/api/risk/check", json=body(provider="other", total_price_sen=None), headers=amir
+        )
+        assert bad.status_code == 422
+    assert api.post("/api/risk/check", json=body(), headers=amir).status_code == 200
+
+
+def test_a_failing_cleanup_does_not_hide_the_real_error_or_stop_the_raise(
+    api, amir, fake_db, monkeypatch
+):
+    fill(fake_db, "amir")
+
+    def explode(*_a, **_k):
+        raise RuntimeError("the plan could not be saved")
+
+    def explode_too(*_a, **_k):
+        raise OSError("and the cleanup failed too")
+
+    monkeypatch.setattr("app.api.risk.store_plan", explode)
+    monkeypatch.setattr("app.api.risk.risk_checks.delete", explode_too)
+    with pytest.raises(RuntimeError, match="could not be saved"):
+        api.post("/api/risk/confirm", json=body(), headers=amir)
+
+
+def test_confirming_the_same_purchase_twice_in_a_row_does_not_create_a_second_plan(
+    api, amir, fake_db
+):
+    fill(fake_db, "amir")
+    first = api.post("/api/risk/confirm", json=body(), headers=amir)
+    second = api.post("/api/risk/confirm", json=body(), headers=amir)
+
+    assert first.status_code == 201
+    assert second.status_code == 409 and second.json()["detail"]["code"] == "duplicate_confirm"
+    assert len(plans_repo.list_with_instalments(fake_db, user_id(fake_db, "amir"))) == 1
+    assert len(fake_db.rows("risk_checks")) == 1
+
+
+def test_a_different_purchase_is_not_mistaken_for_a_duplicate(api, amir, fake_db):
+    fill(fake_db, "amir")
+    assert api.post("/api/risk/confirm", json=body(), headers=amir).status_code == 201
+    other = api.post("/api/risk/confirm", json=body(item_name="Phone case"), headers=amir)
+    assert other.status_code == 201
+
+
+@pytest.mark.parametrize("days", [-60, 400, 3000])
+def test_a_purchase_date_far_from_today_is_refused(api, amir, fake_db, days):
+    fill(fake_db, "amir")
+    far = (TODAY + timedelta(days=days)).isoformat()
+    res = api.post("/api/risk/check", json=body(purchase_date=far), headers=amir)
+
+    assert res.status_code == 422
+    assert res.json()["detail"]["code"] == "purchase_date_out_of_range"
+
+
+def test_dates_close_to_today_are_fine(api, amir, fake_db):
+    fill(fake_db, "amir")
+    for days in (-30, 0, 90):
+        day = (TODAY + timedelta(days=days)).isoformat()
+        assert (
+            api.post("/api/risk/check", json=body(purchase_date=day), headers=amir).status_code
+            == 200
+        )
+
+
+def test_the_confirm_response_and_the_saved_report_carry_the_same_rounded_numbers(
+    api, amir, fake_db
+):
+    fill(fake_db, "amir")
+    confirmed = api.post("/api/risk/confirm", json=body(), headers=amir).json()
+    saved = api.get(f"/api/risk/checks/{confirmed['check_id']}", headers=amir).json()
+
+    assert saved["probability"] == confirmed["check"]["probability"]
+    assert saved["simulated_probability"] == confirmed["check"]["simulated_probability"]
+
+
+def test_health_stays_up_while_the_risk_check_slots_are_taken(api):
+    import app.api.risk as risk_module
+
+    held = [
+        risk_module.ADMISSION.acquire(blocking=False) for _ in range(risk_module.MAX_CONCURRENT)
+    ]
+    try:
+        assert api.get("/api/health").status_code == 200
+    finally:
+        for _ in held:
+            risk_module.ADMISSION.release()
+
+
+def test_a_model_that_rounds_just_over_one_still_gives_a_valid_probability():
+    from app.engines.risk.artefact import clamp_probability
+
+    assert clamp_probability(1.0000001) == 1.0
+    assert clamp_probability(-1e-9) == 0.0
+    assert clamp_probability(0.37) == 0.37
