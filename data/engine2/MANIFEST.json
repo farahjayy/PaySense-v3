@@ -1,0 +1,61 @@
+{
+  "as_of_window": {
+    "days": 365,
+    "start": "2025-01-01"
+  },
+  "capped_profiles": 0,
+  "feature_names": [
+    "disc_weekly_p50",
+    "disc_weekly_p90",
+    "disc_volatility",
+    "margin_monthly_p50_without",
+    "margin_cum_p10_without",
+    "income_p10_monthly",
+    "instalment_amount",
+    "num_instalments",
+    "monthly_fee_rate",
+    "instalment_to_income",
+    "dsr_with_purchase",
+    "active_plans_with_purchase",
+    "bnpl_outstanding_to_income",
+    "upfront_to_income",
+    "limit_utilisation_with_purchase",
+    "limit_known"
+  ],
+  "feature_schema_hash": "2066b37e13182a5e",
+  "file": {
+    "name": "labels.jsonl",
+    "sha256": "7c8d408db49779b104287119f5a555794edf3c1b28f7351594a2a3a4b1ed321f"
+  },
+  "git_commit": "35987344212f7aa710fd7a510451a7adf88295dc",
+  "horizon_max_weeks": 180,
+  "label_quantiles": {
+    "25": 0.0,
+    "5": 0.0,
+    "50": 0.31,
+    "75": 0.956,
+    "95": 1.0
+  },
+  "label_version": "2",
+  "locked_profiles": 0,
+  "params_hash": "0a9eaed564687d77",
+  "paths": 1000,
+  "profiles": 10000,
+  "seed": 20251228,
+  "served_model": "lstm",
+  "served_model_files": {
+    "lstm_income.onnx": "87186798ef3821b42c21690df626a921707bf81291b26f14c71538222cedf36d",
+    "lstm_spend.onnx": "56b0e083483091d9c1e5d265e06ead1ab5393e118ef8c777d6d63c94f0acdb9a"
+  },
+  "versions": {
+    "lightgbm": "4.7.0",
+    "numpy": "2.5.3",
+    "onnxruntime": "1.30.0",
+    "optuna": "5.0.0",
+    "python": "3.12.15",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1",
+    "torch": "2.14.1+cpu",
+    "xgboost": "3.4.1"
+  }
+}
