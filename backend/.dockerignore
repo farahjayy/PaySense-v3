@@ -1,0 +1,13 @@
+.venv
+.env
+.env.*
+!.env.example
+.git
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.coverage
+tests
+ml
+scripts
+migrations

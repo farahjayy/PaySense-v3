@@ -22,6 +22,16 @@ Everything needed to run a short usability and decision study with a handful of 
 
 The report gives mean SUS with a 95% confidence interval, the mean of each clarity item, and a before/after table per scenario showing how many testers chose a safer, the same or a riskier option (against the ordering in `vignettes.yaml`). With five to seven testers these are descriptive only, and the report says so.
 
+## Persona dates
+
+The persona statements were written for a fixed period. Imported unchanged on a later date, a tester would see a ledger months out of date and a forecast flagged as stale. Before a session, move the persona forward so it ends just before that day:
+
+```
+cd backend && uv run python -m ml.uat.shift_persona --persona budget_conscious     --session <the session date, YYYY-MM-DD> --out ../uat/data/budget_conscious_shifted.csv
+```
+
+Every date moves by the same whole number of weeks, so weekday patterns and the gaps between payments survive. Give the tester that file (not the original) for the import task. Do this on the day: a file shifted for one day is stale a fortnight later.
+
 ## Dry run
 
 Run one full session with a friend before the real ones. Read the report it produces and check that every number matches what you recorded. Change `task-script.md` wherever the tester was confused by the script rather than by the app.

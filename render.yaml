@@ -1,0 +1,25 @@
+# Render blueprint for the API (backend/). Nothing here is deployed until the author applies it.
+# Secrets are never written here: `sync: false` makes Render ask for the value in its dashboard.
+# Walkthrough: refdocs/guides/deployment.md
+
+services:
+  - type: web
+    name: paysense-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: singapore # next to the Supabase project (Singapore)
+    plan: free # 512 MB; the served stack measured about 112 MB (see the guide)
+    healthCheckPath: /api/health
+    autoDeploy: false # deploys happen when the author chooses
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false # the Vercel URL, e.g. https://paysense.vercel.app, no trailing slash
+      - key: FORWARDED_ALLOW_IPS
+        sync: false # the platform's proxy range, never "*" (see the guide)
