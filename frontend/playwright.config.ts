@@ -31,7 +31,9 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: "npm run dev -- --port 3100",
+      // The production build, not `next dev`: the Content-Security-Policy (no eval, nonce-only
+      // scripts) must be exercised exactly as it will be served.
+      command: "npm run build && npm run start -- --port 3100",
       url: FRONTEND_URL,
       env: { NEXT_PUBLIC_API_BASE_URL: API_URL, NEXT_DIST_DIR: ".next-e2e" },
       reuseExistingServer: false,

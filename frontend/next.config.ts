@@ -1,18 +1,13 @@
 import type { NextConfig } from "next";
 
-// Headers that are safe for every route. A full script-src / connect-src Content-Security-Policy
-// needs per-request nonces for Next's inline hydration scripts; it is planned for P8 (deployment)
-// together with the real API origin. Until then this blocks framing, plugin content, base-tag
-// injection and MIME sniffing.
+// Headers that are safe for every route. The Content-Security-Policy is not here: it carries a
+// per-request script nonce, so `proxy.ts` sets it (policy text in `lib/csp.ts`).
 const SECURITY_HEADERS = [
-  {
-    key: "Content-Security-Policy",
-    value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
-  },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
 ];
 
 // cacheComponents / partialPrefetching are deliberately off: every screen is per-user data fetched

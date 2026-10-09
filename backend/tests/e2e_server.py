@@ -7,7 +7,9 @@ sessions with a random per-start key. Test tooling only — never deployed.
 """
 
 import secrets
+from datetime import date
 
+from app.api.deps import get_today
 from app.core.settings import Settings
 from app.main import create_app
 from app.seed import seed_user
@@ -16,6 +18,9 @@ from tests.fakes import FakeSupabase
 E2E_ORIGIN = "http://localhost:3100"
 E2E_USERNAME = "e2e"
 E2E_DISPLAY_NAME = "E2E Tester"
+# The persona CSVs end on 28 December 2025; the browser tests run "the next day" so the imported
+# ledger is fresh and the forecast is not flagged as out of date.
+E2E_TODAY = date(2025, 12, 29)
 
 
 def build_e2e_app():
@@ -27,8 +32,12 @@ def build_e2e_app():
         cors_origins=E2E_ORIGIN,
     )
     db = FakeSupabase()
-    seed_user(db, username=E2E_USERNAME, display_name=E2E_DISPLAY_NAME, persona="frequent_bnpl")
-    return create_app(settings, db=db)
+    # One tester per browser project, so parallel journeys never share a ledger.
+    for username in (E2E_USERNAME, f"{E2E_USERNAME}-desktop", f"{E2E_USERNAME}-phone"):
+        seed_user(db, username=username, display_name=E2E_DISPLAY_NAME, persona="frequent_bnpl")
+    app = create_app(settings, db=db)
+    app.dependency_overrides[get_today] = lambda: E2E_TODAY
+    return app
 
 
 app = build_e2e_app()

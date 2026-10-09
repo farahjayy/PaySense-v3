@@ -27,7 +27,9 @@ export function EmptyState({ title, children, action }: EmptyProps) {
   return (
     <div className="rounded-card border border-dashed border-line bg-surface-2 px-5 py-8 text-center">
       <p className="text-sm font-semibold text-ink">{title}</p>
-      {children && <p className="mx-auto mt-1 max-w-md text-[13px] text-ink-secondary">{children}</p>}
+      {children && (
+        <p className="mx-auto mt-1 max-w-md text-[13px] text-ink-secondary">{children}</p>
+      )}
       {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>
   );
@@ -61,17 +63,23 @@ type LockedProps = {
 export function LockedState({ reason, monthsOfHistory }: LockedProps) {
   const noUsable = reason === "no_usable_history";
   const shown = Math.min(monthsOfHistory, MONTHS_NEEDED);
+  // Four months are logged but the weekly pattern still has fewer than 17 complete weeks.
+  const needsWeeks = !noUsable && monthsOfHistory >= MONTHS_NEEDED;
   return (
     <div className="rounded-card border border-line bg-surface px-5 py-6 sm:px-7">
       <p className="text-sm font-semibold text-ink">
         {noUsable
           ? "There is nothing to forecast from yet"
-          : "Your forecast unlocks with four months of history"}
+          : needsWeeks
+            ? "Almost there: the forecast needs a few more complete weeks"
+            : "Your forecast unlocks with four months of history"}
       </p>
       <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-ink-secondary">
         {noUsable
           ? "What you have logged so far is savings, BNPL payments or items you have already marked as recurring. Add your everyday spending and income to build a forecast."
-          : "A forecast built on less than that would look precise and be wrong. Import a bank statement to start from the history you already have."}
+          : needsWeeks
+            ? "You have four months logged, but the forecast learns from at least 17 complete weeks (Monday to Sunday) of spending and income. Import or add a little more history, going further back if you can."
+            : "A forecast built on less than that would look precise and be wrong. Import a bank statement to start from the history you already have."}
       </p>
       {!noUsable && (
         <div className="mt-4 max-w-xs">

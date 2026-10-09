@@ -950,6 +950,7 @@ source = { editable = "." }
 default-groups = ["dev", "ml"]
 dependencies = [
     { name = "fastapi" },
+    { name = "numpy" },
     { name = "onnxruntime" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
@@ -990,6 +991,7 @@ ml = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.142" },
+    { name = "numpy", specifier = ">=2.5.3" },
     { name = "onnxruntime", specifier = ">=1.30.0" },
     { name = "pydantic-settings", specifier = ">=2.6" },
     { name = "pyjwt", specifier = ">=2.15" },

@@ -88,12 +88,18 @@ describe("states", () => {
 
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
     expect(screen.getByText("2 months of 4 logged")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Import a statement" })).toHaveAttribute("href", "/import");
+    expect(screen.getByRole("link", { name: "Import a statement" })).toHaveAttribute(
+      "href",
+      "/import",
+    );
   });
 
   it("caps the months shown at four and says something different when nothing is usable", () => {
     const { rerender } = render(<LockedState reason="needs_four_months" monthsOfHistory={9} />);
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "4");
+    // Enough months but not enough weeks is a different message, not "needs four months".
+    expect(screen.getByText(/needs a few more complete weeks/i)).toBeInTheDocument();
+    expect(screen.queryByText(/unlocks with four months/i)).not.toBeInTheDocument();
 
     rerender(<LockedState reason="no_usable_history" monthsOfHistory={5} />);
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
@@ -141,7 +147,9 @@ describe("MoneyInput", () => {
   });
 
   it("shows an error from the server beside the field", () => {
-    render(<MoneyInput label="Price" valueSen={100} onChange={() => undefined} error="Too large" />);
+    render(
+      <MoneyInput label="Price" valueSen={100} onChange={() => undefined} error="Too large" />,
+    );
 
     expect(screen.getByRole("alert")).toHaveTextContent("Too large");
   });
