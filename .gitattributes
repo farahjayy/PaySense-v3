@@ -3,3 +3,4 @@ data/synthetic/MANIFEST.json text eol=lf
 reports/datagen/** text eol=lf
 reports/engine1/** text eol=lf
 *.png binary
+*.onnx binary
