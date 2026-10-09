@@ -200,10 +200,12 @@ def test_features_are_computed_in_exactly_one_module():
     shared = {"num_instalments", "monthly_fee_rate", "instalment_amount", "limit_known"}
     derived = [name for name in FEATURE_NAMES if name not in shared]
     pattern = re.compile(r"\b(" + "|".join(derived) + r")\b")
+    # These only attach words to a feature by its name; they compute nothing (D-12).
+    wording_only = {root / "app" / "engines" / "risk" / "templates.py"}
     offenders = []
     for folder in ("app", "ml"):
         for path in (root / folder).rglob("*.py"):
-            if path == Path(features.__file__).resolve():
+            if path == Path(features.__file__).resolve() or path in wording_only:
                 continue
             if pattern.search(path.read_text(encoding="utf-8")):
                 offenders.append(str(path.relative_to(root)))
