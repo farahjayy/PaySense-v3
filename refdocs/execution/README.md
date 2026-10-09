@@ -28,6 +28,13 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 
 | File | Companion plan | Status |
 |---|---|---|
-| [2026-10-08-p0-foundation.md](2026-10-08-p0-foundation.md) | [../plans/2026-10-08-p0-foundation.md](../plans/2026-10-08-p0-foundation.md) | In progress — all but live-Supabase checks |
-| [2026-10-08-p1-ledger-bnpl.md](2026-10-08-p1-ledger-bnpl.md) | [../plans/2026-10-08-p1-ledger-bnpl.md](../plans/2026-10-08-p1-ledger-bnpl.md) | In progress |
-| [2026-10-08-p2-synthetic-population.md](2026-10-08-p2-synthetic-population.md) | [../plans/2026-10-08-p2-synthetic-population.md](../plans/2026-10-08-p2-synthetic-population.md) | Not started |
+| [2026-10-08-p0-foundation.md](2026-10-08-p0-foundation.md) | [../plans/2026-10-08-p0-foundation.md](../plans/2026-10-08-p0-foundation.md) | In progress, all but live-Supabase checks |
+| [2026-10-08-p1-ledger-bnpl.md](2026-10-08-p1-ledger-bnpl.md) | [../plans/2026-10-08-p1-ledger-bnpl.md](../plans/2026-10-08-p1-ledger-bnpl.md) | In progress, built and green on the in-memory database |
+| [2026-10-08-p2-synthetic-population.md](2026-10-08-p2-synthetic-population.md) | [../plans/2026-10-08-p2-synthetic-population.md](../plans/2026-10-08-p2-synthetic-population.md) | Done |
+| [2026-10-08-p3-engine1-evaluation.md](2026-10-08-p3-engine1-evaluation.md) | [../plans/2026-10-08-p3-engine1-evaluation.md](../plans/2026-10-08-p3-engine1-evaluation.md) | Done |
+| [2026-10-08-p4-engine1-serving.md](2026-10-08-p4-engine1-serving.md) | [../plans/2026-10-08-p4-engine1-serving.md](../plans/2026-10-08-p4-engine1-serving.md) | Almost done |
+| [2026-10-08-p5-engine2-training.md](2026-10-08-p5-engine2-training.md) | [../plans/2026-10-08-p5-engine2-training.md](../plans/2026-10-08-p5-engine2-training.md) | In progress |
+| [2026-10-09-p6-engine2-serving.md](2026-10-09-p6-engine2-serving.md) | [../plans/2026-10-09-p6-engine2-serving.md](../plans/2026-10-09-p6-engine2-serving.md) | In progress |
+| [2026-10-09-p7-frontend.md](2026-10-09-p7-frontend.md) | [../plans/2026-10-09-p7-frontend.md](../plans/2026-10-09-p7-frontend.md) | In progress |
+| [2026-10-09-p8-deployment-prep.md](2026-10-09-p8-deployment-prep.md) | [../plans/2026-10-09-p8-deployment-prep.md](../plans/2026-10-09-p8-deployment-prep.md) | Done (nothing deployed) |
+| [2026-10-09-p9-uat-kit.md](2026-10-09-p9-uat-kit.md) | [../plans/2026-10-09-p9-uat-kit.md](../plans/2026-10-09-p9-uat-kit.md) | In progress |

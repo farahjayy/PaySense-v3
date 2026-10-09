@@ -208,6 +208,22 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** With the 52-week cap, 3,834 of the first 10,000 labels were truncated (about 28% of a truncated plan's payable was never simulated), so the label understated the risk of long plans and the model could learn "more instalments is safer" from an artefact of the cap. Found by the ml-auditor before any full training run; the labels were regenerated (label version 2).
 **Trade-off.** Beyond 13 weeks the served LSTM continues recursively (D-34), and that extension was never evaluated; a 36-instalment label depends on about 150 weeks of it, with the error record resampled in 8-week paths and widened by the fixed 1.5 factor (D-35). The long-plan labels are therefore the least trustworthy ones, and the report says so. **Rejected:** keeping the cap and flagging long plans with a note (the original ASSUMED 2: the label itself was biased, a note does not repair it); refusing plans over 12 months (the app allows them).
 
+## D-38 — Content-Security-Policy with a per-request script nonce
+*2026-10-09 · Claude decision (deferred from the P1 reviews)*
+
+**Decision.** The frontend sends a Content-Security-Policy built per request in `frontend/proxy.ts` (text in `lib/csp.ts`): scripts only by a fresh nonce plus `'strict-dynamic'` (no `'unsafe-inline'`, no `'unsafe-eval'` in production), `connect-src` limited to this origin and the API origin from `NEXT_PUBLIC_API_BASE_URL` (the build fails closed without it), no framing, plugins or foreign form posts. Every page is rendered per request (`await connection()` in the root layout) because Next can only stamp a nonce on a page rendered after the request. `style-src` keeps `'unsafe-inline'`.
+**Why.** The bearer token lives in `sessionStorage` (D-03), so an injected script could read it; a script policy that blocks injected script and limits where a running script can send data closes the main route. Server-rendered `style=""` attributes (progress bars, sizing) cannot carry a nonce, and style injection is a far smaller risk, with images and fonts limited to this origin and `data:`/`blob:`.
+**Rejected.** `'unsafe-inline'` scripts (no protection); experimental SRI hashes (static pages, but experimental in Next 16); a nonce with nonce-only styles (breaks the inline style attributes).
+**Trade-off.** No static prerendering or CDN caching of pages: one server render per page view, acceptable for a per-user app of this size. Verified on the production build: header present, every script tag carries the request's nonce, 12 Playwright tests pass with no policy violations.
+
+## D-39 — Per-user limits and short sessions for the study deployment
+*2026-10-09 · Claude decision (security review); supplements D-03*
+
+**Decision.** `GET /api/forecast` (30 per minute per user), `POST /api/import/csv` (20) and `POST /api/import/confirm` (10) are limited by an in-memory sliding window keyed by user (refused requests are not recorded; 429 with `Retry-After`). The deployment blueprint sets `SESSION_TTL_HOURS` to 4. The roster tool rejects predictable tester usernames (`tester01`, `p01`), because login takes only a username.
+**Why.** One logged-in user looping on the forecast (a 1,000-path simulation per call) could starve every other tester on a single 512 MB worker; logout cannot revoke a stateless token, so its lifetime is the exposure; a guessable username on a public URL is a login.
+**Rejected.** Caching the forecast result (a correct cache key needs a ledger version the schema does not have); a token-version claim for revocation (migration and endpoint work for a closed study).
+**Trade-off.** The limiter is per process, so it assumes the single worker the deployment already requires.
+
 ## D-37 — Engine 2 evaluation protocol: a lockbox, nested ablation, a stored calibrator
 *2026-10-09 · Claude decision after the P5 ml-auditor's first pass (amends the protocol of D-10)*
 

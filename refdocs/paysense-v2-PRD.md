@@ -248,6 +248,8 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-35 | Forecast gate = 4 calendar months and 17 complete weeks; incomplete-month rules (no data / no income / low spend); actual before `forecast_from`, rules and model after; error paths with a 1.5x widening | Four calendar months can hold eight weeks of data; stale ledgers must not read as zero spending; short histories must widen the bands, not report false certainty |
 | D-36 | A risk check simulates to the last instalment of the plan (bounded at 180 weeks); the dashboard forecast keeps its own 52-week default | The 52-week cap truncated 3,834 of the first 10,000 labels and made long plans look safer; found by audit before any training |
 | D-37 | Engine 2 evaluation: a 10% lockbox scored once, both ablation arms tuned inside every fold, calibration fitted on single-repeat out-of-fold predictions and stored, subgroup results where the baseline is under 0.10, stress on the lockbox with an identity control | The first harness reported the winner on the folds that chose it and tuned the ablation on its own test folds |
+| D-38 | Content-Security-Policy with a per-request script nonce (proxy), every page rendered per request, connect-src limited to this origin and the API, styles keep unsafe-inline | The session token is readable by injected script; blocking injected script and limiting where a running one can send is the main control; inline style attributes cannot carry a nonce |
+| D-39 | Per-user limits on the forecast and import routes, 4-hour sessions in the blueprint, unguessable tester usernames enforced by the roster | One user must not starve the single worker; a stateless token cannot be revoked on logout; login takes only a username |
 
 ---
 

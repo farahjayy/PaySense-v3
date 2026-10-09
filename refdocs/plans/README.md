@@ -27,6 +27,13 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 
 | File | Description | Status |
 |---|---|---|
-| [2026-10-08-p0-foundation.md](2026-10-08-p0-foundation.md) | P0 Foundation — toolchain spike, backend/frontend skeletons, username login + user scoping, generated API client, test tooling | In progress — all but live-Supabase checks |
-| [2026-10-08-p1-ledger-bnpl.md](2026-10-08-p1-ledger-bnpl.md) | P1 Ledger & BNPL domain — pure-domain ports (schedule, limit split, flows, CSV), repositories, API; no balance (D-27) | In progress |
-| [2026-10-08-p2-synthetic-population.md](2026-10-08-p2-synthetic-population.md) | P2 Synthetic population — cited parameter file, deterministic generator, persona CSVs, Engine 2 profiles, Engine 1 cohort, distribution report | Draft |
+| [2026-10-08-p0-foundation.md](2026-10-08-p0-foundation.md) | P0 Foundation — toolchain spike, backend/frontend skeletons, username login + user scoping, generated API client, test tooling | In progress, all but live-Supabase checks |
+| [2026-10-08-p1-ledger-bnpl.md](2026-10-08-p1-ledger-bnpl.md) | P1 Ledger & BNPL domain — pure-domain ports (schedule, limit split, flows, CSV), repositories, API; no balance (D-27) | In progress, built and green on the in-memory database |
+| [2026-10-08-p2-synthetic-population.md](2026-10-08-p2-synthetic-population.md) | P2 Synthetic population: cited parameter file, deterministic generator, persona CSVs, Engine 2 profiles, Engine 1 cohort, distribution report | Done |
+| [2026-10-08-p3-engine1-evaluation.md](2026-10-08-p3-engine1-evaluation.md) | P3 Engine 1 evaluation: five forecasters, rolling origin, MASE and significance; the global LSTM wins (D-34) | Done |
+| [2026-10-08-p4-engine1-serving.md](2026-10-08-p4-engine1-serving.md) | P4 Engine 1 serving: recurring detection, Monte Carlo, /api/forecast, the LSTM through ONNX | Almost done |
+| [2026-10-08-p5-engine2-training.md](2026-10-08-p5-engine2-training.md) | P5 Engine 2 training: simulation labels, shared features, four classifiers, lockbox, calibration, ablation, stress | In progress |
+| [2026-10-09-p6-engine2-serving.md](2026-10-09-p6-engine2-serving.md) | P6 Engine 2 serving: risk check, SHAP factors, counterfactual search, repayment flag, frozen report | In progress |
+| [2026-10-09-p7-frontend.md](2026-10-09-p7-frontend.md) | P7 Frontend: all screens, states, accessibility, browser journeys | In progress |
+| [2026-10-09-p8-deployment-prep.md](2026-10-09-p8-deployment-prep.md) | P8 Deployment preparation: container, blueprint, nonce CSP, runbook, smoke script | Done (nothing deployed) |
+| [2026-10-09-p9-uat-kit.md](2026-10-09-p9-uat-kit.md) | P9 UAT kit: instruments, roster seeding, persona dates, analysis script | In progress |
