@@ -1,18 +1,21 @@
+import hashlib
 import json
 from dataclasses import fields
 from datetime import timedelta
 
 import numpy as np
+import pytest
 
 from app.engines.forecasting.models import MovingAverage
 from app.engines.forecasting.recurring import detect
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from ml.datagen.params import load_params
-from ml.datagen.profile import generate_profile
+from ml.datagen.profile import draw_as_of, generate_profile
 from ml.engine2_train.labels import (
     LABELS_FILE,
     MANIFEST_FILE,
     generate_labels,
+    iter_labels,
     label_profile,
     prepare,
     profile_seed,
@@ -149,3 +152,49 @@ def test_no_field_of_the_profile_used_for_features_is_an_answer_key():
 def test_a_label_run_does_not_need_the_clock(tmp_path):
     p = profile(6)
     assert p.as_of - timedelta(days=1) < p.as_of  # fixed reference day, no wall-clock dependence
+
+
+def test_each_label_is_made_on_its_own_as_of_day_drawn_from_the_seed_and_the_index():
+    records = list(iter_labels(PARAMS, SEED, 6, MODEL, paths=100))
+
+    days = [r["as_of"] for r in records]
+    assert days == [draw_as_of(PARAMS, SEED, r["index"]).isoformat() for r in records]
+    assert len(set(days)) > 3  # not one shared calendar position (audit finding M1)
+
+
+def test_a_label_records_the_per_month_definition_beside_the_cumulative_one():
+    record = label_profile(profile(0), MODEL, SEED, paths=100)
+
+    assert 0 <= record["label_monthly"] <= 1 and 0 <= record["p_without_monthly"] <= 1
+
+
+def test_the_manifest_records_the_provenance_of_the_run(tmp_path):
+    manifest = generate_labels(PARAMS, SEED, 3, tmp_path, paths=100, forecaster=MODEL)
+
+    assert manifest["label_version"] == "2"
+    assert {"python", "numpy", "onnxruntime", "scipy"} <= set(manifest["versions"])
+    assert "git_commit" in manifest and manifest["capped_profiles"] == 0
+    assert manifest["horizon_max_weeks"] >= 160
+    assert manifest["as_of_window"]["days"] == PARAMS["calendar.as_of_window_days"]
+
+
+def test_an_interrupted_run_resumes_to_exactly_the_file_of_an_uninterrupted_one(tmp_path):
+    generate_labels(PARAMS, SEED, 5, tmp_path / "whole", paths=100, forecaster=MODEL)
+    whole = (tmp_path / "whole" / LABELS_FILE).read_bytes()
+    generate_labels(PARAMS, SEED, 3, tmp_path / "cut", paths=100, forecaster=MODEL)
+    cut = tmp_path / "cut" / LABELS_FILE
+    cut.write_bytes(cut.read_bytes() + b'{"index":3,"lab')  # a crash in the middle of a line
+
+    resumed = generate_labels(
+        PARAMS, SEED, 5, tmp_path / "cut", paths=100, forecaster=MODEL, resume=True
+    )
+
+    assert cut.read_bytes() == whole
+    assert resumed["file"]["sha256"] == hashlib.sha256(whole).hexdigest()
+
+
+def test_a_run_refuses_to_resume_under_different_settings(tmp_path):
+    generate_labels(PARAMS, SEED, 2, tmp_path, paths=100, forecaster=MODEL)
+
+    with pytest.raises(ValueError, match="different"):
+        generate_labels(PARAMS, SEED, 4, tmp_path, paths=200, forecaster=MODEL, resume=True)

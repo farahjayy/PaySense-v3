@@ -49,12 +49,18 @@ def _constraints(features: tuple[str, ...]) -> list[int]:
     return [MONOTONE_DIRECTIONS[name] for name in features]
 
 
-def build(name: str, params: dict[str, Any], features: tuple[str, ...], seed: int = SEED) -> Any:
+def build(
+    name: str,
+    params: dict[str, Any],
+    features: tuple[str, ...],
+    seed: int = SEED,
+    constrained: bool = True,
+) -> Any:
     if name == "logistic":
         return make_pipeline(
             StandardScaler(), LogisticRegression(C=params.get("C", 1.0), max_iter=2000)
         )
-    constraints = _constraints(features)
+    constraints = _constraints(features) if constrained else None
     if name == "random_forest":
         return RandomForestClassifier(
             n_estimators=params.get("n_estimators", 200),
@@ -73,7 +79,7 @@ def build(name: str, params: dict[str, Any], features: tuple[str, ...], seed: in
             colsample_bytree=params.get("colsample_bytree", 0.9),
             min_child_weight=params.get("min_child_weight", 5),
             reg_lambda=params.get("reg_lambda", 1.0),
-            monotone_constraints=tuple(constraints),
+            monotone_constraints=tuple(constraints) if constraints else None,
             n_jobs=1,
             random_state=seed,
             verbosity=0,
@@ -102,9 +108,10 @@ def fit_soft(
     y: np.ndarray,
     features: tuple[str, ...],
     seed: int = SEED,
+    constrained: bool = True,
 ) -> Fitted:
     x2, y2, w2 = expand_soft(x, y)
-    model = build(name, params, features, seed)
+    model = build(name, params, features, seed, constrained)
     if name == "logistic":
         model.fit(x2, y2, logisticregression__sample_weight=w2)
     else:
@@ -150,6 +157,7 @@ def tune(
     trials: int,
     seed: int,
     scorer: Callable[[np.ndarray, np.ndarray], float],
+    constrained: bool = True,
 ) -> dict[str, Any]:
     """Pick hyperparameters on an inner 80/20 split of the TRAINING data only (Optuna, seeded)."""
     rng = np.random.default_rng(seed)
@@ -159,7 +167,9 @@ def tune(
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     def objective(trial: optuna.Trial) -> float:
-        fitted = fit_soft(name, suggest(name, trial), x[fit_idx], y[fit_idx], features, seed)
+        fitted = fit_soft(
+            name, suggest(name, trial), x[fit_idx], y[fit_idx], features, seed, constrained
+        )
         return scorer(fitted.predict(x[valid_idx]), y[valid_idx])
 
     study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(seed=seed))

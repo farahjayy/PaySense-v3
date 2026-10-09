@@ -10,6 +10,8 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 
+from app.engines.forecasting.simulate import CAUTION_BELOW, SAFE_BELOW
+
 CAUTION_THRESHOLD = 0.30  # the pre-registered At Risk boundary, used for the hard-label AUC
 EPS = 1e-6
 ECE_BINS = 10
@@ -54,6 +56,20 @@ def expected_calibration_error(pred: np.ndarray, target: np.ndarray) -> float:
         if mask.any():
             total += mask.mean() * abs(float(target[mask].mean()) - float(pred[mask].mean()))
     return float(total)
+
+
+def band_index(p: np.ndarray) -> np.ndarray:
+    """0 Safe, 1 Caution, 2 At Risk, by the pre-registered edges."""
+    return np.digitize(p, [SAFE_BELOW, CAUTION_BELOW])
+
+
+def band_agreement(pred: np.ndarray, target: np.ndarray) -> tuple[float, np.ndarray]:
+    """Share of profiles whose predicted band equals the label's, and the 3x3 count matrix
+    (rows: the label's band, columns: the model's)."""
+    labelled, predicted = band_index(target), band_index(pred)
+    confusion = np.zeros((3, 3), dtype=int)
+    np.add.at(confusion, (labelled, predicted), 1)
+    return float((labelled == predicted).mean()), confusion
 
 
 def all_metrics(pred: np.ndarray, target: np.ndarray) -> dict[str, float]:

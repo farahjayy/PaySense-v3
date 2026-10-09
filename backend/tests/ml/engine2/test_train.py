@@ -5,12 +5,19 @@ import numpy as np
 import pytest
 
 from app.engines.risk.features import FEATURE_NAMES, MONOTONE_DIRECTIONS
-from ml.engine2_train.calibrate import choose_calibration, fit_calibrator
+from ml.engine2_train.calibrate import Calibrator, choose_calibration, fit_calibrator
 from ml.engine2_train.cv import CvResult, cross_validate, folds, nadeau_bengio
-from ml.engine2_train.data import Dataset, load_labels
+from ml.engine2_train.data import (
+    LOCKBOX_EVERY,
+    LOW_BASELINE,
+    Dataset,
+    load_labels,
+    split_lockbox,
+)
 from ml.engine2_train.metrics import (
     all_metrics,
     auc_at_threshold,
+    band_agreement,
     brier,
     calibration_slope,
     expected_calibration_error,
@@ -293,3 +300,122 @@ def test_a_dataset_subset_keeps_labels_and_the_chosen_columns_in_order():
     assert subset.names == ("limit_known", "num_instalments")
     assert np.array_equal(subset.x[:, 1], data.x[:, FEATURE_NAMES.index("num_instalments")])
     assert np.array_equal(subset.y, data.y)
+
+
+# ---------------------------------------------------------------- the lockbox (audit H5/H6)
+def test_the_lockbox_is_every_tenth_profile_and_the_development_set_is_the_rest():
+    data = synthetic(200)
+
+    development, lockbox = split_lockbox(data)
+
+    assert set(lockbox.index) == {i for i in range(200) if i % LOCKBOX_EVERY == 0}
+    assert set(development.index).isdisjoint(lockbox.index)
+    assert len(development) + len(lockbox) == 200
+    assert development.x.shape[1] == 16 and len(lockbox.y) == len(lockbox.x)
+
+
+def test_taking_a_subset_of_rows_keeps_every_array_aligned():
+    data = synthetic(40)
+    data = Dataset(data.x, data.y, data.index, data.names, p_without=data.y / 2,
+                   capped=np.zeros(40, dtype=bool))  # fmt: skip
+
+    part = data.take(data.index % 4 == 0)
+
+    assert len(part) == 10 and np.array_equal(part.p_without, part.y / 2)
+    assert part.capped.shape == (10,)
+    assert data.subset(("limit_known",)).p_without is data.p_without  # extras survive a subset
+
+
+def test_strata_are_quantile_bins_and_their_number_is_stated_not_assumed():
+    rng = np.random.default_rng(0)
+    y = np.concatenate([np.zeros(500), np.ones(300), rng.uniform(0, 1, 200)])
+    data = Dataset(np.zeros((1000, 16)), y, np.arange(1000), FEATURE_NAMES)
+
+    assert 1 < data.n_strata <= 10  # ties at exactly 0 and 1 collapse some of the ten bins
+    assert data.n_strata == len(np.unique(data.strata()))
+
+
+def test_the_low_baseline_subgroup_is_where_the_plan_decides_the_band():
+    base = synthetic(100)
+    data = Dataset(base.x, base.y, base.index, base.names, p_without=np.linspace(0, 1, 100))
+
+    mask = data.subgroups()[LOW_BASELINE]
+
+    assert mask.sum() == int((data.p_without < 0.10).sum())
+    assert synthetic(10).subgroups() == {}  # no baseline recorded, no subgroup
+
+
+def test_cross_validation_scores_the_subgroup_in_every_fold():
+    base = synthetic(300)
+    data = Dataset(base.x, base.y, base.index, base.names, p_without=np.linspace(0, 1, 300))
+
+    result = cross_validate("logistic", data, repeats=1, k=3, trials=0)
+
+    assert f"brier@{LOW_BASELINE}" in result.fold_metrics[0]
+    assert result.mean(f"brier@{LOW_BASELINE}") >= 0
+
+
+def test_band_agreement_counts_the_share_in_the_same_pre_registered_band():
+    pred = np.array([0.05, 0.2, 0.5, 0.5])
+    target = np.array([0.08, 0.35, 0.6, 0.1])
+
+    agreement, confusion = band_agreement(pred, target)
+
+    assert agreement == pytest.approx(0.5)
+    assert confusion.tolist() == [[1, 0, 0], [0, 0, 1], [0, 1, 1]]  # rows: label, columns: model
+
+
+def test_unconstrained_models_are_free_to_break_monotonicity():
+    rng = np.random.default_rng(4)
+    n = 800
+    x = rng.normal(size=(n, len(FEATURE_NAMES)))
+    up = FEATURE_NAMES.index("instalment_to_income")
+    y = np.clip(0.5 + 0.4 * np.sin(2.5 * x[:, up]), 0, 1)
+    probe = np.zeros((60, len(FEATURE_NAMES)))
+    probe[:, up] = np.linspace(-3, 3, 60)
+
+    free = fit_soft("xgboost", {"n_estimators": 100}, x, y, FEATURE_NAMES, constrained=False)
+    held = fit_soft("xgboost", {"n_estimators": 100}, x, y, FEATURE_NAMES)
+
+    assert np.any(np.diff(free.predict(probe)) < -1e-3)
+    assert np.all(np.diff(held.predict(probe)) >= -1e-9)
+
+
+# ---------------------------------------------------------------- the stored calibrator
+@pytest.mark.parametrize("kind", ["none", "platt", "isotonic"])
+def test_a_fitted_calibrator_survives_a_round_trip_through_json(kind):
+    rng = np.random.default_rng(7)
+    target = rng.uniform(0.02, 0.98, 800)
+    pred = np.clip(target**2 + rng.normal(0, 0.03, 800), 0.01, 0.99)
+    fitted = fit_calibrator(kind, pred, target)
+
+    restored = Calibrator.from_dict(json.loads(json.dumps(fitted.to_dict())))
+
+    probe = np.linspace(0, 1, 101)
+    assert np.allclose(restored.apply(probe), fitted.apply(probe), atol=1e-9)
+
+
+# ---------------------------------------------------------------- the label baseline
+def test_label_facts_separate_the_baseline_from_the_purchase():
+    from ml.engine2_train.labelstats import baseline_facts
+
+    y = np.array([0.0, 0.05, 0.5, 1.0])
+    base = np.array([0.0, 0.0, 0.5, 1.0])
+    data = Dataset(np.zeros((4, 16)), y, np.arange(4), FEATURE_NAMES, p_without=base)
+
+    facts = baseline_facts(data, paths=1000)
+
+    assert facts["share_label_exactly_0"] == 0.25 and facts["share_label_exactly_1"] == 0.25
+    assert facts["share_p_without_exactly_1"] == 0.25
+    assert facts["share_p_without_at_or_above_safe_edge"] == 0.5
+    assert facts["share_purchase_moves_the_band"] == 0.0  # 0 -> 0.05 stays Safe
+    assert facts["share_purchase_changes_label_by_under_001"] == 0.75
+    assert facts["monte_carlo_noise_floor_brier"] == pytest.approx(
+        0.05 * 0.95 / 4 / 1000 + 0.25 / 4 / 1000
+    )
+    assert (
+        baseline_facts(Dataset(data.x, y, data.index, data.names), None)[
+            "monte_carlo_noise_floor_brier"
+        ]
+        is None
+    )

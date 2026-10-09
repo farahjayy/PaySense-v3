@@ -1,9 +1,10 @@
 """Repeated, stratified, profile-grouped cross-validation with nested tuning (plan P5, D6).
 
 Each profile is one row of the label file and appears twice only inside a training set
-(duplicate-and-weight), so a profile can never sit on both sides of a split. Strata are deciles of
-the soft label, so every fold sees the whole range of risk. Tuning happens inside each training
-fold, never on the fold it is scored on. Scoring is the Brier score against the soft label.
+(duplicate-and-weight), so a profile can never sit on both sides of a split. Strata are quantile
+bins of the soft label (at most ten; ties at exactly 0 or 1 merge some), so every fold sees the
+whole range of risk. Tuning happens inside each training fold, never on the fold it is scored on.
+Scoring is the Brier score against the soft label, overall and for each subgroup of `Dataset`.
 """
 
 import math
@@ -43,7 +44,7 @@ class CvResult:
 
 
 def folds(data: Dataset, repeats: int, k: int, seed: int):
-    """Yield (repeat, fold, train_idx, test_idx), stratified on the soft label's deciles."""
+    """Yield (repeat, fold, train_idx, test_idx), stratified on the soft label's quantile bins."""
     strata = data.strata()
     for repeat in range(repeats):
         splitter = StratifiedKFold(n_splits=k, shuffle=True, random_state=seed + repeat)
@@ -59,23 +60,33 @@ def cross_validate(
     trials: int = 12,
     seed: int = 0,
     fixed_params: dict[str, Any] | None = None,
+    constrained: bool = True,
 ) -> CvResult:
-    """Nested CV for one candidate. `fixed_params` skips tuning (used by the ablation)."""
+    """Nested CV for one candidate. `fixed_params` skips tuning (tests and learning curves only:
+    a fixed setting tuned on the same data would leak into the score)."""
     result = CvResult(name, data.names)
     result.oof = np.full((repeats, len(data)), np.nan)
+    groups = data.subgroups()
     for repeat, fold, train, test in folds(data, repeats, k, seed):
         if fixed_params is not None:
             params = fixed_params
         elif trials > 0:
             params = tune(
-                name, data.x[train], data.y[train], data.names, trials, seed + fold, brier
-            )
+                name, data.x[train], data.y[train], data.names, trials, seed + fold, brier,
+                constrained,
+            )  # fmt: skip
         else:
             params = {}
-        fitted = fit_soft(name, params, data.x[train], data.y[train], data.names, seed)
+        fitted = fit_soft(name, params, data.x[train], data.y[train], data.names, seed, constrained)
         pred = fitted.predict(data.x[test])
         result.oof[repeat, test] = pred
-        result.fold_metrics.append(all_metrics(pred, data.y[test]))
+        metrics = all_metrics(pred, data.y[test])
+        for group, mask in groups.items():
+            inside = mask[test]
+            metrics[f"brier@{group}"] = (
+                brier(pred[inside], data.y[test][inside]) if inside.any() else math.nan
+            )
+        result.fold_metrics.append(metrics)
         result.fold_sizes.append((len(train), len(test)))
         result.chosen_params.append(params)
     return result
@@ -96,3 +107,17 @@ def nadeau_bengio(a: CvResult, b: CvResult, key: str = "brier") -> tuple[float, 
         return float(d.mean()), 0.0 if d.mean() == 0 else math.inf, 1.0 if d.mean() == 0 else 0.0
     t = float(d.mean() / math.sqrt((1 / j + test / train) * variance))
     return float(d.mean()), t, float(2 * stats.t.sf(abs(t), df=j - 1))
+
+
+def nadeau_bengio_interval(
+    a: CvResult, b: CvResult, key: str = "brier", level: float = 0.95
+) -> tuple[float, float, float]:
+    """(mean difference A - B, low, high): the corrected interval, using the t critical value for
+    J - 1 degrees of freedom (2.06 for 5x5 folds), not the normal 1.96."""
+    d = a.metric(key) - b.metric(key)
+    train, test = a.fold_sizes[0]
+    half = float(
+        stats.t.ppf(0.5 + level / 2, df=len(d) - 1)
+        * np.sqrt((1 / len(d) + test / train) * np.var(d, ddof=1))
+    )
+    return float(d.mean()), float(d.mean() - half), float(d.mean() + half)

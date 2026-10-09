@@ -29,6 +29,40 @@ class Calibrator:
             return self.model.predict_proba(_logit(pred).reshape(-1, 1))[:, 1]
         return self.model.predict(pred)
 
+    def to_dict(self) -> dict:
+        """A plain-JSON form, so the served calibrator can be stored without pickling."""
+        if self.kind == "none":
+            return {"kind": "none"}
+        if self.kind == "platt":
+            return {
+                "kind": "platt",
+                "coef": float(self.model.coef_[0][0]),
+                "intercept": float(self.model.intercept_[0]),
+            }
+        return {
+            "kind": "isotonic",
+            "x": [float(v) for v in self.model.X_thresholds_],
+            "y": [float(v) for v in self.model.y_thresholds_],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Calibrator":
+        return cls(data["kind"], None if data["kind"] == "none" else _Stored(data))
+
+
+class _Stored:
+    """A fitted calibration curve rebuilt from `Calibrator.to_dict`."""
+
+    def __init__(self, data: dict) -> None:
+        self._data = data
+
+    def predict_proba(self, logit: np.ndarray) -> np.ndarray:
+        p = 1 / (1 + np.exp(-(self._data["coef"] * logit[:, 0] + self._data["intercept"])))
+        return np.column_stack([1 - p, p])
+
+    def predict(self, pred: np.ndarray) -> np.ndarray:
+        return np.interp(pred, self._data["x"], self._data["y"])
+
 
 def _logit(p: np.ndarray) -> np.ndarray:
     clipped = np.clip(p, EPS, 1 - EPS)

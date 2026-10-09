@@ -1,0 +1,5 @@
+# Generated outputs (labels, run results, models in training) are not committed; only the label
+# manifest is, so a run can be checked against the file it names.
+*
+!.gitignore
+!MANIFEST.json
