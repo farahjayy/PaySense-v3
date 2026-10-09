@@ -100,7 +100,12 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
       </figcaption>
       <details className="mt-3 rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-[13px]">
         <summary className="cursor-pointer font-medium text-ink">Show the numbers</summary>
-        <div className="mt-3 overflow-x-auto">
+        <div
+          className="mt-3 overflow-x-auto"
+          role="region"
+          aria-label="Forecast numbers, scrollable"
+          tabIndex={0}
+        >
           <table className="w-full min-w-[34rem] text-left tabular-nums">
             <caption className="sr-only">Forecast running margin by month</caption>
             <thead className="text-[11px] uppercase tracking-wide text-ink-muted">

@@ -9,7 +9,12 @@ export function RecentMonths({ summary }: { summary: MonthSummary }) {
   const months = [...summary.months].sort((a, b) => b.month.localeCompare(a.month)).slice(0, SHOWN);
   if (months.length === 0) return null;
   return (
-    <div className="overflow-x-auto">
+    <div
+      className="overflow-x-auto"
+      role="region"
+      aria-label="Recent months, scrollable"
+      tabIndex={0}
+    >
       <table className="w-full min-w-[26rem] text-left text-[13px] tabular-nums">
         <caption className="sr-only">Income, spending and net by month</caption>
         <thead className="text-[11px] uppercase tracking-wide text-ink-muted">
