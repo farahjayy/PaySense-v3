@@ -3,16 +3,25 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { isActive } from "@/lib/nav";
 import { clearSession, type Session } from "@/lib/session";
 
-type NavItem = { href: string; label: string; icon: string };
+type NavItem = { href: string; label: string; icon: string; mobile: boolean };
 
-// Grows with each phase: screens are added here as their backend lands.
-const NAV_ITEMS: readonly NavItem[] = [{ href: "/", label: "Dashboard", icon: "◫" }];
+// `mobile` marks the five items that fit a phone's bottom bar; the rest stay in the sidebar and
+// are linked from the screens that lead to them.
+const NAV_ITEMS: readonly NavItem[] = [
+  { href: "/", label: "Dashboard", icon: "◫", mobile: true },
+  { href: "/transactions", label: "Transactions", icon: "≡", mobile: true },
+  { href: "/recurring", label: "Recurring", icon: "↻", mobile: false },
+  { href: "/plans", label: "Plans", icon: "▤", mobile: true },
+  { href: "/risk", label: "Risk check", icon: "◔", mobile: true },
+  { href: "/import", label: "Import", icon: "⇪", mobile: true },
+  { href: "/model", label: "About the model", icon: "ⓘ", mobile: false },
+];
 
 function navLinkClass(active: boolean): string {
   return active
@@ -57,7 +66,7 @@ function MobileNav({ pathname }: { pathname: string }) {
       aria-label="Main navigation"
       className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface md:hidden"
     >
-      {NAV_ITEMS.map((item) => {
+      {NAV_ITEMS.filter((item) => item.mobile).map((item) => {
         const active = isActive(pathname, item.href);
         return (
           <Link
@@ -85,6 +94,18 @@ export function AppShell({ user, children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const main = useRef<HTMLElement>(null);
+  const firstRender = useRef(true);
+
+  // After navigating, move focus to the new page so keyboard and screen-reader users start at its
+  // top instead of wherever the old page left them. Not on the first load.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    main.current?.focus();
+  }, [pathname]);
 
   function handleLogout() {
     clearSession();
@@ -94,6 +115,12 @@ export function AppShell({ user, children }: Props) {
 
   return (
     <div className="flex min-h-screen">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to content
+      </a>
       <Sidebar pathname={pathname} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4 sm:px-6">
@@ -109,7 +136,14 @@ export function AppShell({ user, children }: Props) {
             </Button>
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-8">{children}</main>
+        <main
+          id="main"
+          ref={main}
+          tabIndex={-1}
+          className="flex-1 px-4 py-6 pb-24 outline-none sm:px-6 md:pb-8"
+        >
+          {children}
+        </main>
       </div>
       <MobileNav pathname={pathname} />
     </div>

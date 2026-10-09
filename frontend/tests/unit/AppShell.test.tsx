@@ -83,6 +83,44 @@ describe("AppShell", () => {
     expect(dashboardLinks.some((l) => l.getAttribute("aria-current") === "page")).toBe(true);
   });
 
+  it("links every screen from the sidebar and keeps five on the phone bar", () => {
+    render(
+      <AppShell user={USER}>
+        <p>page body</p>
+      </AppShell>,
+      { wrapper },
+    );
+
+    for (const name of [
+      "Dashboard",
+      "Transactions",
+      "Recurring",
+      "Plans",
+      "Risk check",
+      "Import",
+      "About the model",
+    ]) {
+      expect(screen.getAllByRole("link", { name: new RegExp(name, "i") }).length).toBeGreaterThan(0);
+    }
+    const phoneBar = screen.getAllByRole("navigation").find((n) => n.className.includes("fixed"));
+    expect(phoneBar && phoneBar.querySelectorAll("a").length).toBe(5);
+  });
+
+  it("offers a skip link that targets the focusable main region", () => {
+    render(
+      <AppShell user={USER}>
+        <p>page body</p>
+      </AppShell>,
+      { wrapper },
+    );
+
+    const skip = screen.getByRole("link", { name: /skip to content/i });
+    expect(skip).toHaveAttribute("href", "#main");
+    const main = screen.getByRole("main");
+    expect(main).toHaveAttribute("id", "main");
+    expect(main).toHaveAttribute("tabindex", "-1");
+  });
+
   it("logs out: forgets the session and returns to the login page", async () => {
     render(
       <AppShell user={USER}>
