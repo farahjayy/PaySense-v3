@@ -1,16 +1,30 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
-type Props = { open: boolean; title: string; onClose: () => void; children: ReactNode };
+type Props = {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  /** False while a save is in flight: Escape, the backdrop and the close button then do nothing. */
+  dismissible?: boolean;
+  children: ReactNode;
+};
 
 /**
  * A modal on the native <dialog>: focus moves in, Escape and the backdrop close it, focus returns
  * to what opened it, and the page behind is inert. Falls back to a plain open attribute where the
  * element's methods are missing (test environments).
  */
-export function Dialog({ open, title, onClose, children }: Props) {
+export function Dialog({ open, title, onClose, dismissible = true, children }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  // A drag that starts inside the dialog (selecting text) and ends on the backdrop is not a click on
+  // the backdrop, so it must not discard what was typed.
+  const pressedBackdrop = useRef(false);
+  const dismiss = () => {
+    if (dismissible) onClose();
+  };
 
   useEffect(() => {
     const dialog = ref.current;
@@ -28,27 +42,31 @@ export function Dialog({ open, title, onClose, children }: Props) {
   return (
     <dialog
       ref={ref}
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        dismiss();
+      }}
+      onMouseDown={(event) => {
+        pressedBackdrop.current = event.target === ref.current;
       }}
       onClick={(event) => {
-        if (event.target === ref.current) onClose();
+        if (event.target === ref.current && pressedBackdrop.current) dismiss();
       }}
       className="m-auto w-[min(32rem,calc(100%-2rem))] rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/40"
     >
       {open && (
         <div className="p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
-            <h2 id="dialog-title" className="font-serif text-lg font-semibold">
+            <h2 id={titleId} className="font-serif text-lg font-semibold">
               {title}
             </h2>
             <button
               type="button"
-              onClick={onClose}
+              onClick={dismiss}
+              disabled={!dismissible}
               aria-label="Close"
-              className="-mr-1 -mt-1 rounded p-1 text-ink-secondary hover:bg-surface-2 hover:text-ink"
+              className="-mr-1.5 -mt-1.5 flex h-9 w-9 items-center justify-center rounded text-ink-secondary hover:bg-surface-2 hover:text-ink disabled:opacity-40"
             >
               ✕
             </button>

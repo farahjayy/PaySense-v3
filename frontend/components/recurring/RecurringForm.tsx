@@ -25,7 +25,7 @@ type Props = {
   onCancel: () => void;
 };
 
-const SELECT = "h-10 rounded-lg border border-line bg-surface px-3 text-[14px] text-ink";
+const SELECT = "h-10 rounded-lg border border-field bg-surface px-3 text-[14px] text-ink";
 
 /** A bill or income that repeats. The first date is when it last (or next) lands. */
 export function RecurringForm({ initial, saving, error, onSubmit, onCancel }: Props) {
@@ -33,10 +33,10 @@ export function RecurringForm({ initial, saving, error, onSubmit, onCancel }: Pr
   const [name, setName] = useState(initial?.name ?? "");
   const [amountSen, setAmountSen] = useState<number | null>(initial?.amount_sen ?? null);
   const [cadence, setCadence] = useState<RecurringInput["cadence"]>(initial?.cadence ?? "monthly");
-  const [interval, setInterval] = useState(String(initial?.custom_interval_days ?? ""));
+  const [intervalText, setIntervalText] = useState(String(initial?.custom_interval_days ?? ""));
   const [anchor, setAnchor] = useState(initial?.anchor_date ?? todayIso());
 
-  const days = Number(interval);
+  const days = Number(intervalText);
   const customOk = cadence !== "custom" || (Number.isInteger(days) && days >= 1 && days <= 366);
   const valid =
     /\p{L}/u.test(name) && amountSen !== null && amountSen > 0 && anchor !== "" && customOk;
@@ -105,9 +105,9 @@ export function RecurringForm({ initial, saving, error, onSubmit, onCancel }: Pr
           <TextField
             label="Number of days between"
             inputMode="numeric"
-            value={interval}
-            error={interval !== "" && !customOk ? "Enter a whole number from 1 to 366." : null}
-            onChange={(event) => setInterval(event.target.value)}
+            value={intervalText}
+            error={intervalText !== "" && !customOk ? "Enter a whole number from 1 to 366." : null}
+            onChange={(event) => setIntervalText(event.target.value)}
           />
         )}
         <TextField

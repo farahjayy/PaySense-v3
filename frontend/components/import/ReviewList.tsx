@@ -17,7 +17,7 @@ const TYPES: readonly { value: RowType; label: string }[] = [
 ];
 
 const SELECT =
-  "h-9 w-full rounded-lg border border-line bg-surface px-2 text-[13px] text-ink hover:border-ink-muted";
+  "h-9 w-full rounded-lg border border-field bg-surface px-2 text-[13px] text-ink hover:border-ink-muted";
 
 /** One line per statement row: a card on a phone, a table-like row from tablet width up. */
 export function ReviewList({ rows, onChange }: Props) {
@@ -34,8 +34,8 @@ export function ReviewList({ rows, onChange }: Props) {
             type="checkbox"
             checked={r.include}
             onChange={(event) => onChange(r.row, { include: event.target.checked })}
-            aria-label={`Include row ${r.row}`}
-            className="h-4 w-4 accent-[var(--color-accent)]"
+            aria-label={`Include row ${r.row}: ${r.description || "no description"}, ${formatDate(r.date)}`}
+            className="h-5 w-5 accent-[var(--color-accent)]"
           />
           <span className="text-[13px] tabular-nums">{formatDate(r.date)}</span>
           <div className="min-w-0">

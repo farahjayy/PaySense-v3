@@ -38,7 +38,11 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
     <figure className="m-0">
       <div role="img" aria-label={chartSummary(simulation)} className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <ComposedChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <ComposedChart
+            accessibilityLayer={false}
+            data={points}
+            margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+          >
             <XAxis
               dataKey="label"
               tickLine={false}
@@ -64,7 +68,8 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
             <Area
               dataKey="spread"
               stackId="range"
-              stroke="none"
+              stroke="var(--color-chart-edge)"
+              strokeOpacity={0.6}
               fill="var(--color-chart-blue)"
               fillOpacity={0.35}
               isAnimationActive={false}

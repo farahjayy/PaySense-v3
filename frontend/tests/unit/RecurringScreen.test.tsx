@@ -104,6 +104,9 @@ describe("RecurringScreen", () => {
     expect(patch.mock.calls[0][1].body).toEqual({ active: false });
 
     await userEvent.click(screen.getByRole("button", { name: "Delete Rent" }));
+    expect(del).not.toHaveBeenCalled(); // asks first
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
     await waitFor(() => expect(del).toHaveBeenCalledTimes(1));
   });
 

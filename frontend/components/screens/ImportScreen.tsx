@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DropZone } from "@/components/import/DropZone";
 import { ReviewList } from "@/components/import/ReviewList";
@@ -9,7 +9,7 @@ import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatTile } from "@/components/ui/StatTile";
-import { useImportConfirm, useImportPreview } from "@/lib/api/queries";
+import { ApiError, useImportConfirm, useImportPreview } from "@/lib/api/queries";
 import { plural } from "@/lib/format";
 import {
   fileProblem,
@@ -60,35 +60,53 @@ export function ImportScreen() {
     });
   }
 
+  // When the screen changes step the old controls disappear; move focus to the new step so a
+  // keyboard or screen-reader user is not dropped at the top of the document.
+  const step = created !== null ? "done" : rows ? "review" : "pick";
+  const stepRef = useRef<HTMLDivElement>(null);
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    stepRef.current?.focus();
+  }, [step]);
+
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
         title="Import"
         intro="Bring in a bank or e-wallet statement. You review everything before it is saved."
       />
-      {created !== null ? (
-        <Done created={created} onAnother={reset} />
-      ) : rows ? (
-        <Review
-          rows={rows}
-          skipped={skipped}
-          onChange={(row, patch) => setRows((current) => patchRow(current ?? [], row, patch))}
-          onAll={(include) => setRows((current) => setAllIncluded(current ?? [], include))}
-          onConfirm={handleConfirm}
-          onCancel={reset}
-          saving={confirm.isPending}
-          saveError={confirm.error?.message ?? null}
-        />
-      ) : (
-        <div className="space-y-4">
-          <DropZone onFile={handleFile} busy={preview.isPending} />
-          {(problem ?? preview.error?.message) && (
-            <Banner tone="danger" title="That file could not be used">
-              {problem ?? preview.error?.message}
-            </Banner>
-          )}
-        </div>
-      )}
+      <div ref={stepRef} tabIndex={-1} className="outline-none">
+        {created !== null ? (
+          <Done created={created} onAnother={reset} />
+        ) : rows ? (
+          <Review
+            rows={rows}
+            skipped={skipped}
+            onChange={(row, patch) => setRows((current) => patchRow(current ?? [], row, patch))}
+            onAll={(include) => setRows((current) => setAllIncluded(current ?? [], include))}
+            onConfirm={handleConfirm}
+            onCancel={reset}
+            saving={confirm.isPending}
+            saveError={confirm.error?.message ?? null}
+            networkLost={
+              confirm.error instanceof ApiError && confirm.error.code === "network_error"
+            }
+          />
+        ) : (
+          <div className="space-y-4">
+            <DropZone onFile={handleFile} busy={preview.isPending} />
+            {(problem ?? preview.error?.message) && (
+              <Banner tone="danger" title="That file could not be used">
+                {problem ?? preview.error?.message}
+              </Banner>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -123,6 +141,7 @@ type ReviewProps = {
   onCancel: () => void;
   saving: boolean;
   saveError: string | null;
+  networkLost: boolean;
 };
 
 function Review({
@@ -134,6 +153,7 @@ function Review({
   onCancel,
   saving,
   saveError,
+  networkLost,
 }: ReviewProps) {
   const sums = totals(rows);
   return (
@@ -170,8 +190,12 @@ function Review({
       </div>
       <ReviewList rows={rows} onChange={onChange} />
       {saveError && (
-        <Banner tone="danger" title="Nothing was saved">
+        <Banner
+          tone="danger"
+          title={networkLost ? "We could not confirm this was saved" : "Nothing was saved"}
+        >
           {saveError}
+          {networkLost && " Check Transactions before trying again, so nothing is added twice."}
         </Banner>
       )}
       <div className="sticky bottom-20 flex justify-end gap-2 md:bottom-4">

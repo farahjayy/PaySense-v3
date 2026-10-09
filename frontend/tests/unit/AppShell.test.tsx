@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -100,10 +100,31 @@ describe("AppShell", () => {
       "Import",
       "About the model",
     ]) {
-      expect(screen.getAllByRole("link", { name: new RegExp(name, "i") }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole("link", { name: new RegExp(name, "i") }).length).toBeGreaterThan(
+        0,
+      );
     }
     const phoneBar = screen.getAllByRole("navigation").find((n) => n.className.includes("fixed"));
     expect(phoneBar && phoneBar.querySelectorAll("a").length).toBe(5);
+  });
+
+  it("keeps Recurring and About the model reachable on a phone in a 'More pages' row", () => {
+    render(
+      <AppShell user={USER}>
+        <p>page body</p>
+      </AppShell>,
+      { wrapper },
+    );
+
+    const more = screen.getByRole("navigation", { name: "More pages" });
+    expect(within(more).getByRole("link", { name: "Recurring" })).toHaveAttribute(
+      "href",
+      "/recurring",
+    );
+    expect(within(more).getByRole("link", { name: "About the model" })).toHaveAttribute(
+      "href",
+      "/model",
+    );
   });
 
   it("offers a skip link that targets the focusable main region", () => {

@@ -135,7 +135,9 @@ describe("PlansScreen", () => {
     await screen.findByText("Headphones");
 
     await userEvent.click(screen.getByRole("button", { name: /show instalments/i }));
-    await userEvent.click(screen.getByRole("button", { name: /instalment 2 of headphones/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /mark paid, instalment 2 of headphones/i }),
+    );
     await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
     expect(post.mock.calls[0][0]).toBe("/api/plans/{plan_id}/installments/{seq}/pay");
     expect(post.mock.calls[0][1].params.path).toEqual({ plan_id: "p1", seq: 2 });
@@ -207,7 +209,7 @@ describe("PlansScreen", () => {
     render(<PlansScreen />, { wrapper });
     await screen.findByText("Headphones");
 
-    await userEvent.click(screen.getByRole("button", { name: "Delete Headphones" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete plan, Headphones" }));
     expect(del).not.toHaveBeenCalled();
     const dialog = await screen.findByRole("dialog");
     await userEvent.click(within(dialog).getByRole("checkbox"));
@@ -217,5 +219,21 @@ describe("PlansScreen", () => {
     expect(del.mock.calls[0][1]).toEqual({
       params: { path: { plan_id: "p1" }, query: { keep_payments: false } },
     });
+  });
+
+  it("starts every plan deletion with the payments kept, whatever the last one chose", async () => {
+    serve([PLAN, { ...PLAN, id: "p2", item_name: "Keyboard" }]);
+    render(<PlansScreen />, { wrapper });
+    await screen.findByText("Headphones");
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete plan, Headphones" }));
+    let dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("checkbox"));
+    expect(within(dialog).getByRole("checkbox")).not.toBeChecked();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Keep the plan" }));
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete plan, Keyboard" }));
+    dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("checkbox")).toBeChecked();
   });
 });

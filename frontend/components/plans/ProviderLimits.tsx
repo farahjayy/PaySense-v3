@@ -68,7 +68,9 @@ function LimitRow({ limit }: { limit: ProviderLimit }) {
           : `${formatRm(limit.used_sen)} in use, ${formatRm(limit.remaining_sen ?? 0)} left`}
       </p>
       {save.error && (
-        <p className="w-full text-[12px] font-medium text-danger">{save.error.message}</p>
+        <p role="alert" className="w-full text-[12px] font-medium text-danger">
+          {save.error.message}
+        </p>
       )}
     </div>
   );

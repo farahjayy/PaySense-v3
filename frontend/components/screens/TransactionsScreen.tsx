@@ -26,7 +26,7 @@ type Dialogue =
   { kind: "add" } | { kind: "edit"; txn: Transaction } | { kind: "delete"; txn: Transaction };
 
 const TYPE_LABEL = { income: "Income", expense: "Spending", savings: "Savings" } as const;
-const FIELD = "h-9 rounded-lg border border-line bg-surface px-2 text-[13px] text-ink";
+const FIELD = "h-9 rounded-lg border border-field bg-surface px-2 text-[13px] text-ink";
 
 export function TransactionsScreen() {
   const [filters, setFilters] = useState<TransactionFilters>({});
@@ -103,7 +103,7 @@ export function TransactionsScreen() {
           </EmptyState>
         ) : (
           <>
-            <p className="mb-2 text-[12px] text-ink-secondary">
+            <p role="status" className="mb-2 text-[12px] text-ink-secondary">
               {plural(list.data.length, "transaction")}
             </p>
             <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
@@ -124,6 +124,7 @@ export function TransactionsScreen() {
         open={dialogue?.kind === "add" || dialogue?.kind === "edit"}
         title={dialogue?.kind === "edit" ? "Edit transaction" : "Add transaction"}
         onClose={close}
+        dismissible={!saving}
       >
         {(dialogue?.kind === "add" || dialogue?.kind === "edit") && (
           <TransactionForm
@@ -136,7 +137,12 @@ export function TransactionsScreen() {
         )}
       </Dialog>
 
-      <Dialog open={dialogue?.kind === "delete"} title="Delete this transaction?" onClose={close}>
+      <Dialog
+        open={dialogue?.kind === "delete"}
+        title="Delete this transaction?"
+        onClose={close}
+        dismissible={!remove.isPending}
+      >
         {dialogue?.kind === "delete" && (
           <div className="space-y-4">
             <p className="text-[13px] text-ink-secondary">
@@ -246,9 +252,9 @@ function Row({ txn, onEdit, onDelete }: RowProps) {
   const sign = txn.type === "income" ? "+" : "";
   const label = txn.description ?? txn.category;
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-medium text-ink">{label}</p>
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+      <div className="min-w-[10rem] flex-1">
+        <p className="break-words text-[14px] font-medium text-ink">{label}</p>
         <p className="text-[12px] text-ink-secondary">
           {formatDate(txn.date)} · {txn.category} · {TYPE_LABEL[txn.type]}
           {txn.is_bnpl && " · BNPL plan payment"}
@@ -263,12 +269,12 @@ function Row({ txn, onEdit, onDelete }: RowProps) {
       {txn.bnpl_plan_id ? (
         <Link
           href="/plans"
-          className="w-[8.5rem] text-right text-[12px] text-accent hover:underline"
+          className="w-full text-right text-[12px] text-accent hover:underline sm:w-[8.5rem]"
         >
           Managed in Plans
         </Link>
       ) : (
-        <div className="flex w-[8.5rem] justify-end gap-1">
+        <div className="flex w-full justify-end gap-1 sm:w-[8.5rem]">
           <Button variant="secondary" size="sm" onClick={onEdit} aria-label={`Edit ${label}`}>
             Edit
           </Button>

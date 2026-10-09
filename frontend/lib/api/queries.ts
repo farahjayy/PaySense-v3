@@ -45,8 +45,18 @@ function codeOf(error: unknown): string | undefined {
   return typeof detail?.code === "string" ? detail.code : undefined;
 }
 
-/** The data of a successful result; anything else becomes an ApiError. */
-export function unwrap<T>(result: Result<T>): T {
+/**
+ * The data of a successful call. An error response becomes an ApiError with the server's own
+ * sentence; a request that never reached the server (a thrown TypeError) becomes one too, with the
+ * "can't reach the server" sentence, so no screen ever shows a raw browser message.
+ */
+export async function unwrap<T>(pending: Promise<Result<T>>): Promise<T> {
+  let result: Result<T>;
+  try {
+    result = await pending;
+  } catch (error) {
+    throw new ApiError(errorMessage(error), 0, "network_error");
+  }
   if (result.error !== undefined || result.data === undefined) {
     if (result.response.ok && result.response.status === 204) return undefined as T;
     throw new ApiError(errorMessage(result.error), result.response.status, codeOf(result.error));
@@ -69,35 +79,35 @@ export const queryKeys = {
 export function useForecast() {
   return useQuery({
     queryKey: queryKeys.forecast,
-    queryFn: async () => unwrap(await api.GET("/api/forecast")),
+    queryFn: async () => unwrap(api.GET("/api/forecast")),
   });
 }
 
 export function useMonthSummary() {
   return useQuery({
     queryKey: queryKeys.summary,
-    queryFn: async () => unwrap(await api.GET("/api/summary/months")),
+    queryFn: async () => unwrap(api.GET("/api/summary/months")),
   });
 }
 
 export function useBills() {
   return useQuery({
     queryKey: queryKeys.bills,
-    queryFn: async () => unwrap(await api.GET("/api/bills")),
+    queryFn: async () => unwrap(api.GET("/api/bills")),
   });
 }
 
 export function useSuggestions() {
   return useQuery({
     queryKey: queryKeys.suggestions,
-    queryFn: async () => unwrap(await api.GET("/api/recurring-items/suggestions")),
+    queryFn: async () => unwrap(api.GET("/api/recurring-items/suggestions")),
   });
 }
 
 export function useRecurringItems() {
   return useQuery({
     queryKey: queryKeys.recurring,
-    queryFn: async () => unwrap(await api.GET("/api/recurring-items")),
+    queryFn: async () => unwrap(api.GET("/api/recurring-items")),
   });
 }
 
@@ -111,21 +121,21 @@ export type TransactionFilters = {
 export function useTransactions(filters: TransactionFilters = {}) {
   return useQuery({
     queryKey: queryKeys.transactions(filters),
-    queryFn: async () => unwrap(await api.GET("/api/transactions", { params: { query: filters } })),
+    queryFn: async () => unwrap(api.GET("/api/transactions", { params: { query: filters } })),
   });
 }
 
 export function usePlans() {
   return useQuery({
     queryKey: queryKeys.plans,
-    queryFn: async () => unwrap(await api.GET("/api/plans")),
+    queryFn: async () => unwrap(api.GET("/api/plans")),
   });
 }
 
 export function useProviders() {
   return useQuery({
     queryKey: queryKeys.providers,
-    queryFn: async () => unwrap(await api.GET("/api/providers")),
+    queryFn: async () => unwrap(api.GET("/api/providers")),
     staleTime: Infinity, // provider rules do not change while the app is open
   });
 }
@@ -133,7 +143,7 @@ export function useProviders() {
 export function useProviderLimits() {
   return useQuery({
     queryKey: queryKeys.limits,
-    queryFn: async () => unwrap(await api.GET("/api/provider-limits")),
+    queryFn: async () => unwrap(api.GET("/api/provider-limits")),
   });
 }
 
@@ -142,9 +152,16 @@ function useInvalidateLedger() {
   const client = useQueryClient();
   return () =>
     Promise.all(
-      ["forecast", "summary", "bills", "suggestions", "recurring", "transactions", "plans"].map(
-        (key) => client.invalidateQueries({ queryKey: [key] }),
-      ),
+      [
+        "forecast",
+        "summary",
+        "bills",
+        "suggestions",
+        "recurring",
+        "transactions",
+        "plans",
+        "limits",
+      ].map((key) => client.invalidateQueries({ queryKey: [key] })),
     );
 }
 
@@ -154,7 +171,7 @@ export function useImportPreview() {
       const body = new FormData();
       body.append("file", file);
       return unwrap(
-        await api.POST("/api/import/csv", {
+        api.POST("/api/import/csv", {
           body: body as unknown as { file: string },
           bodySerializer: (value) => value as unknown as FormData,
         }),
@@ -167,17 +184,24 @@ export function useImportConfirm() {
   const invalidate = useInvalidateLedger();
   return useMutation({
     mutationFn: async (rows: ConfirmRow[]) =>
-      unwrap(await api.POST("/api/import/confirm", { body: { rows } })),
-    onSuccess: invalidate,
+      unwrap(api.POST("/api/import/confirm", { body: { rows } })),
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
 export function useCreateTransaction() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async (body: TransactionInput) =>
-      unwrap(await api.POST("/api/transactions", { body })),
-    onSuccess: invalidate,
+    mutationFn: async (body: TransactionInput) => unwrap(api.POST("/api/transactions", { body })),
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
@@ -186,12 +210,16 @@ export function useUpdateTransaction() {
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Schemas["TransactionPatch"] }) =>
       unwrap(
-        await api.PATCH("/api/transactions/{transaction_id}", {
+        api.PATCH("/api/transactions/{transaction_id}", {
           params: { path: { transaction_id: id } },
           body: patch,
         }),
       ),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
@@ -200,20 +228,27 @@ export function useDeleteTransaction() {
   return useMutation({
     mutationFn: async (id: string) =>
       unwrap(
-        await api.DELETE("/api/transactions/{transaction_id}", {
+        api.DELETE("/api/transactions/{transaction_id}", {
           params: { path: { transaction_id: id } },
         }),
       ),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
 export function useCreateRecurring() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async (body: RecurringInput) =>
-      unwrap(await api.POST("/api/recurring-items", { body })),
-    onSuccess: invalidate,
+    mutationFn: async (body: RecurringInput) => unwrap(api.POST("/api/recurring-items", { body })),
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
@@ -222,12 +257,16 @@ export function useUpdateRecurring() {
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Schemas["RecurringPatch"] }) =>
       unwrap(
-        await api.PATCH("/api/recurring-items/{item_id}", {
+        api.PATCH("/api/recurring-items/{item_id}", {
           params: { path: { item_id: id } },
           body: patch,
         }),
       ),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
@@ -235,24 +274,30 @@ export function useDeleteRecurring() {
   const invalidate = useInvalidateLedger();
   return useMutation({
     mutationFn: async (id: string) =>
-      unwrap(
-        await api.DELETE("/api/recurring-items/{item_id}", { params: { path: { item_id: id } } }),
-      ),
-    onSuccess: invalidate,
+      unwrap(api.DELETE("/api/recurring-items/{item_id}", { params: { path: { item_id: id } } })),
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
 export function usePreviewPlan() {
   return useMutation({
-    mutationFn: async (body: PlanInput) => unwrap(await api.POST("/api/plans/preview", { body })),
+    mutationFn: async (body: PlanInput) => unwrap(api.POST("/api/plans/preview", { body })),
   });
 }
 
 export function useCreatePlan() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async (body: PlanInput) => unwrap(await api.POST("/api/plans", { body })),
-    onSuccess: invalidate,
+    mutationFn: async (body: PlanInput) => unwrap(api.POST("/api/plans", { body })),
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
@@ -269,12 +314,16 @@ export function usePayInstalment() {
       paidDate?: string;
     }) =>
       unwrap(
-        await api.POST("/api/plans/{plan_id}/installments/{seq}/pay", {
+        api.POST("/api/plans/{plan_id}/installments/{seq}/pay", {
           params: { path: { plan_id: planId, seq } },
           body: paidDate ? { paid_date: paidDate } : {},
         }),
       ),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
@@ -283,12 +332,16 @@ export function usePayInstalments() {
   return useMutation({
     mutationFn: async ({ planId, seqs }: { planId: string; seqs: number[] }) =>
       unwrap(
-        await api.POST("/api/plans/{plan_id}/pay", {
+        api.POST("/api/plans/{plan_id}/pay", {
           params: { path: { plan_id: planId } },
           body: { seqs },
         }),
       ),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
@@ -297,11 +350,15 @@ export function useDeletePlan() {
   return useMutation({
     mutationFn: async ({ id, keepPayments }: { id: string; keepPayments: boolean }) =>
       unwrap(
-        await api.DELETE("/api/plans/{plan_id}", {
+        api.DELETE("/api/plans/{plan_id}", {
           params: { path: { plan_id: id }, query: { keep_payments: keepPayments } },
         }),
       ),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      // Refresh behind the screen: a save is done when the server says so, not when every
+      // active query (the forecast simulation included) has been fetched again.
+      void invalidate();
+    },
   });
 }
 
@@ -310,7 +367,7 @@ export function useSetProviderLimit() {
   return useMutation({
     mutationFn: async ({ provider, limitSen }: { provider: string; limitSen: number }) =>
       unwrap(
-        await api.PUT("/api/provider-limits/{provider}", {
+        api.PUT("/api/provider-limits/{provider}", {
           params: { path: { provider: provider as ProviderLimit["provider"] } },
           body: { limit_sen: limitSen },
         }),

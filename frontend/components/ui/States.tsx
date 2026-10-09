@@ -8,7 +8,12 @@ const MONTHS_NEEDED = 4;
 
 export function Skeleton({ lines = 3, label = "Loading" }: { lines?: number; label?: string }) {
   return (
-    <div role="status" aria-label={label} aria-busy="true" className="animate-pulse space-y-2.5">
+    <div
+      role="status"
+      aria-label={label}
+      aria-busy="true"
+      className="motion-safe:animate-pulse space-y-2.5"
+    >
       {Array.from({ length: lines }, (_, i) => (
         <div
           key={i}

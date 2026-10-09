@@ -68,7 +68,7 @@ export function TransactionForm({ initial, saving, error, onSubmit, onCancel }: 
             id="txn-type"
             value={type}
             onChange={(event) => setType(event.target.value as RowType)}
-            className="h-10 rounded-lg border border-line bg-surface px-3 text-[14px] text-ink"
+            className="h-10 rounded-lg border border-field bg-surface px-3 text-[14px] text-ink"
           >
             {TYPES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -85,7 +85,7 @@ export function TransactionForm({ initial, saving, error, onSubmit, onCancel }: 
             id="txn-category"
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="h-10 rounded-lg border border-line bg-surface px-3 text-[14px] text-ink"
+            className="h-10 rounded-lg border border-field bg-surface px-3 text-[14px] text-ink"
           >
             {categories.map((c) => (
               <option key={c} value={c}>

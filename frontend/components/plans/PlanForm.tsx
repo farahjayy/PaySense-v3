@@ -8,16 +8,22 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/fields";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { useCreatePlan, usePreviewPlan, useProviders, type PlanInput } from "@/lib/api/queries";
-import { todayIso } from "@/lib/format";
+import { plural, todayIso } from "@/lib/format";
+import { formatRm } from "@/lib/money";
 import { emptyDraft, toPlanInput, type AmountMode, type PlanDraft } from "@/lib/plans";
 
 const DEBOUNCE_MS = 350;
-const SELECT = "h-10 rounded-lg border border-line bg-surface px-3 text-[14px] text-ink";
+const SELECT = "h-10 rounded-lg border border-field bg-surface px-3 text-[14px] text-ink";
 
-type Props = { onSaved: () => void; onCancel: () => void };
+type Props = {
+  onSaved: () => void;
+  onCancel: () => void;
+  /** Tells the dialog around the form not to close while the plan is being saved. */
+  onSavingChange?: (saving: boolean) => void;
+};
 
 /** Enter a purchase; the server previews the split and schedule as you type; save when it looks right. */
-export function PlanForm({ onSaved, onCancel }: Props) {
+export function PlanForm({ onSaved, onCancel, onSavingChange }: Props) {
   const providers = useProviders();
   const preview = usePreviewPlan();
   const create = useCreatePlan();
@@ -27,6 +33,12 @@ export function PlanForm({ onSaved, onCancel }: Props) {
   const input = useMemo(() => toPlanInput(draft, provider), [draft, provider]);
   const inputKey = JSON.stringify(input);
   const { mutate: requestPreview, reset: resetPreview } = preview;
+  // The preview on screen belongs to the input it was computed for; once the form moves on, Save
+  // waits for the next one so what is saved is always what was shown.
+  const previewIsCurrent =
+    preview.data !== undefined && JSON.stringify(preview.variables) === inputKey;
+  const savingNow = create.isPending;
+  useEffect(() => onSavingChange?.(savingNow), [savingNow, onSavingChange]);
 
   useEffect(() => {
     if (!input) {
@@ -118,7 +130,25 @@ export function PlanForm({ onSaved, onCancel }: Props) {
         )}
       </div>
 
-      {preview.data && input && <PlanPreviewPanel preview={preview.data} />}
+      {providers.error && (
+        <Banner tone="danger" title="Providers did not load">
+          {providers.error.message}
+        </Banner>
+      )}
+      <p role="status" className="text-[13px] text-ink-secondary">
+        {!input
+          ? "Fill in the purchase to see the schedule."
+          : previewIsCurrent && preview.data
+            ? `Pay ${formatRm(preview.data.cash_at_purchase_sen)} at checkout, then ${formatRm(
+                preview.data.total_payable_sen,
+              )} over ${plural(preview.data.installments.length, "instalment")}.`
+            : preview.error
+              ? ""
+              : "Working it out…"}
+      </p>
+      {preview.data && input && (
+        <PlanPreviewPanel preview={preview.data} stale={!previewIsCurrent} />
+      )}
       {preview.error && (
         <Banner tone="warning" title="We could not work this out yet">
           {preview.error.message}
@@ -136,7 +166,7 @@ export function PlanForm({ onSaved, onCancel }: Props) {
         <Button
           type="submit"
           variant="accent"
-          disabled={!input || !preview.data || create.isPending}
+          disabled={!input || !previewIsCurrent || create.isPending}
         >
           {create.isPending ? "Saving…" : "Save plan"}
         </Button>

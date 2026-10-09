@@ -86,8 +86,8 @@ describe("ImportScreen", () => {
     await userEvent.upload(screen.getByLabelText("Choose a CSV file"), csv());
 
     expect(await screen.findByText(/1 row could not be read/i)).toBeInTheDocument();
-    expect(screen.getByLabelText("Include row 2")).toBeChecked();
-    expect(screen.getByLabelText("Include row 3")).not.toBeChecked();
+    expect(screen.getByLabelText(/^include row 2/i)).toBeChecked();
+    expect(screen.getByLabelText(/^include row 3/i)).not.toBeChecked();
     expect(screen.getByText(/already in your ledger/i)).toBeInTheDocument();
 
     await userEvent.selectOptions(screen.getByLabelText("Category for row 2"), "Salary");
@@ -121,7 +121,7 @@ describe("ImportScreen", () => {
     });
     render(<ImportScreen />, { wrapper });
     await userEvent.upload(screen.getByLabelText("Choose a CSV file"), csv());
-    await screen.findByLabelText("Include row 2");
+    await screen.findByLabelText(/^include row 2/i);
 
     await userEvent.click(screen.getByRole("button", { name: /untick all/i }));
     expect(screen.getByRole("button", { name: /add 0 transactions/i })).toBeDisabled();

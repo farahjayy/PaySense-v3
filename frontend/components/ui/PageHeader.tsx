@@ -7,7 +7,10 @@ export function PageHeader({ title, intro, actions }: Props) {
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="max-w-2xl">
-        <h1 className="font-serif text-[28px] font-semibold leading-tight tracking-tight text-ink">
+        <h1
+          tabIndex={-1}
+          className="font-serif outline-none text-[28px] font-semibold leading-tight tracking-tight text-ink"
+        >
           {title}
         </h1>
         {intro && <p className="mt-1.5 text-[14px] leading-relaxed text-ink-secondary">{intro}</p>}

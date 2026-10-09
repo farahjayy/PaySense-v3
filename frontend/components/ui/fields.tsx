@@ -33,7 +33,7 @@ function FieldShell({ label, htmlFor, hint, hintId, error, errorId, children }: 
 }
 
 const INPUT_CLASSES =
-  "h-10 rounded-lg border border-line bg-surface px-3 text-[14px] text-ink placeholder:text-ink-muted hover:border-ink-muted read-only:bg-surface-2";
+  "h-10 rounded-lg border border-field bg-surface px-3 text-[14px] text-ink placeholder:text-ink-muted hover:border-ink-muted read-only:bg-surface-2";
 
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;

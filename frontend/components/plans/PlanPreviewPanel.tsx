@@ -7,10 +7,19 @@ import { formatRm } from "@/lib/money";
  * What the server worked out for this purchase, before anything is saved. The split between what
  * the provider finances and what is paid at checkout is the server's, never recalculated here.
  */
-export function PlanPreviewPanel({ preview }: { preview: PlanPreview }) {
+export function PlanPreviewPanel({
+  preview,
+  stale = false,
+}: {
+  preview: PlanPreview;
+  stale?: boolean;
+}) {
   const capped = preview.upfront_sen > 0;
   return (
-    <div className="space-y-3 rounded-card border border-line bg-surface-2 p-4" aria-live="polite">
+    <div
+      className={`space-y-3 rounded-card border border-line bg-surface-2 p-4 ${stale ? "opacity-60" : ""}`}
+      aria-busy={stale}
+    >
       <dl className="grid grid-cols-2 gap-3 text-[13px] sm:grid-cols-3">
         <Figure label="Pay at checkout" value={formatRm(preview.cash_at_purchase_sen)} strong />
         <Figure label="Financed" value={formatRm(preview.financed_sen)} />

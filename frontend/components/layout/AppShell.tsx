@@ -11,8 +11,8 @@ import { clearSession, type Session } from "@/lib/session";
 
 type NavItem = { href: string; label: string; icon: string; mobile: boolean };
 
-// `mobile` marks the five items that fit a phone's bottom bar; the rest stay in the sidebar and
-// are linked from the screens that lead to them.
+// `mobile` marks the five items that fit a phone's bottom bar; the rest are in the sidebar and, on
+// a phone, in the "More pages" row under the header.
 const NAV_ITEMS: readonly NavItem[] = [
   { href: "/", label: "Dashboard", icon: "◫", mobile: true },
   { href: "/transactions", label: "Transactions", icon: "≡", mobile: true },
@@ -104,7 +104,8 @@ export function AppShell({ user, children }: Props) {
       firstRender.current = false;
       return;
     }
-    main.current?.focus();
+    // The page's own heading, so a screen reader announces where it landed; main as a fallback.
+    (main.current?.querySelector<HTMLElement>("h1") ?? main.current)?.focus();
   }, [pathname]);
 
   function handleLogout() {
@@ -136,6 +137,21 @@ export function AppShell({ user, children }: Props) {
             </Button>
           </div>
         </header>
+        <nav
+          aria-label="More pages"
+          className="flex gap-5 border-b border-line bg-surface px-4 py-2 text-[13px] font-medium md:hidden"
+        >
+          {NAV_ITEMS.filter((item) => !item.mobile).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive(pathname, item.href) ? "page" : undefined}
+              className="py-1 text-accent underline-offset-2 hover:underline"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
         <main
           id="main"
           ref={main}

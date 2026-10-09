@@ -29,6 +29,7 @@ const STATUS = {
 export function PlansScreen() {
   const plans = usePlans();
   const [adding, setAdding] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<Plan | null>(null);
 
   return (
@@ -65,8 +66,19 @@ export function PlansScreen() {
       )}
       <ProviderLimits />
 
-      <Dialog open={adding} title="Add a BNPL plan" onClose={() => setAdding(false)}>
-        {adding && <PlanForm onSaved={() => setAdding(false)} onCancel={() => setAdding(false)} />}
+      <Dialog
+        open={adding}
+        title="Add a BNPL plan"
+        onClose={() => setAdding(false)}
+        dismissible={!creating}
+      >
+        {adding && (
+          <PlanForm
+            onSaved={() => setAdding(false)}
+            onCancel={() => setAdding(false)}
+            onSavingChange={setCreating}
+          />
+        )}
       </Dialog>
       <DeleteDialog plan={deleting} onClose={() => setDeleting(null)} />
     </div>
@@ -80,6 +92,8 @@ function PlanCard({ plan, onDelete }: { plan: Plan; onDelete: () => void }) {
   const status = STATUS[plan.status];
   const due = plan.installments.filter((i) => !i.is_paid);
   const error = pay.error?.message ?? payMany.error?.message ?? null;
+  // One request at a time per plan: single and bulk payments must not overlap.
+  const busy = pay.isPending || payMany.isPending;
 
   return (
     <Card>
@@ -108,7 +122,7 @@ function PlanCard({ plan, onDelete }: { plan: Plan; onDelete: () => void }) {
           <Button
             variant="secondary"
             size="sm"
-            disabled={payMany.isPending}
+            disabled={busy}
             onClick={() => payMany.mutate({ planId: plan.id, seqs: due.map((i) => i.seq) })}
           >
             Mark all {due.length} as paid
@@ -118,7 +132,7 @@ function PlanCard({ plan, onDelete }: { plan: Plan; onDelete: () => void }) {
           variant="secondary"
           size="sm"
           onClick={onDelete}
-          aria-label={`Delete ${plan.item_name}`}
+          aria-label={`Delete plan, ${plan.item_name}`}
         >
           Delete plan
         </Button>
@@ -146,9 +160,9 @@ function PlanCard({ plan, onDelete }: { plan: Plan; onDelete: () => void }) {
                   <Button
                     size="sm"
                     variant="secondary"
-                    disabled={pay.isPending}
+                    disabled={busy}
                     onClick={() => pay.mutate({ planId: plan.id, seq: i.seq })}
-                    aria-label={`Mark instalment ${i.seq} of ${plan.item_name} as paid`}
+                    aria-label={`Mark paid, instalment ${i.seq} of ${plan.item_name}`}
                   >
                     Mark paid
                   </Button>
@@ -168,11 +182,17 @@ function DeleteDialog({ plan, onClose }: { plan: Plan | null; onClose: () => voi
 
   function close() {
     remove.reset();
+    setKeepPayments(true); // never carry an unticked box over to the next plan
     onClose();
   }
 
   return (
-    <Dialog open={plan !== null} title="Delete this plan?" onClose={close}>
+    <Dialog
+      open={plan !== null}
+      title="Delete this plan?"
+      onClose={close}
+      dismissible={!remove.isPending}
+    >
       {plan && (
         <div className="space-y-4">
           <p className="text-[13px] text-ink-secondary">
