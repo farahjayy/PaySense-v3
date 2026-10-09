@@ -42,7 +42,7 @@
 - **Verify:** `uv run pytest tests/ml/engine2/`; a small-config run end to end.
 
 ### Task D7 — Calibration, ablation, stress tests
-- **Steps:** calibration chosen and fitted on single-repeat out-of-fold predictions of the development set and stored; the final model scored once on the lockbox (with the logistic benchmark and the constant); ablation (both arms tuned inside every fold, ΔBrier with a t-based CI, overall and for the baseline-under-0.10 subgroup); stress tests on the lockbox (income −20%, the next PTPTN disbursement not arriving, a stale ledger, a missing month, and an identity control with the same paths and seed); sensitivity runs (unconstrained model, learning curve, per-month shortfall definition).
+- **Steps:** calibration chosen and fitted on single-repeat out-of-fold predictions of the development set and stored; the final model scored once on the lockbox (with the logistic benchmark and the constant); ablation (both arms computed fresh on the same fresh folds and tuned inside every fold, ΔBrier with a t-based CI, overall and for the baseline-under-0.10 subgroup); the lockbox scored LAST and logged; stress tests on the lockbox (income −20%, the next PTPTN disbursement not arriving, a stale ledger, a missing month, and an identity control with the same paths and seed); sensitivity runs (unconstrained model, learning curve, per-month shortfall definition).
 - **Verify:** tables written by script.
 
 ### Task D8 — Artefact, start-up check, report, ADR
@@ -62,10 +62,28 @@ The ml-auditor reviewed the pipeline before the full training run. The nested gr
 - **D-36:** the 52-week simulation cap truncated 3,834 of 10,000 labels; a risk check now simulates to the plan's last instalment (`RISK_CHECK_MAX_WEEKS = 180`, dashboard unchanged).
 - **As-of day per profile** (D-31 note): all labels had shared 2025-12-28, so the PTPTN position, semester and horizon were identical.
 - **Feature schema hash** now covers the window constants (`RECENT_MONTHS`, `COMMITMENT_MONTHS`, ...), which moved into `features.py`.
-- **D-37:** lockbox, both ablation arms tuned inside every fold (the full arm is the winner's own nested CV, reused), t critical value for the CI, calibration fitted on single-repeat out-of-fold predictions and stored, stress on the lockbox with an identity control and the calibrated model. The PTPTN stress variant now removes the next detected semester income (the original removed ledger rows dated after as-of minus 45 days, which changed nothing because PTPTN lands in March and September).
+- **D-37:** lockbox, both ablation arms tuned inside every fold (the first harness reused the winner's own nested CV as the full arm; the second pass replaced that, see below), t critical value for the CI, calibration fitted on single-repeat out-of-fold predictions and stored, stress on the lockbox with an identity control and the calibrated model. The PTPTN stress variant now removes the next detected semester income (the original removed ledger rows dated after as-of minus 45 days, which changed nothing because PTPTN lands in March and September).
 - **Report:** the baseline distribution, the share of profiles where the purchase moves the band, Brier overall and for the baseline-under-0.10 subgroup, label histograms by persona and purchase ratio, the Monte Carlo noise floor, versions and commit, and an explicit "Not done" list (the bias-term sensitivity). The hard-coded allowance sentence is gone.
 - **Doc conflict resolved:** the plan said stale and incomplete ledgers join the training set; this doc said they are kept apart. They are kept apart (D-37 item 6).
 - **Resumable:** the plan claimed it; `--resume` now makes it true.
+
+---
+
+## What actually happened (second ml-auditor pass, before the full run)
+
+The second pass found nothing blocking (the manifest was consistent, 10,000 version-2 labels, none locked or truncated). Before the full run, and therefore before any full-run lockbox score, these were changed in `train.py`, `sensitivity.py`, the new `lockbox.py`, `labels.py`, `stress.py`, `models.py` and `report.py`, each with a failing test first:
+
+- **M1:** the lockbox constant benchmark of the low-baseline subgroup used the overall development mean (about 0.44) although the subgroup's own mean is about 0.07, which inflated the subgroup's constant Brier. Each subgroup now uses its own development mean.
+- **M2:** the "with Engine 1" arm of the ablation and the constrained arm of the monotonicity run reused the SELECTED winner's CV (a winner's curse the other arm lacks). Both arms of each comparison are now computed fresh on the same fresh folds (`seed + 1000`, `FRESH_FOLDS_OFFSET`), with the same nested tuning. Cost: two extra nested CVs per comparison.
+- **M3 (a)-(b):** the low-baseline subgroup is scored in full on the lockbox (Brier, ECE, calibration slope, AUC, band agreement, reliability, raw and calibrated), and a descriptive Brier breakdown is added by label class (exactly 0, strictly between, exactly 1) and by whether the baseline is strictly between 0 and 1. **(c)** The report sentence that said the subgroup was "reported separately everywhere" was untrue; it now says exactly where it appears (cross-validation Brier, ablation, lockbox) and where it does not (stress, learning curve, monotonicity, per-month run, calibration choice). **(d)** Items (a)-(b) were added before any full-run result existed.
+- **L1:** `results.json` and the report carry each logistic coefficient (standardised features) beside the monotone direction and whether the signs agree; the report states that if the logistic regression wins, the served model has no monotone constraints.
+- **L2:** the report states that the calibrator is fitted on out-of-fold predictions of the fold models but applied to the final model (other hyperparameters, more training data), and that SHAP (P6) will explain raw scores while the display is calibrated.
+- **L3:** the wording of ASSUMED 14 and of the report's limitations: the lockbox rule and the 0.10 threshold were fixed before the full run, after the first harness and a 3-fold logistic sanity check on version-2 development labels (CHANGELOG), not before any model had been looked at. The headline no longer hard-codes "six" Engine 1 features.
+- **L4:** `stress.py` takes the seed from the label manifest; `check_provenance` also compares the label version, the horizon, the served-model file hashes and the live sha256 of `labels.jsonl`, and refuses to run on any mismatch.
+- **L5:** `labels._settings` records the git commit and the profile count; resuming is refused if the file already holds more profiles than the new count.
+- **L6:** the lockbox is now scored as the LAST step of `train.run`, after every step that can fail (so a crash cannot spend it), and each scoring is appended to `data/engine2/runs/lockbox_log.jsonl` (gitignored); `results.json` carries `lockbox_scorings` (the line count) and the report states it. When the full run started `data/engine2/runs/` did not exist, so no earlier scoring of the real lockbox is on record.
+- **For P6:** `results.json` also carries `labels_manifest` (label version, horizon, served-model file hashes, paths, seed) and `serving_constants` (`RISK_CHECK_MAX_WEEKS`, `DASHBOARD_MONTHS`, `ERROR_INFLATION`, `BOOTSTRAP_BLOCK`) for the artefact metadata.
+- **Not done (belong to P6 serving):** L7, L8, M4 of the second pass.
 
 ---
 
