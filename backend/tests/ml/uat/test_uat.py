@@ -166,8 +166,8 @@ class TestReport:
         code = main(["--data", str(EXAMPLE), "--vignettes", str(VIGNETTES), "--out", str(out)])
         assert code == 0
         assert out.read_text(encoding="utf-8").startswith("# UAT analysis")
-        assert (out.parent / "sus_scores.csv").exists()
-        assert (out.parent / "switches.csv").exists()
+        assert (out.parent / "report_sus_scores.csv").exists()
+        assert (out.parent / "report_switches.csv").exists()
         assert "Mean SUS" in capsys.readouterr().out
 
     def test_main_reports_a_bad_data_folder_without_a_traceback(self, tmp_path, capsys):

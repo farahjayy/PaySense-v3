@@ -128,9 +128,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(report, encoding="utf-8")
-        write_csv(args.out.with_name("sus_scores.csv"), ["participant", "sus"], scores.items())
         write_csv(
-            args.out.with_name("switches.csv"),
+            args.out.with_name(f"{args.out.stem}_sus_scores.csv"),
+            ["participant", "sus"],
+            scores.items(),
+        )
+        write_csv(
+            args.out.with_name(f"{args.out.stem}_switches.csv"),
             ["vignette", "n", "same", "safer", "riskier", "confidence_before", "confidence_after"],
             [
                 (
