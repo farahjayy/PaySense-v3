@@ -47,7 +47,10 @@ export function plural(count: number, one: string, many = `${one}s`): string {
 
 export type Band = "Safe" | "Caution" | "At Risk";
 
-export const BAND_COPY: Record<Band, { icon: string; tone: "success" | "warning" | "danger"; line: string }> = {
+export const BAND_COPY: Record<
+  Band,
+  { icon: string; tone: "success" | "warning" | "danger"; line: string }
+> = {
   Safe: {
     icon: "✓",
     tone: "success",
@@ -64,3 +67,10 @@ export const BAND_COPY: Record<Band, { icon: string; tone: "success" | "warning"
     line: "Your income is unlikely to cover this alongside your other commitments.",
   },
 };
+
+/** Today in the person's own time zone as "2026-10-09" (not UTC, which can be a day behind). */
+export function todayIso(now: Date = new Date()): string {
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
