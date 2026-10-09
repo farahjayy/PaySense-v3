@@ -278,6 +278,20 @@ export function usePayInstalment() {
   });
 }
 
+export function usePayInstalments() {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async ({ planId, seqs }: { planId: string; seqs: number[] }) =>
+      unwrap(
+        await api.POST("/api/plans/{plan_id}/pay", {
+          params: { path: { plan_id: planId } },
+          body: { seqs },
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
 export function useDeletePlan() {
   const invalidate = useInvalidateLedger();
   return useMutation({
