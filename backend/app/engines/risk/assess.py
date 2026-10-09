@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.engines.forecasting.flows import occurrences
+from app.engines.forecasting.service import Forecast
 from app.engines.forecasting.simulate import Forecaster
 from app.engines.risk.check import CheckResult, Predictor, RiskRequest, run_check
 from app.engines.risk.counterfactual import Counterfactual, search
@@ -51,10 +52,13 @@ def assess(
 ) -> Assessment:
     """Raises `ProposalError` when the plan rules reject the request."""
 
+    # candidates share one ledger, so the without-purchase simulation is reused per plan end
+    cache: dict[Any, Forecast] = {}
+
     def check(candidate: RiskRequest) -> CheckResult:
         return run_check(
             rows, items, plans, provider_limits, candidate, today, forecaster, predictor,
-            paths=paths, seed=seed,
+            paths=paths, seed=seed, without_cache=cache,
         )  # fmt: skip
 
     result = check(request)

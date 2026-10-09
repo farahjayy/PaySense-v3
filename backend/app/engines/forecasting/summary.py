@@ -134,6 +134,7 @@ def build_feature_inputs(
     forecaster: Forecaster,
     seed: int = 0,
     paths: int = 1000,
+    without_cache: dict[Any, Forecast] | None = None,
 ) -> Built | None:
     """Engine 2 inputs and both simulations, or None if the ledger is locked.
 
@@ -141,6 +142,10 @@ def build_feature_inputs(
     only make things worse, never better, by chance. Both run to the plan's last instalment
     (up to `RISK_CHECK_MAX_WEEKS`, ADR D-36): a label that stopped at 52 weeks would leave the
     tail of a long plan unscored and make "more instalments" look safer than it is.
+
+    The "without the purchase" simulation depends on the ledger and on where the horizon ends, not
+    on the plan, so a caller that tries many candidate plans on one ledger can pass the same
+    `without_cache` dict and each distinct plan end is simulated once. The result is identical.
     """
     rows, items, plans = list(rows), list(items), list(plans)
     plan_end = max((i.due_date for i in proposal.instalments), default=today)
@@ -149,7 +154,13 @@ def build_feature_inputs(
         rows=rows, items=items, plans=plans, today=today, forecaster=forecaster,
         max_weeks=RISK_CHECK_MAX_WEEKS,
     )  # fmt: skip
-    without = build_forecast(**common, end=end, paths=paths, seed=seed)
+    key = (end, paths, seed)
+    if without_cache is not None and key in without_cache:
+        without = without_cache[key]
+    else:
+        without = build_forecast(**common, end=end, paths=paths, seed=seed)
+        if without_cache is not None:
+            without_cache[key] = without
     if without.status != "ok":
         return None
     with_plan = build_forecast(**common, proposed=proposal, end=end, paths=paths, seed=seed)

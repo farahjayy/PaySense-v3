@@ -131,6 +131,7 @@ def run_check(
     predictor: Predictor,
     paths: int = 1000,
     seed: int = 0,
+    without_cache: dict[Any, Forecast] | None = None,
 ) -> CheckResult:
     """Raises `ProposalError` when the plan rules reject the request (the API maps it to 422)."""
     rows, items, plans = list(rows), list(items), list(plans)
@@ -147,8 +148,9 @@ def run_check(
         remaining_limit_sen=remaining_limit(request.provider, provider_limits, plans),
     )
     built = build_feature_inputs(
-        rows, items, plans, proposal, provider_limits, today, forecaster, seed=seed, paths=paths
-    )
+        rows, items, plans, proposal, provider_limits, today, forecaster,
+        seed=seed, paths=paths, without_cache=without_cache,
+    )  # fmt: skip
     if built is None:
         refusal = build_forecast(
             rows=rows, items=items, plans=plans, today=today, forecaster=forecaster, seed=seed

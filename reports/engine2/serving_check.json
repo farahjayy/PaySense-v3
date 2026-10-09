@@ -1,0 +1,46 @@
+{
+  "assessed": 200,
+  "band_agreement": 0.95,
+  "gap": {
+    "max_abs": 0.5061720012800629,
+    "mean": -0.01071296756689468,
+    "mean_abs": 0.06010380991631983,
+    "p95_abs": 0.22810037008834058
+  },
+  "locked": 0,
+  "mean_evaluations_when_not_safe": 25.158730158730158,
+  "mean_factors_shown": 2.26,
+  "non_safe": 126,
+  "profiles": 200,
+  "rejected_by_plan_rules": 0,
+  "rejected_reasons": {},
+  "seconds": {
+    "max": 3.5010033000144176,
+    "p50": 0.5678359500016086,
+    "p95": 1.8432425650011277
+  },
+  "share_with_no_factor": 0.225,
+  "slowest": [
+    {
+      "index": 48,
+      "seconds": 3.501
+    },
+    {
+      "index": 11,
+      "seconds": 3.494
+    },
+    {
+      "index": 166,
+      "seconds": 3.046
+    },
+    {
+      "index": 12,
+      "seconds": 2.46
+    },
+    {
+      "index": 154,
+      "seconds": 2.073
+    }
+  ],
+  "suggestion_reaches_safe": 0.12698412698412698
+}

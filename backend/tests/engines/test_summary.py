@@ -254,3 +254,51 @@ def test_both_arms_also_report_the_per_month_definition_for_the_sensitivity_chec
 
     assert 0 <= built.p_without_monthly <= 1 and 0 <= built.p_with_monthly <= 1
     assert built.p_with_monthly == built.with_plan.simulation.p_shortfall_monthly
+
+
+def test_a_shared_cache_computes_the_without_purchase_simulation_once_per_plan_end(monkeypatch):
+    import app.engines.forecasting.summary as summary_module
+
+    real = summary_module.build_forecast
+    calls = []
+
+    def spy(**kwargs):
+        calls.append(kwargs.get("proposed") is not None)
+        return real(**kwargs)
+
+    monkeypatch.setattr(summary_module, "build_forecast", spy)
+    cache: dict = {}
+    first = build(without_cache=cache)
+    second = build(without_cache=cache)
+
+    assert calls == [False, True, True]  # without once, with-plan twice
+    assert first.p_without == second.p_without and first.p_with == second.p_with
+
+
+def test_a_different_plan_end_does_not_reuse_the_cached_simulation(monkeypatch):
+    import app.engines.forecasting.summary as summary_module
+
+    real = summary_module.build_forecast
+    without_calls = []
+
+    def spy(**kwargs):
+        if kwargs.get("proposed") is None:
+            without_calls.append(kwargs["end"])
+        return real(**kwargs)
+
+    monkeypatch.setattr(summary_module, "build_forecast", spy)
+    cache: dict = {}
+    longer = Proposal(
+        "spaylater", TODAY, tuple(Instalment(i + 1, date(2025, 6 + i, 12), 10000) for i in range(6))
+    )
+    build(without_cache=cache)
+    build(without_cache=cache, proposal=longer)
+
+    assert len(set(without_calls)) == 2
+
+
+def test_the_cache_does_not_change_any_number():
+    plain = build()
+    cached = build(without_cache={})
+    assert (cached.p_with, cached.p_without) == (plain.p_with, plain.p_without)
+    assert compute_features(cached.inputs) == compute_features(plain.inputs)
