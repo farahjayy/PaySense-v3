@@ -17,6 +17,7 @@ import {
   usePlans,
   type Plan,
 } from "@/lib/api/queries";
+import { focusPageHeading } from "@/lib/focus";
 import { formatDate, plural } from "@/lib/format";
 import { formatRm } from "@/lib/money";
 
@@ -225,7 +226,17 @@ function DeleteDialog({ plan, onClose }: { plan: Plan | null; onClose: () => voi
             <Button
               variant="danger"
               disabled={remove.isPending}
-              onClick={() => remove.mutate({ id: plan.id, keepPayments }, { onSuccess: close })}
+              onClick={() =>
+                remove.mutate(
+                  { id: plan.id, keepPayments },
+                  {
+                    onSuccess: () => {
+                      close();
+                      focusPageHeading();
+                    },
+                  },
+                )
+              }
             >
               {remove.isPending ? "Deleting…" : "Delete plan"}
             </Button>

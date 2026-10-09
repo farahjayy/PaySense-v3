@@ -20,6 +20,7 @@ import {
   type RecurringItem,
   type Suggestion,
 } from "@/lib/api/queries";
+import { focusPageHeading } from "@/lib/focus";
 import { formatDate, formatPercent } from "@/lib/format";
 import { formatRm } from "@/lib/money";
 
@@ -165,6 +166,7 @@ export function RecurringScreen() {
                     onSuccess: () => {
                       setDeleting(null);
                       remove.reset();
+                      focusPageHeading();
                     },
                   })
                 }

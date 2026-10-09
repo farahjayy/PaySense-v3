@@ -18,6 +18,7 @@ import {
   type TransactionFilters,
   type TransactionInput,
 } from "@/lib/api/queries";
+import { focusPageHeading } from "@/lib/focus";
 import { formatDate, plural } from "@/lib/format";
 import { CATEGORIES } from "@/lib/import";
 import { formatRm } from "@/lib/money";
@@ -161,7 +162,14 @@ export function TransactionsScreen() {
               <Button
                 variant="danger"
                 disabled={remove.isPending}
-                onClick={() => remove.mutate(dialogue.txn.id, { onSuccess: close })}
+                onClick={() =>
+                  remove.mutate(dialogue.txn.id, {
+                    onSuccess: () => {
+                      close();
+                      focusPageHeading();
+                    },
+                  })
+                }
               >
                 {remove.isPending ? "Deleting…" : "Delete"}
               </Button>

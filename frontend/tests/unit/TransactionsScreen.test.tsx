@@ -172,4 +172,39 @@ describe("TransactionsScreen", () => {
     render(<TransactionsScreen />, { wrapper });
     expect(await screen.findByText("Something went wrong on our side.")).toBeInTheDocument();
   });
+
+  it("says why Save is disabled instead of just greying it out", async () => {
+    render(<TransactionsScreen />, { wrapper });
+    await screen.findByText("Lunch");
+    await userEvent.click(screen.getByRole("button", { name: /add transaction/i }));
+    const dialog = await screen.findByRole("dialog");
+
+    const save = within(dialog).getByRole("button", { name: "Add transaction" });
+    expect(save).toBeDisabled();
+    expect(save).toHaveAccessibleDescription("Enter an amount greater than zero.");
+
+    await userEvent.type(within(dialog).getByLabelText(/amount/i), "5");
+    expect(save).toBeEnabled();
+  });
+
+  it("puts focus on the page heading after a delete, not on a row that no longer exists", async () => {
+    del.mockResolvedValue({
+      data: undefined,
+      error: undefined,
+      response: { ok: true, status: 204 },
+    });
+    render(
+      <main>
+        <TransactionsScreen />
+      </main>,
+      { wrapper },
+    );
+    await screen.findByText("Lunch");
+    await userEvent.click(screen.getByRole("button", { name: /delete lunch/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^delete$/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1, name: "Transactions" })).toHaveFocus(),
+    );
+  });
 });

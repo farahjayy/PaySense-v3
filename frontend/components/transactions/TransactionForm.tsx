@@ -33,6 +33,7 @@ export function TransactionForm({ initial, saving, error, onSubmit, onCancel }: 
   const [description, setDescription] = useState(initial?.description ?? "");
 
   const valid = date !== "" && amountSen !== null && amountSen > 0;
+  const reason = date === "" ? "Choose a date." : "Enter an amount greater than zero.";
   const categories = CATEGORIES.includes(category as (typeof CATEGORIES)[number])
     ? CATEGORIES
     : [...CATEGORIES, category];
@@ -107,11 +108,21 @@ export function TransactionForm({ initial, saving, error, onSubmit, onCancel }: 
           {error}
         </Banner>
       )}
+      {!valid && (
+        <p id="txn-reason" className="text-[12px] text-ink-secondary">
+          {reason}
+        </p>
+      )}
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
-        <Button type="submit" variant="accent" disabled={!valid || saving}>
+        <Button
+          type="submit"
+          variant="accent"
+          disabled={!valid || saving}
+          aria-describedby={valid ? undefined : "txn-reason"}
+        >
           {saving ? "Saving…" : initial ? "Save changes" : "Add transaction"}
         </Button>
       </div>

@@ -41,6 +41,14 @@ export function RecurringForm({ initial, saving, error, onSubmit, onCancel }: Pr
   const valid =
     /\p{L}/u.test(name) && amountSen !== null && amountSen > 0 && anchor !== "" && customOk;
 
+  const reason = !/\p{L}/u.test(name)
+    ? "Give it a name with some letters, such as Rent or Netflix."
+    : amountSen === null || amountSen <= 0
+      ? "Enter an amount greater than zero."
+      : anchor === ""
+        ? "Choose a date."
+        : "Enter a whole number of days from 1 to 366.";
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!valid || amountSen === null) return;
@@ -123,11 +131,21 @@ export function RecurringForm({ initial, saving, error, onSubmit, onCancel }: Pr
           {error}
         </Banner>
       )}
+      {!valid && (
+        <p id="rec-reason" className="text-[12px] text-ink-secondary">
+          {reason}
+        </p>
+      )}
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
-        <Button type="submit" variant="accent" disabled={!valid || saving}>
+        <Button
+          type="submit"
+          variant="accent"
+          disabled={!valid || saving}
+          aria-describedby={valid ? undefined : "rec-reason"}
+        >
           {saving ? "Saving…" : initial ? "Save changes" : "Add"}
         </Button>
       </div>
