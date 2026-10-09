@@ -65,6 +65,7 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 *2026-10-08 · Claude decision*
 
 **Decision.** `backend/app/engines/risk/features.py` is the only place Engine 2 features are computed. `ml/engine2_train` imports it; it never re-implements a feature. Each artefact's `metadata.json` stores the ordered feature list and its hash; the server refuses to start on a mismatch.
+*Amended 2026-10-09: the hash also covers the windows and caps that change feature values without changing a name (`RECENT_MONTHS`, `COMMITMENT_MONTHS`, the 30-day commitment month, `RATIO_CAP`, `SEN_PER_RM`), which now live in `features.py`.*
 **Why.** v1 trained `bnpl_income_ratio` as total debt/income and served it as monthly burden/income, and `forecasted_cash_flow` meant different things in training and serving.
 
 ## D-10 — Engine 2 training & selection protocol
@@ -72,6 +73,8 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 
 **Decision.** Soft-label training by duplicate-and-weight; 5×5 repeated CV stratified by target decile and grouped by profile; Optuna tuning in an inner loop with the budget written to metadata; Brier primary, log-loss / ROC-AUC (p ≥ 0.30) / calibration slope / ECE secondary; Nadeau–Bengio corrected t-tests; calibration (none / Platt / isotonic) by nested CV; ablation without Engine-1 features; stress scenarios (income −20%, delayed PTPTN).
 **Why.** Ports v1's proven harness and fixes its gaps (untuned defaults, single split, unreported tuning).
+*Amended 2026-10-09 by D-37 (lockbox, nested ablation, stored calibrator); the stratification is on quantile bins of the label, at most ten, not exactly deciles, because labels tie at 0 and 1.*
+
 
 ## D-11 — Repayment history is a flag, not a feature
 *2026-10-08 · Claude decision*
@@ -167,6 +170,7 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 3. **Repayment behaviour is drawn once per student.** The cited 88 / 12 / <0.5% are shares of account holders (CCOB), so a student is "always on time", "sometimes late" or "misses one"; they are not per-instalment probabilities.
 4. **The weekly series carries structure the forecasters are not told about** (AR(1) drift in the spending level, a payday-week lift, exam dips, outlier weeks). Day-of-week and payday-day effects only move spending within a week, so they are *not* claimed as weekly-scale difficulty.
 5. **Every parameter is in `params.yaml`** with a citation or an `assumed` reason; structural constants that change outputs are parameters too. The report separates distribution matches from "wiring checks" that hold by construction.
+6. *(2026-10-09 note)* **Engine 2 labels draw each profile's as-of day** across a full year (`calendar.as_of_window_start` / `calendar.as_of_window_days`, its own random stream), so the PTPTN position, the semester and the horizon differ between labels. The first label run gave every profile the same day (2025-12-28), which made the calendar identical for all 10,000 labels. The Engine 1 cohort and the persona files keep the fixed day, so P3's results are unaffected.
 **Why.** The first version leaked the true limit into the purchase (train/serve skew on `limit_known`), applied a holder-level statistic to instalments (only 37% of holders were fully on time against a cited 88%), and claimed weekly-scale richness it did not have, so a "forecaster beats benchmarks" result on it would have been partly an artefact. Each was found by the ml-auditor and fixed before any model saw the data.
 **Trade-off.** More assumed parameters (105 of 121) and a noisier weekly total than the drawn one; the report says both. The synthetic population remains a stand-in, never evidence about real students.
 
@@ -197,18 +201,36 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** The thresholds come from the audit scenarios, not from data: a stale ledger flipped a comfortable user from Safe to At Risk; four calendar months with eight weeks of data produced p = 0 and "Safe"; a deleted month was invisible; flat resampling of single weeks gave a third of the true spread over a long horizon.
 **Trade-off.** All thresholds are assumptions with no real-user evidence; they are tested on synthetic ledgers with deliberately broken months and will be revisited after UAT. The forecast remains more confident than it should be on short histories.
 
+## D-36 — A risk check simulates to the last instalment of the plan
+*2026-10-09 · Claude decision after the P5 ml-auditor's first pass (resolves ASSUMED 2)*
+
+**Decision.** The Monte Carlo horizon is a parameter of `simulate` (`max_weeks`, default 52, so the 3-month dashboard forecast behaves exactly as before). A risk check, and therefore every Engine 2 label and every served Engine 2 score, passes `RISK_CHECK_MAX_WEEKS = 180`: the longest plan the app allows (36 monthly instalments, about 157 weeks) plus a month to the first instalment and the rounding up to a whole month. The "without the plan" arm runs on the same horizon, so with and without are comparable. The cap remains as a bound and sets `horizon_capped` if it is ever hit; the Engine 2 report refuses to run when any label is truncated.
+**Why.** With the 52-week cap, 3,834 of the first 10,000 labels were truncated (about 28% of a truncated plan's payable was never simulated), so the label understated the risk of long plans and the model could learn "more instalments is safer" from an artefact of the cap. Found by the ml-auditor before any full training run; the labels were regenerated (label version 2).
+**Trade-off.** Beyond 13 weeks the served LSTM continues recursively (D-34), and that extension was never evaluated; a 36-instalment label depends on about 150 weeks of it, with the error record resampled in 8-week paths and widened by the fixed 1.5 factor (D-35). The long-plan labels are therefore the least trustworthy ones, and the report says so. **Rejected:** keeping the cap and flagging long plans with a note (the original ASSUMED 2: the label itself was biased, a note does not repair it); refusing plans over 12 months (the app allows them).
+
+## D-37 — Engine 2 evaluation protocol: a lockbox, nested ablation, a stored calibrator
+*2026-10-09 · Claude decision after the P5 ml-auditor's first pass (amends the protocol of D-10)*
+
+**Decision.** (1) Every tenth profile (`index % 10 == 0`) is a **lockbox**: excluded from cross-validation, model choice, final tuning, calibration and the ablation. The final calibrated winner is fitted on the other 90% and scored once on the lockbox (Brier, reliability, band agreement), with the logistic benchmark and the constant beside it. (2) The ablation tunes **both** arms inside every training fold on the same folds (the full arm is the winner's own nested CV, reused); intervals use the t critical value for J-1 degrees of freedom. (3) Calibration is chosen and fitted on **single-repeat** out-of-fold predictions of the development set, then stored (`calibrator.json`) with the final model. (4) Results are reported for all profiles and separately for the profiles whose simulated shortfall chance without the purchase is under 0.10, where the plan decides the band. (5) Stress variants are scored on the lockbox only, with the stored calibrated model, against an `identity` run with the same path count and seed. (6) Stale and incomplete ledgers are used only in the stress test and never trained on (this settles a conflict between the plan, which said they join the training set, and the execution doc, which kept them apart; the stress test is a robustness evaluation, and training on them would contaminate it).
+**Why.** The first harness reported the winner on the folds that chose it, tuned the ablation's hyperparameters on all data (including the test folds), averaged five repeats' predictions before choosing a calibration the served single model does not have, and ran the stress variants on profiles that had shaped the model. Half the generated students were already short before the purchase, so a headline Brier mostly measured the baseline.
+**Trade-off.** The lockbox is 10% of the profiles that no choice may use (the final model trains on the other 90%); a single lockbox score has sampling noise of its own and is not repeated. The PTPTN stress variant now removes the next disbursement instead of editing the ledger (see the stress module); it only changes students whose detected recurring items include a semester income.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)
 
 Not decisions — guesses made to keep moving. Each one must be confirmed or killed before anything load-bearing is built on it. When one is resolved, delete it here and write a real ADR above.
 
-2. `ASSUMED:` 52-week horizon cap for risk checks (resolve in P4).
+2. ~~52-week horizon cap for risk checks~~ **Resolved in P5 by D-36**: a risk check simulates to the last instalment (bounded at 180 weeks).
 3. `ASSUMED:` ~10,000 synthetic profiles suffice (resolve in P5 with learning curves).
 4. `ASSUMED:` (D-27) Shortfall is judged on the cumulative margin from RM0, not on each month alone; P5 reports the per-month version as a sensitivity check.
 5. `ASSUMED:` (D-28) The limit caps the financed total payable including fee, and used limit = sum of unpaid instalment amounts; confirm with a real checkout during P1.
 6. `ASSUMED:` (D-27) Incomplete-month thresholds and the unconfirmed-income series follow the same candidates and protocol as discretionary spend (fix in P3/P4). P3 evaluates total weekly income; the confirmed/unconfirmed split is decided by recurring detection in P4. **Resolved in P4 by D-35 (thresholds still assumptions).**
 7. `ASSUMED:` (D-31) The cited RM201-400 monthly spending band (Tok & Cheah 2024) is applied to *discretionary* spend only, with rent, phone and subscriptions added on top. The source most naturally describes total spending; the report states the interpretation.
-8. `ASSUMED:` (D-31) 105 of 121 generator parameters are assumptions (listed with reasons in `reports/datagen/README.md`); they are chosen for plausibility and coverage and stress-tested in P5, not defended as estimates.
+8. `ASSUMED:` (D-31) 107 of 123 generator parameters are assumptions (105 of 121 before the two calendar parameters were added) (listed with reasons in `reports/datagen/README.md`); they are chosen for plausibility and coverage and stress-tested in P5, not defended as estimates.
 9. `ASSUMED:` (D-06, P3) The Engine 1 selection rule keeps pooled MASE as the primary metric, with 13-week cumulative-margin error and bias reported beside it as co-checks rather than a veto. The audit showed MASE can favour a model that is biased on the running total (it rewards forecasting the median). If the author wants margin error to be co-primary, D-06 must be amended before the served model is fixed in P4.
 10. `ASSUMED:` (D-06, P3) "Pooled MASE" is aggregated as a geometric mean over a dataset's series (then the mean over datasets), with the arithmetic mean reported beside it. A small run showed one Berka account with a nearly flat early history giving per-origin MASE near 28, which would let a single series decide between the literature candidates. This was decided after that small run and before any full-run result; the small run's winner did not influence it.
+11. `ASSUMED:` (D-36) The LSTM's recursive continuation beyond 13 weeks (never evaluated, D-34) is acceptable for the 20-150 weeks a long plan needs. The labels of plans over about 12 months are the least reliable ones; P5 reports label statistics by plan length and the learning curve, but no evaluation of the forecaster at those horizons exists.
+12. `ASSUMED:` (D-31 note) The as-of window for Engine 2 labels is one year from 2025-01-01, drawn uniformly. It is in `params.yaml` as an assumed parameter; it is only meant to spread the calendar position, not to reproduce when real students use the app.
+13. `ASSUMED:` (D-37) The PTPTN stress scenario is "the next disbursement does not arrive within the horizon" (the later ones are unchanged), applied only to students whose detected recurring items include a semester income. A shorter delay (weeks) was not tested.
+14. `ASSUMED:` (D-37) The lockbox is every tenth profile index (10%) and the subgroup threshold is a simulated shortfall chance of 0.10 without the purchase (the Safe edge). Both were fixed before any training result.

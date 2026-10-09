@@ -82,7 +82,7 @@ Confirmed from the founding context documents and the scaffold interview (2026-1
 |---|---|
 | Known flows | Confirmed recurring income (allowance, PTPTN disbursements, part-time pay), confirmed recurring bills, every unpaid BNPL instalment, the checkout payment of a plan under evaluation (D-28), future-dated savings goals. Placed in the month of their exact dates. Recurring items are *suggested* by a detection heuristic (merchant normalisation → dominant gap 7/14/28–31 days → amount within ±15% → ≥3 occurrences) and *confirmed* by the user. |
 | Variable series | Weekly (Mon–Sun) sums of (a) expense transactions not linked to a recurring item or BNPL plan and not of type `savings` — discretionary spend — and (b) income transactions not covered by a confirmed recurring income (irregular / gig income). The current, incomplete week is excluded. |
-| Forecast | Served model (P3 winner) forecasts each weekly series for the horizon: 3 months on the dashboard; through the last due date of the plan under evaluation for a risk check, capped at 52 weeks. Weeks that straddle a month boundary are split by days. |
+| Forecast | Served model (P3 winner) forecasts each weekly series for the horizon: 3 months on the dashboard; through the last due date of the plan under evaluation for a risk check (bounded at 180 weeks, D-36). Weeks that straddle a month boundary are split by days. |
 | Uncertainty | Residual bootstrap: each path resamples the served model's rolling-origin forecast errors (moving-block bootstrap, block = 4 weeks), the same method for every candidate so the comparison is fair. 1,000 paths. |
 | Monthly margin | **No starting balance (D-27).** For each month of the horizon, per path: `margin = income − bills − BNPL instalments (incl. checkout payments) − discretionary spend`. Cumulative margin starts at RM0 at the start of the current month ("no savings assumed"; D-33) and accumulates month by month, the current month using its actual net so far plus the simulated remainder. |
 | Outputs | P10/P50/P90 monthly and cumulative margin; **P(shortfall)** = share of paths where the cumulative margin at any month-end in the horizon is < RM0, i.e. the plan could not be paid from income alone; the month most likely to go negative. |
@@ -246,6 +246,8 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-33 | The cumulative margin starts at RM0 at the start of the current month and includes this month's actual net so far (amends D-27's "RM0 today") | Read literally, income received earlier this month was ignored while the rest of the month's bills were counted, so users looked At Risk on any day after payday |
 | D-34 | Engine 1 serves the global LSTM (per kind), exported to ONNX; torch stays out of the API process | Best literature candidate by the D-06 rule: geometric-mean MASE 0.815 against 1.044 for the best benchmark, p = 2e-37, best on every dataset and history length; about 1 ms per forecast |
 | D-35 | Forecast gate = 4 calendar months and 17 complete weeks; incomplete-month rules (no data / no income / low spend); actual before `forecast_from`, rules and model after; error paths with a 1.5x widening | Four calendar months can hold eight weeks of data; stale ledgers must not read as zero spending; short histories must widen the bands, not report false certainty |
+| D-36 | A risk check simulates to the last instalment of the plan (bounded at 180 weeks); the dashboard forecast keeps its own 52-week default | The 52-week cap truncated 3,834 of the first 10,000 labels and made long plans look safer; found by audit before any training |
+| D-37 | Engine 2 evaluation: a 10% lockbox scored once, both ablation arms tuned inside every fold, calibration fitted on single-repeat out-of-fold predictions and stored, subgroup results where the baseline is under 0.10, stress on the lockbox with an identity control | The first harness reported the winner on the folds that chose it and tuned the ablation on its own test folds |
 
 ---
 
@@ -256,7 +258,7 @@ Unresolved. Anything marked `ASSUMED:` is a working assumption, not a confirmed 
 1. ~~Python 3.12 / Render memory~~ — resolved by the P0 spike (D-23, D-15; `reports/spikes/p0-dependency-spike.md`): 3.12 installs everything; torch must stay out of the served process.
 2. *(was Q2 — resolved, see above)*
 3. ~~Berka obtainable~~ — resolved in P3: the CTU Relational Repository's public guest database served all 4,500 accounts without a login (checksummed, `data/external/README.md`); Berka remains a benchmark only (D-25), and the global LSTM was not pre-trained on it.
-4. `ASSUMED:` Horizon cap of 52 weeks for risk checks; plans longer than 12 months are scored on their first year with a visible note.
+4. ~~Horizon cap of 52 weeks for risk checks~~ — resolved in P5 (D-36): a risk check simulates to the last instalment of the plan, bounded at 180 weeks.
 5. `ASSUMED:` Synthetic population size ~10,000 profiles is enough for stable 5×5 CV; P5 checks learning curves.
 6. Providers other than SPayLater, TikTok PayLater and Atome are not named in the app until the author collects a real checkout example for each; until then they use the manual "Other provider" entry (D-24).
 7. Whether the supervisor and faculty consultants want to review the simulation-derived label design before P5 training starts (recommended).

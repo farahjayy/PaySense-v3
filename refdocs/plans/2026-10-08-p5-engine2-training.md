@@ -15,7 +15,7 @@ The design is fixed in PRD §3.1 (decided design) and §3.2 (feature contract): 
 - **Train/serve parity is the main risk** (the P4 ml-auditor's finding 10):
   - Serving uses the recurring items the user *confirmed*. The generator's `truth.recurring_truth` is an answer key and is forbidden as an input (D-31), so labels must be made by running **recurring detection on the profile's ledger up to the as-of date and confirming what it suggests** — otherwise training labels are cleaner than anything serving can see.
   - Plan paid status must be the status **on the as-of date** (`paid_dates` on or before it), not the end state.
-  - The generator has no logging lag and no stale ledgers. P5 adds a small, seeded share of lagged and incomplete-month ledgers to the training set so the classifier is not trained only on tidy data (a stress set, reported separately).
+  - The generator has no logging lag and no stale ledgers. P5 builds a stress set from the held-out profiles (a stale ledger, a missing month, income down 20%, the next PTPTN disbursement not arriving) and reports it separately. *Resolved 2026-10-09 (audit M5):* the first draft of this plan added such ledgers to the training set; the execution doc kept them apart, and they stay apart, because the stress test is a robustness evaluation and training on them would contaminate it.
 - The label is the *served* model's simulation, so the training set is regenerated whenever the served model, `simulate`, the completeness rules or the generator parameters change (`params_hash` and a `label_version` are recorded in the artefact metadata).
 - Level bias in the served forecaster (ASSUMED 9) matters here: the P4 serving report quantifies it, and P5 reports the sensitivity of the labels to removing the bias term.
 
@@ -23,10 +23,11 @@ The design is fixed in PRD §3.1 (decided design) and §3.2 (feature contract): 
 
 **In:**
 - `backend/app/engines/risk/features.py` — the *only* place Engine 2 features are computed (D-09), with a `FEATURE_SCHEMA_HASH`. `ml/` imports it; nothing else re-implements a feature. Inputs are the ledger, plans, limits, a proposed plan and the Engine 1 outputs for the horizon.
-- **Label generation** (`ml/engine2_train/labels.py`): for each synthetic profile, build the ledger as of its `as_of`, detect-and-confirm recurring items, run `simulate` without and with the proposed plan, and store `p_shortfall_with`, the Engine 1 summary features, and provenance. Streamed, seeded, resumable.
-- **Training** (`ml/engine2_train/train.py`): the four candidates, monotone constraints on the features whose direction is known (PRD table), Optuna inner tuning with the budget recorded, 5×5 repeated stratified CV (strata = deciles of the soft label) **grouped by profile**, Brier primary, log-loss / ROC-AUC at p ≥ 0.30 / calibration slope and ECE secondary, Nadeau–Bengio corrected resampled t-tests between candidates.
-- **Calibration** chosen by nested CV (none / Platt / isotonic), applied to the winner.
-- **Proof of the link:** ablation (retrain the winner without the Engine 1-derived features, report ΔBrier with its CI) and stress tests (income −20%, a delayed PTPTN disbursement, the lagged/incomplete-ledger set).
+- **Label generation** (`ml/engine2_train/labels.py`): for each synthetic profile, build the ledger as of its own `as_of` (drawn per profile across a full year, D-31 note), detect-and-confirm recurring items, run `simulate` without and with the proposed plan **to the plan's last instalment** (D-36), and store `p_shortfall_with`, `p_shortfall_without`, the Engine 1 summary features, the per-month shortfall definition (sensitivity only) and provenance. Streamed, seeded and resumable (`--resume` continues an interrupted file of the same settings, and refuses a file made with different ones).
+- **Training** (`ml/engine2_train/train.py`): the four candidates, monotone constraints on the features whose direction is known (PRD table), Optuna inner tuning with the budget recorded, 5×5 repeated stratified CV (strata = quantile bins of the soft label, at most ten) **grouped by profile**, Brier primary (overall and where the baseline is under 0.10), log-loss / ROC-AUC at p ≥ 0.30 / calibration slope and ECE secondary, Nadeau–Bengio corrected resampled t-tests between candidates. Every tenth profile is a **lockbox** that no selection step sees (D-37).
+- **Calibration** chosen by nested CV (none / Platt / isotonic) on single-repeat out-of-fold predictions of the development set, fitted on them and stored with the model.
+- **Proof of the link:** ablation (retrain the winner without the Engine 1-derived features, both arms tuned inside every fold, ΔBrier with a t-based CI, overall and for the profiles whose baseline is under 0.10) and stress tests on the lockbox (income −20%, the next PTPTN disbursement not arriving, a stale ledger, a missing month, with an identity control).
+- **Sensitivity runs:** the winner without monotone constraints, a learning curve (ASSUMED 3), and the per-month shortfall definition (ASSUMED 4). The bias-term sensitivity was not built and the report says so.
 - **Artefacts** (`backend/models/engine2/<version>/`): the model file, `metadata.json` (training data version, feature list and hash, library versions, metrics, CV summary, calibration choice, git commit), and a start-up check that refuses to serve a mismatching feature hash.
 - **Report** (`reports/engine2/`) generated by script: tables, figures, README with limitations; winner and calibration recorded as an ADR; bands confirmed as pre-registered, not tuned.
 
@@ -53,6 +54,8 @@ The design is fixed in PRD §3.1 (decided design) and §3.2 (feature contract): 
 | Train/serve parity gaps (confirmed items, plan status, lag) | High | The three parity rules above, each with a test; the stress set; `label_version` in metadata |
 | Monotone constraints hurt accuracy | Low | Reported as the price of monotonicity (literature: 0–3% AUC), with unconstrained variants as a sensitivity run |
 | 10,000 profiles are too few for stable 5×5 CV | Medium | Learning curves (ASSUMED 5); the size can be raised by regenerating |
+| The label is mostly the baseline (half of the first 10,000 students were already short before any purchase) | Realised | Report Brier for all profiles and for those whose baseline is under 0.10, and say how often the purchase moves the band |
+| Long plans are truncated by a horizon cap, so the label understates their risk | Realised | D-36: the simulation runs to the last instalment; the report refuses truncated labels |
 | Fairness: age and employment must not leak | Low | They are not generated as attributes and not features; the feature list is checked against a forbidden list in a test |
 
 ## Definition of done
