@@ -30,7 +30,11 @@ from app.engines.forecasting.flows import MonthFlows, month_key
 from app.engines.forecasting.series import WeeklySeries
 
 DAYS_PER_WEEK = 7
-MAX_WEEKS = 52  # horizon cap for a risk check (PRD 3.1, ASSUMED 2)
+MAX_WEEKS = 52  # the default horizon cap (the dashboard forecast looks 3 months ahead anyway)
+# A risk check simulates to the last instalment of the proposed plan (ADR D-36, which replaces the
+# 52-week cap of ASSUMED 2): the longest plan the app allows is 36 monthly instalments, about 157
+# weeks, plus a month of lag to the first one and the rounding up to a whole month.
+RISK_CHECK_MAX_WEEKS = 180
 BOOTSTRAP_BLOCK = 4  # weeks
 DEFAULT_PATHS = 1000
 SAFE_BELOW = 0.10  # pre-registered before training: Safe < 0.10, Caution < 0.30, At Risk >= 0.30
@@ -65,6 +69,9 @@ class Simulation:
     weekly_spend_p50_sen: float = 0.0
     weekly_spend_p90_sen: float = 0.0
     monthly_income_p10_sen: float = 0.0
+    # sensitivity only (ASSUMED 4): the share of paths in which ANY single month's margin is
+    # negative, instead of the running total. The label and every band use `p_shortfall`.
+    p_shortfall_monthly: float = 0.0
 
 
 def forecaster_for(forecaster: Forecaster, kind: str) -> Forecaster:
@@ -160,6 +167,7 @@ def simulate(
     seed: int = 0,
     month_to_date_sen: int = 0,
     fallback_errors: bool = False,
+    max_weeks: int = MAX_WEEKS,
 ) -> Simulation:
     if series.start is None or series.weeks == 0:
         raise ValueError("a forecast needs at least one complete week of history")
@@ -167,8 +175,8 @@ def simulate(
     end = _month_end(month_key(end))  # whole months only: a partial last month would miss income
     # that lands later in it and invent a month-end shortfall
     needed = math.ceil(((end - first_monday).days + 1) / DAYS_PER_WEEK)
-    weeks = max(1, min(needed, MAX_WEEKS))
-    capped = needed > MAX_WEEKS
+    weeks = max(1, min(needed, max_weeks))
+    capped = needed > max_weeks
     covered_until = first_monday + timedelta(days=DAYS_PER_WEEK * weeks - 1)
     last_day = min(end, covered_until)
     months = [
@@ -204,6 +212,7 @@ def simulate(
     negative = cumulative < 0
     p_negative = negative.mean(axis=0)
     p_shortfall = float(negative.any(axis=1).mean())
+    p_shortfall_monthly = float((margin < 0).any(axis=1).mean())
 
     in_horizon = weights.sum(axis=1) > 0
     spend_weeks = spend[:, in_horizon]
@@ -228,6 +237,7 @@ def simulate(
         weekly_spend_p50_sen=float(np.percentile(spend_weeks, 50, axis=0).mean()),
         weekly_spend_p90_sen=float(np.percentile(spend_weeks, 90, axis=0).mean()),
         monthly_income_p10_sen=float(np.percentile(monthly_income, 10, axis=0).mean()),
+        p_shortfall_monthly=p_shortfall_monthly,
     )
 
 

@@ -206,3 +206,51 @@ def test_the_features_compute_from_the_inputs():
 
 def test_the_same_inputs_give_the_same_label():
     assert build().p_with == build().p_with
+
+
+def _monthly_plan(count, first=date(2025, 6, 12), amount=5000):
+    def due(i):
+        month = first.month - 1 + i
+        return date(first.year + month // 12, month % 12 + 1, first.day)
+
+    return Proposal(
+        "spaylater", TODAY, tuple(Instalment(i + 1, due(i), amount) for i in range(count))
+    )
+
+
+def test_a_24_instalment_plan_is_simulated_to_its_last_instalment():
+    plan = _monthly_plan(24)  # last instalment on 12 May 2027, 105 weeks out
+
+    built = build(proposal=plan, paths=100)
+
+    last = max(i.due_date for i in plan.instalments).strftime("%Y-%m")
+    for arm in (built.without, built.with_plan):  # the same horizon, so the arms are comparable
+        assert not arm.simulation.horizon_capped
+        assert arm.simulation.months[-1] == last
+        assert arm.simulation.weeks > 52
+
+
+def test_a_36_instalment_plan_also_fits_inside_the_risk_check_horizon():
+    built = build(proposal=_monthly_plan(36), paths=100)
+
+    assert not built.with_plan.simulation.horizon_capped
+    assert built.with_plan.simulation.months[-1] == "2028-05"
+
+
+def test_the_dashboard_forecast_keeps_its_own_cap_and_three_month_horizon():
+    from app.engines.forecasting.service import build_forecast
+
+    dashboard = build_forecast(ledger(), ITEMS, [], TODAY, MovingAverage(8), paths=100)
+
+    assert len(dashboard.simulation.months) == 3
+    assert not dashboard.simulation.horizon_capped and dashboard.simulation.weeks < 52
+    long_end = date(2027, 5, 31)
+    capped = build_forecast(ledger(), ITEMS, [], TODAY, MovingAverage(8), end=long_end, paths=100)
+    assert capped.simulation.horizon_capped and capped.simulation.weeks == 52
+
+
+def test_both_arms_also_report_the_per_month_definition_for_the_sensitivity_check():
+    built = build(paths=100)
+
+    assert 0 <= built.p_without_monthly <= 1 and 0 <= built.p_with_monthly <= 1
+    assert built.p_with_monthly == built.with_plan.simulation.p_shortfall_monthly

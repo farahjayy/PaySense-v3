@@ -17,6 +17,19 @@ from dataclasses import dataclass
 SEN_PER_RM = 100
 RATIO_CAP = 10.0  # a ratio above ten months of income is "far beyond affordable"; cap the rest
 DEFINITIONS_VERSION = "v1"  # bump when a feature's definition (not just its name) changes
+# Windows and caps that change feature VALUES without changing a name or a direction. They are part
+# of the schema hash (the builder in `forecasting/summary.py` imports them), so changing one makes
+# an artefact trained under the old values refuse to serve.
+RECENT_MONTHS = 3  # complete months averaged for the expected income (every ratio's denominator)
+COMMITMENT_MONTHS = 3  # existing BNPL obligations due in this many months are spread over them
+COMMITMENT_DAYS_PER_MONTH = 30
+FEATURE_CONSTANTS: dict[str, float] = {
+    "recent_months": RECENT_MONTHS,
+    "commitment_months": COMMITMENT_MONTHS,
+    "commitment_days_per_month": COMMITMENT_DAYS_PER_MONTH,
+    "ratio_cap": RATIO_CAP,
+    "sen_per_rm": SEN_PER_RM,
+}
 
 # name -> direction of its effect on risk: +1 raises it, -1 lowers it, 0 none / unknown
 MONOTONE_DIRECTIONS: dict[str, int] = {
@@ -43,9 +56,16 @@ FEATURE_NAMES: tuple[str, ...] = tuple(MONOTONE_DIRECTIONS)
 ENGINE1_FEATURES: tuple[str, ...] = FEATURE_NAMES[:6]
 
 
-def schema_hash(names: list[str], directions: dict[str, int]) -> str:
+def schema_hash(
+    names: list[str], directions: dict[str, int], constants: dict[str, float] | None = None
+) -> str:
     blob = json.dumps(
-        {"names": names, "directions": directions, "definitions": DEFINITIONS_VERSION},
+        {
+            "names": names,
+            "directions": directions,
+            "definitions": DEFINITIONS_VERSION,
+            "constants": FEATURE_CONSTANTS if constants is None else constants,
+        },
         sort_keys=False,
         separators=(",", ":"),
     )

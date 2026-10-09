@@ -24,6 +24,7 @@ from app.engines.forecasting.flows import ProposedPlan, known_flows, unlogged_oc
 from app.engines.forecasting.series import build_weekly_series
 from app.engines.forecasting.simulate import (
     DEFAULT_PATHS,
+    MAX_WEEKS,
     Forecaster,
     Simulation,
     band,
@@ -99,6 +100,7 @@ def build_forecast(
     end: date | None = None,
     paths: int = DEFAULT_PATHS,
     seed: int = 0,
+    max_weeks: int = MAX_WEEKS,
 ) -> Forecast:
     rows = [r for r in rows if as_date(r["date"]) <= today]  # nothing from the future
     items, plans = list(items), list(plans)
@@ -145,6 +147,7 @@ def build_forecast(
         month_to_date_sen=month_to_date_net(rows, first_of_month, forecast_from)
         + unlogged_occurrences_net(confirmed, rows, first_of_month, forecast_from),
         fallback_errors=fallback,
+        max_weeks=max_weeks,
     )
     latest = max(as_date(r["date"]) for r in rows)
     return Forecast(

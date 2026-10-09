@@ -6,6 +6,8 @@ import pytest
 from app.engines.forecasting.flows import MonthFlows
 from app.engines.forecasting.series import WeeklySeries
 from app.engines.forecasting.simulate import (
+    MAX_WEEKS,
+    RISK_CHECK_MAX_WEEKS,
     band,
     block_bootstrap,
     health_score,
@@ -243,6 +245,57 @@ def test_the_horizon_is_capped_at_fifty_two_weeks():
     )
 
     assert result.horizon_capped and result.weeks == 52
+
+
+def test_a_risk_check_can_raise_the_cap_to_cover_the_whole_plan():
+    months = [f"{2025 + (m - 1) // 12}-{(m - 1) % 12 + 1:02d}" for m in range(5, 5 + 28)]
+    end = date(2027, 8, 31)  # 28 months: well past 52 weeks
+    base = dict(
+        series=series(7000), known=flows(months), forecaster=LastValue(),
+        spend_errors=np.zeros(10), income_errors=np.zeros(0), start=TODAY, end=end,
+        paths=5, seed=1,
+    )  # fmt: skip
+
+    default = simulate(**base)
+    raised = simulate(**base, max_weeks=RISK_CHECK_MAX_WEEKS)
+
+    assert default.horizon_capped and default.weeks == MAX_WEEKS
+    assert not raised.horizon_capped and raised.weeks > MAX_WEEKS
+    assert raised.months == months  # the last month of the plan is simulated, not dropped
+
+
+def test_the_risk_check_cap_still_bounds_the_horizon():
+    months = [f"{2025 + (m - 1) // 12}-{(m - 1) % 12 + 1:02d}" for m in range(5, 5 + 60)]
+
+    result = simulate(
+        series=series(7000), known=flows(months), forecaster=LastValue(),
+        spend_errors=np.zeros(10), income_errors=np.zeros(0), start=TODAY,
+        end=date(2030, 4, 30), paths=5, seed=1, max_weeks=RISK_CHECK_MAX_WEEKS,
+    )  # fmt: skip
+
+    assert result.horizon_capped and result.weeks == RISK_CHECK_MAX_WEEKS
+
+
+def test_the_risk_check_cap_covers_the_longest_plan_the_app_allows():
+    from app.domain.schedule import MAX_INSTALMENTS
+
+    longest_weeks = MAX_INSTALMENTS * 53 // 12 + 8  # monthly, a month of lag, month rounding
+    assert longest_weeks <= RISK_CHECK_MAX_WEEKS
+
+
+def test_the_per_month_shortfall_is_a_sensitivity_measure_beside_the_cumulative_one():
+    known = {
+        "2025-05": MonthFlows(income_sen=100000),
+        "2025-06": MonthFlows(bills_sen=30000),
+    }  # a good month then a short one: the running total never goes below zero
+
+    result = simulate(
+        series=series(0), known=known, forecaster=LastValue(), spend_errors=np.zeros(10),
+        income_errors=np.zeros(0), start=TODAY, end=date(2025, 6, 30), paths=20, seed=1,
+    )  # fmt: skip
+
+    assert result.p_shortfall == 0.0  # the definition the label uses (D-27, D-33)
+    assert result.p_shortfall_monthly == 1.0  # June alone is short
 
 
 def test_what_already_happened_this_month_counts_toward_this_months_margin():

@@ -14,16 +14,17 @@ from typing import Any, Protocol
 from app.domain.flows import as_date, month_summary
 from app.engines.forecasting.flows import ProposedPlan
 from app.engines.forecasting.service import Forecast, build_forecast, horizon_end
-from app.engines.forecasting.simulate import Forecaster
+from app.engines.forecasting.simulate import RISK_CHECK_MAX_WEEKS, Forecaster
 from app.engines.risk.features import (
+    COMMITMENT_DAYS_PER_MONTH,
+    COMMITMENT_MONTHS,
+    RECENT_MONTHS,
     Commitments,
     Engine1Summary,
     FeatureInputs,
     PlanInput,
 )
 
-RECENT_MONTHS = 3  # months averaged for the expected income
-COMMITMENT_MONTHS = 3  # existing BNPL obligations are spread over this many months
 WEEKS_PER_YEAR = 52
 MONTHS_PER_YEAR = 12
 DAYS_PER_YEAR = 365
@@ -50,6 +51,14 @@ class Built:
     @property
     def p_without(self) -> float:
         return self.without.simulation.p_shortfall
+
+    @property
+    def p_with_monthly(self) -> float:
+        return self.with_plan.simulation.p_shortfall_monthly
+
+    @property
+    def p_without_monthly(self) -> float:
+        return self.without.simulation.p_shortfall_monthly
 
 
 def expected_monthly_income(rows: Iterable[Mapping[str, Any]], today: date) -> int:
@@ -80,7 +89,7 @@ def _commitments(
     limit: int | None,
     today: date,
 ) -> Commitments:
-    soon = today + timedelta(days=30 * COMMITMENT_MONTHS)
+    soon = today + timedelta(days=COMMITMENT_DAYS_PER_MONTH * COMMITMENT_MONTHS)
     owed = due_soon = by_provider = active = 0
     for plan in plans:
         unpaid = [i for i in plan["installments"] if not i["is_paid"]]
@@ -129,12 +138,17 @@ def build_feature_inputs(
     """Engine 2 inputs and both simulations, or None if the ledger is locked.
 
     The two simulations share one seed, so they draw the same random paths and the purchase can
-    only make things worse, never better, by chance.
+    only make things worse, never better, by chance. Both run to the plan's last instalment
+    (up to `RISK_CHECK_MAX_WEEKS`, ADR D-36): a label that stopped at 52 weeks would leave the
+    tail of a long plan unscored and make "more instalments" look safer than it is.
     """
     rows, items, plans = list(rows), list(items), list(plans)
     plan_end = max((i.due_date for i in proposal.instalments), default=today)
     end = max(horizon_end(today), plan_end)
-    common = dict(rows=rows, items=items, plans=plans, today=today, forecaster=forecaster)
+    common = dict(
+        rows=rows, items=items, plans=plans, today=today, forecaster=forecaster,
+        max_weeks=RISK_CHECK_MAX_WEEKS,
+    )  # fmt: skip
     without = build_forecast(**common, end=end, paths=paths, seed=seed)
     if without.status != "ok":
         return None

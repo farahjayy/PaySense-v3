@@ -6,6 +6,7 @@ import pytest
 
 from app.engines.risk import features
 from app.engines.risk.features import (
+    FEATURE_CONSTANTS,
     FEATURE_NAMES,
     FEATURE_SCHEMA_HASH,
     MONOTONE_DIRECTIONS,
@@ -158,6 +159,24 @@ def test_the_schema_hash_changes_with_names_order_or_directions():
     assert schema_hash(names[::-1], MONOTONE_DIRECTIONS) != base
     assert schema_hash([*names[:-1], "other"], MONOTONE_DIRECTIONS) != base
     assert schema_hash(names, {**MONOTONE_DIRECTIONS, "limit_known": 1}) != base
+
+
+def test_the_schema_hash_covers_the_constants_that_change_feature_values():
+    names = list(FEATURE_NAMES)
+    base = schema_hash(names, MONOTONE_DIRECTIONS, FEATURE_CONSTANTS)
+
+    assert base == FEATURE_SCHEMA_HASH
+    assert set(FEATURE_CONSTANTS) >= {"recent_months", "commitment_months", "ratio_cap"}
+    for key, value in FEATURE_CONSTANTS.items():
+        changed = {**FEATURE_CONSTANTS, key: value + 1}
+        assert schema_hash(names, MONOTONE_DIRECTIONS, changed) != base, key
+
+
+def test_the_summary_builder_reads_its_window_constants_from_the_feature_module():
+    from app.engines.forecasting import summary
+
+    assert FEATURE_CONSTANTS["recent_months"] == summary.RECENT_MONTHS
+    assert FEATURE_CONSTANTS["commitment_months"] == summary.COMMITMENT_MONTHS
 
 
 FORBIDDEN = ("age", "employ", "persona", "repayment", "overdue", "late_pay", "gender", "race")
