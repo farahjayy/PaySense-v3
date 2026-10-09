@@ -1,0 +1,128 @@
+{
+  "baseline": {
+    "active_plans_with_purchase": 1.0,
+    "bnpl_outstanding_to_income": 0.3018564187152438,
+    "disc_volatility": 62.71251232328663,
+    "disc_weekly_p50": 53.493376843400824,
+    "disc_weekly_p90": 218.2577318765699,
+    "dsr_with_purchase": 0.3891131092623784,
+    "income_p10_monthly": 856.6188461538461,
+    "instalment_amount": 39.72708333333333,
+    "instalment_to_income": 0.0372548901366673,
+    "limit_known": 0.0,
+    "limit_utilisation_with_purchase": 0.0,
+    "margin_cum_p10_without": -21.845,
+    "margin_monthly_p50_without": 277.885,
+    "monthly_fee_rate": 1.5,
+    "num_instalments": 6.0,
+    "upfront_to_income": 0.0
+  },
+  "calibrator": {
+    "coef": 0.9414210820382163,
+    "intercept": 0.01818952554712277,
+    "kind": "platt"
+  },
+  "explanation": {
+    "method": "baseline_shapley",
+    "reference": "the median development profile, feature by feature (ADR D-40)"
+  },
+  "family": "lightgbm",
+  "feature_names": [
+    "disc_weekly_p50",
+    "disc_weekly_p90",
+    "disc_volatility",
+    "margin_monthly_p50_without",
+    "margin_cum_p10_without",
+    "income_p10_monthly",
+    "instalment_amount",
+    "num_instalments",
+    "monthly_fee_rate",
+    "instalment_to_income",
+    "dsr_with_purchase",
+    "active_plans_with_purchase",
+    "bnpl_outstanding_to_income",
+    "upfront_to_income",
+    "limit_utilisation_with_purchase",
+    "limit_known"
+  ],
+  "feature_schema_hash": "2066b37e13182a5e",
+  "label": {
+    "horizon_max_weeks": 180,
+    "label_version": "2",
+    "paths": 1000,
+    "seed": 20251228,
+    "served_model_files": {
+      "lstm_income.onnx": "87186798ef3821b42c21690df626a921707bf81291b26f14c71538222cedf36d",
+      "lstm_spend.onnx": "56b0e083483091d9c1e5d265e06ead1ab5393e118ef8c777d6d63c94f0acdb9a"
+    }
+  },
+  "logit_eps": 1e-06,
+  "metrics": {
+    "constant_baseline_brier": 0.1799272868861111,
+    "cv_brier": 0.016308635948330798,
+    "lockbox_band_agreement": 0.915,
+    "lockbox_calibrated": {
+      "auc_at_030": 0.9887179487179487,
+      "brier": 0.019829576451768652,
+      "calibration_slope": 0.9558998877960599,
+      "ece": 0.018134927645322926,
+      "log_loss": 0.27877427953044354
+    },
+    "lockbox_constant_brier": 0.17884348564277774,
+    "lockbox_logistic_brier": 0.02625313454537298,
+    "lockbox_raw": {
+      "auc_at_030": 0.9887179487179487,
+      "brier": 0.020095983712510136,
+      "calibration_slope": 0.8996308610889563,
+      "ece": 0.019894392723599094,
+      "log_loss": 0.2798273436026782
+    }
+  },
+  "monotone_constraints": true,
+  "onnx_sha256": "b384b3c0320b987c4f651b65e87a3240a5ae2b36324c965d9ac162ec8c45bd28",
+  "parity": {
+    "onnx_vs_trained_model": {
+      "max_abs_diff": 0.0002621615610184369,
+      "rows": 3000,
+      "rows_over_1e-6": 1
+    },
+    "served_vs_trained_calibrated": {
+      "max_abs_diff": 0.0003056334491866597,
+      "rows": 3000,
+      "rows_over_1e-6": 1
+    }
+  },
+  "serving_constants": {
+    "BOOTSTRAP_BLOCK": 4,
+    "DASHBOARD_MONTHS": 3,
+    "ERROR_INFLATION": 1.5,
+    "RISK_CHECK_MAX_WEEKS": 180
+  },
+  "training": {
+    "config": "full",
+    "development_profiles": 9000,
+    "final_params": {
+      "colsample_bytree": 0.8188190955205956,
+      "learning_rate": 0.12159519563464402,
+      "min_child_samples": 23,
+      "n_estimators": 100,
+      "num_leaves": 17,
+      "subsample": 0.7450583414005654
+    },
+    "git_commit": "911d0934a7ef981a5f3c872d70ed4243dba8b784+dirty",
+    "labels_sha256": "7c8d408db49779b104287119f5a555794edf3c1b28f7351594a2a3a4b1ed321f",
+    "lockbox_profiles": 1000,
+    "versions": {
+      "lightgbm": "4.7.0",
+      "numpy": "2.5.3",
+      "onnxruntime": "1.30.0",
+      "optuna": "5.0.0",
+      "python": "3.12.15",
+      "scikit-learn": "1.9.1",
+      "scipy": "1.18.1",
+      "torch": "2.14.1+cpu",
+      "xgboost": "3.4.1"
+    }
+  },
+  "version": "v1"
+}

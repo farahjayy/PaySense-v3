@@ -35,6 +35,7 @@ from app.api.rate_limit import LoginRateLimiter, RequestRateLimiter
 from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
+from app.engines.risk.artefact import load_if_present
 from app.engines.risk.check import Predictor
 
 _STATUS_CODES = {
@@ -174,7 +175,8 @@ def __getattr__(name: str) -> Any:
         raise AttributeError(name)
     if _app is None:
         try:
-            _app = create_app(get_settings())
+            # A risk model that is present but does not match this code stops start-up here.
+            _app = create_app(get_settings(), predictor=load_if_present())
         except MissingSettingsError as err:
             print(err, file=sys.stderr)
             raise SystemExit(2) from err

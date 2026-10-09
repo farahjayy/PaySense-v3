@@ -1,0 +1,171 @@
+"""The served risk model: load it, check it matches the running code, predict and explain.
+
+The artefact is a folder (`models/engine2/<version>/`) holding `model.onnx` (the trained
+classifier, run with ONNX Runtime so no training library enters the API process, D-15) and
+`metadata.json` (the calibrator as plain numbers, the reference student for explanations, and
+everything the model was built against). No pickle anywhere.
+
+The server must refuse a model that was built against different code (D-09, the v1 failure): the
+feature schema hash, the feature order, the simulation constants that decided every label, and the
+exact forecast network files must all equal what is running now. Any difference raises
+`ArtefactError`, which stops the API from starting.
+"""
+
+import hashlib
+import json
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import onnxruntime
+
+from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
+from app.engines.forecasting.service import DASHBOARD_MONTHS, ERROR_INFLATION
+from app.engines.forecasting.serving import ARTEFACT_VERSION as ENGINE1_VERSION
+from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEEKS
+from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
+from app.engines.risk.shapley import baseline_shapley
+
+MODEL_ROOT = Path(__file__).resolve().parents[3] / "models" / "engine2"
+MODEL_FILE = "model.onnx"
+METADATA_FILE = "metadata.json"
+
+LIVE_CONSTANTS = {
+    "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
+    "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
+    "ERROR_INFLATION": ERROR_INFLATION,
+    "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
+}
+
+
+class ArtefactError(RuntimeError):
+    """The risk model cannot be served; the message says why."""
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _read_metadata(folder: Path) -> dict[str, Any]:
+    path = folder / METADATA_FILE
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as err:
+        raise ArtefactError(f"cannot read the model metadata at {path}: {err}") from err
+
+
+def _check_matches_running_code(meta: Mapping[str, Any], folder: Path) -> None:
+    if meta.get("feature_schema_hash") != FEATURE_SCHEMA_HASH:
+        raise ArtefactError(
+            f"the model was built for feature schema {meta.get('feature_schema_hash')!r} but this "
+            f"code computes {FEATURE_SCHEMA_HASH!r}; retrain or redeploy matching code"
+        )
+    if list(meta.get("feature_names", [])) != list(FEATURE_NAMES):
+        raise ArtefactError("the model's feature order differs from the code's feature order")
+    recorded = meta.get("serving_constants", {})
+    for name, live in LIVE_CONSTANTS.items():
+        if recorded.get(name) != live:
+            raise ArtefactError(
+                f"{name} was {recorded.get(name)!r} when the model's labels were made but is "
+                f"{live!r} now"
+            )
+    label = meta.get("label", {})
+    if label.get("horizon_max_weeks") != RISK_CHECK_MAX_WEEKS:
+        raise ArtefactError(
+            f"the labels were made with a {label.get('horizon_max_weeks')!r}-week horizon limit, "
+            f"this code uses {RISK_CHECK_MAX_WEEKS}"
+        )
+    for filename, digest in (label.get("served_model_files") or {}).items():
+        live_path = ENGINE1_DIR / ENGINE1_VERSION / filename
+        if not live_path.exists() or _sha256(live_path) != digest:
+            raise ArtefactError(
+                f"the labels were made with a different forecast model file ({filename}); "
+                "the served forecast model has changed since"
+            )
+    if not label.get("served_model_files"):
+        raise ArtefactError("the artefact does not record which forecast model made its labels")
+    model_path = folder / MODEL_FILE
+    if not model_path.exists() or _sha256(model_path) != meta.get("onnx_sha256"):
+        raise ArtefactError("the model file does not match the checksum recorded at export")
+
+
+class OnnxPredictor:
+    """Calibrated probability from the 16 features, and which features pushed it up."""
+
+    def __init__(self, folder: Path, meta: Mapping[str, Any]) -> None:
+        self.version: str = str(meta["version"])
+        self.feature_schema_hash: str = str(meta["feature_schema_hash"])
+        self.family: str = str(meta.get("family", ""))
+        self._calibrator: Mapping[str, Any] = meta["calibrator"]
+        self._eps = float(meta.get("logit_eps", 1e-6))
+        self._baseline = np.array([meta["baseline"][name] for name in FEATURE_NAMES], dtype=float)
+        options = onnxruntime.SessionOptions()
+        options.intra_op_num_threads = 1  # one request at a time on a small host
+        self._session = onnxruntime.InferenceSession(
+            str(folder / MODEL_FILE), sess_options=options, providers=["CPUExecutionProvider"]
+        )
+        shape = self._session.get_inputs()[0].shape
+        if shape[-1] != len(FEATURE_NAMES):
+            raise ArtefactError(
+                f"the model takes {shape[-1]} inputs, expected {len(FEATURE_NAMES)}"
+            )
+        self._input = self._session.get_inputs()[0].name
+        names = [o.name for o in self._session.get_outputs()]
+        self._output = "probabilities" if "probabilities" in names else names[-1]
+
+    # ------------------------------------------------------------------ prediction
+    def _raw(self, batch: np.ndarray) -> np.ndarray:
+        out = self._session.run([self._output], {self._input: batch.astype(np.float32)})[0]
+        return np.asarray(out, dtype=float)[:, 1]
+
+    def _calibrate(self, raw: np.ndarray) -> np.ndarray:
+        kind = self._calibrator["kind"]
+        if kind == "none":
+            return raw
+        if kind == "platt":
+            clipped = np.clip(raw, self._eps, 1 - self._eps)
+            logit = np.log(clipped / (1 - clipped))
+            return 1 / (
+                1 + np.exp(-(self._calibrator["coef"] * logit + self._calibrator["intercept"]))
+            )
+        if kind == "isotonic":
+            return np.interp(raw, self._calibrator["x"], self._calibrator["y"])
+        raise ArtefactError(f"unknown calibration {kind!r}")
+
+    def predict_batch(self, batch: np.ndarray) -> np.ndarray:
+        return self._calibrate(self._raw(np.asarray(batch, dtype=float)))
+
+    def predict(self, vector: Sequence[float]) -> float:
+        return float(self.predict_batch(np.asarray([vector], dtype=float))[0])
+
+    # ------------------------------------------------------------------ explanation
+    def contributions(self, vector: Sequence[float]) -> list[float]:
+        """Exact Shapley values against the reference student, on the scale of `predict` (D-40)."""
+        values = baseline_shapley(
+            self.predict_batch, np.asarray(vector, dtype=float), self._baseline
+        )
+        return [float(v) for v in values]
+
+
+def load_engine2(folder: Path) -> OnnxPredictor:
+    """Load one version folder, or raise `ArtefactError` saying what is wrong."""
+    meta = _read_metadata(folder)
+    _check_matches_running_code(meta, folder)
+    return OnnxPredictor(folder, meta)
+
+
+def load_if_present(root: Path = MODEL_ROOT) -> OnnxPredictor | None:
+    """The newest version under `root`; None when nothing is deployed there (the risk check then
+    says it is unavailable). A version that is there but wrong stops start-up."""
+    if not root.is_dir():
+        return None
+    versions = sorted(p for p in root.iterdir() if p.is_dir() and (p / METADATA_FILE).exists())
+    if not versions:
+        return None
+    return load_engine2(max(versions, key=_version_key))
+
+
+def _version_key(folder: Path) -> tuple[int, str]:
+    digits = "".join(ch for ch in folder.name if ch.isdigit())
+    return (int(digits) if digits else -1, folder.name)

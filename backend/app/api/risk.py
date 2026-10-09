@@ -35,19 +35,17 @@ from app.db import plans as plans_repo
 from app.db import provider_limits as limits_repo
 from app.db import recurring_items, risk_checks, transactions
 from app.domain.plan_builder import ProposalError
-from app.engines.forecasting.flows import occurrences
 from app.engines.forecasting.simulate import band as band_of
-from app.engines.risk.check import CheckResult, Curve, Predictor, RiskRequest, run_check
-from app.engines.risk.counterfactual import Counterfactual, describe, search
-from app.engines.risk.explain import ExplainedFactor, select_factors
-from app.engines.risk.features import as_vector
+from app.engines.risk.assess import assess
+from app.engines.risk.check import CheckResult, Curve, Predictor, RiskRequest
+from app.engines.risk.counterfactual import Counterfactual, describe
+from app.engines.risk.explain import ExplainedFactor
 from app.engines.risk.repayment import RepaymentFlag, assess_repayment
 
 logger = logging.getLogger("paysense")
 router = APIRouter(prefix="/risk", tags=["risk"], responses=PROTECTED_RESPONSES)
 
 Band = Literal["Safe", "Caution", "At Risk"]
-NEXT_INCOME_LOOKAHEAD_DAYS = 400
 CHECKS_PER_MINUTE = 10
 
 
@@ -148,17 +146,6 @@ def _request(body: PlanIn) -> RiskRequest:
     )
 
 
-def _next_income(items: list[dict[str, Any]], today: dt.date) -> dt.date | None:
-    start = today + dt.timedelta(days=1)
-    end = today + dt.timedelta(days=NEXT_INCOME_LOOKAHEAD_DAYS)
-    upcoming = [
-        days[0]
-        for item in items
-        if item["kind"] == "income" and (days := occurrences(item, start, end))
-    ]
-    return min(upcoming) if upcoming else None
-
-
 def _repayment(plans: list[dict[str, Any]], today: dt.date) -> RepaymentFlag:
     return assess_repayment((i for plan in plans for i in plan["installments"]), today)
 
@@ -230,25 +217,15 @@ def _evaluate(
     items = recurring_items.list_items(db, user_id, active_only=True)
     plans = plans_repo.list_with_instalments(db, user_id)
     limits = {r["provider"]: r["limit_sen"] for r in limits_repo.list_limits(db, user_id)}
-    seed = daily_seed(user_id, today)
-    request = _request(body)
-
-    def check(candidate: RiskRequest) -> CheckResult:
-        return run_check(
-            rows, items, plans, limits, candidate, today, forecaster, predictor, seed=seed
-        )
-
     try:
-        result = check(request)
-        factors: list[ExplainedFactor] = []
-        suggestion: Counterfactual | None = None
-        if result.status == "ok" and result.features is not None:
-            vector = as_vector(result.features)
-            factors = select_factors(result.features, predictor.contributions(vector))
-            suggestion = search(request, _next_income(items, today), check, baseline=result)
+        found = assess(
+            rows, items, plans, limits, _request(body), today, forecaster, predictor,
+            seed=daily_seed(user_id, today),
+        )  # fmt: skip
     except ProposalError as err:
         raise unprocessable(err.code, err.message) from err
-    return _out(result, factors, suggestion, _repayment(plans, today), predictor), result
+    out = _out(found.result, found.factors, found.suggestion, _repayment(plans, today), predictor)
+    return out, found.result
 
 
 def _frozen_row(out: RiskCheckOut, request: PlanIn, features: dict[str, float]) -> dict[str, Any]:
