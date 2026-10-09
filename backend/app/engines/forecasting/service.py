@@ -90,20 +90,34 @@ def _locked(reason: str, months: int, suspects: list[SuspectMonth], weeks: int =
     return Forecast("locked", months, suspects, weeks, reason, None, None, None)
 
 
-def build_forecast(
+@dataclass(frozen=True)
+class LedgerPrep:
+    """Everything about a ledger that does not depend on the plan being tried: it is read once and
+    reused for every candidate plan in a risk check."""
+
+    rows: list[Mapping[str, Any]]
+    confirmed: list[Mapping[str, Any]]
+    months: int
+    suspects: list[SuspectMonth]
+    series: Any
+    forecast_from: date
+    spend_errors: np.ndarray
+    income_errors: np.ndarray
+    fallback: bool
+    error_std: float
+    month_to_date_sen: int
+    latest: date
+    unmatched: tuple[str, ...]
+
+
+def prepare_ledger(
     rows: Iterable[Mapping[str, Any]],
     items: Iterable[Mapping[str, Any]],
-    plans: Iterable[Mapping[str, Any]],
     today: date,
     forecaster: Forecaster,
-    proposed: ProposedPlan | None = None,
-    end: date | None = None,
-    paths: int = DEFAULT_PATHS,
-    seed: int = 0,
-    max_weeks: int = MAX_WEEKS,
-) -> Forecast:
+) -> LedgerPrep | Forecast:
+    """The plan-independent half of a forecast, or the locked forecast if the ledger is too thin."""
     rows = [r for r in rows if as_date(r["date"]) <= today]  # nothing from the future
-    items, plans = list(items), list(plans)
     completeness = assess(rows, today)
     if completeness.status == "locked":
         return _locked("needs_four_months", completeness.months_of_history, [])
@@ -118,8 +132,6 @@ def build_forecast(
         return _locked("needs_four_months", months, suspects, series.weeks)
 
     forecast_from = series.start + timedelta(days=7 * series.weeks)
-    horizon = max(end or horizon_end(today), forecast_from)
-    known = known_flows(confirmed, plans, forecast_from, horizon, proposed)
     spend_errors = rolling_error_paths(
         series.spend, series.start, forecaster_for(forecaster, "spend")
     )
@@ -127,40 +139,86 @@ def build_forecast(
         series.income, series.start, forecaster_for(forecaster, "income")
     )
     fallback = len(spend_errors) < MIN_ERROR_PATHS or len(income_errors) < MIN_ERROR_PATHS
-    if fallback:  # too short to score the model: use the series' own spread, never zero noise
+    if fallback:  # too short to score the model: use the series own spread, never zero noise
         spend_errors = mean_forecast_errors(series.spend)
         income_errors = mean_forecast_errors(series.income)
     error_std = float(np.std(spend_errors)) if spend_errors.size else 0.0
-    spend_errors = widen(spend_errors, ERROR_INFLATION)
-    income_errors = widen(income_errors, ERROR_INFLATION)
     first_of_month = date(forecast_from.year, forecast_from.month, 1)
+    return LedgerPrep(
+        rows=rows,
+        confirmed=confirmed,
+        months=months,
+        suspects=suspects,
+        series=series,
+        forecast_from=forecast_from,
+        spend_errors=widen(spend_errors, ERROR_INFLATION),
+        income_errors=widen(income_errors, ERROR_INFLATION),
+        fallback=fallback,
+        error_std=error_std,
+        month_to_date_sen=month_to_date_net(rows, first_of_month, forecast_from)
+        + unlogged_occurrences_net(confirmed, rows, first_of_month, forecast_from),
+        latest=max(as_date(r["date"]) for r in rows),
+        unmatched=_unmatched(rows, confirmed),
+    )
+
+
+def forecast_prepared(
+    prep: LedgerPrep,
+    plans: Iterable[Mapping[str, Any]],
+    today: date,
+    forecaster: Forecaster,
+    proposed: ProposedPlan | None = None,
+    end: date | None = None,
+    paths: int = DEFAULT_PATHS,
+    seed: int = 0,
+    max_weeks: int = MAX_WEEKS,
+) -> Forecast:
+    """The plan-dependent half: known flows for this plan, then the simulation."""
+    horizon = max(end or horizon_end(today), prep.forecast_from)
+    known = known_flows(prep.confirmed, list(plans), prep.forecast_from, horizon, proposed)
     simulation = simulate(
-        series,
+        prep.series,
         known,
         forecaster,
-        spend_errors,
-        income_errors,
-        forecast_from,
+        prep.spend_errors,
+        prep.income_errors,
+        prep.forecast_from,
         horizon,
         paths,
         seed,
-        month_to_date_sen=month_to_date_net(rows, first_of_month, forecast_from)
-        + unlogged_occurrences_net(confirmed, rows, first_of_month, forecast_from),
-        fallback_errors=fallback,
+        month_to_date_sen=prep.month_to_date_sen,
+        fallback_errors=prep.fallback,
         max_weeks=max_weeks,
     )
-    latest = max(as_date(r["date"]) for r in rows)
     return Forecast(
         status="ok",
-        months_of_history=months,
-        suspect_months=suspects,
-        series_weeks=series.weeks,
+        months_of_history=prep.months,
+        suspect_months=prep.suspects,
+        series_weeks=prep.series.weeks,
         lock_reason=None,
         simulation=simulation,
         band=band(simulation.p_shortfall),
         health_score=health_score(simulation.p_shortfall),
-        data_through=latest,
-        stale_days=(today - latest).days,
-        unmatched_items=_unmatched(rows, confirmed),
-        spend_error_std_sen=error_std,
+        data_through=prep.latest,
+        stale_days=(today - prep.latest).days,
+        unmatched_items=prep.unmatched,
+        spend_error_std_sen=prep.error_std,
     )
+
+
+def build_forecast(
+    rows: Iterable[Mapping[str, Any]],
+    items: Iterable[Mapping[str, Any]],
+    plans: Iterable[Mapping[str, Any]],
+    today: date,
+    forecaster: Forecaster,
+    proposed: ProposedPlan | None = None,
+    end: date | None = None,
+    paths: int = DEFAULT_PATHS,
+    seed: int = 0,
+    max_weeks: int = MAX_WEEKS,
+) -> Forecast:
+    prep = prepare_ledger(rows, items, today, forecaster)
+    if isinstance(prep, Forecast):
+        return prep
+    return forecast_prepared(prep, plans, today, forecaster, proposed, end, paths, seed, max_weeks)

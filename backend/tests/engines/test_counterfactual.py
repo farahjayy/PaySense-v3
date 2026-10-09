@@ -244,3 +244,43 @@ def test_a_baseline_already_computed_is_not_computed_again():
     result = search(BASE, NEXT_INCOME, evaluate, baseline=Outcome(0.5))
     assert result.baseline_band == "At Risk" and result.reaches_safe
     assert BASE not in calls  # the baseline was not asked for again
+
+
+class TestScreening:
+    """Cheap screening of candidates, full-strength confirmation of what is shown."""
+
+    def test_only_a_candidate_that_screens_safe_is_confirmed_at_full_strength(self):
+        screen = evaluator(lambda r: 0.05 if r.num_installments >= 6 else 0.5)
+        full = evaluator(lambda r: 0.06 if r.num_installments >= 6 else 0.5)
+
+        result = search(BASE, NEXT_INCOME, full, baseline=Outcome(0.5), screen=screen)
+
+        assert result.reaches_safe and result.best.request.num_installments == 6
+        assert result.best.probability == 0.06  # the confirmed number, not the screening one
+        assert [c.num_installments for c in full.calls] == [6]  # one confirmation, nothing else
+        assert len(screen.calls) >= 2
+
+    def test_a_candidate_that_only_looked_safe_in_the_screen_is_dropped(self):
+        screen = evaluator(lambda r: 0.05 if r.num_installments >= 4 else 0.5)
+        full = evaluator(lambda r: 0.4 if r.num_installments == 4 else 0.05)
+
+        result = search(BASE, NEXT_INCOME, full, baseline=Outcome(0.5), screen=screen)
+
+        assert result.reaches_safe and result.best.request.num_installments == 6
+        assert [c.num_installments for c in full.calls][:2] == [4, 6]
+
+    def test_the_best_screened_candidate_is_reported_at_full_strength(self):
+        screen = evaluator(lambda r: 0.3 if r.total_price_sen <= 30000 else 0.8)
+        full = evaluator(lambda r: 0.33 if r.total_price_sen <= 30000 else 0.85)
+
+        result = search(BASE, NEXT_INCOME, full, baseline=Outcome(0.8), screen=screen)
+
+        assert not result.reaches_safe
+        assert result.best.request.total_price_sen == 30000
+        assert result.best.probability == 0.33
+        assert len(full.calls) == 1  # just the confirmation of the best one
+
+    def test_without_a_screen_nothing_changes(self):
+        evaluate = evaluator(lambda r: 0.05 if r.num_installments >= 4 else 0.5)
+        result = search(BASE, NEXT_INCOME, evaluate, baseline=Outcome(0.5))
+        assert result.reaches_safe and len(evaluate.calls) == 1

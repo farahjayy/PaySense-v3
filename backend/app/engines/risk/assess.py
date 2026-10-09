@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.engines.forecasting.flows import occurrences
-from app.engines.forecasting.service import Forecast
 from app.engines.forecasting.simulate import Forecaster
 from app.engines.risk.check import CheckResult, Predictor, RiskRequest, run_check
 from app.engines.risk.counterfactual import Counterfactual, search
@@ -17,6 +16,9 @@ from app.engines.risk.explain import ExplainedFactor, select_factors
 from app.engines.risk.features import as_vector
 
 NEXT_INCOME_LOOKAHEAD_DAYS = 400
+# Candidate changes are screened with fewer simulated futures; the one shown is re-run at full
+# strength, so only the search is cheaper, never the number a student sees.
+SCREEN_PATHS = 300
 
 
 @dataclass(frozen=True)
@@ -52,18 +54,24 @@ def assess(
 ) -> Assessment:
     """Raises `ProposalError` when the plan rules reject the request."""
 
-    # candidates share one ledger, so the without-purchase simulation is reused per plan end
-    cache: dict[Any, Forecast] = {}
+    # candidates share one ledger: it is read once and the without-purchase simulation is reused
+    cache: dict[Any, Any] = {}
 
-    def check(candidate: RiskRequest) -> CheckResult:
+    def check(candidate: RiskRequest, at: int = paths) -> CheckResult:
         return run_check(
             rows, items, plans, provider_limits, candidate, today, forecaster, predictor,
-            paths=paths, seed=seed, without_cache=cache,
+            paths=at, seed=seed, cache=cache,
         )  # fmt: skip
 
     result = check(request)
     if result.status != "ok" or result.features is None:
         return Assessment(result, [], None)
     factors = select_factors(result.features, predictor.contributions(as_vector(result.features)))
-    suggestion = search(request, next_income(items, today), check, baseline=result)
+    suggestion = search(
+        request,
+        next_income(items, today),
+        check,
+        baseline=result,
+        screen=lambda candidate: check(candidate, min(SCREEN_PATHS, paths)),
+    )
     return Assessment(result, factors, suggestion)

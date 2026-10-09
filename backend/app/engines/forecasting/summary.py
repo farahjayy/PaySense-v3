@@ -13,7 +13,13 @@ from typing import Any, Protocol
 
 from app.domain.flows import as_date, month_summary
 from app.engines.forecasting.flows import ProposedPlan
-from app.engines.forecasting.service import Forecast, build_forecast, horizon_end
+from app.engines.forecasting.service import (
+    Forecast,
+    LedgerPrep,
+    forecast_prepared,
+    horizon_end,
+    prepare_ledger,
+)
 from app.engines.forecasting.simulate import RISK_CHECK_MAX_WEEKS, Forecaster
 from app.engines.risk.features import (
     COMMITMENT_DAYS_PER_MONTH,
@@ -134,7 +140,7 @@ def build_feature_inputs(
     forecaster: Forecaster,
     seed: int = 0,
     paths: int = 1000,
-    without_cache: dict[Any, Forecast] | None = None,
+    cache: dict[Any, Any] | None = None,
 ) -> Built | None:
     """Engine 2 inputs and both simulations, or None if the ledger is locked.
 
@@ -143,27 +149,29 @@ def build_feature_inputs(
     (up to `RISK_CHECK_MAX_WEEKS`, ADR D-36): a label that stopped at 52 weeks would leave the
     tail of a long plan unscored and make "more instalments" look safer than it is.
 
-    The "without the purchase" simulation depends on the ledger and on where the horizon ends, not
-    on the plan, so a caller that tries many candidate plans on one ledger can pass the same
-    `without_cache` dict and each distinct plan end is simulated once. The result is identical.
+    A caller that tries many candidate plans on one ledger passes the same `cache` dict: the
+    ledger is read once (completeness, weekly series, the rolling forecast-error pass) and the
+    "without the purchase" simulation is run once per distinct plan end. The numbers are
+    identical.
     """
     rows, items, plans = list(rows), list(items), list(plans)
+    cache = {} if cache is None else cache
+    prep = cache.get("prep")
+    if prep is None:
+        prep = cache["prep"] = prepare_ledger(rows, items, today, forecaster)
+    if not isinstance(prep, LedgerPrep):  # locked
+        return None
     plan_end = max((i.due_date for i in proposal.instalments), default=today)
     end = max(horizon_end(today), plan_end)
     common = dict(
-        rows=rows, items=items, plans=plans, today=today, forecaster=forecaster,
+        today=today, forecaster=forecaster, end=end, paths=paths, seed=seed,
         max_weeks=RISK_CHECK_MAX_WEEKS,
     )  # fmt: skip
-    key = (end, paths, seed)
-    if without_cache is not None and key in without_cache:
-        without = without_cache[key]
-    else:
-        without = build_forecast(**common, end=end, paths=paths, seed=seed)
-        if without_cache is not None:
-            without_cache[key] = without
-    if without.status != "ok":
-        return None
-    with_plan = build_forecast(**common, proposed=proposal, end=end, paths=paths, seed=seed)
+    key = ("without", end, paths, seed)
+    if key not in cache:
+        cache[key] = forecast_prepared(prep, plans, **common)
+    without = cache[key]
+    with_plan = forecast_prepared(prep, plans, proposed=proposal, **common)
     inputs = FeatureInputs(
         plan=PlanInput(
             instalment_amounts_sen=tuple(i.amount_sen for i in proposal.instalments),

@@ -171,12 +171,18 @@ def search(
     next_income: date | None,
     evaluate: Evaluate,
     baseline: Any = None,
+    screen: Evaluate | None = None,
 ) -> Counterfactual:
     """Run the grid through `evaluate(request) -> result with .status and .probability`.
 
     `evaluate` may raise `ProposalError` for a candidate the plan rules reject; that candidate is
     skipped. A locked ledger (no probability) yields no suggestion at all. Pass the check already
     run for `request` as `baseline` to avoid running it twice.
+
+    `screen` is a cheaper version of `evaluate` (fewer simulated futures). Candidates are screened
+    with it, and only one that screens Safe, or the best one when none does, is run through
+    `evaluate`: what is returned is always an `evaluate` result, so the number a student sees is
+    full strength, and a candidate that only looked Safe in the screen is dropped.
     """
     base = baseline if baseline is not None else evaluate(request)
     if base.status != "ok" or base.probability is None:
@@ -187,11 +193,12 @@ def search(
             start, base.probability, True, Outcome((), request, base.probability), 1
         )
 
+    probe = screen or evaluate
     evaluated = 1
     best: Outcome | None = None
     for candidate in candidates(request, next_income):
         try:
-            result = evaluate(candidate.request)
+            result = probe(candidate.request)
         except ProposalError:
             continue
         evaluated += 1
@@ -199,10 +206,29 @@ def search(
             continue
         outcome = Outcome(candidate.changes, candidate.request, result.probability)
         if band(result.probability) == "Safe":
-            return Counterfactual(start, base.probability, True, outcome, evaluated)
+            confirmed = _confirm(outcome, evaluate) if screen is not None else outcome
+            if confirmed is not None and band(confirmed.probability) == "Safe":
+                return Counterfactual(start, base.probability, True, confirmed, evaluated)
+            outcome = confirmed or outcome
         if best is None or outcome.probability < best.probability:
             best = outcome
+
+    if screen is not None and best is not None:
+        best = _confirm(best, evaluate) or best
+        if band(best.probability) == "Safe":
+            return Counterfactual(start, base.probability, True, best, evaluated)
     return Counterfactual(start, base.probability, False, best, evaluated)
+
+
+def _confirm(outcome: Outcome, evaluate: Evaluate) -> Outcome | None:
+    """The same candidate at full strength, or None if it cannot be evaluated."""
+    try:
+        result = evaluate(outcome.request)
+    except ProposalError:
+        return None
+    if result.status != "ok" or result.probability is None:
+        return None
+    return Outcome(outcome.changes, outcome.request, result.probability)
 
 
 _MONTHS = [

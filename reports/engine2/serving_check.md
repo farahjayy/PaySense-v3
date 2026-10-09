@@ -34,7 +34,7 @@ Single process, one request at a time, on the machine that made this report.
 
 | p50 | p95 | max |
 |---|---|---|
-| 0.57 s | 1.84 s | 3.50 s |
+| 0.29 s | 0.69 s | 1.07 s |
 
 The target was a p95 of 3 s. Slowest five (profile index, seconds):
-48: 3.50, 11: 3.49, 166: 3.05, 12: 2.46, 154: 2.07.
+48: 1.07, 11: 0.98, 166: 0.95, 108: 0.92, 12: 0.86.
