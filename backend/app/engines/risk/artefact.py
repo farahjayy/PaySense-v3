@@ -97,6 +97,13 @@ class OnnxPredictor:
         self.version: str = str(meta["version"])
         self.feature_schema_hash: str = str(meta["feature_schema_hash"])
         self.family: str = str(meta.get("family", ""))
+        metrics = meta.get("metrics", {})
+        self.summary: dict[str, Any] = {
+            "family": self.family,
+            "development_profiles": meta.get("training", {}).get("development_profiles"),
+            "lockbox_brier": (metrics.get("lockbox_calibrated") or {}).get("brier"),
+            "constant_brier": metrics.get("lockbox_constant_brier"),
+        }
         self._calibrator: Mapping[str, Any] = meta["calibrator"]
         self._eps = float(meta.get("logit_eps", 1e-6))
         self._baseline = np.array([meta["baseline"][name] for name in FEATURE_NAMES], dtype=float)

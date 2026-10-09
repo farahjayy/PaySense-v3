@@ -27,6 +27,7 @@ export type ImportPreview = Schemas["ImportPreviewOut"];
 export type ConfirmRow = Schemas["ConfirmRow"];
 export type RiskCheck = Schemas["RiskCheckOut"];
 export type RiskConfirm = Schemas["RiskConfirmOut"];
+export type ModelInfo = Schemas["ModelInfoOut"];
 
 /** A failed API call, with the server's own sentence when it sent one. */
 export class ApiError extends Error {
@@ -344,6 +345,14 @@ export function usePayInstalments() {
       // active query (the forecast simulation included) has been fetched again.
       void invalidate();
     },
+  });
+}
+
+export function useModelInfo() {
+  return useQuery({
+    queryKey: ["model-info"],
+    queryFn: async () => unwrap(api.GET("/api/model-info")),
+    staleTime: Infinity, // changes only when the server is redeployed
   });
 }
 

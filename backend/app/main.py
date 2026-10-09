@@ -23,6 +23,7 @@ from app.api import (
     forecast,
     health,
     imports,
+    model_info,
     plans,
     provider_limits,
     providers,
@@ -163,6 +164,7 @@ def create_app(
     app.include_router(bills.router, prefix="/api")
     app.include_router(forecast.router, prefix="/api")
     app.include_router(risk.router, prefix="/api")
+    app.include_router(model_info.router, prefix="/api")
     return app
 
 

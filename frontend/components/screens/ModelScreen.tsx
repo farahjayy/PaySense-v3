@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { ModelVersions } from "@/components/model/ModelVersions";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -29,6 +30,7 @@ export function ModelScreen() {
         title="About the model"
         intro="How the forecast and the BNPL risk check work, what they were built from, and where they are weak."
       />
+      <ModelVersions />
       <Section id="forecast" title="Financial health forecast">
         <p>
           It looks at the weekly pattern of your spending and income, adds the bills and instalments

@@ -135,6 +135,18 @@ const DATA: Record<string, unknown> = {
   "/api/transactions": [TXN],
   "/api/plans": [PLAN],
   "/api/providers": [],
+  "/api/model-info": {
+    forecast: { model: "lstm", version: "v1" },
+    risk: {
+      available: true,
+      version: "v1",
+      family: "lightgbm",
+      development_profiles: 9000,
+      lockbox_brier: 0.0198,
+      constant_brier: 0.1788,
+      feature_schema_hash: "2066b37e13182a5e",
+    },
+  },
   "/api/provider-limits": [
     { provider: "atome", limit_sen: 50000, used_sen: 30000, remaining_sen: 20000 },
   ],
@@ -184,7 +196,7 @@ const SCREENS: [string, ReactNode, string][] = [
   ["recurring", <RecurringScreen key="r" />, "Netflix"],
   ["plans", <PlansScreen key="p" />, "Headphones"],
   ["import", <ImportScreen key="i" />, "Choose a file"],
-  ["model", <ModelScreen key="m" />, "Where it is weak"],
+  ["model", <ModelScreen key="m" />, "gradient-boosted trees"],
 ];
 
 describe("accessibility (axe)", () => {

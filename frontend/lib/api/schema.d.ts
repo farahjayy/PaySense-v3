@@ -440,6 +440,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/model-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Model Info */
+        get: operations["model_info"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -605,6 +622,13 @@ export interface components {
             /** Contribution */
             contribution: number;
         };
+        /** ForecastModelOut */
+        ForecastModelOut: {
+            /** Model */
+            model: string;
+            /** Version */
+            version: string;
+        };
         /** ForecastOut */
         ForecastOut: {
             /**
@@ -759,6 +783,11 @@ export interface components {
              */
             expires_in: number;
             user: components["schemas"]["UserOut"];
+        };
+        /** ModelInfoOut */
+        ModelInfoOut: {
+            forecast: components["schemas"]["ForecastModelOut"];
+            risk: components["schemas"]["RiskModelOut"];
         };
         /** MonthOut */
         MonthOut: {
@@ -1122,6 +1151,23 @@ export interface components {
             check_id: string;
             check: components["schemas"]["RiskCheckOut"];
             plan: components["schemas"]["PlanOut"];
+        };
+        /** RiskModelOut */
+        RiskModelOut: {
+            /** Available */
+            available: boolean;
+            /** Version */
+            version: string | null;
+            /** Family */
+            family: string | null;
+            /** Development Profiles */
+            development_profiles: number | null;
+            /** Lockbox Brier */
+            lockbox_brier: number | null;
+            /** Constant Brier */
+            constant_brier: number | null;
+            /** Feature Schema Hash */
+            feature_schema_hash: string | null;
         };
         /** SimulationOut */
         SimulationOut: {
@@ -2737,6 +2783,44 @@ export interface operations {
             };
             /** @description No such record for this user */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    model_info: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelInfoOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
