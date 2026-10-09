@@ -27,8 +27,13 @@ class Predictor(Protocol):
     """The trained, calibrated model: 16 feature values in, a probability out."""
 
     version: str
+    feature_schema_hash: str
 
     def predict(self, vector: Sequence[float]) -> float: ...
+
+    def contributions(self, vector: Sequence[float]) -> Sequence[float]:
+        """How much each feature pushed this probability up (positive) or down, in feature order."""
+        ...
 
 
 @dataclass(frozen=True)

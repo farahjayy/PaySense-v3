@@ -17,6 +17,7 @@ from tests.engines.test_summary import EXISTING, ITEMS, TODAY, ledger
 
 class StubPredictor:
     version = "stub-1"
+    feature_schema_hash = "stub-hash"
 
     def __init__(self, p: float = 0.2):
         self.p = p
@@ -25,6 +26,9 @@ class StubPredictor:
     def predict(self, vector):
         self.seen.append(list(vector))
         return self.p
+
+    def contributions(self, vector):
+        return [0.0] * len(vector)
 
 
 def request(**overrides) -> RiskRequest:

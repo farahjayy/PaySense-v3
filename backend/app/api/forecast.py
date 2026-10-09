@@ -62,7 +62,7 @@ class ForecastOut(ApiModel):
     health_score: int | None
 
 
-def _seed(user_id: str, today: dt.date) -> int:
+def daily_seed(user_id: str, today: dt.date) -> int:
     """Deterministic per user and day, so reloading the page does not move the numbers."""
     return zlib.crc32(f"{user_id}:{today.isoformat()}".encode())
 
@@ -76,7 +76,7 @@ def forecast(user: CurrentUser, db: DbDep, today: TodayDep, model: ForecasterDep
         plans=plans_repo.list_with_instalments(db, user.id),
         today=today,
         forecaster=model,
-        seed=_seed(user.id, today),
+        seed=daily_seed(user.id, today),
     )
     simulation = result.simulation
     shown = None

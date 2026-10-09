@@ -166,13 +166,19 @@ def candidates(request: RiskRequest, next_income: date | None) -> list[Candidate
     return ordered[:MAX_EVALUATIONS]
 
 
-def search(request: RiskRequest, next_income: date | None, evaluate: Evaluate) -> Counterfactual:
+def search(
+    request: RiskRequest,
+    next_income: date | None,
+    evaluate: Evaluate,
+    baseline: Any = None,
+) -> Counterfactual:
     """Run the grid through `evaluate(request) -> result with .status and .probability`.
 
     `evaluate` may raise `ProposalError` for a candidate the plan rules reject; that candidate is
-    skipped. A locked ledger (no probability) yields no suggestion at all.
+    skipped. A locked ledger (no probability) yields no suggestion at all. Pass the check already
+    run for `request` as `baseline` to avoid running it twice.
     """
-    base = evaluate(request)
+    base = baseline if baseline is not None else evaluate(request)
     if base.status != "ok" or base.probability is None:
         return Counterfactual(None, None, False, None, 1)
     start = band(base.probability)
@@ -197,3 +203,34 @@ def search(request: RiskRequest, next_income: date | None, evaluate: Evaluate) -
         if best is None or outcome.probability < best.probability:
             best = outcome
     return Counterfactual(start, base.probability, False, best, evaluated)
+
+
+_MONTHS = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+]
+_PROVIDER_NAMES = {"spaylater": "SPayLater", "tiktok_paylater": "TikTok PayLater", "atome": "Atome"}
+
+
+def describe(change: Change) -> str:
+    """One plain sentence for a change; every number in it is the change's own value."""
+    if change.kind == "instalments":
+        return f"Spread it over {change.value} instalments"
+    if change.kind == "wait":
+        day: date = change.value
+        return f"Buy it on {day.day} {_MONTHS[day.month - 1]} {day.year}, after your next income"
+    if change.kind == "price":
+        return f"Choose something priced at about RM {round(change.value / 100):,}"
+    if change.kind == "provider":
+        return f"Use {_PROVIDER_NAMES.get(change.value, change.value)} instead"
+    raise ValueError(f"unknown change kind {change.kind!r}")

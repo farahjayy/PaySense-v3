@@ -27,6 +27,7 @@ from app.api import (
     provider_limits,
     providers,
     recurring,
+    risk,
     summary,
     transactions,
 )
@@ -34,6 +35,7 @@ from app.api.rate_limit import LoginRateLimiter, RequestRateLimiter
 from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
+from app.engines.risk.check import Predictor
 
 _STATUS_CODES = {
     400: "bad_request",
@@ -87,12 +89,14 @@ def create_app(
     settings: Settings,
     db: Database | None = None,
     login_limiter: LoginRateLimiter | None = None,
+    predictor: Predictor | None = None,
 ) -> FastAPI:
     app = FastAPI(title="PaySense API", version="0.1.0", generate_unique_id_function=_operation_id)
     app.state.settings = settings
     app.state.db = db  # built lazily on first use when None (see api/deps.py)
     app.state.login_limiter = login_limiter or LoginRateLimiter()
     app.state.request_limiter = RequestRateLimiter()
+    app.state.predictor = predictor  # the trained risk model; None until an artefact is loaded
 
     # Added first, so it sits *inside* CORS: its 413 responses still carry CORS headers.
     app.add_middleware(BodySizeLimitMiddleware)
@@ -157,6 +161,7 @@ def create_app(
     app.include_router(plans.router, prefix="/api")
     app.include_router(bills.router, prefix="/api")
     app.include_router(forecast.router, prefix="/api")
+    app.include_router(risk.router, prefix="/api")
     return app
 
 

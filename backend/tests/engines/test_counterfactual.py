@@ -213,3 +213,34 @@ def test_end_to_end_with_the_real_pipeline_and_a_stub_model_that_rewards_smaller
     assert result.reaches_safe
     assert result.best.request.num_installments > 2 or result.best.request.total_price_sen < 180000
     assert StubPredictor  # imported for parity with the check tests
+
+
+class TestDescribe:
+    def test_each_change_reads_as_one_sentence_with_only_its_own_number(self):
+        from app.engines.risk.counterfactual import Change, describe
+
+        assert describe(Change("instalments", 6)) == "Spread it over 6 instalments"
+        assert describe(Change("wait", date(2025, 6, 2))) == (
+            "Buy it on 2 June 2025, after your next income"
+        )
+        assert describe(Change("price", 45000)) == "Choose something priced at about RM 450"
+        assert describe(Change("price", 123456)) == "Choose something priced at about RM 1,235"
+        assert describe(Change("provider", "tiktok_paylater")) == "Use TikTok PayLater instead"
+
+    def test_an_unknown_kind_is_an_error(self):
+        from app.engines.risk.counterfactual import Change, describe
+
+        with pytest.raises(ValueError):
+            describe(Change("magic", 1))
+
+
+def test_a_baseline_already_computed_is_not_computed_again():
+    calls = []
+
+    def evaluate(request):
+        calls.append(request)
+        return Outcome(0.05)
+
+    result = search(BASE, NEXT_INCOME, evaluate, baseline=Outcome(0.5))
+    assert result.baseline_band == "At Risk" and result.reaches_safe
+    assert BASE not in calls  # the baseline was not asked for again

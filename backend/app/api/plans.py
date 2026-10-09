@@ -143,7 +143,7 @@ def _remaining_limit(db: Any, user_id: str, provider: str) -> int | None:
     return remaining_limit_sen(limit, used)
 
 
-def _propose(body: PlanIn, db: Any, user_id: str) -> PlanProposal:
+def propose_for(body: PlanIn, db: Any, user_id: str) -> PlanProposal:
     try:
         return propose_plan(
             provider=body.provider,
@@ -173,9 +173,8 @@ def _check_paid_date(paid_date: dt.date | None, today: dt.date) -> dt.date:
 
 
 # ------------------------------------------------------------------ routes
-@router.post("/preview", response_model=PlanPreviewOut)
-def preview_plan(body: PlanIn, user: CurrentUser, db: DbDep) -> PlanPreviewOut:
-    p = _propose(body, db, user.id)
+def preview_out(p: PlanProposal) -> PlanPreviewOut:
+    """The preview shape for a proposal; shared with the risk check so both show the same plan."""
     return PlanPreviewOut(
         provider=p.provider,  # type: ignore[arg-type]
         provider_label=p.provider_label,
@@ -203,14 +202,25 @@ def preview_plan(body: PlanIn, user: CurrentUser, db: DbDep) -> PlanPreviewOut:
     )
 
 
-@router.post("", response_model=PlanOut, status_code=201)
-def create_plan(body: PlanIn, user: CurrentUser, db: DbDep, today: TodayDep) -> PlanOut:
-    p = _propose(body, db, user.id)
-    created = plans_repo.create_plan(
+@router.post("/preview", response_model=PlanPreviewOut)
+def preview_plan(body: PlanIn, user: CurrentUser, db: DbDep) -> PlanPreviewOut:
+    return preview_out(propose_for(body, db, user.id))
+
+
+def store_plan(
+    db: Any,
+    user_id: str,
+    item_name: str,
+    p: PlanProposal,
+    risk: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Save a proposal as a plan (with its schedule and checkout payments). `risk` carries the
+    frozen risk check's link fields when the plan comes from a risk check."""
+    return plans_repo.create_plan(
         db,
-        user.id,
+        user_id,
         {
-            "item_name": body.item_name,
+            "item_name": item_name,
             "provider": p.provider,
             "provider_label": p.provider_label,
             "schedule_source": p.schedule_source,
@@ -221,10 +231,20 @@ def create_plan(body: PlanIn, user: CurrentUser, db: DbDep, today: TodayDep) -> 
             "num_installments": p.num_installments,
             "purchase_date": p.purchase_date,
             "first_payment_date": p.first_payment_date,
+            **(risk or {}),
         },
         p.instalments,
     )
-    return _plan_out(created, today)
+
+
+def plan_out(row: dict[str, Any], today: dt.date) -> PlanOut:
+    return _plan_out(row, today)
+
+
+@router.post("", response_model=PlanOut, status_code=201)
+def create_plan(body: PlanIn, user: CurrentUser, db: DbDep, today: TodayDep) -> PlanOut:
+    p = propose_for(body, db, user.id)
+    return _plan_out(store_plan(db, user.id, body.item_name, p), today)
 
 
 @router.get("", response_model=list[PlanOut])

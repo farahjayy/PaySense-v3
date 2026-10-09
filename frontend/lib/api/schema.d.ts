@@ -383,6 +383,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/risk/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Risk
+         * @description Stateless: nothing is stored. A ledger that is too short returns `status: locked`.
+         */
+        post: operations["check_risk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/risk/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Risk
+         * @description Go ahead with the purchase: freeze this check and create the plan linked to it.
+         */
+        post: operations["confirm_risk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/risk/checks/{check_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Check */
+        get: operations["read_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -449,6 +506,33 @@ export interface components {
             /** Seqs */
             seqs: number[];
         };
+        /** ChangeOut */
+        ChangeOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "instalments" | "wait" | "price" | "provider";
+            /** Label */
+            label: string;
+        };
+        /** ChangeSuggestionOut */
+        ChangeSuggestionOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "already_safe" | "found" | "none_found";
+            /** Changes */
+            changes: components["schemas"]["ChangeOut"][];
+            /** Probability */
+            probability: number | null;
+            /** Band */
+            band: ("Safe" | "Caution" | "At Risk") | null;
+            request: components["schemas"]["PlanIn"] | null;
+            /** Evaluated */
+            evaluated: number;
+        };
         /** ConfirmIn */
         ConfirmIn: {
             /** Rows */
@@ -481,6 +565,17 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** CurveOut */
+        CurveOut: {
+            /** Months */
+            months: string[];
+            /** Cumulative P10 Sen */
+            cumulative_p10_sen: number[];
+            /** Cumulative P50 Sen */
+            cumulative_p50_sen: number[];
+            /** Cumulative P90 Sen */
+            cumulative_p90_sen: number[];
+        };
         /** ErrorDetail */
         ErrorDetail: {
             /**
@@ -500,6 +595,15 @@ export interface components {
          */
         ErrorEnvelope: {
             detail: components["schemas"]["ErrorDetail"];
+        };
+        /** FactorOut */
+        FactorOut: {
+            /** Feature */
+            feature: string;
+            /** Text */
+            text: string;
+            /** Contribution */
+            contribution: number;
         };
         /** ForecastOut */
         ForecastOut: {
@@ -956,6 +1060,69 @@ export interface components {
             /** Active */
             active?: boolean | null;
         };
+        /** RepaymentOut */
+        RepaymentOut: {
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "none" | "watch" | "warning";
+            /** Overdue Count */
+            overdue_count: number;
+            /** Overdue Sen */
+            overdue_sen: number;
+            /** Late Paid Count */
+            late_paid_count: number;
+            /** Longest Miss Run */
+            longest_miss_run: number;
+            /** Reason */
+            reason: string;
+        };
+        /** RiskCheckOut */
+        RiskCheckOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "locked";
+            /** Lock Reason */
+            lock_reason: ("needs_four_months" | "no_usable_history") | null;
+            /** Months Of History */
+            months_of_history: number;
+            /** Stale Days */
+            stale_days: number | null;
+            /** Unmatched Items */
+            unmatched_items: string[];
+            /** Suspect Months */
+            suspect_months: components["schemas"]["SuspectMonthOut"][];
+            plan: components["schemas"]["PlanPreviewOut"];
+            /** Probability */
+            probability: number | null;
+            /** Band */
+            band: ("Safe" | "Caution" | "At Risk") | null;
+            /** Score */
+            score: number | null;
+            /** Simulated Probability */
+            simulated_probability: number | null;
+            /** Probability Without Purchase */
+            probability_without_purchase: number | null;
+            /** Factors */
+            factors: components["schemas"]["FactorOut"][];
+            suggestion: components["schemas"]["ChangeSuggestionOut"] | null;
+            repayment: components["schemas"]["RepaymentOut"];
+            with_plan_curve: components["schemas"]["CurveOut"] | null;
+            without_curve: components["schemas"]["CurveOut"] | null;
+            versions: components["schemas"]["VersionsOut"] | null;
+            /** Check Id */
+            check_id: string | null;
+        };
+        /** RiskConfirmOut */
+        RiskConfirmOut: {
+            /** Check Id */
+            check_id: string;
+            check: components["schemas"]["RiskCheckOut"];
+            plan: components["schemas"]["PlanOut"];
+        };
         /** SimulationOut */
         SimulationOut: {
             /** Months */
@@ -1120,6 +1287,13 @@ export interface components {
             display_name: string;
             /** Persona */
             persona: ("frequent_bnpl" | "budget_conscious" | "irregular_income") | null;
+        };
+        /** VersionsOut */
+        VersionsOut: {
+            /** Model */
+            model: string;
+            /** Feature Schema Hash */
+            feature_schema_hash: string;
         };
     };
     responses: never;
@@ -2416,6 +2590,153 @@ export interface operations {
             };
             /** @description Not logged in, or the session is invalid */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    check_risk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskCheckOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No trained model is loaded */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    confirm_risk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskConfirmOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No trained model is loaded */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    read_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                check_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskCheckOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
