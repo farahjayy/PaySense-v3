@@ -60,3 +60,8 @@ mlruns/
 wandb/
 optuna_studies/
 data/engine1/
+
+# UAT: real response files stay local; only the invented example is committed
+uat/data/*
+!uat/data/example/
+uat/testers.csv

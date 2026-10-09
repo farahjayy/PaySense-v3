@@ -1,0 +1,8 @@
+# INVENTED example data for testing the analysis script. Not results.
+participant,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10
+P01,5,1,5,1,4,2,5,1,5,2
+P02,4,2,4,2,4,2,4,2,4,2
+P03,3,3,3,3,3,3,3,3,3,3
+P04,5,2,4,1,5,1,4,2,4,1
+P05,4,1,5,2,4,2,5,1,4,3
+P06,3,2,4,2,3,3,4,2,3,2

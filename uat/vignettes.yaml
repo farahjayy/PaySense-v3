@@ -1,0 +1,53 @@
+# Decision vignettes: asked before the tester uses the risk check, and again after.
+#
+# `risk_rank` orders the options of one vignette by how much new commitment they put on the
+# student in the next few months (higher = more). It is a judgement written down here so the
+# analysis can say "safer" or "riskier" from the same file the facilitator reads the options from.
+# The ordering is the same in every vignette: buy as planned > spread it longer > cheaper item >
+# wait > do not buy. Spreading the same price over more instalments lowers each payment but keeps
+# the full price owed, so it ranks above buying something cheaper.
+
+ordering_note: >
+  Rank follows the new commitment taken on within the next three months. Spreading over more
+  instalments lowers each payment but not the total owed; a cheaper item lowers the total;
+  waiting defers the commitment; not buying removes it.
+
+vignettes:
+  - id: V1
+    title: Headphones on SPayLater
+    scenario: |
+      You get RM 1,000 a month (allowance and part-time work). Rent, food and transport come to
+      about RM 850. You already pay RM 150 a month on another BNPL plan. You want headphones
+      priced at RM 600 and can pay on SPayLater in 3 monthly instalments, the first due next month.
+    options:
+      - { id: A, text: "Buy them on SPayLater in 3 instalments, as offered", risk_rank: 4 }
+      - { id: B, text: "Buy them but spread over 6 instalments", risk_rank: 3 }
+      - { id: C, text: "Buy a cheaper pair at about half the price", risk_rank: 2 }
+      - { id: D, text: "Wait a month and decide then", risk_rank: 1 }
+      - { id: E, text: "Do not buy them", risk_rank: 0 }
+
+  - id: V2
+    title: Laptop repair on Atome
+    scenario: |
+      Your income varies: RM 400 in a quiet month and RM 1,600 in a busy one, about RM 1,000 on
+      average. Your fixed costs are about RM 700 a month. Your laptop needs a RM 1,200 repair. Atome
+      offers 4 payments, the first at checkout.
+    options:
+      - { id: A, text: "Repair it on Atome in 4 payments, as offered", risk_rank: 4 }
+      - { id: B, text: "Repair it but ask for a longer plan elsewhere", risk_rank: 3 }
+      - { id: C, text: "Choose a cheaper repair or a second-hand part", risk_rank: 2 }
+      - { id: D, text: "Borrow a laptop for a month and decide then", risk_rank: 1 }
+      - { id: E, text: "Do not repair it", risk_rank: 0 }
+
+  - id: V3
+    title: Shoes on TikTok PayLater
+    scenario: |
+      You live on RM 700 a month and spend nearly all of it on rent, food and transport. A pair of
+      shoes you like costs RM 250. TikTok PayLater lets you pay in 2 monthly instalments, the first
+      due next month.
+    options:
+      - { id: A, text: "Buy them on TikTok PayLater in 2 instalments, as offered", risk_rank: 4 }
+      - { id: B, text: "Buy them but spread over 4 instalments", risk_rank: 3 }
+      - { id: C, text: "Buy cheaper shoes", risk_rank: 2 }
+      - { id: D, text: "Wait until you have saved part of the price", risk_rank: 1 }
+      - { id: E, text: "Do not buy them", risk_rank: 0 }

@@ -1,0 +1,4 @@
+participant,username,display,persona
+P01,tester01,Tester 1,frequent_bnpl
+P02,tester02,Tester 2,budget_conscious
+P03,tester03,Tester 3,irregular_income
