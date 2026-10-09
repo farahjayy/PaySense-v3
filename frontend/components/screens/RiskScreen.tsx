@@ -40,8 +40,15 @@ export function RiskScreen() {
   }
 
   function trySuggestion(request: PlanInput) {
-    setDraft(draftFromInput(request, todayIso()));
-    run(request);
+    // Through the form's own shape: the server sends explicit nulls for fields a plan does not
+    // use, and the result must count as current only when it matches what the form would send.
+    const next = draftFromInput(request, todayIso());
+    const body = toPlanInput(
+      next,
+      providers.data?.find((p) => p.key === next.provider),
+    );
+    setDraft(next);
+    if (body) run(body);
   }
 
   return (

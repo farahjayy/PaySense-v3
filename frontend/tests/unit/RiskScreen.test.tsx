@@ -107,6 +107,11 @@ function result(patch: Record<string, unknown> = {}) {
         num_installments: 6,
         total_price_sen: 60000,
         monthly_fee_rate_pct: 0,
+        // the API sends every optional field, null when unused
+        first_payment_date: null,
+        provider_label: null,
+        instalment_sen: null,
+        total_payable_sen: null,
       },
       evaluated: 3,
     },
@@ -224,6 +229,9 @@ describe("RiskScreen", () => {
     expect(
       await screen.findByRole("img", { name: /score 93 out of 100, safe/i }),
     ).toBeInTheDocument();
+    // and the new result counts as current: no "you have changed" notice, going ahead is allowed
+    expect(screen.queryByText(/you have changed the purchase/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add this as a plan" })).toBeEnabled();
   });
 
   it("dims the result and disables going ahead once the form has moved on", async () => {
