@@ -119,3 +119,28 @@ def test_files_use_unix_line_endings_and_no_byte_order_mark(tmp_path):
     for path in write_personas(PARAMS, tmp_path):
         raw = Path(path).read_bytes()
         assert b"\r" not in raw and not raw.startswith(b"\xef\xbb\xbf")
+
+
+@pytest.mark.parametrize("persona", PERSONAS)
+def test_an_imported_persona_unlocks_the_forecast(profiles, persona):
+    """The tester's first minutes: import the file, open the dashboard. A locked forecast there
+    would waste the session (frequent_bnpl once had 16 complete weeks, one short of the gate)."""
+    from datetime import timedelta
+
+    from app.engines.forecasting.models import MovingAverage
+    from app.engines.forecasting.service import MIN_SERIES_WEEKS, build_forecast
+
+    profile = profiles[persona]
+    rows = as_rows(parse_csv(render_csv(profile)))
+    forecast = build_forecast(
+        rows=rows,
+        items=[],
+        plans=[],
+        today=profile.as_of + timedelta(days=1),
+        forecaster=MovingAverage(8),
+    )
+
+    assert forecast.status == "ok", (persona, forecast.lock_reason)
+    first = min(r["date"] for r in rows)
+    # a margin above the gate, so shifting the file by whole weeks cannot fall back under it
+    assert (profile.as_of - first).days // 7 >= MIN_SERIES_WEEKS + 2

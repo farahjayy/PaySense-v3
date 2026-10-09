@@ -1,74 +1,142 @@
 Date,Description,Amount
-01/09/2025,DEBIT ADVICE 2669,-5.73
-01/09/2025,Allowance - Mak,803.50
-04/09/2025,Hostel rent,-426.75
-04/09/2025,Petronas petrol,-4.20
-05/09/2025,Mamak dinner,-17.25
-06/09/2025,Netflix subscription,-31.38
-06/09/2025,Petronas petrol,-5.76
-11/09/2025,DEBIT ADVICE 4941,-5.56
-13/09/2025,Tealive,-12.70
-17/09/2025,Parking fee,-3.18
-19/09/2025,Foodpanda order,-12.34
-20/09/2025,Celcom bill,-42.62
-20/09/2025,DEBIT ADVICE 4941,-8.26
-22/09/2025,MRT fare,-3.63
-23/09/2025,Nasi lemak breakfast,-16.08
-25/09/2025,Grab refund,82.55
-29/09/2025,Zalora order,-83.73
-30/09/2025,Starbucks,-8.63
-01/10/2025,Allowance - Mak,803.50
-02/10/2025,DEBIT ADVICE 6290,-14.48
-02/10/2025,KFC,-10.62
-04/10/2025,Hostel rent,-426.75
-05/10/2025,RapidKL bus,-4.68
-06/10/2025,CARD TXN 6060,-6.19
-06/10/2025,DEBIT ADVICE 9485,-11.47
-06/10/2025,Netflix subscription,-31.38
-09/10/2025,Bakery bread,-7.55
-17/10/2025,RapidKL bus,-5.56
-19/10/2025,Foodpanda order,-13.75
-19/10/2025,Zalora refund,65.84
-20/10/2025,Celcom bill,-44.14
-20/10/2025,Petronas petrol,-4.54
-20/10/2025,Tealive,-10.96
-23/10/2025,Shopee order,-84.68
-24/10/2025,Nasi lemak breakfast,-11.28
-30/10/2025,Starbucks,-10.25
-31/10/2025,Mamak dinner,-10.88
-31/10/2025,TNG eWallet top up,-32.56
-01/11/2025,Shell petrol,-3.71
-01/11/2025,Allowance - Mak,803.50
-04/11/2025,Hostel rent,-426.75
-05/11/2025,Shell petrol,-3.78
-06/11/2025,Netflix subscription,-31.38
-06/11/2025,Shell petrol,-5.65
-08/11/2025,TNG eWallet top up,-48.05
-09/11/2025,Kedai makan lunch,-14.29
-09/11/2025,Nasi lemak breakfast,-11.88
-13/11/2025,Petronas petrol,-5.72
-15/11/2025,Nasi lemak breakfast,-14.05
-20/11/2025,Celcom bill,-43.06
-22/11/2025,Makan malam,-17.15
-23/11/2025,Shell petrol,-4.91
-24/11/2025,GrabFood order,-7.25
-25/11/2025,MRT fare,-9.08
-28/11/2025,McDonald's,-18.10
-29/11/2025,Shell petrol,-5.20
-01/12/2025,CARD TXN 3196,-6.62
-01/12/2025,Allowance - Mak,803.50
-02/12/2025,Kedai makan lunch,-15.79
-04/12/2025,Hostel rent,-426.75
-06/12/2025,Netflix subscription,-31.38
-06/12/2025,Shell petrol,-3.55
-08/12/2025,McDonald's,-10.24
-09/12/2025,Touch n Go toll,-3.74
-12/12/2025,MRT fare,-5.47
-16/12/2025,Grab refund,39.20
-17/12/2025,Touch n Go toll,-3.48
-18/12/2025,Touch n Go toll,-6.67
-20/12/2025,Celcom bill,-42.34
-20/12/2025,Makan malam,-13.29
-27/12/2025,Bakery bread,-17.27
-27/12/2025,Petronas petrol,-4.75
-28/12/2025,TNG eWallet top up,-65.18
+01/08/2025,Allowance from Ayah,671.75
+02/08/2025,Touch n Go toll,-5.11
+03/08/2025,Makan malam,-12.95
+03/08/2025,Rent - bilik sewa,-233.71
+04/08/2025,Shopee order,-64.08
+07/08/2025,McDonald's,-18.10
+07/08/2025,Mr DIY purchase,-43.14
+08/08/2025,Tealive,-5.48
+09/08/2025,Tealive,-13.68
+09/08/2025,Touch n Go toll,-2.80
+12/08/2025,Spotify Premium,-24.22
+13/08/2025,Zalora refund,26.75
+14/08/2025,Astro subscription,-33.11
+16/08/2025,RapidKL bus,-5.45
+16/08/2025,Restoran nasi kandar,-11.36
+16/08/2025,Starbucks,-12.32
+17/08/2025,Transfer to own account,-27.15
+18/08/2025,Bookstore,-12.30
+19/08/2025,Digi bill,-56.03
+20/08/2025,Shell petrol,-4.36
+21/08/2025,GSC cinema ticket,-17.92
+21/08/2025,MRT fare,-6.68
+22/08/2025,Kedai makan lunch,-11.17
+23/08/2025,CARD TXN 1394,-11.66
+24/08/2025,DEBIT ADVICE 6706,-8.43
+26/08/2025,Food court lunch,-14.82
+29/08/2025,Shell petrol,-7.84
+01/09/2025,Starbucks,-21.04
+01/09/2025,Allowance from Ayah,671.75
+02/09/2025,Foodpanda order,-14.30
+02/09/2025,MRT fare,-8.29
+03/09/2025,Rent - bilik sewa,-233.71
+04/09/2025,Nasi lemak breakfast,-10.81
+04/09/2025,POS PURCHASE 9028,-7.34
+06/09/2025,Touch n Go toll,-6.69
+06/09/2025,Lazada refund,48.75
+12/09/2025,Shell petrol,-6.10
+12/09/2025,Spotify Premium,-24.22
+13/09/2025,Kedai makan lunch,-12.53
+14/09/2025,Astro subscription,-33.11
+16/09/2025,Kedai makan lunch,-12.36
+16/09/2025,McDonald's,-14.58
+17/09/2025,DEBIT ADVICE 5552,-2.47
+18/09/2025,DEBIT ADVICE 2055,-11.14
+18/09/2025,RapidKL bus,-11.30
+19/09/2025,Digi bill,-57.24
+20/09/2025,Kedai makan lunch,-8.87
+20/09/2025,Parking fee,-3.43
+20/09/2025,Parking fee,-11.08
+20/09/2025,Zalora order,-66.51
+21/09/2025,CARD TXN 1186,-4.57
+21/09/2025,Makan malam,-7.42
+21/09/2025,RapidKL bus,-4.66
+25/09/2025,Transfer to own account,-22.44
+27/09/2025,McDonald's,-17.89
+28/09/2025,Touch n Go toll,-8.11
+29/09/2025,CARD TXN 2661,-3.71
+29/09/2025,Starbucks,-13.80
+30/09/2025,Kedai makan lunch,-9.51
+30/09/2025,Nasi lemak breakfast,-9.87
+01/10/2025,Allowance from Ayah,671.75
+03/10/2025,Grab ride to campus,-5.29
+03/10/2025,Rent - bilik sewa,-233.71
+03/10/2025,Touch n Go toll,-6.26
+03/10/2025,Touch n Go toll,-6.83
+04/10/2025,Bookstore,-45.29
+06/10/2025,Mamak dinner,-12.97
+07/10/2025,GrabFood order,-9.76
+07/10/2025,Mr DIY purchase,-41.33
+08/10/2025,Grab ride to campus,-4.87
+09/10/2025,Shell petrol,-7.07
+11/10/2025,Grab ride to campus,-4.26
+11/10/2025,Grab ride to campus,-5.96
+11/10/2025,Grab ride to campus,-8.07
+11/10/2025,MRT fare,-3.65
+11/10/2025,Starbucks,-8.81
+12/10/2025,Shopee order,-74.61
+12/10/2025,Spotify Premium,-24.22
+14/10/2025,Astro subscription,-33.11
+14/10/2025,Petronas petrol,-4.21
+18/10/2025,GrabFood order,-9.00
+19/10/2025,Digi bill,-56.83
+19/10/2025,Makan malam,-10.06
+22/10/2025,Shell petrol,-4.11
+23/10/2025,Restoran nasi kandar,-11.95
+25/10/2025,Tealive,-15.52
+26/10/2025,CARD TXN 2156,-6.62
+27/10/2025,Lazada order,-24.89
+27/10/2025,Restoran nasi kandar,-15.29
+29/10/2025,Parking fee,-5.46
+30/10/2025,Karaoke night,-24.26
+30/10/2025,QR PAY 7717,-4.66
+30/10/2025,Touch n Go toll,-9.24
+31/10/2025,McDonald's,-6.26
+01/11/2025,RapidKL bus,-3.87
+01/11/2025,Allowance from Ayah,671.75
+02/11/2025,Kedai makan lunch,-9.33
+02/11/2025,QR PAY 6912,-21.03
+03/11/2025,Rent - bilik sewa,-233.71
+05/11/2025,Starbucks,-14.81
+05/11/2025,Touch n Go toll,-5.61
+08/11/2025,Nasi lemak breakfast,-12.13
+09/11/2025,Bakery bread,-13.89
+09/11/2025,Petronas petrol,-4.72
+12/11/2025,McDonald's,-16.44
+12/11/2025,Spotify Premium,-24.22
+13/11/2025,Starbucks,-9.96
+14/11/2025,Astro subscription,-33.11
+14/11/2025,Touch n Go toll,-8.06
+16/11/2025,RapidKL bus,-2.71
+17/11/2025,Foodpanda order,-4.91
+19/11/2025,Digi bill,-56.31
+21/11/2025,MRT fare,-5.46
+21/11/2025,Parking fee,-5.78
+22/11/2025,Foodpanda order,-19.17
+28/11/2025,Mamak dinner,-10.33
+29/11/2025,Nasi lemak breakfast,-13.35
+29/11/2025,Parking fee,-2.70
+01/12/2025,Allowance from Ayah,671.75
+02/12/2025,POS PURCHASE 1356,-14.84
+03/12/2025,Rent - bilik sewa,-233.71
+04/12/2025,Parking fee,-7.10
+06/12/2025,GrabFood order,-8.30
+07/12/2025,CARD TXN 6360,-4.38
+09/12/2025,Kedai makan lunch,-15.13
+12/12/2025,Spotify Premium,-24.22
+13/12/2025,Parking fee,-8.24
+14/12/2025,Astro subscription,-33.11
+14/12/2025,Food court lunch,-6.47
+14/12/2025,Parking fee,-4.48
+15/12/2025,TGV movie,-32.94
+17/12/2025,Kedai makan lunch,-9.11
+19/12/2025,Digi bill,-55.97
+19/12/2025,Shell petrol,-4.36
+20/12/2025,Makan malam,-18.76
+20/12/2025,Parking fee,-6.04
+21/12/2025,KFC,-7.11
+21/12/2025,Parking fee,-4.61
+24/12/2025,Foodpanda order,-12.03
+25/12/2025,Food court lunch,-15.03
+27/12/2025,Grab ride to campus,-5.26
