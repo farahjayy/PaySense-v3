@@ -1,0 +1,199 @@
+"""'What would make this safer?': an exact search over a small grid of things a student can do.
+
+Levers (PRD 3.1, ADR D-12): more instalments, buying after the next income, a lower price, another
+provider. Every candidate goes through the whole pipeline (plan rules -> simulations -> features ->
+model), so the answer is what the model actually says about that plan, not a rule of thumb.
+
+"Smallest" is a fixed, written-down ordering of effort, not a guess about taste: one change before
+two; within that, cheaper first by the `*_EFFORT` numbers below. The first candidate in that order
+that reaches Safe is returned. If none does within `MAX_EVALUATIONS`, the best one found is returned
+with `reaches_safe=False`, and the caller says plainly that nothing in the grid gets there.
+"""
+
+from collections.abc import Callable
+from dataclasses import dataclass, replace
+from datetime import date
+from itertools import combinations
+from typing import Any
+
+from app.domain.plan_builder import ProposalError
+from app.domain.providers import PROVIDERS, get_provider
+from app.engines.forecasting.simulate import band
+from app.engines.risk.check import RiskRequest
+
+# Counts a student can realistically pick at checkout. ASSUMED (the providers' own menus are not
+# published in a form the app can read); only counts above the current one are tried.
+OFFERED_COUNTS: tuple[int, ...] = (2, 3, 4, 6, 9, 12)
+PRICE_CUTS_PCT: tuple[int, ...] = (10, 25, 50)
+MAX_EVALUATIONS = 60
+
+# Relative effort of each change, used only to order the search.
+COUNT_STEP_EFFORT = 1.0  # per step up the OFFERED_COUNTS list
+WAIT_EFFORT = 2.0
+PRICE_BASE_EFFORT = 3.0  # plus the cut percentage / 25
+PROVIDER_EFFORT = 6.0
+
+Evaluate = Callable[[RiskRequest], Any]
+
+
+@dataclass(frozen=True)
+class Change:
+    kind: str  # "instalments" | "wait" | "price" | "provider"
+    value: Any
+
+
+@dataclass(frozen=True)
+class Candidate:
+    changes: tuple[Change, ...]
+    request: RiskRequest
+    effort: float
+
+
+@dataclass(frozen=True)
+class Outcome:
+    changes: tuple[Change, ...]
+    request: RiskRequest
+    probability: float
+
+
+@dataclass(frozen=True)
+class Counterfactual:
+    baseline_band: str | None
+    baseline_probability: float | None
+    reaches_safe: bool
+    best: Outcome | None
+    evaluated: int
+
+
+def _is_manual(request: RiskRequest) -> bool:
+    return not get_provider(request.provider).rule_driven
+
+
+def _single_changes(request: RiskRequest, next_income: date | None) -> list[Candidate]:
+    out: list[Candidate] = []
+    manual = _is_manual(request)
+
+    # more instalments: for a manual plan only when the total (not each payment) was entered
+    if not manual or request.total_payable_sen is not None:
+        current = request.num_installments
+        steps = [n for n in OFFERED_COUNTS if n > current]
+        for rank, count in enumerate(steps, start=1):
+            out.append(
+                Candidate(
+                    (Change("instalments", count),),
+                    replace(request, num_installments=count),
+                    COUNT_STEP_EFFORT * rank,
+                )
+            )
+
+    # buy after the next income: the whole schedule moves by the same number of days
+    if next_income is not None:
+        target = date.fromordinal(next_income.toordinal() + 1)
+        delta = (target - request.purchase_date).days
+        if delta > 0:
+            moved = replace(request, purchase_date=target)
+            if request.first_payment_date is not None:
+                shifted = date.fromordinal(request.first_payment_date.toordinal() + delta)
+                moved = replace(moved, first_payment_date=shifted)
+            out.append(Candidate((Change("wait", target),), moved, WAIT_EFFORT))
+
+    # a lower price (only when a price was entered, i.e. a rule-driven provider)
+    if request.total_price_sen is not None:
+        for pct in PRICE_CUTS_PCT:
+            cut = request.total_price_sen * (100 - pct) // 100
+            if cut > 0:
+                out.append(
+                    Candidate(
+                        (Change("price", cut),),
+                        replace(request, total_price_sen=cut),
+                        PRICE_BASE_EFFORT + pct / 25,
+                    )
+                )
+
+    # another rule-driven provider, same price and count, at that provider's own fee rule
+    if not manual:
+        for key, config in PROVIDERS.items():
+            if config.rule_driven and key != request.provider:
+                fee = request.monthly_fee_rate_pct if config.monthly_fee_applies else 0.0
+                out.append(
+                    Candidate(
+                        (Change("provider", key),),
+                        replace(request, provider=key, monthly_fee_rate_pct=fee),
+                        PROVIDER_EFFORT,
+                    )
+                )
+    return out
+
+
+def _combine(a: Candidate, b: Candidate) -> Candidate | None:
+    """Two changes of different kinds applied together, or None if they cannot be."""
+    if {c.kind for c in a.changes} & {c.kind for c in b.changes}:
+        return None
+    request = a.request
+    for change in b.changes:
+        if change.kind == "instalments":
+            request = replace(request, num_installments=b.request.num_installments)
+        elif change.kind == "wait":
+            request = replace(
+                request,
+                purchase_date=b.request.purchase_date,
+                first_payment_date=b.request.first_payment_date,
+            )
+        elif change.kind == "price":
+            request = replace(request, total_price_sen=b.request.total_price_sen)
+        elif change.kind == "provider":
+            request = replace(
+                request,
+                provider=b.request.provider,
+                monthly_fee_rate_pct=b.request.monthly_fee_rate_pct,
+            )
+    return Candidate(a.changes + b.changes, request, a.effort + b.effort)
+
+
+def candidates(request: RiskRequest, next_income: date | None) -> list[Candidate]:
+    """Every candidate to try, in the order to try them, at most `MAX_EVALUATIONS`."""
+    singles = sorted(_single_changes(request, next_income), key=lambda c: c.effort)
+    pairs = [merged for a, b in combinations(singles, 2) if (merged := _combine(a, b)) is not None]
+    pairs.sort(key=lambda c: c.effort)
+    seen: set[str] = set()
+    ordered: list[Candidate] = []
+    for candidate in [*singles, *pairs]:
+        key = repr(candidate.request)
+        if key in seen or candidate.request == request:
+            continue
+        seen.add(key)
+        ordered.append(candidate)
+    return ordered[:MAX_EVALUATIONS]
+
+
+def search(request: RiskRequest, next_income: date | None, evaluate: Evaluate) -> Counterfactual:
+    """Run the grid through `evaluate(request) -> result with .status and .probability`.
+
+    `evaluate` may raise `ProposalError` for a candidate the plan rules reject; that candidate is
+    skipped. A locked ledger (no probability) yields no suggestion at all.
+    """
+    base = evaluate(request)
+    if base.status != "ok" or base.probability is None:
+        return Counterfactual(None, None, False, None, 1)
+    start = band(base.probability)
+    if start == "Safe":
+        return Counterfactual(
+            start, base.probability, True, Outcome((), request, base.probability), 1
+        )
+
+    evaluated = 1
+    best: Outcome | None = None
+    for candidate in candidates(request, next_income):
+        try:
+            result = evaluate(candidate.request)
+        except ProposalError:
+            continue
+        evaluated += 1
+        if result.status != "ok" or result.probability is None:
+            continue
+        outcome = Outcome(candidate.changes, candidate.request, result.probability)
+        if band(result.probability) == "Safe":
+            return Counterfactual(start, base.probability, True, outcome, evaluated)
+        if best is None or outcome.probability < best.probability:
+            best = outcome
+    return Counterfactual(start, base.probability, False, best, evaluated)
