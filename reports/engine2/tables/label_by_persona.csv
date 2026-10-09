@@ -1,0 +1,4 @@
+persona,profiles,mean_label,mean_p_without,share_safe,share_caution,share_at_risk
+budget_conscious,3958.0,0.3852,0.2968,0.4677,0.0955,0.4368
+frequent_bnpl,3482.0,0.3997,0.2762,0.4589,0.0936,0.4474
+irregular_income,2560.0,0.5688,0.5028,0.1766,0.1332,0.6902

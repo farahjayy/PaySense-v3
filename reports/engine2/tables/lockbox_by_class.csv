@@ -1,0 +1,6 @@
+lockbox profiles,profiles,share_of_lockbox,brier_calibrated,brier_uncalibrated,brier_logistic,brier_constant,share_of_squared_error
+label strictly between 0 and 1,453,0.453,0.0259,0.0269,0.0299,0.1058,0.5914
+label exactly 0,337,0.337,0.0058,0.0055,0.011,0.1907,0.0985
+label exactly 1,210,0.21,0.0293,0.0289,0.0429,0.3173,0.3102
+baseline strictly between 0 and 1 (0 < p_without < 1),468,0.468,0.0248,0.0257,0.03,0.1349,0.5851
+baseline exactly 0 or exactly 1,532,0.532,0.0155,0.0152,0.023,0.2175,0.4149
