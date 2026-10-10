@@ -1,22 +1,23 @@
 {
   "baseline": {
     "active_plans_with_purchase": 1.0,
-    "bnpl_outstanding_to_income": 0.3018564187152438,
-    "disc_volatility": 62.71251232328663,
-    "disc_weekly_p50": 53.493376843400824,
-    "disc_weekly_p90": 218.2577318765699,
-    "dsr_with_purchase": 0.3891131092623784,
-    "income_p10_monthly": 856.6188461538461,
-    "instalment_amount": 39.72708333333333,
-    "instalment_to_income": 0.0372548901366673,
+    "bnpl_outstanding_to_income": 0.21657559198542806,
+    "disc_volatility": 55.383086974757234,
+    "disc_weekly_p50": 44.72200291735144,
+    "disc_weekly_p90": 190.65121455494943,
+    "dsr_with_purchase": 0.271823022748343,
+    "income_p10_monthly": 1096.605,
+    "instalment_amount": 33.17166666666667,
+    "instalment_to_income": 0.027154289336366825,
     "limit_known": 0.0,
     "limit_utilisation_with_purchase": 0.0,
-    "margin_cum_p10_without": -21.845,
-    "margin_monthly_p50_without": 277.885,
+    "margin_cum_p10_without": 415.46,
+    "margin_monthly_p50_without": 533.53,
     "monthly_fee_rate": 1.5,
     "num_instalments": 6.0,
     "upfront_to_income": 0.0
   },
+  "baseline_profiles": 3505,
   "calibrator": {
     "coef": 0.9414210820382163,
     "intercept": 0.01818952554712277,
@@ -24,7 +25,7 @@
   },
   "explanation": {
     "method": "baseline_shapley",
-    "reference": "the median development profile, feature by feature (ADR D-40)"
+    "reference": "the median, feature by feature, of the development profiles whose label is Safe (below 0.10): a typical student who is not at risk (ADR D-40)"
   },
   "family": "lightgbm",
   "feature_names": [
@@ -47,10 +48,12 @@
   ],
   "feature_schema_hash": "2066b37e13182a5e",
   "label": {
+    "engine1_metadata_sha256": "db1a7635c57b74859811f45c31d15839943af7a067262016416345ea4ed36266",
     "horizon_max_weeks": 180,
     "label_version": "2",
     "paths": 1000,
     "seed": 20251228,
+    "served_model": "lstm",
     "served_model_files": {
       "lstm_income.onnx": "87186798ef3821b42c21690df626a921707bf81291b26f14c71538222cedf36d",
       "lstm_spend.onnx": "56b0e083483091d9c1e5d265e06ead1ab5393e118ef8c777d6d63c94f0acdb9a"
@@ -79,7 +82,7 @@
     }
   },
   "monotone_constraints": true,
-  "onnx_sha256": "b384b3c0320b987c4f651b65e87a3240a5ae2b36324c965d9ac162ec8c45bd28",
+  "onnx_sha256": "9191ddf59b9109873e1eec34243ef59ce41b4aa4b2851fe2be43de6845119e61",
   "parity": {
     "onnx_vs_trained_model": {
       "max_abs_diff": 0.0002621615610184369,

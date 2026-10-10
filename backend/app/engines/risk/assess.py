@@ -15,7 +15,7 @@ from app.engines.risk.counterfactual import Counterfactual, search
 from app.engines.risk.explain import ExplainedFactor, select_factors
 from app.engines.risk.features import as_vector
 
-NEXT_INCOME_LOOKAHEAD_DAYS = 400
+NEXT_INCOME_LOOKAHEAD_DAYS = 300  # purchase dates beyond a year are refused by the API
 # Candidate changes are screened with fewer simulated futures; the one shown is re-run at full
 # strength, so only the search is cheaper, never the number a student sees.
 SCREEN_PATHS = 300
@@ -66,6 +66,14 @@ def assess(
     result = check(request)
     if result.status != "ok" or result.features is None:
         return Assessment(result, [], None)
+    # Switching provider is only suggested to one whose limit the student recorded: with no
+    # record there is no cap and no utilisation, and the model would see missing information as
+    # good news.
+    recorded = {
+        provider
+        for provider, limit in provider_limits.items()
+        if limit is not None and provider != request.provider
+    }
     factors = select_factors(result.features, predictor.contributions(as_vector(result.features)))
     suggestion = search(
         request,
@@ -73,5 +81,6 @@ def assess(
         check,
         baseline=result,
         screen=lambda candidate: check(candidate, min(SCREEN_PATHS, paths)),
+        switch_to=recorded,
     )
     return Assessment(result, factors, suggestion)

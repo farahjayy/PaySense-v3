@@ -17,16 +17,21 @@ students (seed 90001; no training label and not the lockbox).
 | 95th percentile of the absolute gap | 0.2281 |
 | largest absolute gap | 0.5062 |
 | same band | 95.0% |
+| same band, students not already short before the purchase (86) | 94.2% |
 
 ## What a student gets
 
 | measure | value |
 |---|---|
 | results not Safe | 126 |
-| of those, a change that reaches Safe was found | 12.7% |
-| combinations tried when not Safe (mean, cap 60) | 25.2 |
-| reasons shown (mean) | 2.26 |
-| results with no reason ("nothing stands out") | 22.5% |
+| of those, already short before the purchase (simulated chance of 10% or more without it) | 90.5% |
+| of those, a change that reaches Safe was found | 11.9% |
+| of the changes found, Safe by the direct simulation too (15 checked) | 86.7% |
+| how the changes found were judged | simulation: 7, model: 8 |
+| combinations tried when not Safe (mean, cap 60) | 17.6 |
+| reasons shown (mean) | 1.98 |
+| results with no reason ("nothing stands out"), all results | 30.0% |
+| results with no reason, results that are not Safe | 0.0% |
 
 ## Time for a full assessment
 
@@ -34,7 +39,7 @@ Single process, one request at a time, on the machine that made this report.
 
 | p50 | p95 | max |
 |---|---|---|
-| 0.29 s | 0.69 s | 1.07 s |
+| 0.19 s | 0.50 s | 0.94 s |
 
-The target was a p95 of 3 s. Slowest five (profile index, seconds):
-48: 1.07, 11: 0.98, 166: 0.95, 108: 0.92, 12: 0.86.
+The ledgers here come from the generator through the same detection the labels used, not from the database path (24-month window, confirmed items); the engine is the same. The target was a p95 of 3 s. Slowest five (profile index, seconds):
+48: 0.94, 108: 0.87, 166: 0.69, 12: 0.67, 11: 0.65.

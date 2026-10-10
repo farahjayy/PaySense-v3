@@ -11,7 +11,7 @@ from sklearn.linear_model import LogisticRegression
 
 from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
 from app.engines.forecasting.service import DASHBOARD_MONTHS, ERROR_INFLATION
-from app.engines.forecasting.serving import ARTEFACT_VERSION
+from app.engines.forecasting.serving import ARTEFACT_VERSION, SERVED_MODEL
 from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEEKS
 from app.engines.risk.artefact import ArtefactError, load_engine2, load_if_present
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
@@ -47,6 +47,10 @@ def metadata(onnx_bytes: bytes, **overrides) -> dict:
         "label": {
             "horizon_max_weeks": RISK_CHECK_MAX_WEEKS,
             "served_model_files": engine1_hashes(),
+            "served_model": SERVED_MODEL,
+            "engine1_metadata_sha256": hashlib.sha256(
+                (ENGINE1_DIR / ARTEFACT_VERSION / "metadata.json").read_bytes()
+            ).hexdigest(),
         },
         "serving_constants": {
             "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
@@ -193,3 +197,25 @@ def test_a_metadata_file_missing_a_field_is_an_artefact_error_not_a_key_error(tm
     (folder / "metadata.json").write_text(json.dumps(meta), encoding="utf-8")
     with pytest.raises(ArtefactError, match="could not be loaded"):
         load_engine2(folder)
+
+
+def test_a_different_forecast_model_than_the_one_that_made_the_labels_is_refused(tmp_path):
+    label = metadata(b"")["label"] | {"served_model": "ma4"}
+    with pytest.raises(ArtefactError, match="forecast model"):
+        load_engine2(write(tmp_path / "v1", label=label))
+
+
+def test_a_changed_forecast_settings_file_is_refused(tmp_path):
+    label = metadata(b"")["label"] | {"engine1_metadata_sha256": "0" * 64}
+    with pytest.raises(ArtefactError, match="forecast settings"):
+        load_engine2(write(tmp_path / "v1", label=label))
+
+
+def test_a_version_folder_without_metadata_is_an_error_not_a_silent_fallback_to_an_older_one(
+    tmp_path,
+):
+    write(tmp_path / "engine2" / "v1")
+    (tmp_path / "engine2" / "v2").mkdir()
+    (tmp_path / "engine2" / "v2" / "model.onnx").write_bytes(b"partial copy")
+    with pytest.raises(ArtefactError, match="v2"):
+        load_if_present(tmp_path / "engine2")

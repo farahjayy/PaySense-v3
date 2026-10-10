@@ -141,6 +141,9 @@ class ChangeOut(ApiModel):
 
 class ChangeSuggestionOut(ApiModel):
     status: Literal["already_safe", "found", "none_found"]
+    # what the number was judged by: the model, or (for waiting, which the model cannot see) a
+    # direct simulation of that exact plan
+    basis: Literal["model", "simulation"] = "model"
     changes: list[ChangeOut]
     probability: float | None = Field(default=None, ge=0, le=1)
     band: Band | None = None
@@ -181,6 +184,8 @@ class RiskCheckOut(ApiModel):
     band: Band | None = None
     score: int | None = Field(default=None, ge=0, le=100)
     simulated_probability: float | None = Field(default=None, ge=0, le=1)
+    # the band a direct simulation of this purchase gives; differs from `band` about 5% of the time
+    simulated_band: Band | None = None
     probability_without_purchase: float | None = Field(default=None, ge=0, le=1)
     factors: list[FactorOut]
     suggestion: ChangeSuggestionOut | None = None
@@ -246,6 +251,7 @@ def _suggestion(found: Counterfactual | None) -> ChangeSuggestionOut | None:
         changes=changes,
         probability=best.probability if best else None,
         band=band_of(best.probability) if best else None,  # type: ignore[arg-type]
+        basis=best.basis if best else "model",  # type: ignore[arg-type]
         request=PlanIn.model_validate(asdict(best.request)) if best and best.changes else None,
         evaluated=found.evaluated,
     )
@@ -276,6 +282,7 @@ def _out(
         band=result.band,  # type: ignore[arg-type]
         score=result.score,
         simulated_probability=_stored(result.p_simulated),
+        simulated_band=band_of(result.p_simulated) if result.p_simulated is not None else None,  # type: ignore[arg-type]
         probability_without_purchase=_stored(result.p_without),
         factors=[
             FactorOut(feature=f.feature, text=f.text, contribution=min(f.contribution, 1.0))
@@ -367,6 +374,7 @@ def _from_row(row: dict[str, Any]) -> RiskCheckOut:
         band=risk_checks.BANDS[row["label"]],
         score=row["score"],
         simulated_probability=float(row["p_simulated"]),
+        simulated_band=band_of(float(row["p_simulated"])),  # type: ignore[arg-type]
         probability_without_purchase=stored["p_without"],
         factors=row["factors"],
         suggestion=row["counterfactuals"],

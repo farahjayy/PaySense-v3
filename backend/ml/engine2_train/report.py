@@ -665,9 +665,10 @@ def _sections(
         "all of them and stored with the model. The calibrator is fitted on out-of-fold "
         "predictions of the fold models but applied to a different model: "
         f"{record['calibration']['applied_to']}. Its correction is therefore approximate for the "
-        "served model, which the lockbox reliability table checks. Explanations (SHAP, phase P6) "
-        "will be computed on the raw scores of the model, while the number a student sees is the "
-        "calibrated one, so a factor's contribution is on the raw scale.\n",
+        "served model, which the lockbox reliability table checks. The reasons shown to a "
+        "student are exact Shapley values of the calibrated number against a reference "
+        "student (the median Safe-labelled development profile, ADR D-40), so they are on the "
+        "same scale as the probability the student sees.\n",
         _md(tables["calibration"]),
         "## Ablation: the contribution of the Engine 1 features\n",
         f"{record['ablation']['tuning']}; interval: {record['ablation']['ci_method']}.\n",

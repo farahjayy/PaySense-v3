@@ -250,7 +250,8 @@ def test_the_report_is_built_from_a_stored_run_and_states_what_it_computed(tiny,
     assert "Brier by label class" in readme and "exactly 0" in readme
     assert "coefficient" in readme and "no monotone constraints" in readme
     assert "fitted on out-of-fold predictions of the fold models" in readme
-    assert "SHAP" in readme and "raw scores" in readme
+    assert "Shapley" in readme and "same scale" in readme
+    assert "raw scale" not in readme
     assert "scored 1 time" in readme  # the lockbox log, in words
     assert "the six Engine 1 features" not in readme  # the count comes from the record
     for name in ("lockbox_by_class", "lockbox_subgroup", "logistic_signs"):

@@ -24,6 +24,10 @@ from onnxmltools import convert_lightgbm, convert_xgboost
 from onnxmltools.convert.common.data_types import FloatTensorType
 from skl2onnx import to_onnx
 
+from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
+from app.engines.forecasting.serving import ARTEFACT_VERSION as ENGINE1_VERSION
+from app.engines.forecasting.serving import SERVED_MODEL
+from app.engines.forecasting.simulate import SAFE_BELOW
 from app.engines.risk.artefact import MODEL_ROOT, load_engine2
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from ml.engine2_train.calibrate import Calibrator
@@ -32,6 +36,7 @@ from ml.engine2_train.metrics import EPS
 from ml.engine2_train.train import RUNS_DIR
 
 PARITY_SAMPLE = 2000
+MIN_REFERENCE_PROFILES = 100
 LOOSE_TOLERANCE = 1e-3  # a feature within float32 rounding of a split can flip one tree
 
 
@@ -79,6 +84,14 @@ def export(
     data = load_labels(labels_path)
     development, lockbox = split_lockbox(data)
 
+    safe = development.y < SAFE_BELOW
+    if int(safe.sum()) < MIN_REFERENCE_PROFILES:
+        raise SystemExit("too few Safe development profiles to define a reference student")
+    reference = {
+        name: float(value)
+        for name, value in zip(FEATURE_NAMES, np.median(development.x[safe], axis=0), strict=True)
+    }
+
     onnx_bytes = convert(fitted, len(FEATURE_NAMES))
     checked = np.vstack([lockbox.x, development.x[:PARITY_SAMPLE]])
     model_parity = parity(fitted, onnx_bytes, checked)
@@ -93,13 +106,14 @@ def export(
         "onnx_sha256": hashlib.sha256(onnx_bytes).hexdigest(),
         "calibrator": calibrator,
         "logit_eps": EPS,
-        "baseline": {
-            name: float(value)
-            for name, value in zip(FEATURE_NAMES, np.median(development.x, axis=0), strict=True)
-        },
+        "baseline": reference,
+        "baseline_profiles": int(safe.sum()),
         "explanation": {
             "method": "baseline_shapley",
-            "reference": "the median development profile, feature by feature (ADR D-40)",
+            "reference": (
+                "the median, feature by feature, of the development profiles whose label is Safe "
+                "(below 0.10): a typical student who is not at risk (ADR D-40)"
+            ),
         },
         "monotone_constraints": results["served_model_has_monotone_constraints"],
         "label": {
@@ -108,6 +122,10 @@ def export(
             "paths": results["labels_manifest"]["paths"],
             "seed": results["labels_manifest"]["seed"],
             "served_model_files": results["labels_manifest"]["served_model_files"],
+            "served_model": SERVED_MODEL,
+            "engine1_metadata_sha256": hashlib.sha256(
+                (ENGINE1_DIR / ENGINE1_VERSION / "metadata.json").read_bytes()
+            ).hexdigest(),
         },
         "serving_constants": results["serving_constants"],
         "training": {
@@ -141,6 +159,8 @@ def export(
     served = predictor.predict_batch(checked)
     trained = Calibrator.from_dict(calibrator).apply(fitted.predict(checked))
     end_to_end = np.abs(served - trained)
+    if end_to_end.max() > LOOSE_TOLERANCE:
+        raise SystemExit(f"the served artefact differs from the trained model: {end_to_end.max()}")
     metadata["parity"]["served_vs_trained_calibrated"] = {
         "rows": int(len(checked)),
         "max_abs_diff": float(end_to_end.max()),

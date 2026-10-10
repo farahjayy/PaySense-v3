@@ -25,6 +25,7 @@ import onnxruntime
 from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
 from app.engines.forecasting.service import DASHBOARD_MONTHS, ERROR_INFLATION
 from app.engines.forecasting.serving import ARTEFACT_VERSION as ENGINE1_VERSION
+from app.engines.forecasting.serving import SERVED_MODEL
 from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEEKS
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from app.engines.risk.shapley import baseline_shapley
@@ -92,6 +93,17 @@ def _check_matches_running_code(meta: Mapping[str, Any], folder: Path) -> None:
                 f"the labels were made with a different forecast model file ({filename}); "
                 "the served forecast model has changed since"
             )
+    if label.get("served_model") != SERVED_MODEL:
+        raise ArtefactError(
+            f"the labels were made with forecast model {label.get('served_model')!r}, "
+            f"but {SERVED_MODEL!r} is serving now"
+        )
+    settings_path = ENGINE1_DIR / ENGINE1_VERSION / "metadata.json"
+    if not settings_path.exists() or _sha256(settings_path) != label.get("engine1_metadata_sha256"):
+        raise ArtefactError(
+            "the forecast settings (window, horizon, scaling) differ from those the labels "
+            "were made with"
+        )
     if not label.get("served_model_files"):
         raise ArtefactError("the artefact does not record which forecast model made its labels")
     model_path = folder / MODEL_FILE
@@ -179,11 +191,14 @@ def load_engine2(folder: Path) -> OnnxPredictor:
 def load_if_present(root: Path = MODEL_ROOT) -> OnnxPredictor | None:
     """The newest version under `root`; None when nothing is deployed there (the risk check then
     says it is unavailable). A version that is there but wrong stops start-up."""
-    versions = (
-        [p for p in root.iterdir() if p.is_dir() and (p / METADATA_FILE).exists()]
-        if root.is_dir()
-        else []
-    )
+    folders = [p for p in root.iterdir() if p.is_dir()] if root.is_dir() else []
+    unfinished = [p.name for p in folders if not (p / METADATA_FILE).exists()]
+    if unfinished:
+        raise ArtefactError(
+            f"model folder(s) {unfinished} have no {METADATA_FILE}: finish or remove them, "
+            "rather than quietly serving an older version"
+        )
+    versions = folders
     if not versions:
         logger.warning("no risk model found under %s: the risk check will answer 503", root)
         return None

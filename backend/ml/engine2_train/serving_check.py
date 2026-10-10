@@ -12,6 +12,8 @@ Nothing here touches the lockbox: these are different profiles, so the lockbox's
 one. The report is written to `reports/engine2/serving_check.md` and regenerates from the command.
 """
 
+# ruff: noqa: E501  (the markdown template below has long table rows)
+
 import argparse
 import json
 import statistics
@@ -26,10 +28,10 @@ import numpy as np
 from app.domain.plan_builder import ProposalError
 from app.domain.providers import get_provider
 from app.engines.forecasting.serving import served_forecaster
-from app.engines.forecasting.simulate import band
+from app.engines.forecasting.simulate import SAFE_BELOW, band
 from app.engines.risk.artefact import MODEL_ROOT, load_engine2
 from app.engines.risk.assess import assess
-from app.engines.risk.check import Predictor, RiskRequest
+from app.engines.risk.check import Predictor, RiskRequest, run_check
 from ml.datagen.params import load_params
 from ml.datagen.profile import generate_dated_profile
 from ml.engine2_train.labels import prepare, profile_seed
@@ -87,6 +89,14 @@ def run(predictor: Predictor, profiles: int = DEFAULT_PROFILES) -> dict[str, Any
             locked += 1
             continue
         suggestion = found.suggestion
+        best = suggestion.best if suggestion and suggestion.reaches_safe else None
+        suggested_simulated = None
+        if best is not None and best.changes:
+            checked = run_check(
+                known["rows"], known["items"], known["plans"], known["limits"], best.request,
+                known["as_of"], forecaster, predictor, seed=profile_seed(SERVING_SEED, index),
+            )  # fmt: skip
+            suggested_simulated = checked.p_simulated
         rows.append(
             {
                 "index": index,
@@ -100,6 +110,9 @@ def run(predictor: Predictor, profiles: int = DEFAULT_PROFILES) -> dict[str, Any
                 and found.result.band != "Safe",
                 "needed_suggestion": found.result.band != "Safe",
                 "evaluated": suggestion.evaluated if suggestion else 0,
+                "p_without": found.result.p_without,
+                "suggested_simulated": suggested_simulated,
+                "suggestion_basis": best.basis if best is not None else None,
             }
         )
     return summarise(rows, profiles, locked, rejected)
@@ -127,6 +140,21 @@ def summarise(
         },
         "band_agreement": float(np.mean([r["band"] == r["band_simulated"] for r in rows])),
         "non_safe": len(needed),
+        "non_safe_short_before_purchase": _share(needed, lambda r: r["p_without"] >= SAFE_BELOW),
+        "band_agreement_where_plan_decides": _share(
+            [r for r in rows if r["p_without"] < SAFE_BELOW],
+            lambda r: r["band"] == r["band_simulated"],
+        ),
+        "plan_decides_profiles": sum(1 for r in rows if r["p_without"] < SAFE_BELOW),
+        "suggestion_safe_by_simulation": _share(
+            [r for r in rows if r["suggested_simulated"] is not None],
+            lambda r: r["suggested_simulated"] < SAFE_BELOW,
+        ),
+        "suggestions_checked": sum(1 for r in rows if r["suggested_simulated"] is not None),
+        "suggestion_basis": dict(
+            Counter(r["suggestion_basis"] for r in rows if r["suggested_simulated"] is not None)
+        ),
+        "non_safe_with_no_reason": _share(needed, lambda r: r["factors"] == 0),
         "suggestion_reaches_safe": float(np.mean([r["suggestion_found"] for r in needed]))
         if needed
         else None,
@@ -147,9 +175,14 @@ def summarise(
     }
 
 
+def _share(items: list[dict[str, Any]], test: Any) -> float | None:
+    return float(np.mean([bool(test(i)) for i in items])) if items else None
+
+
 def render(result: dict[str, Any], predictor: Predictor) -> str:
     gap, secs = result["gap"], result["seconds"]
     tried = result["mean_evaluations_when_not_safe"] or 0
+    basis = ", ".join(f"{k}: {v}" for k, v in result["suggestion_basis"].items()) or "none"
     reasons = ", ".join(f"{k}: {v}" for k, v in result["rejected_reasons"].items()) or "none"
     pct = lambda v: "n/a" if v is None else f"{v:.1%}"  # noqa: E731
     return f"""# Engine 2 serving check
@@ -171,16 +204,21 @@ students (seed {SERVING_SEED}; no training label and not the lockbox).
 | 95th percentile of the absolute gap | {gap["p95_abs"]:.4f} |
 | largest absolute gap | {gap["max_abs"]:.4f} |
 | same band | {pct(result["band_agreement"])} |
+| same band, students not already short before the purchase ({result["plan_decides_profiles"]}) | {pct(result["band_agreement_where_plan_decides"])} |
 
 ## What a student gets
 
 | measure | value |
 |---|---|
 | results not Safe | {result["non_safe"]} |
+| of those, already short before the purchase (simulated chance of 10% or more without it) | {pct(result["non_safe_short_before_purchase"])} |
 | of those, a change that reaches Safe was found | {pct(result["suggestion_reaches_safe"])} |
+| of the changes found, Safe by the direct simulation too ({result["suggestions_checked"]} checked) | {pct(result["suggestion_safe_by_simulation"])} |
+| how the changes found were judged | {basis} |
 | combinations tried when not Safe (mean, cap 60) | {tried:.1f} |
 | reasons shown (mean) | {result["mean_factors_shown"]:.2f} |
-| results with no reason ("nothing stands out") | {pct(result["share_with_no_factor"])} |
+| results with no reason ("nothing stands out"), all results | {pct(result["share_with_no_factor"])} |
+| results with no reason, results that are not Safe | {pct(result["non_safe_with_no_reason"])} |
 
 ## Time for a full assessment
 
@@ -190,7 +228,7 @@ Single process, one request at a time, on the machine that made this report.
 |---|---|---|
 | {secs["p50"]:.2f} s | {secs["p95"]:.2f} s | {secs["max"]:.2f} s |
 
-The target was a p95 of 3 s. Slowest five (profile index, seconds):
+The ledgers here come from the generator through the same detection the labels used, not from the database path (24-month window, confirmed items); the engine is the same. The target was a p95 of 3 s. Slowest five (profile index, seconds):
 {", ".join(f"{s['index']}: {s['seconds']:.2f}" for s in result["slowest"])}.
 """
 

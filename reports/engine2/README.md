@@ -78,7 +78,7 @@ The simulation horizon was truncated for 0 of 10000 labels (the report refuses t
 
 ## Calibration
 
-Chosen by cross-validation on the single-repeat out-of-fold predictions of the development set, then fitted on all of them and stored with the model. The calibrator is fitted on out-of-fold predictions of the fold models but applied to a different model: the final model, which has other hyperparameters (tuned on all development profiles) and more training data than the fold models whose predictions fitted the calibrator. Its correction is therefore approximate for the served model, which the lockbox reliability table checks. Explanations (SHAP, phase P6) will be computed on the raw scores of the model, while the number a student sees is the calibrated one, so a factor's contribution is on the raw scale.
+Chosen by cross-validation on the single-repeat out-of-fold predictions of the development set, then fitted on all of them and stored with the model. The calibrator is fitted on out-of-fold predictions of the fold models but applied to a different model: the final model, which has other hyperparameters (tuned on all development profiles) and more training data than the fold models whose predictions fitted the calibrator. Its correction is therefore approximate for the served model, which the lockbox reliability table checks. The reasons shown to a student are exact Shapley values of the calibrated number against a reference student (the median Safe-labelled development profile, ADR D-40), so they are on the same scale as the probability the student sees.
 
 | option | held_out_brier |
 |---|---|

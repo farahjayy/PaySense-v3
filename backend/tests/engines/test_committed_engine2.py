@@ -48,12 +48,13 @@ def test_the_model_was_built_with_the_monotone_constraints_and_says_where_it_cam
     )
 
 
-def test_predictions_are_probabilities_and_the_baseline_student_is_in_the_middle(
+def test_the_reference_student_is_a_typical_safe_one_so_reasons_mean_more_than_not_typical(
     predictor, metadata
 ):
     baseline = [metadata["baseline"][name] for name in FEATURE_NAMES]
     p = predictor.predict(baseline)
-    assert 0.0 < p < 1.0
+    assert 0.0 < p < 0.10, p  # a typical student who is not at risk
+    assert metadata["baseline_profiles"] >= 1000
     stretched = list(baseline)
     stretched[FEATURE_NAMES.index("instalment_to_income")] = 5.0
     stretched[FEATURE_NAMES.index("dsr_with_purchase")] = 5.0

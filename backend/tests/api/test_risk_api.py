@@ -429,3 +429,24 @@ def test_a_model_that_rounds_just_over_one_still_gives_a_valid_probability():
     assert clamp_probability(1.0000001) == 1.0
     assert clamp_probability(-1e-9) == 0.0
     assert clamp_probability(0.37) == 0.37
+
+
+def test_the_response_names_the_band_the_direct_simulation_gives_and_how_a_suggestion_was_judged(
+    api, amir, fake_db
+):
+    fill(fake_db, "amir")
+    out = api.post(
+        "/api/risk/check", json=body(total_price_sen=120000, num_installments=2), headers=amir
+    ).json()
+
+    from app.engines.forecasting.simulate import band
+
+    assert out["simulated_band"] == band(out["simulated_probability"])
+    assert out["suggestion"]["basis"] in ("model", "simulation")
+
+
+def test_a_saved_report_keeps_the_simulated_band_and_the_basis(api, amir, fake_db):
+    fill(fake_db, "amir")
+    confirmed = api.post("/api/risk/confirm", json=body(), headers=amir).json()
+    saved = api.get(f"/api/risk/checks/{confirmed['check_id']}", headers=amir).json()
+    assert saved["simulated_band"] == confirmed["check"]["simulated_band"]
