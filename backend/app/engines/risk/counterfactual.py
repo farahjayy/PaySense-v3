@@ -10,7 +10,7 @@ that reaches Safe is returned. If none does within `MAX_EVALUATIONS`, the best o
 with `reaches_safe=False`, and the caller says plainly that nothing in the grid gets there.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass, replace
 from datetime import date
 from itertools import combinations
@@ -18,7 +18,7 @@ from typing import Any
 
 from app.domain.plan_builder import ProposalError
 from app.domain.providers import PROVIDERS, get_provider
-from app.engines.forecasting.simulate import band
+from app.engines.forecasting.simulate import SAFE_BELOW, band
 from app.engines.risk.check import RiskRequest
 
 # Counts a student can realistically pick at checkout. ASSUMED (the providers' own menus are not
@@ -54,6 +54,7 @@ class Outcome:
     changes: tuple[Change, ...]
     request: RiskRequest
     probability: float
+    basis: str = "model"  # "simulation" when the model cannot see what the change does
 
 
 @dataclass(frozen=True)
@@ -69,7 +70,9 @@ def _is_manual(request: RiskRequest) -> bool:
     return not get_provider(request.provider).rule_driven
 
 
-def _single_changes(request: RiskRequest, next_income: date | None) -> list[Candidate]:
+def _single_changes(
+    request: RiskRequest, next_income: date | None, switch_to: Collection[str] | None
+) -> list[Candidate]:
     out: list[Candidate] = []
     manual = _is_manual(request)
 
@@ -113,7 +116,8 @@ def _single_changes(request: RiskRequest, next_income: date | None) -> list[Cand
     # another rule-driven provider, same price and count, at that provider's own fee rule
     if not manual:
         for key, config in PROVIDERS.items():
-            if config.rule_driven and key != request.provider:
+            allowed = switch_to is None or key in switch_to
+            if config.rule_driven and key != request.provider and allowed:
                 fee = request.monthly_fee_rate_pct if config.monthly_fee_applies else 0.0
                 out.append(
                     Candidate(
@@ -150,9 +154,17 @@ def _combine(a: Candidate, b: Candidate) -> Candidate | None:
     return Candidate(a.changes + b.changes, request, a.effort + b.effort)
 
 
-def candidates(request: RiskRequest, next_income: date | None) -> list[Candidate]:
-    """Every candidate to try, in the order to try them, at most `MAX_EVALUATIONS`."""
-    singles = sorted(_single_changes(request, next_income), key=lambda c: c.effort)
+def candidates(
+    request: RiskRequest,
+    next_income: date | None,
+    switch_to: Collection[str] | None = None,
+) -> list[Candidate]:
+    """Every candidate to try, in the order to try them, at most `MAX_EVALUATIONS`.
+
+    `switch_to` limits which other providers are tried (None: any rule-driven one). The app only
+    knows a student's room with a provider whose limit they recorded, so only those are offered.
+    """
+    singles = sorted(_single_changes(request, next_income, switch_to), key=lambda c: c.effort)
     pairs = [merged for a, b in combinations(singles, 2) if (merged := _combine(a, b)) is not None]
     pairs.sort(key=lambda c: c.effort)
     seen: set[str] = set()
@@ -166,12 +178,30 @@ def candidates(request: RiskRequest, next_income: date | None) -> list[Candidate
     return ordered[:MAX_EVALUATIONS]
 
 
+SCREEN_MARGIN = 0.02  # a screened result this close to the Safe edge is confirmed at full strength
+
+
+def _judged(result: Any, candidate: Candidate) -> tuple[float, str]:
+    """The number a candidate is judged by, and where it came from.
+
+    The model cannot see when a purchase happens (none of its features involve timing), so waiting
+    is judged by the direct simulation of that exact plan, which does. Everything else is judged by
+    the model, which is what the student is shown.
+    """
+    if any(change.kind == "wait" for change in candidate.changes):
+        simulated = getattr(result, "p_simulated", None)
+        if simulated is not None:
+            return float(simulated), "simulation"
+    return float(result.probability), "model"
+
+
 def search(
     request: RiskRequest,
     next_income: date | None,
     evaluate: Evaluate,
     baseline: Any = None,
     screen: Evaluate | None = None,
+    switch_to: Collection[str] | None = None,
 ) -> Counterfactual:
     """Run the grid through `evaluate(request) -> result with .status and .probability`.
 
@@ -180,47 +210,63 @@ def search(
     run for `request` as `baseline` to avoid running it twice.
 
     `screen` is a cheaper version of `evaluate` (fewer simulated futures). Candidates are screened
-    with it, and only one that screens Safe, or the best one when none does, is run through
-    `evaluate`: what is returned is always an `evaluate` result, so the number a student sees is
-    full strength, and a candidate that only looked Safe in the screen is dropped.
+    with it, and only one that screens Safe (or within `SCREEN_MARGIN` of it), or the best one when
+    none does, is run through `evaluate`: what is returned is always an `evaluate` result.
+
+    A best effort that is no better than doing nothing is not offered.
     """
     base = baseline if baseline is not None else evaluate(request)
     if base.status != "ok" or base.probability is None:
-        return Counterfactual(None, None, False, None, 1)
+        return Counterfactual(None, None, False, None, 0)
     start = band(base.probability)
     if start == "Safe":
         return Counterfactual(
-            start, base.probability, True, Outcome((), request, base.probability), 1
+            start, base.probability, True, Outcome((), request, base.probability), 0
         )
 
     probe = screen or evaluate
-    evaluated = 1
+    tried = 0
     best: Outcome | None = None
-    for candidate in candidates(request, next_income):
+    for candidate in candidates(request, next_income, switch_to):
         try:
             result = probe(candidate.request)
         except ProposalError:
             continue
-        evaluated += 1
+        tried += 1
         if result.status != "ok" or result.probability is None:
             continue
-        outcome = Outcome(candidate.changes, candidate.request, result.probability)
-        if band(result.probability) == "Safe":
-            confirmed = _confirm(outcome, evaluate) if screen is not None else outcome
+        value, basis = _judged(result, candidate)
+        outcome = Outcome(candidate.changes, candidate.request, value, basis)
+        if value < SAFE_BELOW + (SCREEN_MARGIN if screen is not None else 0):
+            confirmed = _confirm(outcome, candidate, evaluate) if screen is not None else outcome
             if confirmed is not None and band(confirmed.probability) == "Safe":
-                return Counterfactual(start, base.probability, True, confirmed, evaluated)
+                return Counterfactual(start, base.probability, True, confirmed, tried)
             outcome = confirmed or outcome
         if best is None or outcome.probability < best.probability:
             best = outcome
 
     if screen is not None and best is not None:
-        best = _confirm(best, evaluate) or best
+        matching = next(
+            c for c in candidates(request, next_income, switch_to) if c.request == best.request
+        )
+        best = _confirm(best, matching, evaluate) or best
         if band(best.probability) == "Safe":
-            return Counterfactual(start, base.probability, True, best, evaluated)
-    return Counterfactual(start, base.probability, False, best, evaluated)
+            return Counterfactual(start, base.probability, True, best, tried)
+    if best is not None and best.probability >= _same_basis(base, best):
+        best = None
+    return Counterfactual(start, base.probability, False, best, tried)
 
 
-def _confirm(outcome: Outcome, evaluate: Evaluate) -> Outcome | None:
+def _same_basis(base: Any, outcome: Outcome) -> float:
+    """The unchanged purchase measured the way `outcome` was, so the two can be compared."""
+    if outcome.basis == "simulation":
+        simulated = getattr(base, "p_simulated", None)
+        if simulated is not None:
+            return float(simulated)
+    return float(base.probability)
+
+
+def _confirm(outcome: Outcome, candidate: Candidate, evaluate: Evaluate) -> Outcome | None:
     """The same candidate at full strength, or None if it cannot be evaluated."""
     try:
         result = evaluate(outcome.request)
@@ -228,7 +274,8 @@ def _confirm(outcome: Outcome, evaluate: Evaluate) -> Outcome | None:
         return None
     if result.status != "ok" or result.probability is None:
         return None
-    return Outcome(outcome.changes, outcome.request, result.probability)
+    value, basis = _judged(result, candidate)
+    return Outcome(outcome.changes, outcome.request, value, basis)
 
 
 _MONTHS = [

@@ -211,7 +211,12 @@ def test_end_to_end_with_the_real_pipeline_and_a_stub_model_that_rewards_smaller
 
     assert result.baseline_band in ("Caution", "At Risk")
     assert result.reaches_safe
-    assert result.best.request.num_installments > 2 or result.best.request.total_price_sen < 180000
+    best = result.best.request
+    assert (
+        best.num_installments > 2
+        or best.total_price_sen < 180000
+        or best.purchase_date > big.purchase_date  # waiting, judged by the direct simulation
+    )
     assert StubPredictor  # imported for parity with the check tests
 
 
@@ -284,3 +289,65 @@ class TestScreening:
         evaluate = evaluator(lambda r: 0.05 if r.num_installments >= 4 else 0.5)
         result = search(BASE, NEXT_INCOME, evaluate, baseline=Outcome(0.5))
         assert result.reaches_safe and len(evaluate.calls) == 1
+
+
+class Both:
+    """A result that has a model probability and a direct-simulation probability."""
+
+    def __init__(self, model, simulated):
+        self.status = "ok"
+        self.probability = model
+        self.p_simulated = simulated
+
+
+class TestReviewFollowUps:
+    def test_waiting_is_judged_by_the_direct_simulation_because_the_model_cannot_see_timing(self):
+        def evaluate(request):
+            if request.purchase_date != BASE.purchase_date:  # the wait candidate
+                return Both(model=0.5, simulated=0.04)  # the model is blind, the simulation sees it
+            return Both(model=0.5, simulated=0.6)
+
+        result = search(BASE, NEXT_INCOME, evaluate, baseline=Both(0.5, 0.6))
+
+        assert result.reaches_safe and kinds(result.best) == ["wait"]
+        assert result.best.probability == 0.04
+        assert result.best.basis == "simulation"
+
+    def test_other_changes_are_still_judged_by_the_model(self):
+        def evaluate(request):
+            more = request.num_installments >= 6
+            return Both(model=0.05 if more else 0.5, simulated=0.9)
+
+        result = search(BASE, NEXT_INCOME, evaluate, baseline=Both(0.5, 0.9))
+        assert result.reaches_safe and result.best.basis == "model"
+
+    def test_a_best_effort_that_is_no_better_than_doing_nothing_is_not_offered(self):
+        result = search(BASE, NEXT_INCOME, evaluator(lambda r: 0.9), baseline=Outcome(0.8))
+        assert not result.reaches_safe
+        assert result.best is None
+
+    def test_a_small_improvement_is_still_offered(self):
+        result = search(BASE, NEXT_INCOME, evaluator(lambda r: 0.7), baseline=Outcome(0.8))
+        assert not result.reaches_safe and result.best.probability == 0.7
+
+    def test_only_allowed_providers_are_tried(self):
+        found = candidates(BASE, NEXT_INCOME, switch_to={"atome"})
+        switched = {c.request.provider for c in found if kinds(c) == ["provider"]}
+        assert switched == {"atome"}
+        assert not any(
+            "provider" in kinds(c) for c in candidates(BASE, NEXT_INCOME, switch_to=set())
+        )
+
+    def test_the_count_is_the_number_of_changes_tried_not_counting_the_original(self):
+        result = search(BASE, NEXT_INCOME, evaluator(lambda r: 0.9), baseline=Outcome(0.95))
+        assert result.evaluated == len(candidates(BASE, NEXT_INCOME))
+        assert (
+            search(BASE, NEXT_INCOME, evaluator(lambda r: 0.01), baseline=Outcome(0.02)).evaluated
+            == 0
+        )
+
+    def test_a_candidate_close_to_the_edge_in_the_screen_is_confirmed_at_full_strength(self):
+        screen = evaluator(lambda r: 0.11 if r.num_installments == 4 else 0.5)  # just over the edge
+        full = evaluator(lambda r: 0.08 if r.num_installments == 4 else 0.5)
+        result = search(BASE, NEXT_INCOME, full, baseline=Outcome(0.5), screen=screen)
+        assert result.reaches_safe and result.best.request.num_installments == 4
