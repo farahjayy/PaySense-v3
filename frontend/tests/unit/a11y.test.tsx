@@ -265,12 +265,14 @@ describe("accessibility (axe)", () => {
           band: "At Risk",
           score: 58,
           simulated_probability: 0.45,
+          simulated_band: "At Risk",
           probability_without_purchase: 0.1,
           factors: [
             { feature: "dsr_with_purchase", text: "About 40% of income.", contribution: 0.08 },
           ],
           suggestion: {
             status: "found",
+            basis: "model",
             changes: [{ kind: "instalments", label: "Spread it over 6 instalments" }],
             probability: 0.07,
             band: "Safe",

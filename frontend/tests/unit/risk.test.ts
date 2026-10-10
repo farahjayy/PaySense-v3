@@ -17,6 +17,7 @@ function check(patch: Partial<RiskCheck> = {}): RiskCheck {
     band: "Caution",
     score: 80,
     simulated_probability: 0.22,
+    simulated_band: "Caution",
     probability_without_purchase: 0.1,
     factors: [],
     suggestion: null,

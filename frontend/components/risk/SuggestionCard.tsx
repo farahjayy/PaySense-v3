@@ -40,6 +40,12 @@ export function SuggestionCard({ suggestion, onTry, busy = false }: Props) {
               {formatPercent(suggestion.probability)} ({suggestion.band}).
             </p>
           )}
+          {suggestion.basis === "simulation" && (
+            <p className="text-[12px] text-ink-secondary">
+              The risk model cannot see when a purchase happens, so waiting is judged by a direct
+              simulation of that exact plan instead.
+            </p>
+          )}
           {onTry && suggestion.request && (
             <Button
               variant="secondary"

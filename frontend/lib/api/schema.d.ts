@@ -540,6 +540,12 @@ export interface components {
              * @enum {string}
              */
             status: "already_safe" | "found" | "none_found";
+            /**
+             * Basis
+             * @default model
+             * @enum {string}
+             */
+            basis: "model" | "simulation";
             /** Changes */
             changes: components["schemas"]["ChangeOut"][];
             /** Probability */
@@ -1133,6 +1139,8 @@ export interface components {
             score: number | null;
             /** Simulated Probability */
             simulated_probability: number | null;
+            /** Simulated Band */
+            simulated_band: ("Safe" | "Caution" | "At Risk") | null;
             /** Probability Without Purchase */
             probability_without_purchase: number | null;
             /** Factors */

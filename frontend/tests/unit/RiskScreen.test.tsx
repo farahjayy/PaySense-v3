@@ -87,6 +87,7 @@ function result(patch: Record<string, unknown> = {}) {
     band: "At Risk",
     score: 58,
     simulated_probability: 0.45,
+    simulated_band: "At Risk",
     probability_without_purchase: 0.1,
     factors: [
       {
@@ -97,6 +98,7 @@ function result(patch: Record<string, unknown> = {}) {
     ],
     suggestion: {
       status: "found",
+      basis: "model",
       changes: [{ kind: "instalments", label: "Spread it over 6 instalments" }],
       probability: 0.07,
       band: "Safe",
@@ -180,6 +182,7 @@ describe("RiskScreen", () => {
           factors: [],
           suggestion: {
             status: "none_found",
+            basis: "model",
             changes: [],
             probability: null,
             band: null,
@@ -208,6 +211,7 @@ describe("RiskScreen", () => {
           score: 93,
           suggestion: {
             status: "already_safe",
+            basis: "model",
             changes: [],
             probability: null,
             band: null,
@@ -344,5 +348,60 @@ describe("RiskReportScreen", () => {
     expect(
       screen.getByText(/does not exist, or it belongs to another account/i),
     ).toBeInTheDocument();
+  });
+});
+
+describe("RiskResult explanation of the two numbers", () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    get.mockImplementation(async () => ok(PROVIDERS));
+  });
+
+  async function show(patch: Record<string, unknown>) {
+    post.mockResolvedValue(ok(result(patch)));
+    const user = userEvent.setup();
+    render(<RiskScreen />, { wrapper });
+    await fillForm(user);
+    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
+    await screen.findByRole("img", { name: /out of 100/i });
+  }
+
+  it("explains what the second number is and which one decides the band", async () => {
+    await show({});
+    expect(screen.getByText(/the estimate decides the band/i)).toBeInTheDocument();
+    expect(screen.getByText(/slower, direct calculation/i)).toBeInTheDocument();
+  });
+
+  it("says plainly when the two methods put the purchase in different bands", async () => {
+    await show({
+      band: "Safe",
+      score: 93,
+      probability: 0.07,
+      simulated_probability: 0.35,
+      simulated_band: "At Risk",
+    });
+    expect(screen.getByText(/different bands/i)).toBeInTheDocument();
+    expect(screen.getByText(/close to the line/i)).toBeInTheDocument();
+  });
+
+  it("does not raise that notice when they agree", async () => {
+    await show({});
+    expect(screen.queryByText(/different bands/i)).not.toBeInTheDocument();
+  });
+
+  it("says when waiting was judged by the simulation because the model cannot see timing", async () => {
+    await show({
+      suggestion: {
+        status: "found",
+        basis: "simulation",
+        changes: [{ kind: "wait", label: "Buy it on 2 June 2026, after your next income" }],
+        probability: 0.04,
+        band: "Safe",
+        request: null,
+        evaluated: 5,
+      },
+    });
+    expect(screen.getByText(/judged by a direct simulation/i)).toBeInTheDocument();
   });
 });

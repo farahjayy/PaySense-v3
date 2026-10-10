@@ -8,6 +8,7 @@ import { PlanPreviewPanel } from "@/components/plans/PlanPreviewPanel";
 import { RepaymentCard } from "@/components/risk/RepaymentCard";
 import { SuggestionCard } from "@/components/risk/SuggestionCard";
 import { BandBadge } from "@/components/ui/BandBadge";
+import { Banner } from "@/components/ui/Banner";
 import { Card, CardCaption, CardTitle } from "@/components/ui/Card";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { LockedState, Skeleton } from "@/components/ui/States";
@@ -51,8 +52,19 @@ export function RiskResult({ check, onTrySuggestion, busy, stale = false, footer
               </>
             )}
           </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-ink-muted">
+            The estimate decides the band. It comes from a model trained on many simulations like
+            this one; the simulation is the slower, direct calculation of this exact purchase, shown
+            so you can see how close they are.
+          </p>
         </div>
       </Card>
+      {check.simulated_band && check.simulated_band !== check.band && (
+        <Banner tone="info" title="The two methods put this in different bands">
+          The estimate says {check.band} and the direct simulation says {check.simulated_band}. The
+          band above is the estimate&apos;s; treat this purchase as close to the line.
+        </Banner>
+      )}
       <Notices items={riskNotices(check)} />
       <PlanPreviewPanel preview={check.plan} />
       <Card>
