@@ -252,6 +252,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-39 | Per-user limits on the forecast and import routes, 4-hour sessions in the blueprint, unguessable tester usernames enforced by the roster | One user must not starve the single worker; a stateless token cannot be revoked on logout; login takes only a username |
 | D-40 | The risk model is served as ONNX with a calibrator stored as numbers; reasons are exact Shapley values against a stored reference student, threshold 0.02; start-up refuses a model whose feature hash, simulation constants or forecast-model checksums differ | The API image cannot carry shap and a tree library; contributions must be on the calibrated scale the student sees; v1's silent train/serve mismatch must not recur |
 | D-41 | Smallest change = fixed grid (instalments, wait for income, price cut, other provider), one change before two, written effort order, first that reaches Safe, else an honest none | Explainable, cannot recommend what the model does not rate safe; the order is what makes 'smallest' defensible |
+| D-42 | Import reads .xlsx/.xlsm (every sheet with a table; skipped sheets named) and takes a file's own Type and Category columns as written; header found in the first 30 rows; workbooks are size-checked before parsing | The importer trusted a guess over data the person typed; students keep budgets in Excel; a workbook is untrusted input on a small worker |
 
 ---
 
