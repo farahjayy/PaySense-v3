@@ -219,3 +219,10 @@ def test_a_version_folder_without_metadata_is_an_error_not_a_silent_fallback_to_
     (tmp_path / "engine2" / "v2" / "model.onnx").write_bytes(b"partial copy")
     with pytest.raises(ArtefactError, match="v2"):
         load_if_present(tmp_path / "engine2")
+
+
+@pytest.mark.parametrize("name", ["../x.onnx", "a/b.onnx", "a" + chr(92) + "b.onnx", ".."])
+def test_forecast_file_names_that_could_leave_the_folder_are_refused(tmp_path, name):
+    label = metadata(b"")["label"] | {"served_model_files": {name: "0" * 64}}
+    with pytest.raises(ArtefactError, match="file name"):
+        load_engine2(write(tmp_path / "v1", label=label))

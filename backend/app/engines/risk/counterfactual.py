@@ -179,6 +179,9 @@ def candidates(
 
 
 SCREEN_MARGIN = 0.02  # a screened result this close to the Safe edge is confirmed at full strength
+# At most this many near-edge candidates are confirmed during the search, so a request sitting on
+# the edge cannot cost sixty full-strength runs; the best one is still confirmed at the end.
+MAX_CONFIRMATIONS = 6
 
 
 def _judged(result: Any, candidate: Candidate) -> tuple[float, str]:
@@ -226,6 +229,7 @@ def search(
 
     probe = screen or evaluate
     tried = 0
+    confirmations = 0
     best: Outcome | None = None
     for candidate in candidates(request, next_income, switch_to):
         try:
@@ -237,8 +241,12 @@ def search(
             continue
         value, basis = _judged(result, candidate)
         outcome = Outcome(candidate.changes, candidate.request, value, basis)
-        if value < SAFE_BELOW + (SCREEN_MARGIN if screen is not None else 0):
-            confirmed = _confirm(outcome, candidate, evaluate) if screen is not None else outcome
+        near_edge = value < SAFE_BELOW + (SCREEN_MARGIN if screen is not None else 0)
+        if near_edge and (screen is None or confirmations < MAX_CONFIRMATIONS):
+            confirmed = outcome
+            if screen is not None:
+                confirmations += 1
+                confirmed = _confirm(outcome, candidate, evaluate)
             if confirmed is not None and band(confirmed.probability) == "Safe":
                 return Counterfactual(start, base.probability, True, confirmed, tried)
             outcome = confirmed or outcome

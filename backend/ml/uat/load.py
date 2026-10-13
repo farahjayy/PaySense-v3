@@ -44,6 +44,13 @@ class Choice:
     confidence: int
 
 
+def clean_row(name: str, line: int, row: Mapping[str | None, str | None]) -> dict[str, str]:
+    """A CSV row with stripped text; a row with more fields than the header is an error."""
+    if None in row:  # csv.DictReader keeps the surplus fields under a None key
+        raise UatDataError(f"{name} row {line}: too many columns")
+    return {str(k).strip(): (v or "").strip() for k, v in row.items()}
+
+
 def _rows(path: Path, columns: list[str]) -> tuple[list[dict[str, str]], bool]:
     """Data rows of a CSV, skipping '#' comment lines; also whether it is marked invented."""
     text = path.read_text(encoding="utf-8-sig")
@@ -52,7 +59,8 @@ def _rows(path: Path, columns: list[str]) -> tuple[list[dict[str, str]], bool]:
     reader = csv.DictReader(lines)
     if reader.fieldnames is None or [c.strip() for c in reader.fieldnames] != columns:
         raise UatDataError(f"{path.name}: header must be {','.join(columns)}")
-    return [{k.strip(): (v or "").strip() for k, v in row.items()} for row in reader], invented
+    rows = [clean_row(path.name, line, row) for line, row in enumerate(reader, start=2)]
+    return rows, invented
 
 
 def _likert(path: Path, line: int, name: str, value: str) -> int:
@@ -76,6 +84,8 @@ def _scale_file(path: Path, prefix: str, count: int) -> tuple[dict[str, list[int
         if who in out:
             raise UatDataError(f"{path.name} row {line}: {who} appears twice")
         out[who] = [_likert(path, line, c, row[c]) for c in columns[1:]]
+    if not out:
+        raise UatDataError(f"{path.name}: no responses")
     return out, invented
 
 
@@ -88,13 +98,22 @@ def load_clarity(path: Path) -> tuple[dict[str, list[int]], bool]:
 
 
 def load_vignettes(path: Path) -> dict[str, Vignette]:
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    out: dict[str, Vignette] = {}
-    for item in raw["vignettes"]:
-        options = tuple(
-            Option(str(o["id"]), str(o["text"]), int(o["risk_rank"])) for o in item["options"]
-        )
-        out[str(item["id"])] = Vignette(str(item["id"]), str(item["title"]), options)
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        out: dict[str, Vignette] = {}
+        for item in raw["vignettes"]:
+            vignette_id = str(item["id"])
+            if vignette_id in out:
+                raise UatDataError(f"{path.name}: vignette {vignette_id} is listed twice")
+            options = tuple(
+                Option(str(o["id"]), str(o["text"]), int(o["risk_rank"])) for o in item["options"]
+            )
+            out[vignette_id] = Vignette(vignette_id, str(item["title"]), options)
+    except (yaml.YAMLError, KeyError, TypeError, ValueError) as err:
+        if isinstance(err, UatDataError):
+            raise
+        missing = f" (missing {err})" if isinstance(err, KeyError) else ""
+        raise UatDataError(f"{path.name}: not a valid vignette file{missing}") from err
     return out
 
 
@@ -124,4 +143,6 @@ def load_choices(path: Path, vignettes: Mapping[str, Vignette]) -> tuple[list[Ch
                 _likert(path, line, "confidence", row["confidence"]),
             )
         )
+    if not choices:
+        raise UatDataError(f"{path.name}: no responses")
     return choices, invented

@@ -25,6 +25,7 @@ class Check:
 
 def run_smoke(client: httpx.Client, *, username: str, origin: str) -> list[Check]:
     results: list[Check] = []
+    origin = origin.rstrip("/")
 
     def check(name: str, test: Callable[[], str | None]) -> bool:
         """Run one check; `test` returns None on success or a reason on failure."""
@@ -32,6 +33,9 @@ def run_smoke(client: httpx.Client, *, username: str, origin: str) -> list[Check
             problem = test()
         except httpx.HTTPError as err:
             problem = f"request failed: {err}"
+        except (ValueError, KeyError, TypeError, AttributeError) as err:
+            # e.g. a cold-start or wrong-URL HTML page that still answers 200
+            problem = f"unexpected response: {err!r}"
         results.append(Check(name, problem is None, problem or "ok"))
         return problem is None
 
@@ -78,7 +82,9 @@ def run_smoke(client: httpx.Client, *, username: str, origin: str) -> list[Check
 
     def providers() -> str | None:
         r = client.get("/api/providers", headers=auth)
-        keys = {p["key"] for p in r.json()} if r.status_code == 200 else set()
+        if r.status_code != 200:
+            return f"{r.status_code}"
+        keys = {p["key"] for p in r.json()}
         return None if {"spaylater", "tiktok_paylater", "atome", "other"} <= keys else f"got {keys}"
 
     def forecast() -> str | None:

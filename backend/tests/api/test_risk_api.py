@@ -450,3 +450,62 @@ def test_a_saved_report_keeps_the_simulated_band_and_the_basis(api, amir, fake_d
     confirmed = api.post("/api/risk/confirm", json=body(), headers=amir).json()
     saved = api.get(f"/api/risk/checks/{confirmed['check_id']}", headers=amir).json()
     assert saved["simulated_band"] == confirmed["check"]["simulated_band"]
+
+
+# --------------------------------------------------------------------- security follow-ups
+def test_a_second_confirm_from_the_same_user_is_turned_away_at_once_not_parked(api, amir, fake_db):
+    import app.api.risk as risk_module
+
+    fill(fake_db, "amir")
+    uid = user_id(fake_db, "amir")
+    lock = risk_module._confirm_lock(uid)
+    assert lock.acquire(blocking=False)
+    try:
+        res = api.post("/api/risk/confirm", json=body(), headers=amir)
+    finally:
+        lock.release()
+
+    assert res.status_code == 409 and res.json()["detail"]["code"] == "confirm_in_progress"
+    assert fake_db.rows("risk_checks") == []
+
+
+def test_check_and_confirm_share_one_rate_limit_bucket(api, amir, fake_db):
+    fill(fake_db, "amir")
+    for _ in range(6):
+        assert api.post("/api/risk/check", json=body(), headers=amir).status_code == 200
+    statuses = [
+        api.post("/api/risk/confirm", json=body(item_name=f"Thing {i}"), headers=amir).status_code
+        for i in range(6)
+    ]
+    assert 429 in statuses  # 6 checks + the confirms exceed 10 a minute together
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "urn:uuid:12345678-1234-5678-1234-567812345678",
+        "12345678123456781234567812345678",
+        "+1234567-1234-5678-1234-567812345678",
+        "12345678_12345678-1234-5678-1234-5678",
+    ],
+)
+def test_ids_that_are_not_canonical_uuids_are_a_plain_404_not_a_database_error(api, amir, bad):
+    assert api.get(f"/api/risk/checks/{bad}", headers=amir).status_code == 404
+
+
+def test_deleting_a_plan_also_erases_its_saved_report(api, amir, fake_db):
+    fill(fake_db, "amir")
+    confirmed = api.post("/api/risk/confirm", json=body(), headers=amir).json()
+    plan_id = confirmed["plan"]["id"]
+
+    assert api.delete(f"/api/plans/{plan_id}", headers=amir).status_code == 204
+
+    assert fake_db.rows("risk_checks") == []
+    assert api.get(f"/api/risk/checks/{confirmed['check_id']}", headers=amir).status_code == 404
+
+
+def test_a_different_price_is_not_a_duplicate_even_with_the_same_item_and_date(api, amir, fake_db):
+    fill(fake_db, "amir")
+    assert api.post("/api/risk/confirm", json=body(), headers=amir).status_code == 201
+    other = api.post("/api/risk/confirm", json=body(total_price_sen=90000), headers=amir)
+    assert other.status_code == 201

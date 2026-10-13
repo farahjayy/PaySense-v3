@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.db.users import PERSONAS, USERNAME_PATTERN
-from ml.uat.load import UatDataError
+from ml.uat.load import UatDataError, clean_row
 
 COLUMNS = ["participant", "username", "display", "persona"]
 # Login takes only a username, so a predictable one lets a stranger sign in as that tester.
@@ -34,7 +34,7 @@ def load_roster(path: Path) -> list[Tester]:
     seen_ids: set[str] = set()
     seen_names: set[str] = set()
     for line, row in enumerate(reader, start=2):
-        clean = {k.strip(): (v or "").strip() for k, v in row.items()}
+        clean = clean_row(path.name, line, row)
         who, username = clean["participant"], clean["username"]
         if not who or not clean["display"]:
             raise UatDataError(f"{path.name} row {line}: participant and display are required")

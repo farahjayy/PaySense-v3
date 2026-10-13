@@ -109,3 +109,16 @@ def test_sixteen_features_are_a_single_batch_of_65536_rows():
 def test_a_mismatched_pair_of_vectors_is_an_error():
     with pytest.raises(ValueError):
         baseline_shapley(interaction, X, B[:3])
+
+
+def test_too_many_differing_features_is_refused_before_it_allocates_the_batch():
+    from app.engines.risk.shapley import MAX_ACTIVE
+
+    n = MAX_ACTIVE + 1
+    with pytest.raises(ValueError, match="features differ"):
+        baseline_shapley(lambda rows: rows.sum(axis=1), np.ones(n), np.zeros(n))
+
+
+def test_a_nan_input_is_refused():
+    with pytest.raises(ValueError, match="finite"):
+        baseline_shapley(lambda rows: rows.sum(axis=1), np.array([np.nan, 1.0]), np.zeros(2))

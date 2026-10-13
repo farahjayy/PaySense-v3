@@ -87,6 +87,8 @@ def _check_matches_running_code(meta: Mapping[str, Any], folder: Path) -> None:
             f"this code uses {RISK_CHECK_MAX_WEEKS}"
         )
     for filename, digest in (label.get("served_model_files") or {}).items():
+        if Path(filename).name != filename or filename in {"", ".", ".."} or "\\" in filename:
+            raise ArtefactError(f"the forecast file name {filename!r} is not a plain file name")
         live_path = ENGINE1_DIR / ENGINE1_VERSION / filename
         if not live_path.exists() or _sha256(live_path) != digest:
             raise ArtefactError(

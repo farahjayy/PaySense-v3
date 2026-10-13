@@ -15,6 +15,9 @@ from math import factorial
 
 import numpy as np
 
+# The batch holds 2**m rows for m differing features; 16 is every Engine 2 feature (65,536 rows).
+MAX_ACTIVE = 16
+
 Model = Callable[[np.ndarray], np.ndarray]
 
 
@@ -25,7 +28,13 @@ def baseline_shapley(model: Model, x: np.ndarray, baseline: np.ndarray) -> np.nd
     baseline = np.asarray(baseline, dtype=float)
     if x.shape != baseline.shape or x.ndim != 1:
         raise ValueError("x and baseline must be vectors of the same length")
+    if not (np.isfinite(x).all() and np.isfinite(baseline).all()):
+        raise ValueError("x and baseline must hold finite numbers")
     active = np.flatnonzero(x != baseline)
+    if len(active) > MAX_ACTIVE:
+        raise ValueError(
+            f"{len(active)} features differ from the baseline; at most {MAX_ACTIVE} are supported"
+        )
     contributions = np.zeros(len(x))
     m = len(active)
     if m == 0:

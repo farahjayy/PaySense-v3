@@ -76,10 +76,13 @@ class TestVignetteFile:
 
 class TestTemplates:
     def test_blank_templates_have_the_headers_the_loader_expects(self):
+        # the header check passes, so the only complaint is that nobody has answered yet
         vignettes = load_vignettes(VIGNETTES)
-        assert load_sus(TEMPLATES / "sus.csv")[0] == {}
-        assert load_clarity(TEMPLATES / "clarity.csv")[0] == {}
-        assert load_choices(TEMPLATES / "vignettes.csv", vignettes)[0] == []
+        for load in (load_sus, load_clarity):
+            with pytest.raises(UatDataError, match="no responses"):
+                load(TEMPLATES / ("sus.csv" if load is load_sus else "clarity.csv"))
+        with pytest.raises(UatDataError, match="no responses"):
+            load_choices(TEMPLATES / "vignettes.csv", vignettes)
 
 
 def write(path: Path, text: str) -> Path:
@@ -181,3 +184,60 @@ class TestReport:
     def test_ordinary_cells_are_unchanged(self):
         assert safe_cell("P01") == "P01"
         assert safe_cell(72.5) == "72.5"
+
+
+class TestLoaderRobustness:
+    def test_a_row_with_too_many_columns_is_an_error_that_names_it(self, tmp_path):
+        path = tmp_path / "sus.csv"
+        path.write_text(
+            "participant,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10\nP1,3,3,3,3,3,3,3,3,3,3,9\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(UatDataError, match="too many columns"):
+            load_sus(path)
+
+    @pytest.mark.parametrize("loader", [load_sus, load_clarity])
+    def test_a_header_only_file_is_an_error_not_an_empty_sample(self, tmp_path, loader):
+        copy = tmp_path / "x.csv"
+        template = TEMPLATES / ("sus.csv" if loader is load_sus else "clarity.csv")
+        copy.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+        with pytest.raises(UatDataError, match="no responses"):
+            loader(copy)
+
+    def test_main_on_the_blank_templates_says_so_without_a_traceback(self, tmp_path, capsys):
+        assert main(["--data", str(TEMPLATES), "--vignettes", str(VIGNETTES)]) == 2
+        assert "no responses" in capsys.readouterr().err
+
+    def test_a_vignette_file_with_a_missing_key_or_repeated_id_is_a_data_error(self, tmp_path):
+        broken = tmp_path / "v.yaml"
+        broken.write_text("vignettes:\n  - id: V1\n    title: T\n", encoding="utf-8")
+        with pytest.raises(UatDataError, match="options"):
+            load_vignettes(broken)
+        twice = tmp_path / "w.yaml"
+        item = "  - id: V1\n    title: T\n    options:\n      - {id: a, text: A, risk_rank: 1}\n"
+        twice.write_text("vignettes:\n" + item + item, encoding="utf-8")
+        with pytest.raises(UatDataError, match="twice"):
+            load_vignettes(twice)
+
+
+class TestCsvFormulaGuard:
+    def test_written_csv_neutralises_formulas_and_leaves_none_empty(self, tmp_path):
+        from ml.uat.analyse import write_csv
+
+        path = tmp_path / "out.csv"
+        write_csv(path, ["name", "value"], [("=cmd", None), ("fine", 3)])
+        lines = path.read_text(encoding="utf-8").splitlines()
+        assert lines[1] == "'=cmd,"
+        assert lines[2] == "fine,3"
+
+
+class TestSusInputs:
+    def test_a_fractional_or_boolean_answer_is_refused(self):
+        for bad in ([3.5] * 10, [True] * 10):
+            with pytest.raises(ValueError, match="whole numbers"):
+                sus_score(bad)
+
+    def test_an_interval_level_outside_zero_to_one_is_refused(self):
+        for level in (0, 1, 1.5):
+            with pytest.raises(ValueError, match="level"):
+                mean_interval([60.0, 70.0], level=level)

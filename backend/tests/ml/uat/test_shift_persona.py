@@ -84,3 +84,40 @@ def test_a_file_with_the_wrong_header_is_rejected(tmp_path):
     bad.write_text("when,what\n1,2\n", encoding="utf-8")
     with pytest.raises(UatDataError, match="header must be"):
         read_rows(Path(bad))
+
+
+def test_a_day_and_month_that_could_be_swapped_is_read_as_day_first():
+    out = shift_rows([row("05/06/2025")], date(2025, 6, 6))
+    assert as_date(out[0]["Date"]) == date(2025, 6, 5)  # 5 June, not 6 May
+
+
+def test_the_last_date_lands_within_a_week_of_the_day_before_the_session():
+    session = date(2026, 10, 9)
+    for last in (date(2026, 10, 8), date(2026, 10, 9), date(2026, 10, 1), date(2027, 1, 1)):
+        moved = as_date(shift_rows([row(last.strftime(DATE_FORMAT))], session)[0]["Date"])
+        assert 0 < (session - moved).days <= 7
+
+
+def test_a_row_with_a_missing_or_surplus_column_is_an_error_naming_the_file(tmp_path):
+    short = tmp_path / "short.csv"
+    short.write_text("Date,Description,Amount\n01/09/2025,Rent\n", encoding="utf-8")
+    with pytest.raises(UatDataError, match="row 2"):
+        read_rows(short)
+    extra = tmp_path / "extra.csv"
+    extra.write_text("Date,Description,Amount\n01/09/2025,Rent,-1.00,9\n", encoding="utf-8")
+    with pytest.raises(UatDataError, match="row 2"):
+        read_rows(extra)
+
+
+def test_a_persona_name_cannot_point_outside_the_persona_folder(tmp_path, capsys):
+    out = tmp_path / "o.csv"
+    assert main(["--persona", "../x", "--session", "2026-10-09", "--out", str(out)]) == 2
+    assert "persona" in capsys.readouterr().err
+
+
+def test_the_output_may_not_overwrite_the_source(tmp_path, capsys):
+    source = tmp_path / "s.csv"
+    source.write_text("Date,Description,Amount\n01/09/2025,Rent,-1.00\n", encoding="utf-8")
+    assert main(["--csv", str(source), "--session", "2026-10-09", "--out", str(source)]) == 2
+    assert "overwrite" in capsys.readouterr().err
+    assert "01/09/2025" in source.read_text(encoding="utf-8")

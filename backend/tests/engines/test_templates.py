@@ -122,3 +122,18 @@ def test_a_feature_missing_from_the_values_is_an_error_not_a_guess():
         render_factor("instalment_amount", values)
     with pytest.raises(KeyError):
         render_factor("not_a_feature", VALUES)
+
+
+def test_a_single_plan_or_instalment_reads_naturally():
+    plans = render_factor("active_plans_with_purchase", {**VALUES, "active_plans_with_purchase": 1})
+    assert "only BNPL plan" in plans.text and "1 active" not in plans.text
+    steps = render_factor("num_instalments", {**VALUES, "num_instalments": 1})
+    assert "1 instalments" not in steps.text and "single payment" in steps.text
+
+
+def test_a_value_that_is_not_a_finite_number_is_refused_not_printed():
+    import math
+
+    for bad in (math.nan, math.inf):
+        with pytest.raises(ValueError, match="finite"):
+            render_factor("disc_weekly_p50", {**VALUES, "disc_weekly_p50": bad})

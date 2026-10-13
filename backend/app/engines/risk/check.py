@@ -36,6 +36,9 @@ class Predictor(Protocol):
         ...
 
 
+DEFAULT_PATHS = 1000  # simulated futures per check at full strength
+
+
 @dataclass(frozen=True)
 class RiskRequest:
     """What the student typed. The same fields the plan screen collects."""
@@ -129,7 +132,7 @@ def run_check(
     today: date,
     forecaster: Forecaster,
     predictor: Predictor,
-    paths: int = 1000,
+    paths: int = DEFAULT_PATHS,
     seed: int = 0,
     cache: dict[Any, Any] | None = None,
 ) -> CheckResult:

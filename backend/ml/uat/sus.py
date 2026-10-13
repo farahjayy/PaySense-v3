@@ -14,9 +14,14 @@ def sus_score(responses: Sequence[int]) -> float:
     """0-100. Odd items (positively worded) score r - 1, even items (negative) score 5 - r."""
     if len(responses) != SUS_ITEMS:
         raise ValueError(f"SUS needs {SUS_ITEMS} responses, got {len(responses)}")
-    if any(not LIKERT_MIN <= r <= LIKERT_MAX for r in responses):
+    if any(
+        isinstance(r, bool) or not isinstance(r, int) or not LIKERT_MIN <= r <= LIKERT_MAX
+        for r in responses
+    ):
         raise ValueError(f"SUS responses must be whole numbers {LIKERT_MIN}-{LIKERT_MAX}")
-    total = sum((r - 1) if i % 2 == 0 else (5 - r) for i, r in enumerate(responses))
+    total = sum(
+        (r - LIKERT_MIN) if i % 2 == 0 else (LIKERT_MAX - r) for i, r in enumerate(responses)
+    )
     return total * 2.5
 
 
@@ -30,6 +35,8 @@ class Interval:
 
 def mean_interval(values: Sequence[float], level: float = 0.95) -> Interval:
     """Mean with a t-interval. With fewer than two values there is no interval, so none is given."""
+    if not 0 < level < 1:
+        raise ValueError(f"level must be between 0 and 1, got {level}")
     n = len(values)
     if n == 0:
         raise ValueError("no values")

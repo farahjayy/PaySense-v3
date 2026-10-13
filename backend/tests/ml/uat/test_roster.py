@@ -49,3 +49,16 @@ def test_wrong_header_is_rejected(tmp_path):
     path.write_text("name,persona\nA,frequent_bnpl\n", encoding="utf-8")
     with pytest.raises(UatDataError, match="header must be"):
         load_roster(path)
+
+
+@pytest.mark.parametrize("name", ["tester1", "user-07", "P01", "participant_3", "test.12"])
+def test_guessable_usernames_are_refused(tmp_path, name):
+    with pytest.raises(UatDataError, match="guessable"):
+        load_roster(roster(tmp_path, f"P01,{name},Amir,frequent_bnpl\n"))
+
+
+def test_comment_lines_are_ignored_and_a_ragged_row_is_named(tmp_path):
+    ok = load_roster(roster(tmp_path, "# a note\nP01,amir-k7q2xm,Amir,frequent_bnpl\n"))
+    assert [t.participant for t in ok] == ["P01"]
+    with pytest.raises(UatDataError, match="too many columns"):
+        load_roster(roster(tmp_path, "P01,amir-k7q2xm,Amir,frequent_bnpl,extra\n"))

@@ -13,6 +13,8 @@ the loaded predictor against the training-side calibrated prediction, and record
 import argparse
 import hashlib
 import json
+import shutil
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -38,6 +40,25 @@ from ml.engine2_train.train import RUNS_DIR
 PARITY_SAMPLE = 2000
 MIN_REFERENCE_PROFILES = 100
 LOOSE_TOLERANCE = 1e-3  # a feature within float32 rounding of a split can flip one tree
+
+
+class ExportError(RuntimeError):
+    """The model cannot be exported as it stands; nothing was written to the output folder."""
+
+
+def within_tolerance(diff: np.ndarray) -> bool:
+    """True only if every difference is a finite number no larger than the tolerance (NaN fails)."""
+    return bool(np.isfinite(diff).all() and diff.max() <= LOOSE_TOLERANCE)
+
+
+def reference_student(development: Any) -> tuple[dict[str, float], int]:
+    """The median, feature by feature, of the development profiles labelled Safe, and how many."""
+    safe = development.y < SAFE_BELOW
+    count = int(safe.sum())
+    if count < MIN_REFERENCE_PROFILES:
+        raise ExportError("too few Safe development profiles to define a reference student")
+    medians = np.median(development.x[safe], axis=0)
+    return {name: float(v) for name, v in zip(FEATURE_NAMES, medians, strict=True)}, count
 
 
 def convert(fitted: Any, n_features: int) -> bytes:
@@ -70,6 +91,14 @@ def parity(fitted: Any, onnx_bytes: bytes, x: np.ndarray) -> dict[str, float | i
     }
 
 
+def _write_metadata(folder: Path, metadata: dict[str, Any]) -> None:
+    (folder / "metadata.json").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
 def export(
     run_dir: Path,
     out_dir: Path,
@@ -78,25 +107,19 @@ def export(
 ) -> dict[str, Any]:
     results = json.loads((run_dir / "results.json").read_text(encoding="utf-8"))
     if results["feature_schema_hash"] != FEATURE_SCHEMA_HASH:
-        raise SystemExit("the run was made for a different feature schema than this code")
+        raise ExportError("the run was made for a different feature schema than this code")
     fitted = joblib.load(run_dir / "final_model.joblib")
     calibrator = json.loads((run_dir / "calibrator.json").read_text(encoding="utf-8"))
     data = load_labels(labels_path)
     development, lockbox = split_lockbox(data)
 
-    safe = development.y < SAFE_BELOW
-    if int(safe.sum()) < MIN_REFERENCE_PROFILES:
-        raise SystemExit("too few Safe development profiles to define a reference student")
-    reference = {
-        name: float(value)
-        for name, value in zip(FEATURE_NAMES, np.median(development.x[safe], axis=0), strict=True)
-    }
+    reference, safe_count = reference_student(development)
 
     onnx_bytes = convert(fitted, len(FEATURE_NAMES))
     checked = np.vstack([lockbox.x, development.x[:PARITY_SAMPLE]])
     model_parity = parity(fitted, onnx_bytes, checked)
-    if model_parity["max_abs_diff"] > LOOSE_TOLERANCE:
-        raise SystemExit(f"ONNX output differs from the trained model: {model_parity}")
+    if not within_tolerance(np.array([model_parity["max_abs_diff"]])):
+        raise ExportError(f"ONNX output differs from the trained model: {model_parity}")
 
     metadata = {
         "version": version,
@@ -107,7 +130,7 @@ def export(
         "calibrator": calibrator,
         "logit_eps": EPS,
         "baseline": reference,
-        "baseline_profiles": int(safe.sum()),
+        "baseline_profiles": safe_count,
         "explanation": {
             "method": "baseline_shapley",
             "reference": (
@@ -148,27 +171,32 @@ def export(
         },
         "parity": {"onnx_vs_trained_model": model_parity},
     }
-    out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "model.onnx").write_bytes(onnx_bytes)
-    (out_dir / "metadata.json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
-    )
-
-    # The loaded artefact, end to end, against the training-side calibrated prediction.
-    predictor = load_engine2(out_dir)
-    served = predictor.predict_batch(checked)
-    trained = Calibrator.from_dict(calibrator).apply(fitted.predict(checked))
-    end_to_end = np.abs(served - trained)
-    if end_to_end.max() > LOOSE_TOLERANCE:
-        raise SystemExit(f"the served artefact differs from the trained model: {end_to_end.max()}")
-    metadata["parity"]["served_vs_trained_calibrated"] = {
-        "rows": int(len(checked)),
-        "max_abs_diff": float(end_to_end.max()),
-        "rows_over_1e-6": int((end_to_end > 1e-6).sum()),
-    }
-    (out_dir / "metadata.json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
-    )
+    # Everything is written and checked in a scratch folder; the output folder is only touched once
+    # the artefact has passed, so a failed export never leaves an unverified model where a server
+    # could load it, nor destroys the good one that was there.
+    staging = Path(tempfile.mkdtemp(prefix="engine2-export-"))
+    try:
+        (staging / "model.onnx").write_bytes(onnx_bytes)
+        _write_metadata(staging, metadata)
+        # The loaded artefact, end to end, against the training-side calibrated prediction.
+        predictor = load_engine2(staging)
+        served = predictor.predict_batch(checked)
+        trained = Calibrator.from_dict(calibrator).apply(fitted.predict(checked))
+        end_to_end = np.abs(served - trained)
+        if not within_tolerance(end_to_end):
+            raise ExportError(f"the served artefact differs from the trained model: {end_to_end}")
+        metadata["parity"]["served_vs_trained_calibrated"] = {
+            "rows": int(len(checked)),
+            "max_abs_diff": float(end_to_end.max()),
+            "rows_over_1e-6": int((end_to_end > 1e-6).sum()),
+        }
+        _write_metadata(staging, metadata)
+        if out_dir.exists():
+            shutil.rmtree(out_dir)
+        out_dir.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(staging, out_dir)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
     return metadata
 
 
@@ -182,7 +210,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
     out = args.out or MODEL_ROOT / args.version
-    metadata = export(args.run, out, args.labels, args.version)
+    try:
+        metadata = export(args.run, out, args.labels, args.version)
+    except ExportError as err:
+        raise SystemExit(f"export refused: {err}") from err
     print(f"wrote {out} ({metadata['family']}, parity {metadata['parity']})")  # noqa: T201
 
 

@@ -1,5 +1,7 @@
 """The assessment pipeline wiring: what is passed to the search."""
 
+import datetime as dt
+
 import app.engines.risk.assess as assess_module
 from app.engines.forecasting.models import MovingAverage
 from app.engines.risk.assess import assess, next_income
@@ -8,11 +10,11 @@ from tests.engines.test_check import StubPredictor
 from tests.engines.test_summary import EXISTING, ITEMS, TODAY, ledger
 
 
-def run(limits, predictor=None, **kw):
+def run(limits, predictor=None, paths=150):
     return assess(
         ledger(), ITEMS, EXISTING, limits,
         RiskRequest("spaylater", "Laptop", TODAY, 3, total_price_sen=60000),
-        TODAY, MovingAverage(8), predictor or StubPredictor(0.5), seed=3, paths=150, **kw,
+        TODAY, MovingAverage(8), predictor or StubPredictor(0.5), seed=3, paths=paths,
     )  # fmt: skip
 
 
@@ -39,7 +41,7 @@ def test_with_no_recorded_limits_no_switch_is_offered(monkeypatch):
 
 
 def test_the_next_income_is_the_soonest_confirmed_income_after_today():
-    assert next_income(ITEMS, TODAY) == __import__("datetime").date(2025, 6, 1)
+    assert next_income(ITEMS, TODAY) == dt.date(2025, 6, 1)
     assert next_income([i for i in ITEMS if i["kind"] == "bill"], TODAY) is None
 
 
@@ -49,5 +51,36 @@ def test_the_wait_horizon_stays_inside_the_purchase_date_window_the_api_accepts(
     from app.api.risk import DAYS_AHEAD
     from app.engines.risk.assess import NEXT_INCOME_LOOKAHEAD_DAYS
 
-    assert NEXT_INCOME_LOOKAHEAD_DAYS + 1 <= DAYS_AHEAD
     assert timedelta(days=NEXT_INCOME_LOOKAHEAD_DAYS) < timedelta(days=DAYS_AHEAD)
+
+
+def test_a_locked_ledger_gives_a_locked_result_with_no_reasons_and_no_suggestion():
+    out = assess(
+        [], ITEMS, EXISTING, {},
+        RiskRequest("spaylater", "Laptop", TODAY, 3, total_price_sen=60000),
+        TODAY, MovingAverage(8), StubPredictor(0.5), seed=3, paths=150,
+    )  # fmt: skip
+    assert out.result.status == "locked"
+    assert out.factors == () and out.suggestion is None
+
+
+def test_a_computed_result_carries_its_reasons_as_a_tuple():
+    out = run({})
+    assert out.result.status == "ok"
+    assert isinstance(out.factors, tuple)
+
+
+def test_candidates_are_screened_with_fewer_paths_but_never_more_than_the_full_run(monkeypatch):
+    seen = []
+    real = assess_module.run_check
+
+    def spy(*args, **kwargs):
+        seen.append(kwargs["paths"])
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(assess_module, "run_check", spy)
+    run({}, paths=150)
+    assert max(seen) == 150  # the screen is min(SCREEN_PATHS, 150): never above the full run
+    seen.clear()
+    run({}, paths=1000)
+    assert assess_module.SCREEN_PATHS in seen and 1000 in seen

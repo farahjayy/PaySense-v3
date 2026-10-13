@@ -37,11 +37,14 @@ def _wire(value: Any) -> Any:
 
 
 def is_uuid(value: object) -> bool:
-    try:
-        uuid.UUID(str(value))
-    except (ValueError, AttributeError, TypeError):
+    if not isinstance(value, str):
         return False
-    return isinstance(value, str)
+    try:
+        # only the canonical lowercase form: uuid.UUID also accepts urn:, braces, a sign, spaces
+        # and underscores, which Postgres would reject with a database error
+        return str(uuid.UUID(value)) == value.lower()
+    except ValueError:
+        return False
 
 
 class ScopedTable:

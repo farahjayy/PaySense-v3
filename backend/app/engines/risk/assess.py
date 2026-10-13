@@ -10,12 +10,14 @@ from typing import Any
 
 from app.engines.forecasting.flows import occurrences
 from app.engines.forecasting.simulate import Forecaster
-from app.engines.risk.check import CheckResult, Predictor, RiskRequest, run_check
+from app.engines.risk.check import DEFAULT_PATHS, CheckResult, Predictor, RiskRequest, run_check
 from app.engines.risk.counterfactual import Counterfactual, search
 from app.engines.risk.explain import ExplainedFactor, select_factors
 from app.engines.risk.features import as_vector
 
-NEXT_INCOME_LOOKAHEAD_DAYS = 300  # purchase dates beyond a year are refused by the API
+# How far ahead a wait-for-income suggestion may look. Kept inside the 366-day purchase window
+# the API accepts (`DAYS_AHEAD`), so a suggested date is never one the API would refuse.
+NEXT_INCOME_LOOKAHEAD_DAYS = 300
 # Candidate changes are screened with fewer simulated futures; the one shown is re-run at full
 # strength, so only the search is cheaper, never the number a student sees.
 SCREEN_PATHS = 300
@@ -24,12 +26,13 @@ SCREEN_PATHS = 300
 @dataclass(frozen=True)
 class Assessment:
     result: CheckResult
-    factors: list[ExplainedFactor]
+    factors: tuple[ExplainedFactor, ...]
     suggestion: Counterfactual | None
 
 
 def next_income(items: Iterable[Mapping[str, Any]], today: dt.date) -> dt.date | None:
-    """The soonest day a confirmed income item is due after today, if any."""
+    """The soonest day an income item is due after today, if any. The caller passes the
+    student's active items only (confirmed recurring items), so inactive ones are never used."""
     start = today + dt.timedelta(days=1)
     end = today + dt.timedelta(days=NEXT_INCOME_LOOKAHEAD_DAYS)
     upcoming = [
@@ -50,7 +53,7 @@ def assess(
     forecaster: Forecaster,
     predictor: Predictor,
     seed: int,
-    paths: int = 1000,
+    paths: int = DEFAULT_PATHS,
 ) -> Assessment:
     """Raises `ProposalError` when the plan rules reject the request."""
 
@@ -65,7 +68,7 @@ def assess(
 
     result = check(request)
     if result.status != "ok" or result.features is None:
-        return Assessment(result, [], None)
+        return Assessment(result, (), None)
     # Switching provider is only suggested to one whose limit the student recorded: with no
     # record there is no cap and no utilisation, and the model would see missing information as
     # good news.
@@ -74,7 +77,9 @@ def assess(
         for provider, limit in provider_limits.items()
         if limit is not None and provider != request.provider
     }
-    factors = select_factors(result.features, predictor.contributions(as_vector(result.features)))
+    factors = tuple(
+        select_factors(result.features, predictor.contributions(as_vector(result.features)))
+    )
     suggestion = search(
         request,
         next_income(items, today),

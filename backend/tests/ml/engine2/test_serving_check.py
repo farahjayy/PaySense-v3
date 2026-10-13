@@ -1,12 +1,14 @@
 """The serving check script: its shape on a handful of profiles with the real artefact."""
 
+from collections import Counter
+
 import pytest
 
 from app.engines.risk.artefact import MODEL_ROOT, load_if_present
 from ml.datagen.params import load_params
 from ml.datagen.profile import generate_dated_profile
 from ml.engine2_train.labels import prepare
-from ml.engine2_train.serving_check import render, request_for, run, summarise
+from ml.engine2_train.serving_check import SERVING_SEED, render, request_for, run, summarise
 
 pytestmark = pytest.mark.skipif(
     not (MODEL_ROOT / "v1" / "metadata.json").exists(), reason="no risk model exported yet"
@@ -28,7 +30,7 @@ def test_a_few_profiles_give_a_complete_report():
 def test_a_manual_provider_student_is_asked_for_the_checkouts_own_numbers():
     params = load_params()
     for index in range(60):
-        known = prepare(generate_dated_profile(params, 90001, index))
+        known = prepare(generate_dated_profile(params, SERVING_SEED, index))
         request = request_for(known)
         if known["proposal"].provider == "other":
             assert request.total_price_sen is None
@@ -39,4 +41,4 @@ def test_a_manual_provider_student_is_asked_for_the_checkouts_own_numbers():
 
 def test_summarising_nothing_assessed_does_not_divide_by_zero():
     with pytest.raises(ValueError):
-        summarise([], 0, 0, __import__("collections").Counter())
+        summarise([], 0, 0, Counter())

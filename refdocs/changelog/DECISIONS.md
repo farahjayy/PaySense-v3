@@ -79,7 +79,7 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 ## D-11 — Repayment history is a flag, not a feature
 *2026-10-08 · Claude decision*
 
-**Decision.** Overdue instalments in the last 6 months are shown as a separate, rule-based flag citing BNM's suspension after 3 consecutive missed payments. They are not a model feature.
+**Decision.** Overdue instalments (unpaid and past due, whatever their age) and instalments paid late in the last 6 months are shown as a separate, rule-based flag citing BNM's suspension after 3 consecutive missed payments; only unpaid instalments count as missed, so late payments alone never reach the warning level. They are not a model feature.
 **Why.** The simulation label is about cash flow; a synthetic missed-payment variable would have to be wired into it by hand, recreating v1's distortion (synthetic users averaged ~3 misses, so "0 missed" dominated). Regulators require repayment history to be *checked*, which the flag does visibly.
 **Trade-off.** The model score alone ignores repayment behaviour; the UI always shows both.
 

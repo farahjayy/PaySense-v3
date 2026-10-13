@@ -74,16 +74,41 @@ def test_window_boundary_is_six_calendar_months_back_inclusive():
 def test_three_consecutive_misses_in_one_plan_is_a_warning_citing_the_rule():
     assert CONSECUTIVE_MISSES_WARNING == 3
     rows = [
-        inst("a", 1, date(2026, 7, 1), paid=date(2026, 7, 15)),  # late
+        inst("a", 1, date(2026, 7, 1), paid=date(2026, 7, 15)),  # paid late: not a miss
         inst("a", 2, date(2026, 8, 1)),  # overdue
         inst("a", 3, date(2026, 9, 1)),  # overdue
         inst("a", 4, date(2026, 10, 1)),  # overdue
     ]
     flag = assess_repayment(rows, TODAY)
     assert flag.level == "warning"
-    assert flag.longest_miss_run == 4
+    assert flag.longest_miss_run == 3
+    assert (flag.overdue_count, flag.late_paid_count) == (3, 1)
     assert "three" in flag.reason.lower()
     assert "Bank Negara" in flag.reason
+
+
+def test_instalments_that_were_paid_late_are_never_called_missed():
+    rows = [
+        inst("a", s, date(2026, 6 + s, 1), paid=date(2026, 6 + s, 2)) for s in (1, 2, 3)
+    ]  # three in a row, each paid a day late
+    flag = assess_repayment(rows, TODAY)
+    assert flag.level == "watch"
+    assert (flag.late_paid_count, flag.longest_miss_run, flag.overdue_count) == (3, 0, 0)
+    assert "missed" not in flag.reason.lower()
+
+
+def test_an_instalment_still_unpaid_after_the_window_still_counts_as_overdue():
+    rows = [inst("a", 1, date(2026, 2, 1))]  # eight months ago and never paid
+    flag = assess_repayment(rows, TODAY)
+    assert flag.level == "watch"
+    assert (flag.overdue_count, flag.overdue_sen) == (1, 10000)
+
+
+def test_a_run_of_misses_is_not_cut_short_by_the_window():
+    rows = [inst("a", s, date(2026, 2 + s, 1)) for s in (1, 2, 3, 4)]  # Mar, Apr, May, Jun
+    flag = assess_repayment(rows, TODAY)
+    assert flag.level == "warning"
+    assert flag.longest_miss_run == 4
 
 
 def test_misses_that_are_not_consecutive_do_not_make_a_warning():

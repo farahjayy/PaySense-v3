@@ -44,7 +44,7 @@ def _net_sen(profile: StudentProfile) -> int:
 
 SHOWCASE: dict[str, Callable[[StudentProfile], bool]] = {
     "frequent_bnpl": lambda p: _count(p, BNPL) >= MIN_SHOWCASE_ROWS,
-    # solvent but tight: no BNPL, no gigs, and the four months end no worse than break-even
+    # solvent but tight: no BNPL, no gigs, and the whole history ends no worse than break-even
     "budget_conscious": lambda p: (
         _count(p, BNPL) == 0 and _count(p, "Gig") == 0 and _net_sen(p) >= 0
     ),
@@ -66,7 +66,8 @@ def build_persona_profile(params: Params, persona: str) -> StudentProfile:
 
 def _ringgit(amount_sen: int, outflow: bool) -> str:
     sign = "-" if outflow else ""
-    return f"{sign}{amount_sen // 100}.{amount_sen % 100:02d}"
+    ringgit, sen = divmod(abs(amount_sen), 100)
+    return f"{sign}{ringgit}.{sen:02d}"
 
 
 def render_csv(profile: StudentProfile) -> str:

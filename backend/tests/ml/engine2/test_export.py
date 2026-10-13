@@ -4,7 +4,13 @@ import numpy as np
 import pytest
 
 from app.engines.risk.features import FEATURE_NAMES
-from ml.engine2_train.export import convert, parity
+from ml.engine2_train.export import (
+    ExportError,
+    convert,
+    parity,
+    reference_student,
+    within_tolerance,
+)
 from ml.engine2_train.models import CANDIDATES, fit_soft
 
 N = len(FEATURE_NAMES)
@@ -38,5 +44,34 @@ def test_an_unknown_family_is_not_converted_silently(data):
     # anything that is not one of the tree libraries goes through the scikit-learn converter and
     # fails loudly if the model is not one it knows
     fitted.model = object()
-    with pytest.raises(Exception):  # noqa: B017, PT011 - the converter's own error type varies
+    with pytest.raises(Exception) as caught:  # noqa: B017, PT011 - the converter's error varies
         convert(fitted, N)
+    assert caught.type is not AssertionError
+
+
+def test_a_nan_difference_fails_the_parity_gate_instead_of_slipping_through():
+    assert within_tolerance(np.array([0.0, 1e-4]))
+    assert not within_tolerance(np.array([0.0, np.nan]))
+    assert not within_tolerance(np.array([0.5]))
+    assert not within_tolerance(np.array([np.inf]))
+
+
+class _Dev:
+    def __init__(self, y, x):
+        self.y, self.x = np.asarray(y), np.asarray(x)
+
+
+def test_the_reference_student_is_the_median_of_the_safe_profiles_only():
+    n = 120
+    x = np.vstack([np.full((n, N), 1.0), np.full((n, N), 9.0)])
+    y = np.r_[np.full(n, 0.01), np.full(n, 0.6)]
+    reference, count = reference_student(_Dev(y, x))
+    assert count == n
+    assert set(reference) == set(FEATURE_NAMES)
+    assert all(value == 1.0 for value in reference.values())
+
+
+def test_too_few_safe_profiles_is_a_refusal_not_a_guess():
+    x, y = np.ones((50, N)), np.full(50, 0.01)
+    with pytest.raises(ExportError, match="too few Safe"):
+        reference_student(_Dev(y, x))

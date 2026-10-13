@@ -107,6 +107,13 @@ def _check_purchase_date(body: PlanIn, today: dt.date) -> None:
         )
 
 
+def _same_amount(plan: dict[str, Any], body: PlanIn) -> bool:
+    """The money the request states matches the saved plan (whichever of the two it gave)."""
+    if body.total_price_sen is not None and plan.get("total_price_sen") != body.total_price_sen:
+        return False
+    return body.total_payable_sen is None or plan.get("total_payable_sen") == body.total_payable_sen
+
+
 def _is_duplicate(plans: list[dict[str, Any]], body: PlanIn, now: dt.datetime) -> bool:
     for plan in plans:
         created = plan.get("created_at")
@@ -122,6 +129,7 @@ def _is_duplicate(plans: list[dict[str, Any]], body: PlanIn, now: dt.datetime) -
             and plan["provider"] == body.provider
             and str(plan["purchase_date"]) == body.purchase_date.isoformat()
             and plan["num_installments"] == body.num_installments
+            and _same_amount(plan, body)
         ):
             return True
     return False
@@ -416,7 +424,7 @@ def check_risk(
     "/confirm",
     response_model=RiskConfirmOut,
     status_code=201,
-    dependencies=[rate_limited("risk-confirm", CHECKS_PER_MINUTE, 60)],
+    dependencies=[rate_limited("risk-check", CHECKS_PER_MINUTE, 60)],
     responses={**CHECK_RESPONSES, 409: CONFLICT_ENVELOPE},
 )
 def confirm_risk(
@@ -429,20 +437,28 @@ def confirm_risk(
 ) -> RiskConfirmOut:
     """Go ahead with the purchase: freeze this check and create the plan linked to it."""
     _check_purchase_date(body, today)
-    with _confirm_lock(user.id), admitted():
-        # one confirm at a time per user, and the duplicate test reads the plans after the lock
-        if _is_duplicate(plans_repo.list_with_instalments(db, user.id), body, _now()):
-            raise api_error(
-                409,
-                "duplicate_confirm",
-                "This purchase was just added. Check your plans before adding it again.",
-            )
-        out, result = _evaluate(body, user.id, db, today, forecaster, predictor)
-        if out.status != "ok" or result.features is None:
-            raise unprocessable(
-                "forecast_locked", "There is not enough history yet to check this purchase."
-            )
-        return _freeze_and_create(out, result, body, user.id, db, today)
+    lock = _confirm_lock(user.id)
+    if not lock.acquire(blocking=False):  # never park a server thread behind a slow confirm
+        raise api_error(
+            409, "confirm_in_progress", "This purchase is already being added. Wait a moment."
+        )
+    try:
+        with admitted():
+            # one confirm at a time per user, and the duplicate test reads the plans after the lock
+            if _is_duplicate(plans_repo.list_with_instalments(db, user.id), body, _now()):
+                raise api_error(
+                    409,
+                    "duplicate_confirm",
+                    "This purchase was just added. Check your plans before adding it again.",
+                )
+            out, result = _evaluate(body, user.id, db, today, forecaster, predictor)
+            if out.status != "ok" or result.features is None:
+                raise unprocessable(
+                    "forecast_locked", "There is not enough history yet to check this purchase."
+                )
+            return _freeze_and_create(out, result, body, user.id, db, today)
+    finally:
+        lock.release()
 
 
 def _now() -> dt.datetime:

@@ -31,6 +31,8 @@ FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
 def safe_cell(value: object) -> str:
     """A CSV cell that a spreadsheet will not run as a formula."""
+    if value is None:
+        return ""
     text = str(value)
     return "'" + text if text.startswith(FORMULA_PREFIXES) else text
 

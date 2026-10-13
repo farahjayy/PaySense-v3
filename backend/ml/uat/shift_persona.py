@@ -5,12 +5,15 @@
 
 The persona statements were written for a fixed period. Imported unchanged, a tester would see a
 ledger months out of date and a forecast flagged as stale. Every date moves by the same whole
-number of weeks, so weekday patterns, gaps between payments and the shape of each month survive;
-only the calendar position changes. Amounts and descriptions are untouched.
+number of weeks, so weekday patterns and the gaps between payments survive. A whole-week shift
+does not keep a date on the same day of the month, so a payment on the 1st will land on another
+day; the forecast reads the pattern of weeks, not the calendar. Amounts and descriptions are
+untouched.
 """
 
 import argparse
 import csv
+import re
 import sys
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
@@ -22,6 +25,7 @@ PERSONA_DIR = Path(__file__).resolve().parents[3] / "data" / "personas"
 DATE_FORMAT = "%d/%m/%Y"
 COLUMNS = ["Date", "Description", "Amount"]
 DAYS_PER_WEEK = 7
+PERSONA_NAME = re.compile(r"[a-z][a-z0-9_]*")
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
@@ -29,7 +33,13 @@ def read_rows(path: Path) -> list[dict[str, str]]:
         reader = csv.DictReader(handle)
         if reader.fieldnames != COLUMNS:
             raise UatDataError(f"{path.name}: header must be {','.join(COLUMNS)}")
-        rows = list(reader)
+        rows = []
+        for line, row in enumerate(reader, start=2):
+            if None in row or any(value is None for value in row.values()):
+                raise UatDataError(
+                    f"{path.name} row {line}: expected exactly {len(COLUMNS)} columns"
+                )
+            rows.append(row)
     if not rows:
         raise UatDataError(f"{path.name}: no rows")
     return rows
@@ -74,7 +84,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--session", type=date.fromisoformat, default=None, help="default: today")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.csv is None and not PERSONA_NAME.fullmatch(args.persona):
+        print(f"Cannot shift: persona {args.persona!r} is not a persona name", file=sys.stderr)
+        return 2
     path = args.csv or PERSONA_DIR / f"{args.persona}.csv"
+    if args.out.resolve() == path.resolve():
+        print("Cannot shift: --out would overwrite the source file", file=sys.stderr)
+        return 2
     session = args.session or date.today()
     try:
         shifted = shift_rows(read_rows(path), session)

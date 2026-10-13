@@ -351,3 +351,14 @@ class TestReviewFollowUps:
         full = evaluator(lambda r: 0.08 if r.num_installments == 4 else 0.5)
         result = search(BASE, NEXT_INCOME, full, baseline=Outcome(0.5), screen=screen)
         assert result.reaches_safe and result.best.request.num_installments == 4
+
+
+def test_only_a_few_candidates_are_confirmed_at_full_strength_however_many_look_close():
+    from app.engines.risk.counterfactual import MAX_CONFIRMATIONS
+
+    screen = evaluator(lambda r: 0.11)  # everything looks just over the edge
+    full = evaluator(lambda r: 0.2)  # and none of it holds up
+    result = search(BASE, NEXT_INCOME, full, baseline=Outcome(0.5), screen=screen)
+
+    assert not result.reaches_safe
+    assert len(full.calls) <= MAX_CONFIRMATIONS + 1  # the near-edge ones plus the best at the end

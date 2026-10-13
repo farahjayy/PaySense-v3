@@ -11,6 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
+import httpx
 from postgrest import APIError
 
 from app.core.settings import MissingSettingsError, load_settings
@@ -44,10 +45,18 @@ def main() -> int:
             user, created = seed_user(
                 client, username=t.username, display_name=t.display, persona=t.persona
             )
-        except (ValueError, APIError) as err:
+        except (ValueError, APIError, httpx.HTTPError) as err:
             print(f"{t.participant}: {err}", file=sys.stderr)
             return 1
         print(f"{t.participant}: {'created' if created else 'already exists'} {user['username']}")
+        if not created and (
+            user.get("persona") != t.persona or user.get("display_name") != t.display
+        ):
+            print(
+                f"{t.participant}: warning - the existing account has persona "
+                f"{user.get('persona')!r}, not {t.persona!r} (or a different display name)",
+                file=sys.stderr,
+            )
     return 0
 
 

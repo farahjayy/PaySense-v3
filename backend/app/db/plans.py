@@ -315,11 +315,21 @@ def rename(db: Database, user_id: str, plan_id: str, new_name: str) -> dict[str,
 
 def delete(db: Database, user_id: str, plan_id: str, *, keep_payments: bool = True) -> bool:
     """Delete a plan. Logged payments are kept (unlinked by the database) unless asked."""
-    if ScopedTable(db, PLANS).get(user_id, plan_id) is None:
+    plan = ScopedTable(db, PLANS).get(user_id, plan_id)
+    if plan is None:
         return False
     if not keep_payments:
         transactions.delete_for_plan(db, user_id, plan_id)
-    return ScopedTable(db, PLANS).delete(user_id, plan_id)
+    deleted = ScopedTable(db, PLANS).delete(user_id, plan_id)
+    if deleted and plan.get("risk_check_id"):
+        # the saved report was made for this purchase; deleting the plan erases it too
+        _best_effort(
+            "delete the plan's saved risk check",
+            ScopedTable(db, "risk_checks").delete,
+            user_id,
+            plan["risk_check_id"],
+        )
+    return deleted
 
 
 def mark_paid(

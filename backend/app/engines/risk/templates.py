@@ -6,6 +6,7 @@ and nowhere else. `figures` lists exactly what was printed; the tests recompute 
 Which features to mention is decided elsewhere (SHAP, threshold 0.02); this module only words them.
 """
 
+import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
@@ -20,6 +21,8 @@ class Factor:
 
 
 def _half_up(x: float) -> int:
+    if not math.isfinite(x):
+        raise ValueError(f"a sentence needs a finite number, got {x!r}")
     return int(abs(x) + 0.5)
 
 
@@ -71,6 +74,8 @@ def _num_instalments(values: Mapping[str, float]) -> Factor:
     count = _half_up(values["num_instalments"])
     if count >= MANY_INSTALMENTS:
         text = f"The plan runs for {count} instalments, so you carry the commitment for longer."
+    elif count == 1:
+        text = "The whole amount is a single payment, so it is all due at once."
     else:
         text = f"The plan has only {count} instalments, so each one is larger."
     return Factor("num_instalments", text, (str(count),))
@@ -78,11 +83,11 @@ def _num_instalments(values: Mapping[str, float]) -> Factor:
 
 def _active_plans(values: Mapping[str, float]) -> Factor:
     count = _half_up(values["active_plans_with_purchase"])
-    return Factor(
-        "active_plans_with_purchase",
-        f"You would have {count} active BNPL plans at the same time.",
-        (str(count),),
-    )
+    if count == 1:
+        text = "This would be your only BNPL plan."
+    else:
+        text = f"You would have {count} active BNPL plans at the same time."
+    return Factor("active_plans_with_purchase", text, (str(count),))
 
 
 def _fee(values: Mapping[str, float]) -> Factor:
