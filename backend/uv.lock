@@ -949,9 +949,11 @@ version = "0.1.0"
 source = { editable = "." }
 default-groups = ["dev", "ml"]
 dependencies = [
+    { name = "defusedxml" },
     { name = "fastapi" },
     { name = "numpy" },
     { name = "onnxruntime" },
+    { name = "openpyxl" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
     { name = "python-multipart" },
@@ -969,12 +971,10 @@ dev = [
     { name = "ruff" },
 ]
 ml = [
-    { name = "defusedxml" },
     { name = "lightgbm" },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "onnx" },
-    { name = "openpyxl" },
     { name = "optuna" },
     { name = "pandas" },
     { name = "prophet" },
@@ -990,9 +990,11 @@ ml = [
 
 [package.metadata]
 requires-dist = [
+    { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "fastapi", specifier = ">=0.142" },
     { name = "numpy", specifier = ">=2.5.3" },
     { name = "onnxruntime", specifier = ">=1.30.0" },
+    { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pydantic-settings", specifier = ">=2.6" },
     { name = "pyjwt", specifier = ">=2.15" },
     { name = "python-multipart", specifier = ">=0.0.32" },
@@ -1010,12 +1012,10 @@ dev = [
     { name = "ruff", specifier = ">=0.9" },
 ]
 ml = [
-    { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "lightgbm", specifier = ">=4.7.0" },
     { name = "matplotlib", specifier = ">=3.11.2" },
     { name = "numpy", specifier = ">=2.5.3" },
     { name = "onnx", specifier = ">=1.23.2" },
-    { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "optuna", specifier = ">=5.0.0" },
     { name = "pandas", specifier = ">=3.0.6" },
     { name = "prophet", specifier = ">=1.5.0" },

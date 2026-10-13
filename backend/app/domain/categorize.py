@@ -139,6 +139,16 @@ def _matches(keyword: str, text: str) -> bool:
     return re.search(pattern, text) is not None
 
 
+# The app's own spellings, for matching a category a file already carries. BNPL is not among them:
+# the app assigns it to plan payments and it is never taken from text.
+_KNOWN_CATEGORIES = {name.casefold(): name for name in (*CATEGORY_KEYWORDS, DEFAULT_CATEGORY)}
+
+
+def canonical_category(text: str) -> str | None:
+    """The app's spelling of a category name ("food" -> "Food"), or None for anything else."""
+    return _KNOWN_CATEGORIES.get(text.casefold())
+
+
 def guess_category(description: str | None) -> str:
     text = (description or "").lower()
     if not text:

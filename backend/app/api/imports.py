@@ -1,4 +1,5 @@
-"""CSV import: preview (parses, writes nothing) -> the user edits -> confirm (re-validates, writes).
+"""Statement import: preview (parses, writes nothing) -> the user edits -> confirm (re-validates,
+writes). The file may be CSV or text, or an Excel workbook (D-42); the route keeps its `/csv` name.
 
 Stateless by design (ADR D-29): the server keeps nothing between the two calls, so a Render
 restart cannot lose an upload and one user's preview can never be confirmed by another.
@@ -16,7 +17,8 @@ from app.api.schemas import PROTECTED_RESPONSES, ApiModel
 from app.api.types import AppDate, Sen, text
 from app.core.errors import unprocessable
 from app.db import transactions, user_settings
-from app.domain.csv_import import MAX_ROWS, CsvImportError, flag_duplicates, parse_csv
+from app.domain.csv_import import MAX_ROWS, CsvImportError, flag_duplicates
+from app.domain.upload import file_kind, parse_upload
 
 logger = logging.getLogger("paysense")
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
@@ -30,7 +32,7 @@ class ImportRowOut(ApiModel):
     date: dt.date
     amount_sen: int
     type: TxnType
-    category_guess: str
+    category_guess: str  # the file's own category when it has one, else a guess from the item
     description: str | None
     issues: list[str]
     duplicate: bool
@@ -44,6 +46,7 @@ class SkippedRowOut(ApiModel):
 class ImportPreviewOut(ApiModel):
     rows: list[ImportRowOut]
     skipped: list[SkippedRowOut]
+    notes: list[str]  # about the file as a whole, e.g. a sheet that was not read
     duplicate_count: int
 
 
@@ -71,13 +74,12 @@ class ConfirmOut(ApiModel):
     "/csv", response_model=ImportPreviewOut, dependencies=[rate_limited("import-preview", 20, 60)]
 )
 def preview_csv(file: UploadFile, user: CurrentUser, db: DbDep) -> ImportPreviewOut:
-    if not (file.filename or "").lower().endswith(".csv"):
-        raise unprocessable("wrong_file_type", "Please upload a .csv file.")
-    data = file.file.read(MAX_UPLOAD_BYTES + 1)
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise unprocessable("file_too_large", "File is over 5 MB. Export a shorter date range.")
     try:
-        preview = parse_csv(data.decode("utf-8-sig", errors="replace"))
+        kind = file_kind(file.filename)
+        data = file.file.read(MAX_UPLOAD_BYTES + 1)
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise unprocessable("file_too_large", "File is over 5 MB. Export a shorter date range.")
+        preview = parse_upload(kind, data)
     except CsvImportError as err:
         raise unprocessable(err.code.lower(), err.message) from err
 
@@ -100,6 +102,7 @@ def preview_csv(file: UploadFile, user: CurrentUser, db: DbDep) -> ImportPreview
             for r in rows
         ],
         skipped=[SkippedRowOut(row=s.row, reason=s.reason) for s in preview.skipped],
+        notes=list(preview.notes),
         duplicate_count=sum(1 for r in rows if r.duplicate),
     )
 

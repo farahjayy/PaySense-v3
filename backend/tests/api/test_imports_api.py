@@ -212,3 +212,125 @@ def test_import_routes_require_login(api):
         api.post("/api/import/csv", files={"file": ("a.csv", b"x", "text/csv")}).status_code == 401
     )
     assert api.post("/api/import/confirm", json={"rows": []}).status_code == 401
+
+
+# ------------------------------------------------------------------ own columns and Excel
+OWN_TABLE = (
+    "Type,Date,Item,Amount (RM),Category\n"
+    "expense,1/8/2025, Kopi Corner,6.8,Drink / Dessert\n"
+    "expense,2/8/2025,Rice Stall,15.9, Food\n"
+    "income,3/8/2025,Monthly Allowance,1000,Allowance\n"
+)
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def own_table_workbook(extra_sheets=None) -> bytes:
+    import io
+    from datetime import datetime
+
+    from openpyxl import Workbook
+
+    book = Workbook()
+    sheet = book.active
+    sheet.title = "Aug"
+    sheet.append(["Type", "Date", "Item", "Amount (RM)", "Category"])
+    sheet.append(["expense", datetime(2025, 8, 1), " Kopi Corner", 6.8, "Drink / Dessert"])
+    sheet.append(["expense", datetime(2025, 8, 2), "Rice Stall", 15.9, " Food"])
+    sheet.append(["income", datetime(2025, 8, 3), "Monthly Allowance", 1000, "Allowance"])
+    for name, rows in (extra_sheets or {}).items():
+        extra = book.create_sheet(name)
+        for row in rows:
+            extra.append(row)
+    out = io.BytesIO()
+    book.save(out)
+    return out.getvalue()
+
+
+def upload_xlsx(api, headers, content, name="budget.xlsx"):
+    return api.post("/api/import/csv", files={"file": (name, content, XLSX)}, headers=headers)
+
+
+def test_the_files_own_type_and_category_columns_are_what_the_preview_shows(api, amir):
+    rows = upload(api, amir, OWN_TABLE).json()["rows"]
+
+    assert [(r["type"], r["category_guess"], r["issues"]) for r in rows] == [
+        ("expense", "Drink / Dessert", []),
+        ("expense", "Food", []),
+        ("income", "Allowance", []),
+    ]
+
+
+def test_an_excel_file_gives_the_same_preview_as_the_same_table_as_csv(api, amir):
+    from_csv = upload(api, amir, OWN_TABLE).json()
+
+    res = upload_xlsx(api, amir, own_table_workbook())
+
+    assert res.status_code == 200
+    assert res.json()["rows"] == from_csv["rows"]
+    assert res.json()["notes"] == []
+
+
+def test_a_sheet_that_is_not_a_table_comes_back_as_a_note(api, amir):
+    book = own_table_workbook({"Summary": [["Total"], [22.7]]})
+
+    res = upload_xlsx(api, amir, book)
+
+    assert len(res.json()["rows"]) == 3
+    assert len(res.json()["notes"]) == 1 and "Summary" in res.json()["notes"][0]
+
+
+def test_a_category_of_the_persons_own_is_stored_as_written_after_confirm(api, amir):
+    preview = upload_xlsx(api, amir, own_table_workbook()).json()
+
+    api.post("/api/import/confirm", json=confirm_body(preview), headers=amir)
+
+    stored = api.get("/api/transactions?start=2025-08-01&end=2025-08-31", headers=amir).json()
+    assert sorted(t["category"] for t in stored) == ["Allowance", "Drink / Dessert", "Food"]
+
+
+def test_an_old_xls_file_is_refused_with_how_to_convert_it(api, amir):
+    res = upload(api, amir, b"\xd0\xcf\x11\xe0", "budget.xls")
+
+    assert res.status_code == 422
+    assert res.json()["detail"]["code"] == "wrong_file_type"
+    assert ".xlsx" in res.json()["detail"]["message"]
+
+
+def test_a_broken_workbook_is_a_coded_error_not_a_server_error(api, amir):
+    res = upload_xlsx(api, amir, b"PK\x03\x04 this is not really a workbook")
+
+    assert res.status_code == 422
+    assert res.json()["detail"]["code"] == "excel_unreadable"
+
+
+def test_a_workbook_that_unpacks_to_something_huge_is_refused(api, amir):
+    import io
+    import zipfile
+
+    from app.domain.upload import MAX_WORKBOOK_UNCOMPRESSED
+
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("xl/worksheets/sheet1.xml", b"\0" * (MAX_WORKBOOK_UNCOMPRESSED + 1))
+
+    res = upload_xlsx(api, amir, out.getvalue())
+
+    assert res.status_code == 422
+    assert res.json()["detail"]["code"] == "excel_too_large"
+
+
+def test_tab_separated_text_files_are_accepted(api, amir):
+    res = upload(api, amir, "Date\tItem\tAmount\n01/08/2025\tLunch\t-5.00\n", "export.tsv")
+
+    assert res.status_code == 200 and res.json()["rows"][0]["amount_sen"] == 500
+
+
+def test_a_workbook_import_is_still_one_users_own(api, amir, siti):
+    api.post(
+        "/api/import/confirm",
+        json=confirm_body(upload_xlsx(api, amir, own_table_workbook()).json()),
+        headers=amir,
+    )
+
+    assert upload_xlsx(api, amir, own_table_workbook()).json()["duplicate_count"] == 3
+    assert upload_xlsx(api, siti, own_table_workbook()).json()["duplicate_count"] == 0
