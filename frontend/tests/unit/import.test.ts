@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { ImportPreview } from "@/lib/api/queries";
 import {
+  ACCEPTED_FILES,
+  CATEGORIES,
+  categoryOptions,
   fileProblem,
   MAX_UPLOAD_BYTES,
   patchRow,
@@ -45,6 +48,7 @@ const PREVIEW: ImportPreview = {
     },
   ],
   skipped: [{ row: 5, reason: "No amount" }],
+  notes: [],
   duplicate_count: 1,
 };
 
@@ -98,9 +102,33 @@ describe("import review", () => {
   });
 
   it("catches a wrong, empty or oversized file before uploading", () => {
-    expect(fileProblem({ name: "statement.pdf", size: 10 })).toMatch(/\.csv/);
+    expect(fileProblem({ name: "statement.pdf", size: 10 })).toMatch(/CSV or Excel/);
     expect(fileProblem({ name: "statement.csv", size: 0 })).toMatch(/empty/);
     expect(fileProblem({ name: "statement.csv", size: MAX_UPLOAD_BYTES + 1 })).toMatch(/5 MB/);
     expect(fileProblem({ name: "Statement.CSV", size: MAX_UPLOAD_BYTES })).toBeNull();
+  });
+
+  it("accepts Excel workbooks and tab or plain-text exports as well as CSV", () => {
+    for (const name of ["a.xlsx", "A.XLSM", "a.tsv", "a.txt", "a.csv"]) {
+      expect(fileProblem({ name, size: 10 })).toBeNull();
+    }
+    expect(ACCEPTED_FILES).toContain(".xlsx");
+  });
+
+  it("says how to convert an old .xls file instead of just refusing it", () => {
+    expect(fileProblem({ name: "budget.xls", size: 10 })).toMatch(/\.xlsx/);
+  });
+});
+
+describe("category options", () => {
+  it("is the app's list, then the file's own categories, each once, in alphabetical order", () => {
+    const options = categoryOptions(["Hangout", "Food", "Boyfriend Tax", "Hangout", "Drink / Dessert"]);
+
+    expect(options.slice(0, CATEGORIES.length)).toEqual([...CATEGORIES]);
+    expect(options.slice(CATEGORIES.length)).toEqual(["Boyfriend Tax", "Drink / Dessert", "Hangout"]);
+  });
+
+  it("is just the app's list when there is nothing extra", () => {
+    expect(categoryOptions()).toEqual([...CATEGORIES]);
   });
 });

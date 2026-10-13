@@ -12,6 +12,7 @@ import { StatTile } from "@/components/ui/StatTile";
 import { ApiError, useImportConfirm, useImportPreview } from "@/lib/api/queries";
 import { plural } from "@/lib/format";
 import {
+  categoryOptions,
   fileProblem,
   patchRow,
   setAllIncluded,
@@ -29,12 +30,15 @@ export function ImportScreen() {
   const confirm = useImportConfirm();
   const [rows, setRows] = useState<ReviewRow[] | null>(null);
   const [skipped, setSkipped] = useState<Skipped[]>([]);
+  const [notes, setNotes] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>(categoryOptions());
   const [problem, setProblem] = useState<string | null>(null);
   const [created, setCreated] = useState<number | null>(null);
 
   function reset() {
     setRows(null);
     setSkipped([]);
+    setNotes([]);
     setProblem(null);
     setCreated(null);
     preview.reset();
@@ -49,6 +53,9 @@ export function ImportScreen() {
       onSuccess: (result) => {
         setRows(toReviewRows(result));
         setSkipped(result.skipped);
+        setNotes(result.notes);
+        // Taken from the file as it arrived, so a category stays on offer after a row is changed.
+        setCategories(categoryOptions(result.rows.map((r) => r.category_guess)));
       },
     });
   }
@@ -77,7 +84,7 @@ export function ImportScreen() {
     <div className="mx-auto max-w-4xl">
       <PageHeader
         title="Import"
-        intro="Bring in a bank or e-wallet statement. You review everything before it is saved."
+        intro="Bring in a bank or e-wallet statement, or your own spreadsheet. You review everything before it is saved."
       />
       <div ref={stepRef} tabIndex={-1} className="outline-none">
         {created !== null ? (
@@ -86,6 +93,8 @@ export function ImportScreen() {
           <Review
             rows={rows}
             skipped={skipped}
+            notes={notes}
+            categories={categories}
             onChange={(row, patch) => setRows((current) => patchRow(current ?? [], row, patch))}
             onAll={(include) => setRows((current) => setAllIncluded(current ?? [], include))}
             onConfirm={handleConfirm}
@@ -135,6 +144,8 @@ function Done({ created, onAnother }: { created: number; onAnother: () => void }
 type ReviewProps = {
   rows: readonly ReviewRow[];
   skipped: readonly Skipped[];
+  notes: readonly string[];
+  categories: readonly string[];
   onChange: (row: number, patch: Partial<Pick<ReviewRow, "category" | "type" | "include">>) => void;
   onAll: (include: boolean) => void;
   onConfirm: () => void;
@@ -147,6 +158,8 @@ type ReviewProps = {
 function Review({
   rows,
   skipped,
+  notes,
+  categories,
   onChange,
   onAll,
   onConfirm,
@@ -180,15 +193,27 @@ function Review({
           </ul>
         </Banner>
       )}
-      <div className="flex flex-wrap gap-2">
+      {notes.length > 0 && (
+        <Banner tone="info" title="Part of the file was not read">
+          <ul className="list-disc pl-4">
+            {notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </Banner>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
         <Button variant="secondary" size="sm" onClick={() => onAll(true)}>
           Tick all
         </Button>
         <Button variant="secondary" size="sm" onClick={() => onAll(false)}>
           Untick all
         </Button>
+        <p className="text-[12px] text-ink-secondary">
+          Only ticked rows are saved. Untick a row to leave it out.
+        </p>
       </div>
-      <ReviewList rows={rows} onChange={onChange} />
+      <ReviewList rows={rows} categories={categories} onChange={onChange} />
       {saveError && (
         <Banner
           tone="danger"

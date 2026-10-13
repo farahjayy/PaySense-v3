@@ -1,12 +1,14 @@
 "use client";
 
 import { formatDate } from "@/lib/format";
-import { CATEGORIES, type ReviewRow, type RowType } from "@/lib/import";
+import { type ReviewRow, type RowType } from "@/lib/import";
 import { formatRm } from "@/lib/money";
 
 type Patch = Partial<Pick<ReviewRow, "category" | "type" | "include">>;
 type Props = {
   rows: readonly ReviewRow[];
+  /** Everything a row's category can be set to: the app's list plus the file's own categories. */
+  categories: readonly string[];
   onChange: (row: number, patch: Patch) => void;
 };
 
@@ -20,7 +22,7 @@ const SELECT =
   "h-9 w-full rounded-lg border border-field bg-surface px-2 text-[13px] text-ink hover:border-ink-muted";
 
 /** One line per statement row: a card on a phone, a table-like row from tablet width up. */
-export function ReviewList({ rows, onChange }: Props) {
+export function ReviewList({ rows, categories, onChange }: Props) {
   return (
     <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
       {rows.map((r) => (
@@ -53,10 +55,7 @@ export function ReviewList({ rows, onChange }: Props) {
             value={r.category}
             onChange={(event) => onChange(r.row, { category: event.target.value })}
           >
-            {!CATEGORIES.includes(r.category as (typeof CATEGORIES)[number]) && (
-              <option value={r.category}>{r.category}</option>
-            )}
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>

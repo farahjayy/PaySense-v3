@@ -20,7 +20,7 @@ import {
 } from "@/lib/api/queries";
 import { focusPageHeading } from "@/lib/focus";
 import { formatDate, plural } from "@/lib/format";
-import { CATEGORIES } from "@/lib/import";
+import { categoryOptions } from "@/lib/import";
 import { formatRm } from "@/lib/money";
 
 type Dialogue =
@@ -33,6 +33,12 @@ export function TransactionsScreen() {
   const [filters, setFilters] = useState<TransactionFilters>({});
   const [dialogue, setDialogue] = useState<Dialogue | null>(null);
   const list = useTransactions(filters);
+  // The same query as the list while no filter is set; with one set, it still shows every category.
+  const everything = useTransactions({});
+  const categories = categoryOptions([
+    ...(everything.data ?? []).map((t) => t.category),
+    ...(filters.category ? [filters.category] : []),
+  ]);
   const create = useCreateTransaction();
   const update = useUpdateTransaction();
   const remove = useDeleteTransaction();
@@ -85,7 +91,12 @@ export function TransactionsScreen() {
           </>
         }
       />
-      <Filters filters={filters} onChange={setFilter} onClear={() => setFilters({})} />
+      <Filters
+        filters={filters}
+        categories={categories}
+        onChange={setFilter}
+        onClear={() => setFilters({})}
+      />
       <div className="mt-4">
         {list.isPending ? (
           <Skeleton lines={6} label="Loading transactions" />
@@ -183,11 +194,12 @@ export function TransactionsScreen() {
 
 type FiltersProps = {
   filters: TransactionFilters;
+  categories: readonly string[];
   onChange: <K extends keyof TransactionFilters>(key: K, value: TransactionFilters[K] | "") => void;
   onClear: () => void;
 };
 
-function Filters({ filters, onChange, onClear }: FiltersProps) {
+function Filters({ filters, categories, onChange, onClear }: FiltersProps) {
   const active = Object.keys(filters).length > 0;
   return (
     <form
@@ -220,7 +232,7 @@ function Filters({ filters, onChange, onClear }: FiltersProps) {
           onChange={(event) => onChange("category", event.target.value)}
         >
           <option value="">All</option>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>

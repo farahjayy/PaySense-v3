@@ -42,7 +42,37 @@ const PREVIEW = {
     },
   ],
   skipped: [{ row: 4, reason: "No amount" }],
+  notes: [],
   duplicate_count: 1,
+};
+
+// A file that carries its own categories, and a workbook with a sheet that was not a table.
+const OWN_PREVIEW = {
+  rows: [
+    {
+      row: 1,
+      date: "2025-08-01",
+      amount_sen: 680,
+      type: "expense",
+      category_guess: "Hangout",
+      description: "Kopi Corner",
+      issues: [],
+      duplicate: false,
+    },
+    {
+      row: 2,
+      date: "2025-08-02",
+      amount_sen: 1590,
+      type: "expense",
+      category_guess: "Food",
+      description: "Rice Stall",
+      issues: [],
+      duplicate: false,
+    },
+  ],
+  skipped: [],
+  notes: ["Sheet 'Summary' was not read: no date and amount columns found."],
+  duplicate_count: 0,
 };
 
 function csv(name = "statement.csv", body = "date,amount\n") {
@@ -56,14 +86,54 @@ function ok(data: unknown) {
 describe("ImportScreen", () => {
   beforeEach(() => post.mockReset());
 
-  it("rejects a file that is not a CSV without calling the server", async () => {
+  it("rejects a file that is neither CSV nor Excel without calling the server", async () => {
     render(<ImportScreen />, { wrapper });
-    await userEvent.upload(screen.getByLabelText("Choose a CSV file"), csv("notes.txt"), {
+    await userEvent.upload(screen.getByLabelText("Choose a statement file"), csv("notes.pdf"), {
       applyAccept: false,
     });
 
-    expect(await screen.findByText(/choose a \.csv file/i)).toBeInTheDocument();
+    expect(await screen.findByText(/please choose a csv or excel/i)).toBeInTheDocument();
     expect(post).not.toHaveBeenCalled();
+  });
+
+  it("offers Excel files in the file picker and sends a workbook to the server", async () => {
+    post.mockResolvedValueOnce(ok(OWN_PREVIEW));
+    render(<ImportScreen />, { wrapper });
+    const input = screen.getByLabelText("Choose a statement file");
+    expect(input).toHaveAttribute("accept", expect.stringContaining(".xlsx"));
+
+    await userEvent.upload(input, csv("budget.xlsx", "x"));
+
+    expect(await screen.findByLabelText(/^include row 1/i)).toBeInTheDocument();
+    expect(post).toHaveBeenCalledTimes(1);
+  });
+
+  it("says that only ticked rows are saved", async () => {
+    post.mockResolvedValueOnce(ok(PREVIEW));
+    render(<ImportScreen />, { wrapper });
+    await userEvent.upload(screen.getByLabelText("Choose a statement file"), csv());
+
+    expect(await screen.findByText(/only ticked rows are saved/i)).toBeInTheDocument();
+  });
+
+  it("keeps the file's own categories on offer in every row, even after one row is changed", async () => {
+    post.mockResolvedValueOnce(ok(OWN_PREVIEW));
+    render(<ImportScreen />, { wrapper });
+    await userEvent.upload(screen.getByLabelText("Choose a statement file"), csv());
+    const second = await screen.findByLabelText("Category for row 2");
+    expect(within(second).getByRole("option", { name: "Hangout" })).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Category for row 1"), "Food");
+
+    expect(within(second).getByRole("option", { name: "Hangout" })).toBeInTheDocument();
+  });
+
+  it("names a sheet that was not read", async () => {
+    post.mockResolvedValueOnce(ok(OWN_PREVIEW));
+    render(<ImportScreen />, { wrapper });
+    await userEvent.upload(screen.getByLabelText("Choose a statement file"), csv());
+
+    expect(await screen.findByText(/sheet 'summary' was not read/i)).toBeInTheDocument();
   });
 
   it("shows the server's explanation when the file cannot be read", async () => {
@@ -75,7 +145,7 @@ describe("ImportScreen", () => {
       response: { ok: false, status: 422 },
     });
     render(<ImportScreen />, { wrapper });
-    await userEvent.upload(screen.getByLabelText("Choose a CSV file"), csv());
+    await userEvent.upload(screen.getByLabelText("Choose a statement file"), csv());
 
     expect(await screen.findByText("No usable rows were found.")).toBeInTheDocument();
   });
@@ -83,7 +153,7 @@ describe("ImportScreen", () => {
   it("previews, leaves duplicates out, and confirms only what is ticked with edits applied", async () => {
     post.mockResolvedValueOnce(ok(PREVIEW)).mockResolvedValueOnce(ok({ created: 1 }));
     render(<ImportScreen />, { wrapper });
-    await userEvent.upload(screen.getByLabelText("Choose a CSV file"), csv());
+    await userEvent.upload(screen.getByLabelText("Choose a statement file"), csv());
 
     expect(await screen.findByText(/1 row could not be read/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^include row 2/i)).toBeChecked();
@@ -120,7 +190,7 @@ describe("ImportScreen", () => {
       response: { ok: false, status: 422 },
     });
     render(<ImportScreen />, { wrapper });
-    await userEvent.upload(screen.getByLabelText("Choose a CSV file"), csv());
+    await userEvent.upload(screen.getByLabelText("Choose a statement file"), csv());
     await screen.findByLabelText(/^include row 2/i);
 
     await userEvent.click(screen.getByRole("button", { name: /untick all/i }));

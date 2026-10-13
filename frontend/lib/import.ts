@@ -7,6 +7,14 @@ import type { ConfirmRow, ImportPreview } from "@/lib/api/queries";
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
+const FILE_EXTENSIONS = [".csv", ".tsv", ".txt", ".xlsx", ".xlsm"] as const;
+/** The file picker's `accept` value: CSV and text exports, and Excel workbooks. */
+export const ACCEPTED_FILES = [
+  ...FILE_EXTENSIONS,
+  "text/csv",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+].join(",");
+
 /** The categories the importer guesses from, plus the catch-all. Refund and Transfer matter: the
  * forecast nets refunds against spending and ignores transfers between a person's own accounts. */
 export const CATEGORIES = [
@@ -23,6 +31,15 @@ export const CATEGORIES = [
   "Transfer",
   "Other",
 ] as const;
+
+/** The app's categories, then any others a file carried (each once, alphabetical), so a category the
+ * person wrote in their own spreadsheet stays on offer. */
+export function categoryOptions(extra: Iterable<string> = []): string[] {
+  const known = new Set<string>(CATEGORIES);
+  const own = new Set<string>();
+  for (const category of extra) if (!known.has(category)) own.add(category);
+  return [...CATEGORIES, ...[...own].sort((a, b) => a.localeCompare(b))];
+}
 
 export type RowType = ConfirmRow["type"];
 
@@ -106,7 +123,13 @@ export function totals(rows: readonly ReviewRow[]): ReviewTotals {
 
 /** A problem with the file itself, found before anything is uploaded. */
 export function fileProblem(file: { name: string; size: number }): string | null {
-  if (!file.name.toLowerCase().endsWith(".csv")) return "Please choose a .csv file.";
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".xls")) {
+    return "Old Excel files (.xls) can't be read. In Excel choose File > Save As and pick Excel Workbook (.xlsx) or CSV.";
+  }
+  if (!FILE_EXTENSIONS.some((extension) => name.endsWith(extension))) {
+    return "Please choose a CSV or Excel (.xlsx) file.";
+  }
   if (file.size === 0) return "That file is empty.";
   if (file.size > MAX_UPLOAD_BYTES) {
     return "That file is over 5 MB. Export a shorter date range and try again.";

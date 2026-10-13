@@ -33,7 +33,7 @@ test("a new tester signs in, imports a persona statement and sees a forecast", a
 
   await page.getByRole("link", { name: "Import" }).first().click();
   await expect(page).toHaveURL(/\/import/);
-  await page.getByLabel("Choose a CSV file").setInputFiles(PERSONA_CSV);
+  await page.getByLabel("Choose a statement file").setInputFiles(PERSONA_CSV);
 
   const add = page.getByRole("button", { name: /^add \d+ transactions?$/i });
   await expect(add).toBeEnabled();
@@ -81,7 +81,7 @@ test("a tester checks a purchase, tries the suggestion, adds the plan and reads 
 
   // history first: the check refuses to give a number without it
   await page.getByRole("link", { name: "Import" }).first().click();
-  await page.getByLabel("Choose a CSV file").setInputFiles(PERSONA_CSV);
+  await page.getByLabel("Choose a statement file").setInputFiles(PERSONA_CSV);
   await page.getByRole("button", { name: /^add \d+ transactions?$/i }).click();
   await expect(page.getByText(/transactions added/i)).toBeVisible();
 

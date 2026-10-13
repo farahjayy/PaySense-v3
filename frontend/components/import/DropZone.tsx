@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { ACCEPTED_FILES } from "@/lib/import";
 
 type Props = { onFile: (file: File) => void; busy: boolean };
 
@@ -32,17 +33,17 @@ export function DropZone({ onFile, busy }: Props) {
         dragging ? "border-accent bg-accent-bg" : "border-line bg-surface"
       }`}
     >
-      <p className="font-serif text-lg font-semibold text-ink">Drop a statement here</p>
+      <p className="font-serif text-lg font-semibold text-ink">Drop a statement or spreadsheet here</p>
       <p className="max-w-sm text-[13px] leading-relaxed text-ink-secondary">
-        A CSV exported from your bank or e-wallet, up to 5 MB. Nothing is saved until you have
-        reviewed it.
+        A CSV or Excel (.xlsx) file from your bank, your e-wallet or your own budget sheet, up to 5
+        MB. Nothing is saved until you have reviewed it.
       </p>
       <input
         ref={input}
         type="file"
-        accept=".csv,text/csv"
+        accept={ACCEPTED_FILES}
         className="sr-only"
-        aria-label="Choose a CSV file"
+        aria-label="Choose a statement file"
         tabIndex={-1}
         onChange={(event) => {
           take(event.target.files);

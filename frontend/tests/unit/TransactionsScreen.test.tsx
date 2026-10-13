@@ -109,6 +109,18 @@ describe("TransactionsScreen", () => {
     );
   });
 
+  it("lists the categories in the ledger in the filter, including ones the person made up", async () => {
+    const own = { ...ROWS[0], id: "t4", category: "Hangout", description: "Cinema" };
+    get.mockResolvedValue(ok([...ROWS, own]));
+    render(<TransactionsScreen />, { wrapper });
+    await screen.findByText("Lunch");
+
+    const filter = screen.getByLabelText("Category");
+
+    expect(within(filter).getByRole("option", { name: "Hangout" })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: "Food" })).toBeInTheDocument();
+  });
+
   it("adds a transaction, converting typed ringgit to whole sen", async () => {
     post.mockResolvedValue(ok(ROWS[0], 201));
     render(<TransactionsScreen />, { wrapper });

@@ -702,6 +702,8 @@ export interface components {
             rows: components["schemas"]["ImportRowOut"][];
             /** Skipped */
             skipped: components["schemas"]["SkippedRowOut"][];
+            /** Notes */
+            notes: string[];
             /** Duplicate Count */
             duplicate_count: number;
         };
