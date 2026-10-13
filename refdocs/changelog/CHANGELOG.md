@@ -28,6 +28,13 @@ Rules that make this file worth keeping:
 
 ## [Unreleased]
 
+### 2026-10-13 — Real Supabase project connected
+- **Changed:** nothing in the code. The author created a new project `paysense-v2` (Singapore), separate from v1's, applied `0001_init.sql`, and filled `backend/.env` (gitignored; this session cannot read it by its permission settings, so the author ran the commands).
+- **Decided:** a new project rather than reusing v1's, because v1 is read-only (CLAUDE.md) and the migration would have collided with v1's tables. Data API left on (`check_rls.py` and the database client use it) and "automatically expose new tables" left off, which matches the migration's revoke of public-role grants.
+- **Deviations:** the first run of the seed script and integration tests stopped because `.env` lacked `SESSION_SECRET` and `CORS_ORIGINS`; the setup instructions had listed only the Supabase keys. Both were added and the runs repeated.
+- **Verified:** `scripts/check_rls.py` -> PASS on all 8 tables (HTTP 401), "anon key reads nothing"; `scripts/seed_users.py` -> created `amir-k7q2xm`; `pytest -m integration -q` -> **20 passed**, 2 deprecation warnings. Not verified: login and the API through uvicorn on the real database, the browser against it, the deployment.
+- **Known issues / next steps:** the secret key and the session secret were pasted into a chat; rotate both before deploying (a new secret key in Supabase, a new `SESSION_SECRET`; rotating the latter logs testers out).
+
 ### 2026-10-13 — Serving audit follow-ups; security and python review fixes
 - **Reviews:** a security review of the risk routes and model loading found no critical or high issue (one medium, four low, two informational). The first run of it stopped on a usage limit before reporting and was rerun in full. A python review of the UAT tooling, export and serving-check scripts and the risk modules found no critical or high issue either (eleven medium, twelve low). Everything below was fixed with a failing test first, except where noted.
 - **Risk routes:** a second confirm by the same user is answered `409 confirm_in_progress` at once instead of parking a server thread behind the first; checks and confirms now share one per-user rate limit; a risk-check id must be a canonical UUID (anything else is a 404, never a database error); deleting a plan also erases the saved report made for it; the double-submit guard now compares the price as well as the item, date and instalments; the counterfactual search confirms at most six near-edge candidates at full strength (`MAX_CONFIRMATIONS`), so a request sitting on the edge cannot cost sixty full runs; forecast-file names recorded in a model's metadata must be plain file names.
