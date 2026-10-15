@@ -378,3 +378,33 @@ def test_excels_unicode_text_export_decodes_and_reads_as_a_tab_separated_table()
     preview = parse_upload("text", text.encode("utf-16"))  # utf-16 writes the byte order mark
 
     assert [(r.description, r.amount_sen) for r in preview.rows] == [("Café", 500)]
+
+
+# ---------------------------------------------------------------- the downloadable template
+# Keep identical to frontend/public/paysense-import-template.csv (the frontend has a test that the
+# file starts with the same header). What the person downloads must import without a warning.
+TEMPLATE_CSV = (
+    "type,date,item,amount,category\n"
+    "expense,2026-06-01,Nasi lemak,6.50,Food\n"
+    "expense,2026-06-02,Bus to campus,3.00,Transport\n"
+    "income,2026-06-05,PESP Allowance,1000.00,Allowance\n"
+)
+
+
+def test_the_template_the_person_downloads_imports_cleanly_as_it_stands():
+    preview = parse_upload("text", TEMPLATE_CSV.encode())
+
+    assert summary(preview) == [
+        (date(2026, 6, 1), 650, "expense", "Food", "Nasi lemak"),
+        (date(2026, 6, 2), 300, "expense", "Transport", "Bus to campus"),
+        (date(2026, 6, 5), 100000, "income", "Allowance", "PESP Allowance"),
+    ]
+    assert not preview.skipped and all(not r.issues for r in preview.rows)
+
+
+def test_the_template_also_imports_when_opened_and_saved_as_a_workbook():
+    rows = [line.split(",") for line in TEMPLATE_CSV.strip().splitlines()]
+
+    preview = parse_upload("excel", excel(rows))
+
+    assert [r.category_guess for r in preview.rows] == ["Food", "Transport", "Allowance"]

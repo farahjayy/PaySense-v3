@@ -311,3 +311,54 @@ def test_list_rows_can_ask_for_only_some_columns(db, two_users):
     (row,) = table.list_rows(amir, columns="date,amount_sen")
 
     assert row == {"date": "2026-01-05", "amount_sen": 777}
+
+
+# ---------------------------------------------------------------- update_matching (bulk)
+def test_update_matching_changes_only_the_callers_matching_rows_and_counts_them(db, two_users):
+    amir, siti = two_users
+    table = ScopedTable(db, "transactions")
+    for _ in range(3):
+        table.insert(amir, _txn(category="Gym"))
+    table.insert(amir, _txn(category="Food"))
+    table.insert(siti, _txn(category="Gym"))
+
+    changed = table.update_matching(amir, {"category": "Gym"}, {"category": "Fitness"})
+
+    assert changed == 3
+    assert sorted(r["category"] for r in table.list_rows(amir)) == ["Fitness"] * 3 + ["Food"]
+    assert [r["category"] for r in table.list_rows(siti)] == ["Gym"]  # untouched
+
+
+def test_update_matching_handles_more_rows_than_one_batch(db, two_users):
+    amir, _ = two_users
+    table = ScopedTable(db, "transactions")
+    table.insert_many(amir, [_txn(category="Gym") for _ in range(250)])
+
+    assert table.update_matching(amir, {"category": "Gym"}, {"category": "Fitness"}) == 250
+    assert {r["category"] for r in table.list_rows(amir)} == {"Fitness"}
+
+
+def test_update_matching_with_no_match_changes_nothing(db, two_users):
+    amir, _ = two_users
+
+    assert (
+        ScopedTable(db, "transactions").update_matching(amir, {"category": "x"}, {"category": "y"})
+        == 0
+    )
+
+
+@pytest.mark.parametrize(
+    ("equals", "patch"),
+    [
+        ({}, {"category": "x"}),  # would rewrite every row the user has
+        ({"user_id": "someone-else"}, {"category": "x"}),
+        ({"category": "Gym"}, {"user_id": "someone-else"}),
+        ({"category": "Gym"}, {"id": "x"}),
+        ({"category": "Gym"}, {}),
+    ],
+)
+def test_update_matching_refuses_unsafe_arguments(db, two_users, equals, patch):
+    amir, _ = two_users
+
+    with pytest.raises(ValueError):
+        ScopedTable(db, "transactions").update_matching(amir, equals, patch)

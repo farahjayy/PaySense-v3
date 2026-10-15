@@ -11,6 +11,7 @@ from typing import Any
 
 from app.db.base import ScopedTable, is_uuid
 from app.db.client import Database
+from app.domain.categories import APP_ASSIGNED, locked_name
 from app.domain.csv_import import fingerprint
 from app.domain.flows import as_date
 
@@ -172,6 +173,28 @@ def update(
     return _table(db).update(user_id, transaction_id, cleaned)
 
 
+def category_counts(db: Database, user_id: str) -> dict[str, int]:
+    """How many of the caller's transactions carry each category name (exactly as written)."""
+    counts: dict[str, int] = {}
+    for row in _table(db).list_rows(user_id, columns="category"):
+        counts[row["category"]] = counts.get(row["category"], 0) + 1
+    return counts
+
+
+def recategorise(db: Database, user_id: str, old: str, new: str) -> int:
+    """Move every one of the caller's transactions from category `old` to `new`; how many moved.
+    A built-in category is never moved away from (the engines key off Refund, Transfer and the
+    BNPL plan rows), and nothing is ever moved into the one plans assign."""
+    if locked_name(old) is not None:
+        raise ValueError(f"{old} is a built-in category; its transactions cannot be moved.")
+    if new.strip().casefold() in {name.casefold() for name in APP_ASSIGNED}:
+        raise ValueError(f"{new} is assigned by BNPL plans and cannot be chosen.")
+    target = _clean_text(new, "category", required=True)
+    if target == old:
+        return 0
+    return _table(db).update_matching(user_id, {"category": old}, {"category": target})
+
+
 def delete(db: Database, user_id: str, transaction_id: str) -> bool:
     return _table(db).delete(user_id, transaction_id)
 
@@ -191,6 +214,18 @@ def fingerprints_between(db: Database, user_id: str, start: dt.date, end: dt.dat
 def list_for_summary(db: Database, user_id: str) -> list[dict[str, Any]]:
     """Every transaction, reduced to the columns the month summary needs."""
     return _table(db).list_rows(user_id, order_by="date", columns="date,amount_sen,type,category")
+
+
+def list_for_breakdown(
+    db: Database, user_id: str, start: dt.date, end: dt.date
+) -> list[dict[str, Any]]:
+    """One date range of transactions, reduced to the columns the category breakdown needs."""
+    return _table(db).list_rows(
+        user_id,
+        order_by="date",
+        between={"date": (start, end)},
+        columns="date,amount_sen,type,category",
+    )
 
 
 FORECAST_WINDOW_MONTHS = 24  # older history adds cost without improving a 3-month forecast

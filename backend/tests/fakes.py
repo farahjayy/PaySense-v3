@@ -31,6 +31,7 @@ UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
     "user_settings": [("user_id",)],
     "bnpl_installments": [("plan_id", "seq")],
     "provider_limits": [("user_id", "provider")],
+    "user_categories": [("user_id", "name")],
     "transactions": [("bnpl_installment_id",)],  # partial unique index: NULLs never collide
 }
 # table -> defaults applied on insert (callables are invoked per row)
@@ -60,7 +61,14 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     "provider_limits": {"updated_at": lambda: _now()},
 }
 NO_ID_TABLES = {"user_settings", "provider_limits"}  # keyed by user_id; no `id`
-HAS_CREATED_AT = {"users", "recurring_items", "risk_checks", "bnpl_plans", "transactions"}
+HAS_CREATED_AT = {
+    "users",
+    "recurring_items",
+    "risk_checks",
+    "bnpl_plans",
+    "transactions",
+    "user_categories",
+}
 
 # child table -> [(child column, parent table)]: composite (column, user_id) -> (id, user_id)
 FOREIGN_KEYS: dict[str, list[tuple[str, str]]] = {

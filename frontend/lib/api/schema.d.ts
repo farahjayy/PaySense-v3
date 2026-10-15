@@ -146,6 +146,33 @@ export interface paths {
         patch: operations["update_transaction"];
         trace?: never;
     };
+    "/api/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Categories */
+        get: operations["list_categories"];
+        put?: never;
+        /** Add Category */
+        post: operations["add_category"];
+        /**
+         * Delete Category
+         * @description Delete one of the person's own categories. Any transactions that used it are moved to
+         *     `move_to`, which is required when there are some.
+         */
+        delete: operations["delete_category"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename Category
+         * @description Rename one of the person's own categories; every transaction that used it follows.
+         */
+        patch: operations["rename_category"];
+        trace?: never;
+    };
     "/api/summary/months": {
         parameters: {
             query?: never;
@@ -155,6 +182,26 @@ export interface paths {
         };
         /** Months */
         get: operations["months"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/summary/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Categories
+         * @description Spending by category for one calendar month, biggest first.
+         */
+        get: operations["categories"];
         put?: never;
         post?: never;
         delete?: never;
@@ -522,6 +569,77 @@ export interface components {
             paid_date?: string | null;
             /** Seqs */
             seqs: number[];
+        };
+        /** CategoryChangeOut */
+        CategoryChangeOut: {
+            category: components["schemas"]["CategoryOut"];
+            /** Moved */
+            moved: number;
+        };
+        /** CategoryDeleteOut */
+        CategoryDeleteOut: {
+            /** Moved */
+            moved: number;
+        };
+        /** CategoryIn */
+        CategoryIn: {
+            /** Name */
+            name: string;
+        };
+        /** CategoryListOut */
+        CategoryListOut: {
+            /** Categories */
+            categories: components["schemas"]["CategoryOut"][];
+        };
+        /** CategoryOut */
+        CategoryOut: {
+            /** Name */
+            name: string;
+            /** Builtin */
+            builtin: boolean;
+            /** Locked */
+            locked: boolean;
+            /** Assignable */
+            assignable: boolean;
+            /** Note */
+            note: string | null;
+            /** Transaction Count */
+            transaction_count: number;
+        };
+        /** CategoryRenameIn */
+        CategoryRenameIn: {
+            /** Name */
+            name: string;
+            /** New Name */
+            new_name: string;
+        };
+        /** CategorySpendOut */
+        CategorySpendOut: {
+            /** Category */
+            category: string;
+            /** Spend Sen */
+            spend_sen: number;
+            /** Count */
+            count: number;
+            /** Share */
+            share: number;
+        };
+        /** CategorySummaryOut */
+        CategorySummaryOut: {
+            /** Month */
+            month: string;
+            /** Income Sen */
+            income_sen: number;
+            /** Spend Sen */
+            spend_sen: number;
+            /** Gross Spend Sen */
+            gross_spend_sen: number;
+            /** Refund Sen */
+            refund_sen: number;
+            /** Savings Sen */
+            savings_sen: number;
+            /** Categories */
+            categories: components["schemas"]["CategorySpendOut"][];
         };
         /** ChangeOut */
         ChangeOut: {
@@ -1848,6 +1966,214 @@ export interface operations {
             };
         };
     };
+    list_categories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryListOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    add_category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request conflicts with the current state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_category: {
+        parameters: {
+            query: {
+                name: string;
+                move_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryDeleteOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request conflicts with the current state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    rename_category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRenameIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryChangeOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request conflicts with the current state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     months: {
         parameters: {
             query?: never;
@@ -1864,6 +2190,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MonthSummaryOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    categories: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategorySummaryOut"];
                 };
             };
             /** @description Not logged in, or the session is invalid */

@@ -159,6 +159,36 @@ class ScopedTable:
         updated = query.execute().data
         return updated[0] if updated else None
 
+    def update_matching(
+        self, user_id: str, equals: Mapping[str, Any], patch: Mapping[str, Any]
+    ) -> int:
+        """Apply `patch` to every one of the caller's rows where each `equals` column matches, and
+        return how many rows changed. The ids are read first and written in batches, so no request
+        carries more than IN_BATCH ids and a large ledger is never cut short by the row cap. At
+        least one condition is required: this can never rewrite every row a user has."""
+        uid = require_user_id(user_id)
+        if not equals:
+            raise ValueError("update_matching needs at least one column to match on")
+        if not patch:
+            raise ValueError("update_matching needs something to change")
+        if OWNER_COLUMN in patch or ID_COLUMN in patch:
+            raise ValueError("user_id and id cannot be changed by an update")
+        if OWNER_COLUMN in equals:
+            raise ValueError("user_id cannot be passed as a condition; it is the first argument")
+        ids = [r[ID_COLUMN] for r in self.list_rows(uid, columns=ID_COLUMN, **equals)]
+        changed = 0
+        for start in range(0, len(ids), IN_BATCH):
+            updated = (
+                self._db.table(self._table)
+                .update(dict(patch))
+                .eq(OWNER_COLUMN, uid)
+                .in_(ID_COLUMN, ids[start : start + IN_BATCH])
+                .execute()
+                .data
+            )
+            changed += len(updated)
+        return changed
+
     def delete(self, user_id: str, row_id: str) -> bool:
         uid = require_user_id(user_id)
         if not is_uuid(row_id):

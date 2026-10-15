@@ -22,6 +22,7 @@ TABLES = (
     "bnpl_installments",
     "transactions",
     "provider_limits",
+    "user_categories",
 )
 
 
