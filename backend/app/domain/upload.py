@@ -156,25 +156,36 @@ def _scan_cells(archive: zipfile.ZipFile, part: zipfile.ZipInfo) -> None:
     entity declaration is refused outright."""
     row_cells = 0
     cells = 0
+    in_row = False
 
     def refuse(*_args: object) -> None:
         raise _unreadable()
 
     def start(name: str, _attributes: object) -> None:
-        nonlocal row_cells, cells
+        nonlocal row_cells, cells, in_row
         local = name.rsplit("}", 1)[-1]
         if local == "row":
             row_cells = 0
+            in_row = True
         elif local == "c":
-            row_cells += 1
             cells += 1
-            if row_cells > MAX_COLUMNS + 1:
-                raise too_many_columns()
             if cells > MAX_CELLS_PER_SHEET:
                 raise _too_large()
+            # Only a cell inside a sheet row is a column. Excel's formula chain (calcChain.xml)
+            # lists one <c> per formula with no row around it, so it must not count as one wide row.
+            if in_row:
+                row_cells += 1
+                if row_cells > MAX_COLUMNS + 1:
+                    raise too_many_columns()
+
+    def end(name: str) -> None:
+        nonlocal in_row
+        if name.rsplit("}", 1)[-1] == "row":
+            in_row = False
 
     parser = expat.ParserCreate(namespace_separator="}")
     parser.StartElementHandler = start
+    parser.EndElementHandler = end
     parser.StartDoctypeDeclHandler = refuse
     parser.EntityDeclHandler = refuse
     parser.ExternalEntityRefHandler = refuse

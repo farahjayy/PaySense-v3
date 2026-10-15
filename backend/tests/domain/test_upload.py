@@ -245,6 +245,33 @@ def test_too_many_rows_in_a_workbook_are_refused():
     assert err.value.code == "CSV_TOO_MANY_ROWS"
 
 
+def with_calc_chain(book: bytes, entries: int) -> bytes:
+    """The workbook plus an `xl/calcChain.xml` like Excel writes for a sheet full of formulas: one
+    `<c>` per formula cell, none of them inside a `<row>`."""
+    chain = "".join(f'<c r="A{i}" i="1"/>' for i in range(1, entries + 1))
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<calcChain xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">{chain}'
+        "</calcChain>"
+    )
+    out = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(book)) as source, zipfile.ZipFile(out, "w") as target:
+        for part in source.infolist():
+            target.writestr(part, source.read(part))
+        target.writestr("xl/calcChain.xml", xml)
+    return out.getvalue()
+
+
+def test_a_workbook_with_many_formulas_is_not_mistaken_for_a_wide_sheet():
+    # Found on the author's own workbook: Excel's formula chain lists every formula cell outside
+    # any row, and counting those as one row refused the file as "more than 64 columns".
+    book = with_calc_chain(excel(TABLE), entries=MAX_COLUMNS + 20)
+
+    preview = parse_upload("excel", book)
+
+    assert len(preview.rows) == len(TABLE) - 1
+
+
 def test_too_many_columns_in_a_workbook_are_refused():
     wide = [[f"c{i}" for i in range(MAX_COLUMNS + 1)], [1] * (MAX_COLUMNS + 1)]
 

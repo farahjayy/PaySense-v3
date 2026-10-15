@@ -68,3 +68,6 @@ uat/testers.csv
 # UAT reports of real runs stay local too; only the report made from the invented example is committed
 reports/uat/*
 !reports/uat/example*
+
+# Author's working material: real bank statements and screenshots. Public repo (D-14): never commit.
+progress_material/

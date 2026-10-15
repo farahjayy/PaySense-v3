@@ -54,6 +54,54 @@ def test_merchant_text_is_normalised_so_references_and_dates_do_not_split_a_grou
     assert normalise_merchant(None) == ""
 
 
+def test_month_names_do_not_split_a_group():
+    # Students write the month into the description: "Rent july", "June PESP Allowance".
+    assert normalise_merchant("Rent july") == normalise_merchant("Rent AUGUST") == "rent"
+    assert normalise_merchant("June PESP Allowance") == "pesp allowance"
+    assert normalise_merchant("utilities sept 2026") == "utilities"
+    assert normalise_merchant("Allowance - Dec") == "allowance"
+
+
+def test_a_word_that_only_starts_like_a_month_is_left_alone():
+    assert normalise_merchant("Maybank transfer") == "maybank transfer"
+    assert normalise_merchant("Mayflower Cafe") == "mayflower cafe"
+    assert normalise_merchant("Marina Decor") == "marina decor"
+
+
+def test_a_description_that_is_only_a_month_has_no_merchant_text():
+    assert normalise_merchant("July") == ""
+
+
+def test_rent_with_the_month_in_its_text_and_an_irregular_day_is_one_monthly_item():
+    # Paid on the 25th, 28th, 30th and the 1st: the author's own pattern.
+    rows = [
+        row(date(2026, 1, 25), 45000, "Rent january"),
+        row(date(2026, 2, 28), 45000, "Rent february"),
+        row(date(2026, 3, 30), 45000, "Rent march"),
+        row(date(2026, 5, 1), 45000, "Rent april"),
+        row(date(2026, 5, 28), 45000, "Rent may"),
+    ]
+
+    found = by_name(detect(rows))
+
+    assert list(found) == ["rent"]
+    assert (found["rent"].cadence, found["rent"].occurrences) == ("monthly", 5)
+
+
+def test_an_allowance_named_for_each_month_is_one_monthly_income():
+    rows = [
+        row(date(2026, 1, 1), 100000, "January PESP Allowance", "income", "Allowance"),
+        row(date(2026, 2, 1), 100000, "February PESP Allowance", "income", "Allowance"),
+        row(date(2026, 3, 1), 100000, "March PESP Allowance", "income", "Allowance"),
+        row(date(2026, 4, 1), 100000, "April PESP Allowance", "income", "Allowance"),
+    ]
+
+    found = by_name(detect(rows))
+
+    assert found["pesp allowance"].kind == "income"
+    assert found["pesp allowance"].cadence == "monthly"
+
+
 def test_a_monthly_bill_is_suggested_with_its_amount_cadence_and_latest_date():
     found = by_name(detect(monthly("Sewa bilik", 45000, day=1)))
 
