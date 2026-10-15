@@ -65,7 +65,7 @@ export function RecurringScreen() {
     <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader
         title="Recurring items"
-        intro="Bills and income that repeat. Confirmed items are counted in your forecast on their schedule, so a bill that has not landed yet is not forgotten."
+        intro="Rent, allowance, PTPTN, subscriptions: money that leaves or arrives on a regular schedule. Confirm them and the forecast puts each one on its date, so it only has to guess your everyday spending. The day can move a little (the 25th one month, the 1st the next): a payment within a week of its date counts as the same one."
         actions={
           <Button variant="accent" onClick={() => setDialogue({ kind: "add" })}>
             Add an item

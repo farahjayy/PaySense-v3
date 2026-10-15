@@ -36,4 +36,35 @@ describe("MarginFan", () => {
     expect(within(november).getByText("RM 800.00")).toBeInTheDocument();
     expect(within(november).getByText("tightest")).toBeInTheDocument();
   });
+
+  it("names the columns in plain words: this month alone, then the total so far in three cases", () => {
+    render(<MarginFan simulation={SIM} />);
+
+    const table = screen.getByRole("table", { name: /forecast running margin by month/i });
+    const headers = within(table)
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent);
+    expect(headers).toEqual([
+      "Month",
+      "This month alone",
+      "Total so far, bad case",
+      "Total so far, typical",
+      "Total so far, good case",
+    ]);
+  });
+
+  it("says why the columns do not add up, instead of leaving the reader to think it is a mistake", () => {
+    render(<MarginFan simulation={SIM} />);
+
+    expect(screen.getByText(/do not add up line by line/i)).toBeInTheDocument();
+    expect(screen.getByText(/typical total is not the sum of the typical months/i)).toBeInTheDocument();
+  });
+
+  it("explains the chart in three short statements a student can check against it", () => {
+    render(<MarginFan simulation={SIM} />);
+
+    const caption = screen.getByText(/the line is the most likely total/i).closest("figcaption");
+    expect(caption).toHaveTextContent("8 out of 10");
+    expect(caption).toHaveTextContent(/below the dashed line.*short/i);
+  });
 });

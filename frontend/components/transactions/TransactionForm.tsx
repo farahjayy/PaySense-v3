@@ -8,7 +8,7 @@ import { TextField } from "@/components/ui/fields";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import type { Transaction, TransactionInput } from "@/lib/api/queries";
 import { todayIso } from "@/lib/format";
-import { CATEGORIES, type RowType } from "@/lib/import";
+import type { RowType } from "@/lib/import";
 
 const TYPES: readonly { value: RowType; label: string }[] = [
   { value: "expense", label: "Spending" },
@@ -18,6 +18,8 @@ const TYPES: readonly { value: RowType; label: string }[] = [
 
 type Props = {
   initial?: Transaction;
+  /** The names that can be chosen; the transaction's own category is added if it is not among them. */
+  categories: readonly string[];
   saving: boolean;
   error: string | null;
   onSubmit: (input: TransactionInput) => void;
@@ -25,18 +27,23 @@ type Props = {
 };
 
 /** Add or correct one transaction. Amounts are typed in ringgit and sent as whole sen. */
-export function TransactionForm({ initial, saving, error, onSubmit, onCancel }: Props) {
+export function TransactionForm({
+  initial,
+  categories: choices,
+  saving,
+  error,
+  onSubmit,
+  onCancel,
+}: Props) {
   const [date, setDate] = useState(initial?.date ?? todayIso());
   const [type, setType] = useState<RowType>(initial?.type ?? "expense");
-  const [category, setCategory] = useState(initial?.category ?? "Food");
+  const [category, setCategory] = useState(initial?.category ?? choices[0] ?? "Other");
   const [amountSen, setAmountSen] = useState<number | null>(initial?.amount_sen ?? null);
   const [description, setDescription] = useState(initial?.description ?? "");
 
   const valid = date !== "" && amountSen !== null && amountSen > 0;
   const reason = date === "" ? "Choose a date." : "Enter an amount greater than zero.";
-  const categories = CATEGORIES.includes(category as (typeof CATEGORIES)[number])
-    ? CATEGORIES
-    : [...CATEGORIES, category];
+  const categories = choices.includes(category) ? choices : [...choices, category];
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();

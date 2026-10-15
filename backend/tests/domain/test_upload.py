@@ -408,3 +408,69 @@ def test_the_template_also_imports_when_opened_and_saved_as_a_workbook():
     preview = parse_upload("excel", excel(rows))
 
     assert [r.category_guess for r in preview.rows] == ["Food", "Transport", "Allowance"]
+
+
+# ---------------------------------------------------------------- guard bypasses found in review
+SHEET_HEAD = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+)
+SHEET_TAIL = "</sheetData></worksheet>"
+
+
+def with_sheet_xml(sheet_xml: str, *, rename_to: str | None = None) -> bytes:
+    """A valid workbook whose first sheet is replaced by `sheet_xml`, optionally stored under a
+    different file name (the relationship and content type follow it)."""
+    out = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(excel(TABLE))) as source, zipfile.ZipFile(out, "w") as target:
+        for part in source.infolist():
+            data = source.read(part)
+            name = part.filename
+            if name == "xl/worksheets/sheet1.xml":
+                data = sheet_xml.encode()
+                if rename_to:
+                    name = rename_to
+            elif rename_to and name in ("xl/_rels/workbook.xml.rels", "[Content_Types].xml"):
+                data = data.replace(b"xl/worksheets/sheet1.xml", rename_to.encode())
+                data = data.replace(b"/xl/worksheets/sheet1.xml", ("/" + rename_to).encode())
+            target.writestr(name, data)
+    return out.getvalue()
+
+
+def test_a_row_nested_inside_a_row_is_refused_not_used_to_hide_a_wide_row():
+    # Nested rows are not valid spreadsheet XML. Closing the inner one used to switch the column
+    # count off for the rest of the outer one, so an arbitrarily wide row got past the scan.
+    cells = "".join(f'<c r="A{i}"/>' for i in range(MAX_COLUMNS * 3))
+    sheet = f'{SHEET_HEAD}<row r="1"><row r="2"/>{cells}</row>{SHEET_TAIL}'
+
+    with pytest.raises(CsvImportError) as err:
+        read_workbook(with_sheet_xml(sheet))
+
+    assert err.value.code in {"EXCEL_UNREADABLE", "CSV_PARSE_FAILED"}
+
+
+def test_a_sheet_stored_under_a_name_that_is_not_dot_xml_is_scanned_like_any_other():
+    # The scan used to look only at parts named *.xml, so a sheet renamed to sheet1.bin (with its
+    # relationship pointing at it) skipped every size and cell limit.
+    rows = "".join(
+        f'<row r="{r}">' + "".join(f'<c r="A{r}"/>' for _ in range(50)) + "</row>"
+        for r in range(1, 4200)
+    )
+    sheet = SHEET_HEAD + rows + SHEET_TAIL
+
+    with pytest.raises(CsvImportError) as err:
+        read_workbook(with_sheet_xml(sheet, rename_to="xl/worksheets/sheet1.bin"))
+
+    assert err.value.code == "EXCEL_TOO_LARGE"
+
+
+def test_a_picture_or_other_binary_part_is_still_left_alone():
+    out = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(excel(TABLE))) as source, zipfile.ZipFile(out, "w") as target:
+        for part in source.infolist():
+            target.writestr(part, source.read(part))
+        target.writestr("xl/media/image1.png", b"\x89PNG\r\n\x1a\n" + b"\x00" * 5000)
+
+    preview = parse_upload("excel", out.getvalue())
+
+    assert len(preview.rows) == len(TABLE) - 1

@@ -27,7 +27,7 @@ function axisLabel(sen: number): string {
 }
 
 /**
- * Running margin month by month: the line is the most likely path, the shaded band is where it
+ * Running margin month by month: the line is the most likely total, the shaded band is where it
  * lands in 8 of 10 simulated futures, and below the zero line means short of money. The chart is
  * decoration for the table beneath it, which carries the same numbers.
  */
@@ -94,9 +94,10 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <figcaption className="mt-2 text-[12px] leading-relaxed text-ink-secondary">
-        The line is the most likely running margin. The shaded band is where it lands in 8 of 10
-        simulated futures. Below the dashed line you would be short.
+      <figcaption className="mt-2 space-y-0.5 text-[12px] leading-relaxed text-ink-secondary">
+        <p>The line is the most likely total for each month-end.</p>
+        <p>The shaded area is where the total lands in 8 out of 10 simulated futures.</p>
+        <p>Below the dashed line (RM 0) you would be short of money.</p>
       </figcaption>
       <details className="mt-3 rounded-lg border border-line bg-surface-2 px-4 py-2.5 text-[13px]">
         <summary className="cursor-pointer font-medium text-ink">Show the numbers</summary>
@@ -106,7 +107,7 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
           aria-label="Forecast numbers, scrollable"
           tabIndex={0}
         >
-          <table className="w-full min-w-[34rem] text-left tabular-nums">
+          <table className="w-full min-w-[30rem] text-left tabular-nums">
             <caption className="sr-only">Forecast running margin by month</caption>
             <thead className="text-[11px] uppercase tracking-wide text-ink-muted">
               <tr>
@@ -114,16 +115,16 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
                   Month
                 </th>
                 <th scope="col" className="py-1.5 pr-3 text-right font-medium">
-                  That month
+                  This month alone
                 </th>
                 <th scope="col" className="py-1.5 pr-3 text-right font-medium">
-                  Running, low
+                  Total so far, bad case
                 </th>
                 <th scope="col" className="py-1.5 pr-3 text-right font-medium">
-                  Running, likely
+                  Total so far, typical
                 </th>
                 <th scope="col" className="py-1.5 text-right font-medium">
-                  Running, high
+                  Total so far, good case
                 </th>
               </tr>
             </thead>
@@ -143,6 +144,10 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
             </tbody>
           </table>
         </div>
+        <p className="mt-2 text-[12px] leading-relaxed text-ink-secondary">
+          Each figure is a typical value worked out on its own, so the columns do not add up line
+          by line: the typical total is not the sum of the typical months.
+        </p>
       </details>
     </figure>
   );

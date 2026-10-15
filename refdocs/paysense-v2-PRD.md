@@ -253,6 +253,10 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-40 | The risk model is served as ONNX with a calibrator stored as numbers; reasons are exact Shapley values against a stored reference student, threshold 0.02; start-up refuses a model whose feature hash, simulation constants or forecast-model checksums differ | The API image cannot carry shap and a tree library; contributions must be on the calibrated scale the student sees; v1's silent train/serve mismatch must not recur |
 | D-41 | Smallest change = fixed grid (instalments, wait for income, price cut, other provider), one change before two, written effort order, first that reaches Safe, else an honest none | Explainable, cannot recommend what the model does not rate safe; the order is what makes 'smallest' defensible |
 | D-42 | Import reads .xlsx/.xlsm (every sheet with a table; skipped sheets named) and takes a file's own Type and Category columns as written; header found in the first 30 rows; workbooks are size-checked before parsing | The importer trusted a guess over data the person typed; students keep budgets in Excel; a workbook is untrusted input on a small worker |
+| D-43 | Twelve built-in categories plus BNPL are locked; the person's own are added, renamed and deleted (delete moves or merges), stored in `user_categories` (migration 0002); names travel in body or query, never the path | The engines key off Refund, Transfer and BNPL; her own file brought in categories the app could not manage |
+| D-44 | Merchant text ignores month names ("Rent july" = "Rent august") | Each month looked like a different payee, so monthly items were never detected or matched |
+| D-45 | Spending by category uses the month summary's definition of spent; transfers ignored, refunds netted off the total, savings shown beside spending (`ASSUMED:` not subtracted), BNPL its own row | One definition of "spent" on every screen |
+| D-46 | The plan preview carries `fee_sen` and `total_cost_sen` from the server; the card says who pays what | The frontend computes no money; the old labels hid the fee and the real cost |
 
 ---
 

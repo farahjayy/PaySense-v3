@@ -366,6 +366,18 @@ def _frozen_row(out: RiskCheckOut, request: PlanIn, features: dict[str, float]) 
     }
 
 
+def _stored_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    """The stored plan, with the fee and total cost added if the report was saved before they
+    existed. They are the same sums the preview makes, from figures that were frozen with it."""
+    if "fee_sen" in plan and "total_cost_sen" in plan:
+        return plan
+    return {
+        **plan,
+        "fee_sen": max(plan["total_payable_sen"] - plan["financed_sen"], 0),
+        "total_cost_sen": plan["upfront_sen"] + plan["total_payable_sen"],
+    }
+
+
 def _from_row(row: dict[str, Any]) -> RiskCheckOut:
     stored = row["input"]
     notes = stored["notes"]
@@ -377,7 +389,7 @@ def _from_row(row: dict[str, Any]) -> RiskCheckOut:
         stale_days=notes["stale_days"],
         unmatched_items=notes["unmatched_items"],
         suspect_months=notes["suspect_months"],
-        plan=stored["plan"],
+        plan=_stored_plan(stored["plan"]),
         probability=float(row["p"]),
         band=risk_checks.BANDS[row["label"]],
         score=row["score"],

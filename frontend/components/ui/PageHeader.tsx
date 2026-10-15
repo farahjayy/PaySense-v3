@@ -15,7 +15,7 @@ export function PageHeader({ title, intro, actions }: Props) {
         </h1>
         {intro && <p className="mt-1.5 text-[14px] leading-relaxed text-ink-secondary">{intro}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
   );
 }

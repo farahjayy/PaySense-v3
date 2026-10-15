@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { BAND_COPY, formatDate, formatMonth, formatPercent, plural } from "@/lib/format";
+import {
+  BAND_COPY,
+  formatDate,
+  formatMonth,
+  formatMonthCompact,
+  formatPercent,
+  plural,
+} from "@/lib/format";
 
 describe("formatDate", () => {
   it("reads the day from the text so no time zone can move it", () => {
@@ -23,6 +30,19 @@ describe("formatMonth", () => {
   it("hands back what it cannot read", () => {
     expect(formatMonth("May")).toBe("May");
     expect(formatMonth("2025-00")).toBe("2025-00");
+  });
+});
+
+describe("formatMonthCompact", () => {
+  it("is three letters and the whole year, so September and February fit a narrow column", () => {
+    expect(formatMonthCompact("2026-02")).toBe("Feb 2026");
+    expect(formatMonthCompact("2025-09")).toBe("Sep 2025");
+    expect(formatMonthCompact("2026-05")).toBe("May 2026");
+  });
+
+  it("hands back what it cannot read", () => {
+    expect(formatMonthCompact("May")).toBe("May");
+    expect(formatMonthCompact("2025-13")).toBe("2025-13");
   });
 });
 

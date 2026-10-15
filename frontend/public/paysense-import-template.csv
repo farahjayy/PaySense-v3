@@ -1,0 +1,4 @@
+type,date,item,amount,category
+expense,2026-06-01,Nasi lemak,6.50,Food
+expense,2026-06-02,Bus to campus,3.00,Transport
+income,2026-06-05,PESP Allowance,1000.00,Allowance

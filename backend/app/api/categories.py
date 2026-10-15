@@ -3,40 +3,47 @@
 Names travel in the body or the query string, never in the path: "Drink/Dessert" has a slash.
 """
 
+import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 
-from app.api.deps import CurrentUser, DbDep
+from app.api.deps import CurrentUser, DbDep, rate_limited
 from app.api.schemas import CONFLICT_RESPONSE, NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
 from app.api.types import text
 from app.core.errors import conflict, not_found, unprocessable
 from app.db import categories, transactions
+from app.db.client import Database
 from app.domain.categories import (
-    APP_ASSIGNED,
+    CHANGES_THE_MATHS,
+    MAX_NAME_LENGTH,
     CategoryEntry,
     build_listing,
     clean_name,
     locked_name,
 )
 
+logger = logging.getLogger("paysense")
+
 router = APIRouter(prefix="/categories", tags=["categories"], responses=PROTECTED_RESPONSES)
 
 NameQuery = Annotated[str, Query(min_length=1, max_length=200)]
+# Writes read the whole ledger (to count and to move rows), so one person cannot spam them.
+WRITE_LIMIT = rate_limited("categories-write", 20, 60)
 
 
 class CategoryIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: text(80)
+    name: text(MAX_NAME_LENGTH)
 
 
 class CategoryRenameIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: text(200)
-    new_name: text(80)
+    new_name: text(MAX_NAME_LENGTH)
 
 
 class CategoryOut(ApiModel):
@@ -65,8 +72,17 @@ def _out(entry: CategoryEntry) -> CategoryOut:
     return CategoryOut(**vars(entry))
 
 
-def _listing(db: DbDep, user_id: str) -> list[CategoryEntry]:
+def _listing(db: Database, user_id: str) -> list[CategoryEntry]:
     return build_listing(categories.names(db, user_id), transactions.category_counts(db, user_id))
+
+
+def _entry(db: Database, user_id: str, name: str) -> CategoryEntry:
+    """The listing entry for `name` after a write. If it has vanished (a concurrent delete), say so
+    rather than fail with a server error."""
+    found = next((e for e in _listing(db, user_id) if e.name == name), None)
+    if found is None:
+        raise not_found("category_not_found", "That category no longer exists.")
+    return found
 
 
 def _usable_name(raw: str) -> str:
@@ -93,7 +109,7 @@ def _own(entries: list[CategoryEntry], name: str) -> CategoryEntry:
     return entry
 
 
-def _exists() -> Exception:
+def _exists() -> HTTPException:
     return conflict("category_exists", "A category with that name already exists.")
 
 
@@ -102,7 +118,13 @@ def list_categories(user: CurrentUser, db: DbDep) -> CategoryListOut:
     return CategoryListOut(categories=[_out(e) for e in _listing(db, user.id)])
 
 
-@router.post("", response_model=CategoryOut, status_code=201, responses=CONFLICT_RESPONSE)
+@router.post(
+    "",
+    response_model=CategoryOut,
+    status_code=201,
+    responses=CONFLICT_RESPONSE,
+    dependencies=[WRITE_LIMIT],
+)
 def add_category(body: CategoryIn, user: CurrentUser, db: DbDep) -> CategoryOut:
     name = _usable_name(body.name)
     if locked_name(name) is not None or _taken(_listing(db, user.id), name):
@@ -111,35 +133,56 @@ def add_category(body: CategoryIn, user: CurrentUser, db: DbDep) -> CategoryOut:
         categories.add(db, user.id, name)
     except categories.DuplicateCategory as err:
         raise _exists() from err
-    return _out(next(e for e in _listing(db, user.id) if e.name == name))
+    return _out(_entry(db, user.id, name))
+
+
+def _undo_name(db: Database, user_id: str, old: str, new: str, had_row: bool) -> None:
+    """Best effort: put the name back after the move of transactions failed. If this fails too the
+    two names are both listed, and deleting the old one with `move_to` the new one finishes it."""
+    try:
+        if had_row:
+            categories.rename(db, user_id, new, old)
+        else:
+            categories.remove(db, user_id, new)
+    except Exception:  # noqa: BLE001 - nothing more can be done here; the caller re-raises the cause
+        logger.exception("could not undo the category name change %r -> %r", old, new)
 
 
 @router.patch(
     "",
     response_model=CategoryChangeOut,
     responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
+    dependencies=[WRITE_LIMIT],
 )
 def rename_category(body: CategoryRenameIn, user: CurrentUser, db: DbDep) -> CategoryChangeOut:
-    """Rename one of the person's own categories; every transaction that used it follows."""
+    """Rename one of the person's own categories; every transaction that used it follows.
+
+    The name is written first: the unique index is the authority on a clash, so a clash is found
+    before any transaction has moved. If the move then fails, the name is put back."""
     entries = _listing(db, user.id)
     current = _own(entries, body.name)
     new_name = _usable_name(body.new_name)
     if locked_name(new_name) is not None or _taken(entries, new_name, except_name=current.name):
         raise _exists()
-    moved = transactions.recategorise(db, user.id, current.name, new_name)
     try:
-        if categories.rename(db, user.id, current.name, new_name) is None:
+        had_row = categories.rename(db, user.id, current.name, new_name) is not None
+        if not had_row:
             categories.add(db, user.id, new_name)  # it only existed on transactions until now
     except categories.DuplicateCategory as err:
         raise _exists() from err
-    renamed = next(e for e in _listing(db, user.id) if e.name == new_name)
-    return CategoryChangeOut(category=_out(renamed), moved=moved)
+    try:
+        moved = transactions.recategorise(db, user.id, current.name, new_name)
+    except Exception:
+        _undo_name(db, user.id, current.name, new_name, had_row)
+        raise
+    return CategoryChangeOut(category=_out(_entry(db, user.id, new_name)), moved=moved)
 
 
 @router.delete(
     "",
     response_model=CategoryDeleteOut,
     responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
+    dependencies=[WRITE_LIMIT],
 )
 def delete_category(
     name: NameQuery,
@@ -163,11 +206,13 @@ def delete_category(
         if (
             target is None
             or target.name == current.name
-            or target.name in APP_ASSIGNED
             or not target.assignable
+            or target.name in CHANGES_THE_MATHS
         ):
             raise unprocessable(
-                "invalid_move_target", "Choose a different, existing category to move them to."
+                "invalid_move_target",
+                "Choose a different, existing category to move them to. Refund and Transfer "
+                "change how money counts, so spending cannot be moved into them.",
             )
         moved = transactions.recategorise(db, user.id, current.name, target.name)
     categories.remove(db, user.id, current.name)

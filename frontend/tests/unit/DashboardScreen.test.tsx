@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -90,15 +90,27 @@ const SUMMARY = {
   history: null,
 };
 
-function respond(forecast: unknown) {
-  get.mockImplementation(async (path: string) => {
-    const data = path === "/api/forecast" ? forecast : path === "/api/bills" ? BILLS : SUMMARY;
-    return { data, error: undefined, response: { ok: true, status: 200 } };
-  });
+function respond(forecast: unknown, extra: Record<string, unknown> = {}) {
+  const data: Record<string, unknown> = {
+    "/api/forecast": forecast,
+    "/api/bills": BILLS,
+    "/api/summary/months": SUMMARY,
+    "/api/recurring-items": [],
+    "/api/provider-limits": [],
+    "/api/plans": [],
+    ...extra,
+  };
+  get.mockImplementation(async (path: string) => ({
+    data: data[path],
+    error: undefined,
+    response: { ok: true, status: 200 },
+  }));
 }
 
 describe("DashboardScreen", () => {
-  beforeEach(() => get.mockReset());
+  beforeEach(() => {
+    get.mockReset();
+  });
 
   it("shows the score, band, plain-language line and the chance of a shortfall", async () => {
     respond(OK);
@@ -150,7 +162,7 @@ describe("DashboardScreen", () => {
             response: { ok: false, status: 500 },
           }
         : {
-            data: path === "/api/bills" ? BILLS : SUMMARY,
+            data: path === "/api/bills" ? BILLS : path === "/api/summary/months" ? SUMMARY : [],
             error: undefined,
             response: { ok: true, status: 200 },
           },
@@ -159,5 +171,33 @@ describe("DashboardScreen", () => {
 
     expect(await screen.findByText("Forecast is unavailable.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+  });
+
+  it("says in plain words what the running margin starts from and what each point means", async () => {
+    respond(OK);
+    render(<DashboardScreen />, { wrapper });
+
+    expect(await screen.findByText(/imagine you start october 2026 with rm 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/by the end of each month/i)).toBeInTheDocument();
+  });
+
+  it("tells a student what to do next, and why, while steps are still open", async () => {
+    respond(OK);
+    render(<DashboardScreen />, { wrapper });
+
+    const steps = await screen.findByRole("list", { name: /getting started steps/i });
+    expect(within(steps).getByText("Confirm your regular bills and income")).toBeInTheDocument();
+    expect(within(steps).getByRole("link", { name: /recurring items/i })).toHaveAttribute(
+      "href",
+      "/recurring",
+    );
+  });
+
+  it("puts the instalments and the recent months side by side, both on the page", async () => {
+    respond(OK);
+    render(<DashboardScreen />, { wrapper });
+
+    expect(await screen.findByText("BNPL instalments due")).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: /income, spending and net by month/i })).toBeInTheDocument();
   });
 });

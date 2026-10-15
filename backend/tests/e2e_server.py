@@ -56,7 +56,7 @@ def build_e2e_app():
     usernames = [E2E_USERNAME] + [
         f"{E2E_USERNAME}-{project}-{journey}"
         for project in ("desktop", "phone")
-        for journey in ("import", "screens", "risk")
+        for journey in ("import", "screens", "risk", "spending")
     ]
     for username in usernames:
         seed_user(db, username=username, display_name=E2E_DISPLAY_NAME, persona="frequent_bnpl")

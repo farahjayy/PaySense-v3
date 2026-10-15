@@ -169,6 +169,9 @@ export interface paths {
         /**
          * Rename Category
          * @description Rename one of the person's own categories; every transaction that used it follows.
+         *
+         *     The name is written first: the unique index is the authority on a clash, so a clash is found
+         *     before any transaction has moved. If the move then fails, the name is put back.
          */
         patch: operations["rename_category"];
         trace?: never;
@@ -1065,6 +1068,10 @@ export interface components {
             upfront_sen: number;
             /** Total Payable Sen */
             total_payable_sen: number;
+            /** Fee Sen */
+            fee_sen: number;
+            /** Total Cost Sen */
+            total_cost_sen: number;
             /** Cash At Purchase Sen */
             cash_at_purchase_sen: number;
             /** Monthly Fee Rate Pct */

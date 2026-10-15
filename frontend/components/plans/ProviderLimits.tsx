@@ -26,8 +26,10 @@ export function ProviderLimits() {
     <Card>
       <CardTitle>Your BNPL limits</CardTitle>
       <CardCaption>
-        Copy each limit from the provider&apos;s app. A new purchase above what is left is split:
-        the provider finances up to your remaining limit and you pay the rest at checkout.
+        Copy each limit from the provider&apos;s app. When a new purchase is more than what is left,
+        the provider pays the shop up to your remaining limit and you pay the rest yourself at
+        checkout. The risk check uses this, so it only counts what the provider would really
+        finance.
       </CardCaption>
       <div className="mt-4 space-y-4">
         {limits.isPending ? (

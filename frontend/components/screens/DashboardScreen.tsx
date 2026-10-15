@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 
+import { GettingStarted } from "@/components/dashboard/GettingStarted";
 import { BillsDue } from "@/components/forecast/BillsDue";
 import { Notices } from "@/components/forecast/Notices";
 import { RecentMonths } from "@/components/forecast/RecentMonths";
@@ -11,7 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { ErrorState, LockedState, Skeleton } from "@/components/ui/States";
 import { useBills, useForecast, useMonthSummary } from "@/lib/api/queries";
-import { formatPercent, plural } from "@/lib/format";
+import { formatMonth, formatPercent, plural } from "@/lib/format";
 import { notices, OUTLOOK_LINE } from "@/lib/forecast";
 import { useAuth } from "@/lib/session";
 
@@ -28,12 +29,17 @@ export function DashboardScreen() {
   const auth = useAuth();
   const name = auth.session?.user.display_name ?? "";
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader title={`Hi, ${name}`} intro="Where your money is heading, and what you owe." />
+      <GettingStarted />
       <Outlook />
-      <div className="grid gap-6 md:grid-cols-2">
-        <BillsCard />
-        <RecentCard />
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-2">
+          <BillsCard />
+        </div>
+        <div className="lg:col-span-3">
+          <RecentCard />
+        </div>
       </div>
     </div>
   );
@@ -72,8 +78,9 @@ function Outlook() {
       <Card>
         <CardTitle>Your running margin</CardTitle>
         <CardCaption>
-          Income minus spending and commitments, added up month by month from the start of this
-          month.
+          Imagine you start {formatMonth(sim.months[0])} with RM 0. Each point is how far ahead of
+          that, or short of it, you would be by the end of each month, after income, spending and
+          BNPL instalments.
         </CardCaption>
         <div className="mt-4">
           <MarginFan simulation={sim} />

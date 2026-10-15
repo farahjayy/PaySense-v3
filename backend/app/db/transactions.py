@@ -50,6 +50,15 @@ def _clean_text(value: object, field: str, *, required: bool) -> str | None:
     return text
 
 
+def _category(value: object) -> str:
+    """A category, trimmed; a built-in name in any case is stored spelled the app's way ("food" is
+    Food, "transfer" is Transfer), so it is never a look-alike that cannot be managed (ADR D-43)."""
+    text = _clean_text(value, "category", required=True)
+    if text is None:  # required=True already raised; this keeps the type honest
+        raise ValueError("category is required")
+    return locked_name(text) or text
+
+
 def _clean_row(row: Mapping[str, Any], *, source: str) -> dict[str, Any]:
     if row.get("type") not in TYPES:
         raise ValueError(f"type must be one of {sorted(TYPES)}")
@@ -59,7 +68,7 @@ def _clean_row(row: Mapping[str, Any], *, source: str) -> dict[str, Any]:
         "date": _clean_date(row["date"]),
         "amount_sen": _clean_amount(row.get("amount_sen")),
         "type": row["type"],
-        "category": _clean_text(row.get("category"), "category", required=True),
+        "category": _category(row.get("category")),
         "description": _clean_text(row.get("description"), "description", required=False),
         "account_name": _clean_text(row.get("account_name"), "account_name", required=False),
         "is_bnpl": bool(row.get("is_bnpl", False)),
@@ -162,7 +171,7 @@ def update(
             raise ValueError(f"type must be one of {sorted(TYPES)}")
         cleaned["type"] = patch["type"]
     if "category" in patch:
-        cleaned["category"] = _clean_text(patch["category"], "category", required=True)
+        cleaned["category"] = _category(patch["category"])
     for field in ("description", "account_name"):
         if field in patch:
             cleaned[field] = _clean_text(patch[field], field, required=False)

@@ -3,7 +3,7 @@
  * loading, error and refetch behaviour is the same everywhere and the types come only from the
  * backend's OpenAPI document. No money is computed here: amounts are integer sen as received.
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "./client";
 import { errorMessage } from "./errors";
@@ -28,6 +28,8 @@ export type ConfirmRow = Schemas["ConfirmRow"];
 export type RiskCheck = Schemas["RiskCheckOut"];
 export type RiskConfirm = Schemas["RiskConfirmOut"];
 export type ModelInfo = Schemas["ModelInfoOut"];
+export type Category = Schemas["CategoryOut"];
+export type CategorySummary = Schemas["CategorySummaryOut"];
 
 /** A failed API call, with the server's own sentence when it sent one. */
 export class ApiError extends Error {
@@ -77,6 +79,8 @@ export const queryKeys = {
   plans: ["plans"] as const,
   providers: ["providers"] as const,
   limits: ["limits"] as const,
+  categories: ["categories"] as const,
+  categorySummary: (month: string) => ["summary", "categories", month] as const,
 };
 
 export function useForecast() {
@@ -125,6 +129,8 @@ export function useTransactions(filters: TransactionFilters = {}) {
   return useQuery({
     queryKey: queryKeys.transactions(filters),
     queryFn: async () => unwrap(api.GET("/api/transactions", { params: { query: filters } })),
+    // keep showing the last list while the next month or filter loads, instead of a flash
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -140,6 +146,24 @@ export function useProviders() {
     queryKey: queryKeys.providers,
     queryFn: async () => unwrap(api.GET("/api/providers")),
     staleTime: Infinity, // provider rules do not change while the app is open
+  });
+}
+
+/** Every category the person can see: the built-in ones, then their own, with how many rows use each. */
+export function useCategories() {
+  return useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: async () => unwrap(api.GET("/api/categories")),
+  });
+}
+
+/** Where one month's spending went. Asked for only once a month is known. */
+export function useCategorySummary(month: string | null) {
+  return useQuery({
+    queryKey: queryKeys.categorySummary(month ?? ""),
+    queryFn: async () =>
+      unwrap(api.GET("/api/summary/categories", { params: { query: { month: month ?? "" } } })),
+    enabled: month !== null,
   });
 }
 
@@ -164,6 +188,7 @@ function useInvalidateLedger() {
         "transactions",
         "plans",
         "limits",
+        "categories",
       ].map((key) => client.invalidateQueries({ queryKey: [key] })),
     );
 }
@@ -412,5 +437,53 @@ export function useSetProviderLimit() {
         }),
       ),
     onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.limits }),
+  });
+}
+
+/** What a category change makes stale: the lists and totals that show category names. It cannot
+ * change the forecast, so the (expensive) forecast query is left alone. */
+function useInvalidateCategories() {
+  const client = useQueryClient();
+  return () =>
+    Promise.all(
+      ["categories", "summary", "transactions"].map((key) =>
+        client.invalidateQueries({ queryKey: [key] }),
+      ),
+    );
+}
+
+export function useAddCategory() {
+  const invalidate = useInvalidateCategories();
+  return useMutation({
+    mutationFn: async (name: string) => unwrap(api.POST("/api/categories", { body: { name } })),
+    onSuccess: () => {
+      void invalidate();
+    },
+  });
+}
+
+export function useRenameCategory() {
+  const invalidate = useInvalidateCategories();
+  return useMutation({
+    mutationFn: async ({ name, newName }: { name: string; newName: string }) =>
+      unwrap(api.PATCH("/api/categories", { body: { name, new_name: newName } })),
+    onSuccess: () => {
+      void invalidate();
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const invalidate = useInvalidateCategories();
+  return useMutation({
+    mutationFn: async ({ name, moveTo }: { name: string; moveTo?: string }) =>
+      unwrap(
+        api.DELETE("/api/categories", {
+          params: { query: moveTo ? { name, move_to: moveTo } : { name } },
+        }),
+      ),
+    onSuccess: () => {
+      void invalidate();
+    },
   });
 }

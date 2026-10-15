@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { RiskResult } from "@/components/risk/RiskResult";
+import { CategoriesScreen } from "@/components/screens/CategoriesScreen";
 import { DashboardScreen } from "@/components/screens/DashboardScreen";
 import { ImportScreen } from "@/components/screens/ImportScreen";
 import { ModelScreen } from "@/components/screens/ModelScreen";
@@ -133,6 +134,23 @@ const DATA: Record<string, unknown> = {
     history: null,
   },
   "/api/transactions": [TXN],
+  "/api/summary/categories": {
+    month: "2026-09",
+    income_sen: 1,
+    spend_sen: 1850,
+    gross_spend_sen: 1850,
+    refund_sen: 0,
+    savings_sen: 0,
+    categories: [{ category: "Food", spend_sen: 1850, count: 1, share: 1 }],
+  },
+  "/api/categories": {
+    categories: [
+      { name: "Food", builtin: true, locked: true, assignable: true, note: null, transaction_count: 1 },
+      { name: "Refund", builtin: true, locked: true, assignable: true, note: "Money back.", transaction_count: 0 },
+      { name: "BNPL", builtin: true, locked: true, assignable: false, note: "Added by plans.", transaction_count: 0 },
+      { name: "Gym", builtin: false, locked: false, assignable: true, note: null, transaction_count: 2 },
+    ],
+  },
   "/api/plans": [PLAN],
   "/api/providers": [],
   "/api/model-info": {
@@ -193,6 +211,7 @@ async function violations(container: HTMLElement) {
 const SCREENS: [string, ReactNode, string][] = [
   ["dashboard", <DashboardScreen key="d" />, "Caution"],
   ["transactions", <TransactionsScreen key="t" />, "Lunch"],
+  ["categories", <CategoriesScreen key="c" />, "Gym"],
   ["recurring", <RecurringScreen key="r" />, "Netflix"],
   ["plans", <PlansScreen key="p" />, "Headphones"],
   ["import", <ImportScreen key="i" />, "Choose a file"],
@@ -232,6 +251,8 @@ describe("accessibility (axe)", () => {
       financed_sen: 60000,
       upfront_sen: 0,
       total_payable_sen: 60000,
+      fee_sen: 0,
+      total_cost_sen: 60000,
       cash_at_purchase_sen: 0,
       monthly_fee_rate_pct: 0,
       num_installments: 2,

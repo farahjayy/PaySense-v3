@@ -37,4 +37,5 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-09-p7-frontend.md](2026-10-09-p7-frontend.md) | P7 Frontend: all screens, states, accessibility, browser journeys | In progress |
 | [2026-10-09-p8-deployment-prep.md](2026-10-09-p8-deployment-prep.md) | P8 Deployment preparation: container, blueprint, nonce CSP, runbook, smoke script | Done (nothing deployed) |
 | [2026-10-09-p9-uat-kit.md](2026-10-09-p9-uat-kit.md) | P9 UAT kit: instruments, roster seeding, persona dates, analysis script | In progress |
+| [2026-10-15-p7b-ledger-polish.md](2026-10-15-p7b-ledger-polish.md) | P7b Ledger polish: spending by category, categories, plainer wording, Excel guard, month names | Done (migration 0002 not applied to the real project) |
 | [2026-10-13-import-spreadsheets.md](2026-10-13-import-spreadsheets.md) | Import: Excel workbooks, and a file's own Type and Category columns taken as written | Done (not yet tried with a real .xlsx in a browser) |

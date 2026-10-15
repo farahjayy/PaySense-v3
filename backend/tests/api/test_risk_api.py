@@ -263,6 +263,26 @@ def test_the_frozen_report_reads_back_unchanged_after_the_ledger_changes(api, am
     assert frozen["check_id"] == confirmed["check_id"]
 
 
+def test_a_report_saved_before_the_fee_and_total_cost_were_added_still_reads_back(
+    api, amir, fake_db
+):
+    # Reports are frozen: an older one has a stored plan without fee_sen and total_cost_sen. They
+    # are worked out from the stored figures, with the same sums the preview uses.
+    fill(fake_db, "amir")
+    confirmed = api.post("/api/risk/confirm", json=body(), headers=amir).json()
+    stored_plan = fake_db.rows("risk_checks")[0]["input"]["plan"]
+    stored_plan.pop("fee_sen")
+    stored_plan.pop("total_cost_sen")
+
+    read = api.get(f"/api/risk/checks/{confirmed['check_id']}", headers=amir)
+
+    assert read.status_code == 200
+    plan = read.json()["plan"]
+    assert plan["fee_sen"] == plan["total_payable_sen"] - plan["financed_sen"]
+    assert plan["total_cost_sen"] == plan["upfront_sen"] + plan["total_payable_sen"]
+    assert plan == confirmed["check"]["plan"]
+
+
 def test_another_user_cannot_read_a_frozen_check(api, amir, siti, fake_db):
     fill(fake_db, "amir")
     check_id = api.post("/api/risk/confirm", json=body(), headers=amir).json()["check_id"]

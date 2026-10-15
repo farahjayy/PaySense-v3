@@ -16,6 +16,7 @@ type NavItem = { href: string; label: string; icon: string; mobile: boolean };
 const NAV_ITEMS: readonly NavItem[] = [
   { href: "/", label: "Dashboard", icon: "◫", mobile: true },
   { href: "/transactions", label: "Transactions", icon: "≡", mobile: true },
+  { href: "/categories", label: "Categories", icon: "#", mobile: false },
   { href: "/recurring", label: "Recurring", icon: "↻", mobile: false },
   { href: "/plans", label: "Plans", icon: "▤", mobile: true },
   { href: "/risk", label: "Risk check", icon: "◔", mobile: true },

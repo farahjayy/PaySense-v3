@@ -94,6 +94,7 @@ describe("AppShell", () => {
     for (const name of [
       "Dashboard",
       "Transactions",
+      "Categories",
       "Recurring",
       "Plans",
       "Risk check",
@@ -124,6 +125,10 @@ describe("AppShell", () => {
     expect(within(more).getByRole("link", { name: "About the model" })).toHaveAttribute(
       "href",
       "/model",
+    );
+    expect(within(more).getByRole("link", { name: "Categories" })).toHaveAttribute(
+      "href",
+      "/categories",
     );
   });
 

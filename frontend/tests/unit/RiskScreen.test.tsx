@@ -44,6 +44,8 @@ const PLAN = {
   financed_sen: 60000,
   upfront_sen: 0,
   total_payable_sen: 60000,
+  fee_sen: 0,
+  total_cost_sen: 60000,
   cash_at_purchase_sen: 0,
   monthly_fee_rate_pct: 0,
   num_installments: 3,

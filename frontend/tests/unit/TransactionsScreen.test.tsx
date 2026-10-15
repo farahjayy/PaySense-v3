@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TransactionsScreen } from "@/components/screens/TransactionsScreen";
 
@@ -73,45 +73,211 @@ function fail(status: number, code: string, message: string) {
   return { data: undefined, error: { detail: { code, message } }, response: { ok: false, status } };
 }
 
+const MONTHS = {
+  months: [
+    { month: "2026-09", income_sen: 0, spend_sen: 100, refund_sen: 0, savings_sen: 0, net_sen: -100 },
+    { month: "2026-10", income_sen: 120000, spend_sen: 6850, refund_sen: 0, savings_sen: 0, net_sen: 1 },
+  ],
+  history: null,
+};
+const SPENDING = {
+  month: "2026-10",
+  income_sen: 120000,
+  spend_sen: 6850,
+  gross_spend_sen: 6850,
+  refund_sen: 0,
+  savings_sen: 0,
+  categories: [
+    { category: "BNPL", spend_sen: 5000, count: 1, share: 0.73 },
+    { category: "Food", spend_sen: 1850, count: 1, share: 0.27 },
+  ],
+};
+const PLANS = [
+  {
+    id: "p1",
+    item_name: "Headphones",
+    provider_label: "SPayLater",
+    paid_count: 1,
+    num_installments: 3,
+  },
+];
+const CATEGORY_LIST = {
+  categories: [
+    ...["Food", "Transport", "Rent", "Salary", "Allowance", "Shopping", "Bills"].map((name) => ({
+      name,
+      builtin: true,
+      locked: true,
+      assignable: true,
+      note: null,
+      transaction_count: 0,
+    })),
+    {
+      name: "BNPL",
+      builtin: true,
+      locked: true,
+      assignable: false,
+      note: "x",
+      transaction_count: 1,
+    },
+    {
+      name: "Boyfriend Tax",
+      builtin: false,
+      locked: false,
+      assignable: true,
+      note: null,
+      transaction_count: 2,
+    },
+  ],
+};
+
+let transactions: unknown[] = ROWS;
+let categoryList: () => unknown = () => ok(CATEGORY_LIST);
+
+function route(path: string) {
+  switch (path) {
+    case "/api/summary/months":
+      return ok(MONTHS);
+    case "/api/transactions":
+      return ok(transactions);
+    case "/api/summary/categories":
+      return ok(SPENDING);
+    case "/api/plans":
+      return ok(PLANS);
+    case "/api/categories":
+      return categoryList();
+    default:
+      throw new Error(`unexpected GET ${path}`);
+  }
+}
+
+function transactionQueries(): Record<string, string>[] {
+  return get.mock.calls.filter((c) => c[0] === "/api/transactions").map((c) => c[1].params.query);
+}
+
 describe("TransactionsScreen", () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 15));
     for (const m of [get, post, patch, del]) m.mockReset();
-    get.mockResolvedValue(ok(ROWS));
+    transactions = ROWS;
+    categoryList = () => ok(CATEGORY_LIST);
+    get.mockImplementation(async (path: string) => route(path));
   });
 
-  it("lists transactions with signs, and sends plan payments to Plans instead of editing them", async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("lists transactions with signs, and shows a plan payment's plan instead of Edit and Delete", async () => {
     render(<TransactionsScreen />, { wrapper });
 
     expect(await screen.findByText("Lunch")).toBeInTheDocument();
     expect(screen.getByText("+RM 1,200.00")).toBeInTheDocument();
     expect(screen.getByText("3 transactions")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /edit headphones/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /managed in plans/i })).toHaveAttribute(
-      "href",
-      "/plans",
-    );
+    const box = screen.getByRole("link", { name: /managed in plans/i });
+    expect(box).toHaveAttribute("href", "/plans");
+    expect(within(box).getByText("SPayLater · Headphones")).toBeInTheDocument();
+    expect(within(box).getByText("1 of 3 paid")).toBeInTheDocument();
   });
 
-  it("asks the server for only what the filters say", async () => {
+  it("opens on the latest month that has data and asks the server for just that month", async () => {
     render(<TransactionsScreen />, { wrapper });
     await screen.findByText("Lunch");
 
-    await userEvent.selectOptions(screen.getByLabelText("Type"), "income");
+    expect(screen.getAllByText("October 2026").length).toBeGreaterThan(0);
+    expect(transactionQueries().at(-1)).toEqual({ start: "2026-10-01", end: "2026-10-31" });
+    expect(get).toHaveBeenCalledWith("/api/summary/categories", {
+      params: { query: { month: "2026-10" } },
+    });
+  });
+
+  it("steps back a month and loads that month, and cannot go past this month or before the first", async () => {
+    render(<TransactionsScreen />, { wrapper });
+    await screen.findByText("Lunch");
+    expect(screen.getByRole("button", { name: /next month/i })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: /previous month/i }));
 
     await waitFor(() =>
-      expect(get).toHaveBeenLastCalledWith("/api/transactions", {
-        params: { query: { type: "income" } },
+      expect(transactionQueries().at(-1)).toEqual({ start: "2026-09-01", end: "2026-09-30" }),
+    );
+    expect(screen.getByRole("button", { name: /previous month/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /next month/i })).toBeEnabled();
+  });
+
+  it("asks the server for only what the type and category say", async () => {
+    render(<TransactionsScreen />, { wrapper });
+    await screen.findByText("Lunch");
+
+    await userEvent.click(screen.getByRole("button", { name: "Income" }));
+    await waitFor(() =>
+      expect(transactionQueries().at(-1)).toEqual({
+        start: "2026-10-01",
+        end: "2026-10-31",
+        type: "income",
       }),
     );
     await userEvent.click(screen.getByRole("button", { name: /clear filters/i }));
     await waitFor(() =>
-      expect(get).toHaveBeenLastCalledWith("/api/transactions", { params: { query: {} } }),
+      expect(transactionQueries().at(-1)).toEqual({ start: "2026-10-01", end: "2026-10-31" }),
     );
   });
 
-  it("lists the categories in the ledger in the filter, including ones the person made up", async () => {
+  it("filters by a category picked in the spending panel, and again to let go", async () => {
+    render(<TransactionsScreen />, { wrapper });
+    await screen.findByText("Lunch");
+
+    const panel = await screen.findByRole("complementary", { name: /spending this month/i });
+    await userEvent.click(within(panel).getByRole("button", { name: /food/i }));
+
+    await waitFor(() => expect(transactionQueries().at(-1)).toMatchObject({ category: "Food" }));
+    expect(screen.getByLabelText("Category")).toHaveValue("Food");
+    await userEvent.click(within(panel).getByRole("button", { name: /food/i }));
+    await waitFor(() => expect(transactionQueries().at(-1)).not.toHaveProperty("category"));
+  });
+
+  it("narrows the list as the person types, without asking the server again", async () => {
+    render(<TransactionsScreen />, { wrapper });
+    await screen.findByText("Lunch");
+    const before = get.mock.calls.length;
+
+    await userEvent.type(screen.getByLabelText("Search"), "lun");
+
+    expect(screen.getByText("Lunch")).toBeInTheDocument();
+    expect(screen.queryByText("Headphones 1/3")).not.toBeInTheDocument();
+    expect(screen.getByText("1 transaction")).toBeInTheDocument();
+    expect(get.mock.calls.length).toBe(before);
+  });
+
+  it("says nothing matches, and offers to clear, when a search finds nothing", async () => {
+    render(<TransactionsScreen />, { wrapper });
+    await screen.findByText("Lunch");
+
+    await userEvent.type(screen.getByLabelText("Search"), "zzz");
+
+    expect(await screen.findByText("Nothing matches")).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole("button", { name: /clear filters/i })[0]);
+    expect(await screen.findByText("Lunch")).toBeInTheDocument();
+  });
+
+  it("offers the person's own categories, and not the one plans assign", async () => {
+    render(<TransactionsScreen />, { wrapper });
+    await screen.findByText("Lunch");
+
+    const filter = screen.getByLabelText("Category");
+
+    await waitFor(() =>
+      expect(within(filter).getByRole("option", { name: "Boyfriend Tax" })).toBeInTheDocument(),
+    );
+    expect(within(filter).getByRole("option", { name: "Food" })).toBeInTheDocument();
+    expect(within(filter).queryByRole("option", { name: "BNPL" })).not.toBeInTheDocument();
+  });
+
+  it("still offers the built-in categories and what the ledger uses when the category list fails", async () => {
+    categoryList = () => fail(500, "server_error", "Something went wrong on our side.");
     const own = { ...ROWS[0], id: "t4", category: "Hangout", description: "Cinema" };
-    get.mockResolvedValue(ok([...ROWS, own]));
+    transactions = [...ROWS, own];
     render(<TransactionsScreen />, { wrapper });
     await screen.findByText("Lunch");
 
@@ -175,12 +341,17 @@ describe("TransactionsScreen", () => {
   });
 
   it("shows an empty state and an error state", async () => {
-    get.mockResolvedValueOnce(ok([]));
+    transactions = [];
     const { unmount } = render(<TransactionsScreen />, { wrapper });
     expect(await screen.findByText("Nothing here yet")).toBeInTheDocument();
+    expect(screen.getByText(/nothing is logged for october 2026/i)).toBeInTheDocument();
     unmount();
 
-    get.mockResolvedValueOnce(fail(500, "server_error", "Something went wrong on our side."));
+    get.mockImplementation(async (path: string) =>
+      path === "/api/transactions"
+        ? fail(500, "server_error", "Something went wrong on our side.")
+        : route(path),
+    );
     render(<TransactionsScreen />, { wrapper });
     expect(await screen.findByText("Something went wrong on our side.")).toBeInTheDocument();
   });

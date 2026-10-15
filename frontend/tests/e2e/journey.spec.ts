@@ -53,6 +53,7 @@ test("every screen loads for a signed-in tester with its own title", async ({ pa
 
   const screens: [string, RegExp][] = [
     ["/transactions", /transactions/i],
+    ["/categories", /categories/i],
     ["/recurring", /recurring items/i],
     ["/plans", /bnpl plans/i],
     ["/import", /import/i],
@@ -112,5 +113,26 @@ test("a tester checks a purchase, tries the suggestion, adds the plan and reads 
 
   await page.goto("/plans");
   await expect(page.getByRole("heading", { name: "Laptop" })).toBeVisible();
+  expect(violations).toEqual([]);
+});
+
+test("the transactions page shows where the month went, and picking a category filters the list", async ({
+  page,
+}) => {
+  const violations = watchForCspViolations(page);
+  await signIn(page, "spending");
+  await page.getByRole("link", { name: "Import" }).first().click();
+  await page.getByLabel("Choose a statement file").setInputFiles(PERSONA_CSV);
+  await page.getByRole("button", { name: /^add \d+ transactions?$/i }).click();
+  await expect(page.getByText(/transactions added/i)).toBeVisible();
+
+  await page.goto("/transactions");
+  await expect(page.getByRole("heading", { name: "Spending by category" })).toBeVisible();
+  const panel = page.getByRole("complementary", { name: /spending this month/i });
+  const first = panel.getByRole("button").first();
+  await first.click();
+  await expect(first).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Clear filters" }).first()).toBeVisible();
+
   expect(violations).toEqual([]);
 });

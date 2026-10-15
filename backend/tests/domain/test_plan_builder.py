@@ -213,3 +213,43 @@ def test_a_remaining_limit_too_small_to_split_is_reported_as_an_exhausted_limit(
         rule("spaylater", 30000, 3, remaining_limit_sen=2)
 
     assert err.value.code == "limit_exhausted"
+
+
+# ------------------------------------------------------------------ what it costs, in plain figures
+def test_the_authors_camera_example_pays_now_borrows_pays_a_fee_and_costs_more_than_the_price():
+    # Price RM3,500, 6 instalments, 3% a month, RM2,300 of limit left. The fee counts against the
+    # limit (D-28), so only RM1,949.15 can be financed: RM1,949.15 + 18% = RM2,300.00.
+    p = rule("spaylater", 350000, 6, monthly_fee_rate_pct=3, remaining_limit_sen=230000)
+
+    assert p.upfront_sen == 155085
+    assert p.financed_sen == 194915
+    assert p.total_payable_sen == 230000
+    assert p.fee_sen == 35085
+    assert p.total_cost_sen == 385085  # RM3,850.85 in all: RM350.85 more than the price
+    assert p.total_cost_sen - p.total_price_sen == p.fee_sen
+
+
+def test_with_no_fee_the_total_cost_is_the_price():
+    p = rule("spaylater", 30000, 3)
+
+    assert (p.fee_sen, p.total_cost_sen) == (0, 30000)
+
+
+def test_an_atome_checkout_instalment_is_not_counted_twice_in_the_total_cost():
+    p = rule("atome", 30000, 3)  # the first instalment is paid at checkout and is part of the total
+
+    assert p.cash_at_purchase_sen == 10000
+    assert p.total_cost_sen == 30000
+
+
+def test_a_manual_provider_has_no_fee_because_none_is_known():
+    p = propose_plan(
+        provider="other",
+        purchase_date=PURCHASE,
+        num_instalments=3,
+        first_payment_date=date(2026, 10, 3),
+        provider_label="Grab PayLater",
+        total_payable_sen=10001,
+    )
+
+    assert (p.fee_sen, p.total_cost_sen) == (0, 10001)

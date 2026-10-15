@@ -51,6 +51,17 @@ class PlanProposal:
         return sum(i.amount_sen for i in self.instalments)
 
     @property
+    def fee_sen(self) -> int:
+        """What borrowing costs: the repayment less what was financed. Zero when no fee is known."""
+        return max(self.total_payable_sen - self.financed_sen, 0)
+
+    @property
+    def total_cost_sen(self) -> int:
+        """Everything the person pays for the purchase: the part paid up front plus every
+        instalment. One due at checkout is already among them, so it is not added twice."""
+        return self.upfront_sen + self.total_payable_sen
+
+    @property
     def cash_at_purchase_sen(self) -> int:
         """Cash leaving the user on the purchase date: the excess plus any instalment due at
         checkout (an Atome first payment)."""

@@ -7,6 +7,7 @@ imported as written (D-42), in which case it exists only on transactions until t
 """
 
 import re
+import unicodedata
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
@@ -36,18 +37,29 @@ NOTES = {
     BNPL: "Added by your BNPL plans when an instalment is paid. You cannot pick it by hand.",
 }
 
+# Moving transactions into these would change how they count (Refund takes them back out of
+# spending, Transfer leaves them out altogether), so they are never a move target (ADR D-43).
+CHANGES_THE_MATHS = frozenset({REFUND, TRANSFER, BNPL})
+
 _SPACES = re.compile(r"\s+")
-_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 _LOCKED_BY_FOLDED = {name.casefold(): name for name in LOCKED}
+# Control, format (zero-width, bidirectional overrides), private-use, surrogate and unassigned
+# characters make two names look the same and not be.
+_INVISIBLE = frozenset({"Cc", "Cf", "Co", "Cs", "Cn"})
+
+
+def _fold(name: str) -> str:
+    """NFKC, so a fullwidth or compatibility look-alike is the plain letter it imitates."""
+    return unicodedata.normalize("NFKC", name)
 
 
 def clean_name(raw: object) -> str:
     """The name as it will be stored; ValueError (with a sentence for the person) if unusable."""
     if not isinstance(raw, str):
         raise ValueError("Give the category a name.")
-    if _CONTROL.search(raw):
-        raise ValueError("A category name cannot contain line breaks or control characters.")
-    name = _SPACES.sub(" ", raw).strip()
+    if any(unicodedata.category(ch) in _INVISIBLE for ch in raw):
+        raise ValueError("A category name cannot contain line breaks or invisible characters.")
+    name = _SPACES.sub(" ", _fold(raw)).strip()
     if not any(ch.isalpha() for ch in name):
         raise ValueError("A category name needs at least one letter.")
     if len(name) > MAX_NAME_LENGTH:
@@ -57,7 +69,7 @@ def clean_name(raw: object) -> str:
 
 def locked_name(name: str) -> str | None:
     """The built-in name this matches, whatever its case, or None if it is the person's own."""
-    return _LOCKED_BY_FOLDED.get(_SPACES.sub(" ", name).strip().casefold())
+    return _LOCKED_BY_FOLDED.get(_SPACES.sub(" ", _fold(name)).strip().casefold())
 
 
 @dataclass(frozen=True)

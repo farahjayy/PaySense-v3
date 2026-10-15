@@ -84,6 +84,8 @@ class PlanPreviewOut(ApiModel):
     financed_sen: int
     upfront_sen: int
     total_payable_sen: int
+    fee_sen: int
+    total_cost_sen: int
     cash_at_purchase_sen: int
     monthly_fee_rate_pct: float
     num_installments: int
@@ -183,6 +185,8 @@ def preview_out(p: PlanProposal) -> PlanPreviewOut:
         financed_sen=p.financed_sen,
         upfront_sen=p.upfront_sen,
         total_payable_sen=p.total_payable_sen,
+        fee_sen=p.fee_sen,
+        total_cost_sen=p.total_cost_sen,
         cash_at_purchase_sen=p.cash_at_purchase_sen,
         monthly_fee_rate_pct=p.monthly_fee_rate_pct,
         num_installments=p.num_installments,

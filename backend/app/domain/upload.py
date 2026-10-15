@@ -138,13 +138,35 @@ def _check_archive(data: bytes) -> None:
         raise _unreadable() from err
 
 
+_BINARY_PREFIXES = ("xl/media/", "xl/embeddings/", "xl/printersettings/")
+UTF8_BOM = b"\xef\xbb\xbf"
+
+
+def _looks_like_xml(archive: zipfile.ZipFile, part: zipfile.ZipInfo) -> bool:
+    with archive.open(part) as stream:
+        head = stream.read(64)
+    return head.lstrip(UTF8_BOM + b" \t\r\n").startswith(b"<")
+
+
 def _check_part(archive: zipfile.ZipFile, part: zipfile.ZipInfo) -> None:
+    """Size and cell limits for every part that is XML. A part is judged by what it holds, not by
+    its file name: a sheet stored as `sheet1.bin`, with its relationship pointing there, is still
+    opened by openpyxl, so it must not slip past the scan."""
     name = part.filename.lower()
-    if not name.endswith(".xml"):
+    if part.is_dir() or name.startswith(_BINARY_PREFIXES):
+        return
+    by_name = name.endswith(".xml")
+    if not by_name and not _looks_like_xml(archive, part):
         return
     if part.file_size > _part_limit(name):
         raise _too_large()
-    _scan_cells(archive, part)
+    try:
+        _scan_cells(archive, part)
+    except expat.ExpatError:
+        # Legacy drawing parts (.vml) are often not well-formed XML. A worksheet that is not
+        # well-formed is refused by openpyxl itself, so only the .xml parts must parse here.
+        if by_name:
+            raise
 
 
 def _part_limit(name: str) -> int:
@@ -165,6 +187,8 @@ def _scan_cells(archive: zipfile.ZipFile, part: zipfile.ZipInfo) -> None:
         nonlocal row_cells, cells, in_row
         local = name.rsplit("}", 1)[-1]
         if local == "row":
+            if in_row:  # rows do not nest; one that does is a way to hide how wide a row is
+                raise _unreadable()
             row_cells = 0
             in_row = True
         elif local == "c":

@@ -32,6 +32,10 @@ export function Dialog({ open, title, onClose, dismissible = true, children }: P
     if (open && !dialog.open) {
       if (typeof dialog.showModal === "function") dialog.showModal();
       else dialog.setAttribute("open", "");
+      // React's autoFocus runs while the dialog is still hidden and silently fails, and showModal
+      // then focuses the first control (the close button). A field that should be ready to type
+      // in says so with data-autofocus, and gets focus here, once the dialog is showing.
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
     }
     if (!open && dialog.open) {
       if (typeof dialog.close === "function") dialog.close();

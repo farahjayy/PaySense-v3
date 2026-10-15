@@ -204,4 +204,20 @@ describe("ImportScreen", () => {
       within(alert.closest("[role=alert]") as HTMLElement).getByText(/bad date/i),
     ).toBeVisible();
   });
+
+  it("says plainly that PDFs are not read, and what to do about a PDF statement", () => {
+    render(<ImportScreen />, { wrapper });
+
+    expect(screen.getByText(/we read csv and excel files, not pdfs/i)).toBeInTheDocument();
+    expect(screen.getByText(/convert it to csv or excel first/i)).toBeInTheDocument();
+  });
+
+  it("offers the import template as a download", () => {
+    render(<ImportScreen />, { wrapper });
+
+    const link = screen.getByRole("link", { name: /download the import template/i });
+
+    expect(link).toHaveAttribute("href", "/paysense-import-template.csv");
+    expect(link).toHaveAttribute("download");
+  });
 });

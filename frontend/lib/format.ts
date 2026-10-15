@@ -34,6 +34,13 @@ export function formatMonth(key: string, short = false): string {
   return short ? `${month.slice(0, 3)} ${match[1].slice(2)}` : `${month} ${match[1]}`;
 }
 
+/** "2026-02" -> "Feb 2026": short enough for a narrow table column, with the year in full. */
+export function formatMonthCompact(key: string): string {
+  const match = ISO_MONTH.exec(key);
+  const month = match ? MONTHS[Number(match[2]) - 1] : undefined;
+  return match && month ? `${month.slice(0, 3)} ${match[1]}` : key;
+}
+
 /** 0.234 -> "23%"; anything above 0 that rounds to 0 is "under 1%"; 1 is "100%". */
 export function formatPercent(probability: number): string {
   const percent = Math.round(probability * 100);

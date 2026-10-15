@@ -59,13 +59,27 @@ def test_month_names_do_not_split_a_group():
     assert normalise_merchant("Rent july") == normalise_merchant("Rent AUGUST") == "rent"
     assert normalise_merchant("June PESP Allowance") == "pesp allowance"
     assert normalise_merchant("utilities sept 2026") == "utilities"
-    assert normalise_merchant("Allowance - Dec") == "allowance"
+    assert normalise_merchant("Allowance - December") == "allowance"
+    assert normalise_merchant("Gaji feb") == normalise_merchant("Gaji AUG") == "gaji"
 
 
 def test_a_word_that_only_starts_like_a_month_is_left_alone():
     assert normalise_merchant("Maybank transfer") == "maybank transfer"
     assert normalise_merchant("Mayflower Cafe") == "mayflower cafe"
     assert normalise_merchant("Marina Decor") == "marina decor"
+
+
+def test_malay_month_names_are_dropped_too():
+    assert normalise_merchant("Sewa Julai") == normalise_merchant("sewa OGOS") == "sewa"
+    assert normalise_merchant("Bil Disember") == normalise_merchant("Bil Januari") == "bil"
+
+
+def test_a_short_month_that_is_also_a_name_is_kept_so_different_people_stay_different():
+    # "Jun", "Jan", "Mar" and "Dec" are names; "Transfer to Jun" and "Transfer to Jan" are two
+    # payees, and merging them would invent a recurring item out of unrelated transfers.
+    assert normalise_merchant("Transfer to Jun") != normalise_merchant("Transfer to Jan")
+    assert normalise_merchant("Allowance from Mar") == "allowance from mar"
+    assert normalise_merchant("Dec") == "dec"
 
 
 def test_a_description_that_is_only_a_month_has_no_merchant_text():

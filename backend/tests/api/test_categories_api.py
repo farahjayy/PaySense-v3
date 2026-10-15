@@ -300,3 +300,117 @@ def test_a_rename_only_moves_the_callers_transactions(api, amir, siti):
 )
 def test_every_route_needs_a_login(api, method, kwargs):
     assert getattr(api, method)("/api/categories", **kwargs).status_code == 401
+
+
+# ------------------------------------------------------------------ found in review
+def test_a_rename_the_database_refuses_moves_no_transactions(api, amir, monkeypatch):
+    # The name is written first, so a clash the database catches (a second tab, case rules that
+    # differ) happens before any transaction has moved and there is nothing to undo.
+    from app.api import categories as routes
+
+    add(api, amir, "Gym")
+    spend(api, amir, "Gym")
+
+    def clash(*_args, **_kwargs):
+        raise routes.categories.DuplicateCategory("taken")
+
+    monkeypatch.setattr(routes.categories, "rename", clash)
+
+    res = rename(api, amir, "Gym", "Fitness")
+
+    assert res.status_code == 409 and code(res) == "category_exists"
+    assert listing(api, amir)["Gym"]["transaction_count"] == 1
+
+
+def test_a_rename_whose_move_fails_puts_the_name_back(api, amir, monkeypatch):
+    from app.api import categories as routes
+
+    add(api, amir, "Gym")
+    spend(api, amir, "Gym")
+
+    def broken(*_args, **_kwargs):
+        raise RuntimeError("the connection dropped")
+
+    monkeypatch.setattr(routes.transactions, "recategorise", broken)
+    with pytest.raises(RuntimeError):
+        rename(api, amir, "Gym", "Fitness")
+
+    entries = listing(api, amir)
+    assert "Fitness" not in entries
+    assert entries["Gym"]["transaction_count"] == 1
+
+
+def test_a_failed_rename_of_a_category_only_a_file_carried_leaves_no_new_name_behind(
+    api, amir, monkeypatch
+):
+    from app.api import categories as routes
+
+    spend(api, amir, "Self Care")
+
+    def broken(*_args, **_kwargs):
+        raise RuntimeError("the connection dropped")
+
+    monkeypatch.setattr(routes.transactions, "recategorise", broken)
+    with pytest.raises(RuntimeError):
+        rename(api, amir, "Self Care", "Selfcare")
+
+    entries = listing(api, amir)
+    assert "Selfcare" not in entries
+    assert entries["Self Care"]["transaction_count"] == 1
+
+
+@pytest.mark.parametrize("target", ["Refund", "Transfer", "refund", "transfer"])
+def test_transactions_cannot_be_moved_into_refund_or_transfer(api, amir, target):
+    # Refund and Transfer change how a row counts (back out of spending; left out altogether), so
+    # moving spending into them would silently change the month and the forecast.
+    add(api, amir, "Gym")
+    spend(api, amir, "Gym")
+
+    res = delete(api, amir, "Gym", move_to=target)
+
+    assert res.status_code == 422 and code(res) == "invalid_move_target"
+    assert listing(api, amir)["Gym"]["transaction_count"] == 1
+
+
+@pytest.mark.parametrize("name", ["Refund​", "Fo​od", "‮Gym", "Gym"])
+def test_a_name_with_invisible_characters_is_refused(api, amir, name):
+    assert add(api, amir, name).status_code == 422
+
+
+def test_a_fullwidth_look_alike_of_a_built_in_name_is_the_built_in_name(api, amir):
+    # NFKC folds "Ｆｏｏｄ" to "Food", which is built in.
+    assert add(api, amir, "Ｆｏｏｄ").status_code == 409
+
+
+def test_a_hand_typed_built_in_name_is_stored_spelled_the_apps_way(api, amir):
+    # "food" and "transfer" would otherwise be categories of the person's own that cannot be
+    # renamed, deleted or merged, and "transfer" would not be treated as a transfer.
+    spend(api, amir, "food")
+    spend(api, amir, "TRANSFER")
+
+    entries = listing(api, amir)
+
+    assert entries["Food"]["transaction_count"] == 1
+    assert entries["Transfer"]["transaction_count"] == 1
+    assert "food" not in entries and "TRANSFER" not in entries
+
+
+def test_editing_a_transaction_to_a_built_in_name_in_other_case_is_stored_the_apps_way(api, amir):
+    tx = spend(api, amir, "Gym")
+    api.patch(f"/api/transactions/{tx['id']}", json={"category": "refund"}, headers=amir)
+
+    assert listing(api, amir)["Refund"]["transaction_count"] == 1
+
+
+def test_the_schema_advertises_the_real_name_limit(api):
+    schema = api.get("/openapi.json").json()["components"]["schemas"]
+
+    assert schema["CategoryIn"]["properties"]["name"]["maxLength"] == 40
+    assert schema["CategoryRenameIn"]["properties"]["new_name"]["maxLength"] == 40
+
+
+def test_changing_categories_too_quickly_is_slowed_down(api, amir):
+    codes = [add(api, amir, f"Group {chr(97 + i)}").status_code for i in range(25)]
+
+    assert codes[0] == 201
+    assert 429 in codes

@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatTile } from "@/components/ui/StatTile";
 import { ApiError, useImportConfirm, useImportPreview } from "@/lib/api/queries";
+import { useAssignableCategories } from "@/lib/categories";
 import { plural } from "@/lib/format";
 import {
-  categoryOptions,
   fileProblem,
   patchRow,
   setAllIncluded,
@@ -31,7 +31,8 @@ export function ImportScreen() {
   const [rows, setRows] = useState<ReviewRow[] | null>(null);
   const [skipped, setSkipped] = useState<Skipped[]>([]);
   const [notes, setNotes] = useState<string[]>([]);
-  const [categories, setCategories] = useState<string[]>(categoryOptions());
+  const [fileCategories, setFileCategories] = useState<string[]>([]);
+  const categories = useAssignableCategories(fileCategories);
   const [problem, setProblem] = useState<string | null>(null);
   const [created, setCreated] = useState<number | null>(null);
 
@@ -55,7 +56,7 @@ export function ImportScreen() {
         setSkipped(result.skipped);
         setNotes(result.notes);
         // Taken from the file as it arrived, so a category stays on offer after a row is changed.
-        setCategories(categoryOptions(result.rows.map((r) => r.category_guess)));
+        setFileCategories(result.rows.map((r) => r.category_guess));
       },
     });
   }
@@ -108,6 +109,19 @@ export function ImportScreen() {
         ) : (
           <div className="space-y-4">
             <DropZone onFile={handleFile} busy={preview.isPending} />
+            <p className="text-[12px] leading-relaxed text-ink-secondary">
+              We read CSV and Excel files, not PDFs. If your bank only gives a PDF statement,
+              convert it to CSV or Excel first, then check the descriptions and categories in the
+              review step.{" "}
+              <a
+                href="/paysense-import-template.csv"
+                download
+                className="font-semibold text-accent underline-offset-2 hover:underline"
+              >
+                Download the import template
+              </a>{" "}
+              (type, date, item, amount, category) to see the layout that always imports cleanly.
+            </p>
             {(problem ?? preview.error?.message) && (
               <Banner tone="danger" title="That file could not be used">
                 {problem ?? preview.error?.message}

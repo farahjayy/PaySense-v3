@@ -87,6 +87,8 @@ const PREVIEW = {
   financed_sen: 20000,
   upfront_sen: 10000,
   total_payable_sen: 20000,
+  fee_sen: 0,
+  total_cost_sen: 30000,
   cash_at_purchase_sen: 10000,
   monthly_fee_rate_pct: 0,
   num_installments: 2,
@@ -166,7 +168,7 @@ describe("PlansScreen", () => {
     await userEvent.type(within(dialog).getByLabelText(/number of instalments/i), "2");
     await userEvent.type(within(dialog).getByLabelText(/^price/i), "300");
 
-    const checkout = await within(dialog).findByText("Pay at checkout", {}, { timeout: 3000 });
+    const checkout = await within(dialog).findByText("You pay now", {}, { timeout: 3000 });
     expect(checkout.closest("div")).toHaveTextContent("RM 100.00");
     expect(within(dialog).getByText(/part of this is paid up front/i)).toBeInTheDocument();
     const previewCall = post.mock.calls.find((c) => c[0] === "/api/plans/preview");
