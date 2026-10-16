@@ -121,7 +121,7 @@ describe("LoginForm", () => {
     const input = screen.getByLabelText(/username/i);
 
     const before = input.getAttribute("aria-describedby") ?? "";
-    expect(document.getElementById(before)).toHaveTextContent(/username you were given/i);
+    expect(document.getElementById(before)).toHaveTextContent(/username from your invite/i);
 
     await userEvent.type(input, "ghost");
     await userEvent.click(screen.getByRole("button", { name: /continue/i }));
@@ -129,9 +129,45 @@ describe("LoginForm", () => {
 
     const ids = (input.getAttribute("aria-describedby") ?? "").split(" ");
     const described = ids.map((id) => document.getElementById(id)?.textContent ?? "").join(" ");
-    expect(described).toMatch(/username you were given/i);
+    expect(described).toMatch(/username from your invite/i);
     expect(described).toMatch(/no account with that username/i);
     expect(input).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("tells a tester who lost their username who to message", () => {
+    render(<LoginForm />);
+
+    expect(screen.getByText(/lost it\?/i)).toHaveTextContent(/message farah/i);
+  });
+
+  it("hides what was typed on request and shows it again", async () => {
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    const input = screen.getByLabelText(/username/i);
+    const toggle = screen.getByRole("button", { name: /hide text/i });
+    expect(input).toHaveAttribute("type", "text");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    await user.type(input, "amir");
+    await user.click(toggle);
+
+    expect(input).toHaveAttribute("type", "password");
+    expect(input).toHaveValue("amir");
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(toggle);
+    expect(input).toHaveAttribute("type", "text");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("does not submit the form when the hide toggle is pressed", async () => {
+    const user = userEvent.setup();
+    render(<LoginForm />);
+
+    await user.type(screen.getByLabelText(/username/i), "amir");
+    await user.click(screen.getByRole("button", { name: /hide text/i }));
+
+    expect(post).not.toHaveBeenCalled();
   });
 
   it("clears the error as soon as the user edits the field", async () => {

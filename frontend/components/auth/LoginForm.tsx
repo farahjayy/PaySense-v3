@@ -1,18 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 
-import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/fields";
 import { api } from "@/lib/api/client";
 import { errorMessage } from "@/lib/api/errors";
 import { saveSession, useAuth } from "@/lib/session";
 
+import { ArrowIcon, EyeIcon, EyeOffIcon } from "./LoginArt";
+
+// Who a tester messages when they have lost their username.
+const SUPPORT_CONTACT = "Farah";
+
 export function LoginForm() {
   const router = useRouter();
   const auth = useAuth();
+  const inputId = useId();
+  const hintId = `${inputId}-hint`;
+  const errorId = `${inputId}-error`;
   const [username, setUsername] = useState("");
+  const [isHidden, setIsHidden] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,28 +58,55 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate aria-busy={isPending}>
-      <TextField
-        label="Username"
-        name="username"
-        autoComplete="username"
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        maxLength={64}
-        value={username}
-        onChange={(event) => {
-          setUsername(event.target.value);
-          if (error) setError(null);
-        }}
-        hint="The username you were given for this study."
-        error={error}
-        // read-only, not disabled: a disabled input drops keyboard focus to <body>.
-        readOnly={isPending}
-      />
-      <Button type="submit" variant="accent" disabled={!trimmed || isPending}>
-        {isPending ? "Signing in…" : "Continue"}
-      </Button>
+    <form onSubmit={handleSubmit} className="lg-form" noValidate aria-busy={isPending}>
+      <label htmlFor={inputId} className="lg-label">
+        Username
+      </label>
+      <div className={error ? "lg-field lg-field-error" : "lg-field"}>
+        <input
+          id={inputId}
+          className="lg-input"
+          name="username"
+          type={isHidden ? "password" : "text"}
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          maxLength={64}
+          placeholder="e.g. amir"
+          value={username}
+          onChange={(event) => {
+            setUsername(event.target.value);
+            if (error) setError(null);
+          }}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${hintId} ${errorId}` : hintId}
+          // read-only, not disabled: a disabled input drops keyboard focus to <body>.
+          readOnly={isPending}
+        />
+        {/* The username is the only credential, so a tester can hide it before a screenshot. */}
+        <button
+          type="button"
+          className="lg-eye"
+          aria-label="Hide text"
+          aria-pressed={isHidden}
+          onClick={() => setIsHidden((hidden) => !hidden)}
+        >
+          {isHidden ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
+      <p id={hintId} className="lg-hint">
+        Use the username from your invite. Lost it? Message <strong>{SUPPORT_CONTACT}</strong>.
+      </p>
+      {error && (
+        <p id={errorId} role="alert" className="lg-error">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="lg-go" disabled={!trimmed || isPending}>
+        <span>{isPending ? "Signing in…" : "Continue"}</span>
+        <ArrowIcon />
+      </button>
     </form>
   );
 }
