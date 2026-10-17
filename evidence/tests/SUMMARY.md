@@ -5,11 +5,11 @@
 | Check | Command | Exit | s | Result |
 |---|---|---|---|---|
 | backend-ruff | `cd backend && uv run ruff check .` | 0 | 0 | All checks passed! |
-| backend-format | `cd backend && uv run ruff format --check .` | 0 | 0 | 340 files already formatted |
-| backend-pytest | `cd backend && uv run pytest -q -p no:cacheprovider --cov=app --cov-report=term` | 0 | 490 | errors.py                           13      1    92%; errors.py            25      0   100%; TOTAL                                      7095    177    98%; 2568 passed, 25 deselected in 484.68s (0:08:04) |
-| frontend-lint | `cd frontend && npm run lint` | 0 | 8 | - |
-| frontend-tsc | `cd frontend && npx tsc --noEmit` | 0 | 8 | - |
-| frontend-api-types | `cd frontend && npm run check:api` | 0 | 2 | matches the backend OpenAPI document |
-| frontend-vitest | `cd frontend && npx vitest run --coverage` | 0 | 33 | 45 passed (45); Tests  400 passed (400); All files          /   90.18 /    86.14 /   87.27 /    90.8 / |
-| frontend-build | `cd frontend && npm run build` | 0 | 5 | Compiled successfully in 564ms |
-| frontend-playwright | `cd frontend && npx playwright test` | 0 | 56 | error and stays on /login (868ms); error and stays on /login (761ms); 26 passed (54.9s) |
+| backend-format | `cd backend && uv run ruff format --check .` | 0 | 0 | 343 files already formatted |
+| backend-pytest | `cd backend && uv run pytest -q -p no:cacheprovider --cov=app --cov-report=term` | 0 | 494 | errors.py                           13      1    92%; errors.py            25      0   100%; TOTAL                                      7115    177    98%; 2577 passed, 25 deselected in 488.27s (0:08:08) |
+| frontend-lint | `cd frontend && npm run lint` | 0 | 7 | - |
+| frontend-tsc | `cd frontend && npx tsc --noEmit` | 0 | 3 | - |
+| frontend-api-types | `cd frontend && npm run check:api` | 0 | 3 | matches the backend OpenAPI document |
+| frontend-vitest | `cd frontend && npx vitest run --coverage` | 0 | 33 | 46 passed (46); Tests  406 passed (406); All files          /   91.05 /    86.64 /   87.88 /   91.77 / |
+| frontend-build | `cd frontend && npm run build` | 0 | 5 | Compiled successfully in 193ms |
+| frontend-playwright | `cd frontend && npx playwright test` | 0 | 48 | error and stays on /login (675ms); error and stays on /login (764ms); 26 passed (47.0s) |

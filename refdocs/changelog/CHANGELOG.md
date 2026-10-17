@@ -28,6 +28,11 @@ Rules that make this file worth keeping:
 
 ## [Unreleased]
 
+### 2026-10-18 — End of the cloud dev phase: final verification
+- **Fixed:** `tests/ml/engine1/test_band_fresh_check.py` imported the helper `test_profiles` under its own name, so pytest collected it as a test (a `PytestReturnNotNoneWarning` and one phantom "passed"); imported under an alias.
+- **Verified (final, on the code as pushed):** `cd backend && PW_CHROMIUM_PATH=/opt/pw-browsers/chromium uv run python scripts/collect_test_evidence.py` → exit 0: ruff clean, 343 files formatted; **pytest 2577 passed**, 25 deselected (integration), 0 warnings, coverage **98%** of `app/`; lint, tsc clean; API types match; **Vitest 406 passed**, 91.1% statements overall, `lib/` 99.1%; build compiled; **Playwright 26 passed** (desktop and phone) — `evidence/tests/`. GitHub Actions on `a5224fb` (the last code commit): all 5 jobs green.
+- **Next:** the local steps in `refdocs/fintechathon-2026/local-handoff.md` (migrations 0003–0006 first).
+
 ### 2026-10-18 — Chart axis labels in one helper; the live build output untracked
 - **Changed:** `lib/money.formatAxisRm` (a chart's money axis label with a no-break space) replaces two copies of `axisLabel`: the risk check's with/without chart had the same wrap-and-overlap bug fixed earlier in the forecast chart; both axes 76 px. New `tests/unit/WithWithoutChart.test.tsx` (the chart was 0% covered because the screens load it lazily), `money.test.ts` +1.
 - **Fixed:** commit `d422555` staged the live journey's production build (`frontend/.next-live/`, 474 files) by mistake. Checked for credentials before removing it (no Google API key prefix, no Supabase secret or JWT patterns in any of the files) and removed it from the index; `.gitignore` and the ESLint ignores now list `.next-live/` beside `.next-e2e/` and `.next-real/` (ESLint had started reporting 319 errors from it). The files remain in that one commit's history (no history rewrite of a pushed branch); a squash merge leaves them out of `main`.

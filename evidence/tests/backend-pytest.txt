@@ -1,6 +1,6 @@
 $ uv run pytest -q -p no:cacheprovider --cov=app --cov-report=term  (in backend/)
 app/assistant/guided.py                       9      0   100%
-app/assistant/llm.py                        198      9    95%
+app/assistant/llm.py                        202      9    96%
 app/assistant/numbers.py                     88      0   100%
 app/assistant/paste.py                      122      8    93%
 app/assistant/policy.py                      16      0   100%
@@ -26,7 +26,7 @@ app/db/plans.py                             196     12    94%
 app/db/provider_limits.py                    30      0   100%
 app/db/recurring_items.py                    69      4    94%
 app/db/risk_checks.py                        29      0   100%
-app/db/transactions.py                      139     11    92%
+app/db/transactions.py                      144     11    92%
 app/db/user_settings.py                      56      5    91%
 app/db/users.py                              58      6    90%
 app/domain/__init__.py                        0      0   100%
@@ -73,9 +73,9 @@ app/engines/risk/repayment.py                45      0   100%
 app/engines/risk/shapley.py                  31      0   100%
 app/engines/risk/templates.py                66      0   100%
 app/export_openapi.py                        15      1    93%
-app/main.py                                 118      6    95%
+app/main.py                                 121      6    95%
 app/seed.py                                  16      2    88%
 -------------------------------------------------------------
-TOTAL                                      7095    177    98%
-2568 passed, 25 deselected in 484.68s (0:08:04)
+TOTAL                                      7115    177    98%
+2577 passed, 25 deselected in 488.27s (0:08:08)
 warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.

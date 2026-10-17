@@ -4,6 +4,6 @@ $ npm run check:api  (in frontend/)
 > node scripts/api-types.mjs --check
 
 ✨ openapi-typescript 7.13.0
-🚀 /tmp/paysense-api-Xnnjnh/openapi.json → /tmp/paysense-api-Xnnjnh/schema.d.ts [201.4ms]
+🚀 /tmp/paysense-api-noyCLL/openapi.json → /tmp/paysense-api-noyCLL/schema.d.ts [261.2ms]
 lib/api/schema.d.ts matches the backend OpenAPI document.
 warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.

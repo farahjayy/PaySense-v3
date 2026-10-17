@@ -9,8 +9,8 @@ from ml.engine1_eval.band_calibration import (
     GRID,
     Record,
     dev_profiles,
-    test_profiles,
 )
+from ml.engine1_eval.band_calibration import test_profiles as heldout_profiles
 from ml.engine1_eval.band_fresh_check import fresh_profiles, render, served_factor
 
 
@@ -18,7 +18,7 @@ def test_fresh_students_are_disjoint_from_every_group_already_used():
     fresh = fresh_profiles()
     assert len(fresh) == len(set(fresh)) == 300
     assert not set(fresh) & set(dev_profiles(DEV_PROFILES))
-    assert not set(fresh) & set(test_profiles())
+    assert not set(fresh) & set(heldout_profiles())
     assert all(EVAL_POOL <= i < COHORT and i % 10 != 0 for i in fresh)
     assert fresh == fresh_profiles()  # seeded
 
