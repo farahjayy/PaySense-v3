@@ -214,6 +214,30 @@ def _suggest_budget(ctx: ToolContext, args: BudgetSuggestIn) -> ToolOutput:
     )
 
 
+def _propose(ctx: ToolContext, args: Any) -> ToolOutput:
+    from app.assistant.actions import action_out, propose
+
+    row = propose(ctx, args.type, args.payload)
+    data = {
+        "action_id": row["id"],
+        "status": "pending",
+        "summary": row["summary"],
+        "expires_at": str(row["expires_at"]),
+        "note": "Nothing is saved until the user presses Confirm on the card.",
+    }
+    return ToolOutput(
+        f"Proposed: {row['summary']} Waiting for your confirmation.",
+        data=data,
+        pending_action=action_out(row),
+    )
+
+
+def _propose_args() -> type[BaseModel]:
+    from app.assistant.actions import ProposeArgs
+
+    return ProposeArgs
+
+
 _PURCHASE = (
     "Give provider (spaylater, tiktok_paylater, atome or other), item_name, purchase_date "
     "(YYYY-MM-DD), num_installments and total_price_sen (integer sen: RM799 is 79900). "
@@ -262,5 +286,11 @@ MODEL_TOOLS: dict[str, Tool] = {
         Tool("suggest_budget", 1, "Suggested monthly budgets: income less bills, instalments and "
              "a buffer, split by recent spending, with the working. Stores nothing.",
              BudgetSuggestIn, _suggest_budget),
+        Tool("propose_action", 1, "Propose a change for the user to confirm. You cannot make "
+             "changes yourself: this stores a proposal and shows the user a card with Confirm and "
+             "Cancel. type is add_transaction (payload: date, amount_sen, type income|expense|"
+             "savings, category, description), create_plan (payload: the same fields as "
+             "check_purchase_risk), set_budget (payload: category, limit_sen) or delete_budget "
+             "(payload: category). Amounts are integer sen.", _propose_args(), _propose),
     )
 }  # fmt: skip

@@ -753,7 +753,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Action */
+        /**
+         * Get Action
+         * @description A proposal as stored: the confirm card is built from this, never from the model's words.
+         */
         get: operations["get_action"];
         put?: never;
         post?: never;
@@ -772,7 +775,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Confirm Action */
+        /**
+         * Confirm Action
+         * @description The only way an assistant proposal becomes a write: the person pressed Confirm (D-48).
+         */
         post: operations["confirm_action"];
         delete?: never;
         options?: never;
@@ -5218,6 +5224,24 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Already used, in progress, or just done */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The proposal has expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description The request body or parameters are invalid */
             422: {
                 headers: {
@@ -5278,6 +5302,24 @@ export interface operations {
             };
             /** @description No such record for this user */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Already used, in progress, or just done */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The proposal has expired */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };

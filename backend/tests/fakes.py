@@ -61,6 +61,18 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "bnpl_installments": {"is_paid": False, "paid_date": None},
     "provider_limits": {"updated_at": lambda: _now()},
+    "assistant_actions": {"status": "pending", "preview": None, "result": None, "decided_at": None},
+    "assistant_events": {
+        "tier": None,
+        "tool": None,
+        "status": None,
+        "action_id": None,
+        "provider": None,
+        "model": None,
+        "input_tokens": None,
+        "output_tokens": None,
+        "detail": None,
+    },
 }
 NO_ID_TABLES = {"user_settings", "provider_limits", "user_locks"}  # keyed by user_id; no `id`
 HAS_CREATED_AT = {
@@ -71,6 +83,8 @@ HAS_CREATED_AT = {
     "transactions",
     "user_categories",
     "budgets",
+    "assistant_actions",
+    "assistant_events",
 }
 
 # child table -> [(child column, parent table)]: composite (column, user_id) -> (id, user_id)
@@ -82,12 +96,14 @@ FOREIGN_KEYS: dict[str, list[tuple[str, str]]] = {
     ],
     "bnpl_installments": [("plan_id", "bnpl_plans")],
     "bnpl_plans": [("risk_check_id", "risk_checks")],
+    "assistant_events": [("action_id", "assistant_actions")],
 }
 # parent table -> [(child table, child column)]
 ON_DELETE_SET_NULL: dict[str, list[tuple[str, str]]] = {
     "recurring_items": [("transactions", "recurring_item_id")],
     "bnpl_plans": [("transactions", "bnpl_plan_id")],
     "risk_checks": [("bnpl_plans", "risk_check_id")],
+    "assistant_actions": [("assistant_events", "action_id")],
     "bnpl_installments": [("transactions", "bnpl_installment_id")],
 }
 ON_DELETE_CASCADE: dict[str, list[tuple[str, str]]] = {

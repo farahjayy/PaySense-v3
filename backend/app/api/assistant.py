@@ -375,23 +375,42 @@ def run_tool(body: RunToolIn, ctx: ContextDep) -> ChatOut:
     return run_guided(ctx, body.tool, body.arguments)
 
 
+CONFIRM_LIMIT = rate_limited("assistant-confirm", 10, 60)
+ACTION_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **NOT_FOUND_RESPONSE,
+    409: {"model": ErrorEnvelope, "description": "Already used, in progress, or just done"},
+    410: {"model": ErrorEnvelope, "description": "The proposal has expired"},
+}
+
+
 @router.get("/actions/{action_id}", response_model=PendingActionOut, responses=NOT_FOUND_RESPONSE)
-def get_action(action_id: str, user: CurrentUser, db: DbDep) -> Any:
-    raise _not_built()
+def get_action(action_id: str, ctx: ContextDep) -> Any:
+    """A proposal as stored: the confirm card is built from this, never from the model's words."""
+    from app.assistant import actions
+
+    return actions.action_out(actions._load(ctx, action_id))
 
 
 @router.post(
     "/actions/{action_id}/confirm",
     response_model=ActionResultOut,
-    responses={**NOT_FOUND_RESPONSE, **ASSISTANT_RESPONSES},
-    dependencies=[WRITE_QUOTA],
+    responses={**ACTION_RESPONSES, **ASSISTANT_RESPONSES},
+    dependencies=[WRITE_QUOTA, CONFIRM_LIMIT],
 )
-def confirm_action(action_id: str, user: CurrentUser, db: DbDep) -> ActionResultOut:
-    raise _not_built()
+def confirm_action(action_id: str, ctx: ContextDep) -> ActionResultOut:
+    """The only way an assistant proposal becomes a write: the person pressed Confirm (D-48)."""
+    from app.assistant import actions
+
+    return actions.confirm(ctx, action_id)
 
 
 @router.post(
-    "/actions/{action_id}/decline", response_model=ActionResultOut, responses=NOT_FOUND_RESPONSE
+    "/actions/{action_id}/decline",
+    response_model=ActionResultOut,
+    responses=ACTION_RESPONSES,
+    dependencies=[CONFIRM_LIMIT],
 )
-def decline_action(action_id: str, user: CurrentUser, db: DbDep) -> ActionResultOut:
-    raise _not_built()
+def decline_action(action_id: str, ctx: ContextDep) -> ActionResultOut:
+    from app.assistant import actions
+
+    return actions.decline(ctx, action_id)

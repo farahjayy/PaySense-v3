@@ -68,3 +68,24 @@ def test_0004_budgets_are_unique_per_category_case_insensitively(db, two_users):
         ScopedTable(db, "budgets").insert(amir, {"category": "FOOD", "limit_sen": 5})
     assert budgets.find(db, siti, "Food") is None
     assert [r["limit_sen"] for r in budgets.list_budgets(db, amir)] == [2000]
+
+
+def test_0004_assistant_actions_are_single_use_and_events_scoped(db, two_users):
+    import datetime as dt
+
+    from app.db import assistant_actions, assistant_events
+
+    _needs(db, "assistant_actions", "id", "0004")
+    amir, siti = (u["id"] for u in two_users)
+    row = assistant_actions.create(
+        db, amir, type="set_budget", payload={"category": "Food", "limit_sen": 100},
+        digest="a" * 64, summary="Set the Food budget.",
+        expires_at=dt.datetime.now(dt.UTC) + dt.timedelta(minutes=10),
+    )  # fmt: skip
+    assert assistant_actions.get(db, siti, row["id"]) is None
+    first = assistant_actions.transition(db, amir, row["id"], expected="pending", to="confirmed")
+    second = assistant_actions.transition(db, amir, row["id"], expected="pending", to="confirmed")
+    assert first is not None and second is None
+    assistant_events.record(db, amir, "confirm", tier=2, tool="set_budget", action_id=row["id"])
+    assert [e["kind"] for e in assistant_events.list_events(db, amir)] == ["confirm"]
+    assert assistant_events.list_events(db, siti) == []

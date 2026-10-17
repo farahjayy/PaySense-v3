@@ -47,3 +47,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp14-spending-insights.md](2026-10-18-wp14-spending-insights.md) | WP14 Spending insights: movers, unusual transactions, savings rate, rule-chosen headline | Done |
 | [2026-10-18-wp15-recommendations-alerts.md](2026-10-18-wp15-recommendations-alerts.md) | WP15 Ranked recommendations and proactive alerts over engine outputs | Done |
 | [2026-10-18-wp4a-tool-layer.md](2026-10-18-wp4a-tool-layer.md) | WP4a Assistant tool layer: registry, tiers, executor, guided run | Done |
+| [2026-10-18-wp4b-pending-actions.md](2026-10-18-wp4b-pending-actions.md) | WP4b Pending actions, confirm endpoint, audit log (D-48) | Done on the in-memory database (migration 0004 not applied) |

@@ -25,6 +25,8 @@ TABLES = (
     "user_categories",
     "user_locks",
     "budgets",
+    "assistant_actions",
+    "assistant_events",
 )
 
 

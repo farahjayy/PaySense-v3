@@ -39,6 +39,7 @@
 | C2c Spending insights (WP14) | Movers, unusual transactions, savings rate, headline | ✅ Done (no new table) |
 | C2d Recommendations and alerts (WP15) | Nine ranked rules over engine outputs, sources traced | ✅ Done (no new table) |
 | C3a Assistant tools (WP4a) | 16 tools (Tier 0/1), policy, executor, guided mode; writes separate | ✅ Done (in-memory) |
+| C3b Pending actions and audit (WP4b) | Propose, single-use confirm, decline, audit log | 🔶 Built and green on the in-memory database; migration 0004 not applied |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:
