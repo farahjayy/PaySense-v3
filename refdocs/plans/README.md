@@ -53,3 +53,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp19-privacy.md](2026-10-18-wp19-privacy.md) | WP19 Privacy: consent, export my data, delete my data, responsible use | In progress |
 | [2026-10-18-wp3-topic-screens.md](2026-10-18-wp3-topic-screens.md) | WP3 Budgets, insights, recommendations screens; WP19 consent and data screens | Done |
 | [2026-10-18-wp6-assistant-evaluation.md](2026-10-18-wp6-assistant-evaluation.md) | WP6 Assistant scenario and security suites, live evaluation | Done (32/33 live turns on gemini-3.1-flash-lite) |
+| [2026-10-18-wp8-security-self-assessment.md](2026-10-18-wp8-security-self-assessment.md) | WP8 SECURITY.md, threat model, known risks, pip-audit / npm audit / gitleaks evidence | ✅ Done |

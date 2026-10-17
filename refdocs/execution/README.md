@@ -54,3 +54,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-18-wp19-privacy.md](2026-10-18-wp19-privacy.md) | [../plans/2026-10-18-wp19-privacy.md](../plans/2026-10-18-wp19-privacy.md) | In progress |
 | [2026-10-18-wp3-topic-screens.md](2026-10-18-wp3-topic-screens.md) | [../plans/2026-10-18-wp3-topic-screens.md](../plans/2026-10-18-wp3-topic-screens.md) | Done |
 | [2026-10-18-wp6-assistant-evaluation.md](2026-10-18-wp6-assistant-evaluation.md) | [../plans/2026-10-18-wp6-assistant-evaluation.md](../plans/2026-10-18-wp6-assistant-evaluation.md) | Done (32/33 live turns on gemini-3.1-flash-lite) |
+| [2026-10-18-wp8-security-self-assessment.md](2026-10-18-wp8-security-self-assessment.md) | [../plans/2026-10-18-wp8-security-self-assessment.md](../plans/2026-10-18-wp8-security-self-assessment.md) | ✅ Done |
