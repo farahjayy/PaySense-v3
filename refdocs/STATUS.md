@@ -46,6 +46,7 @@
 | C6b Topic screens (WP3) | Budgets, insights, recommendations, alert strip | ✅ Done (Vitest, axe, Playwright desktop + phone) |
 | C3e Assistant evaluation (WP6) | Scenario and security suites; live evaluation | ✅ Done — suites green with the fake LLM; live: 32/33 turns on gemini-3.1-flash-lite (one provider 503), `reports/assistant/` |
 | C5 Security self-assessment (WP8) | SECURITY.md, threat model, known risks, scans | ✅ Done — pip-audit 0 (runtime and all), npm prod 0, npm dev 5 high (eslint toolchain), gitleaks 0; `evidence/scans/` |
+| C5 Assistant frontend (WP5) | Panel, cards, confirm card, guided mode, states, a11y | ✅ Done on the in-memory backend — Vitest 362 (lib 99% lines), axe clean on every card and the panel, Playwright 20 incl. guided and scripted-model journeys on desktop and phone. Not run: the panel against a live model |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:

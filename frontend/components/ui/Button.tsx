@@ -1,10 +1,12 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, Ref } from "react";
 
 type Variant = "primary" | "secondary" | "danger" | "accent";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
   size?: "sm" | "md";
+  /** React 19 passes a ref as an ordinary prop (used to return focus to a trigger). */
+  ref?: Ref<HTMLButtonElement>;
 };
 
 const VARIANT_CLASSES: Record<Variant, string> = {

@@ -3,8 +3,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { Button } from "@/components/ui/Button";
 import { isActive } from "@/lib/nav";
 import { api } from "@/lib/api/client";
@@ -101,6 +102,13 @@ export function AppShell({ user, children }: Props) {
   const queryClient = useQueryClient();
   const main = useRef<HTMLElement>(null);
   const firstRender = useRef(true);
+  const askButton = useRef<HTMLButtonElement>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+
+  function closeAssistant() {
+    setAssistantOpen(false);
+    askButton.current?.focus(); // back to where the person was
+  }
 
   // After navigating, move focus to the new page so keyboard and screen-reader users start at its
   // top instead of wherever the old page left them. Not on the first load.
@@ -137,6 +145,15 @@ export function AppShell({ user, children }: Props) {
             Pay<span className="text-accent">Sense</span>
           </Link>
           <div className="ml-auto flex items-center gap-3">
+            <Button
+              ref={askButton}
+              variant="accent"
+              size="sm"
+              aria-expanded={assistantOpen}
+              onClick={() => (assistantOpen ? closeAssistant() : setAssistantOpen(true))}
+            >
+              Ask PaySense
+            </Button>
             <span className="max-w-[10rem] truncate text-[13px] font-medium text-ink">
               {user.display_name}
             </span>
@@ -170,6 +187,7 @@ export function AppShell({ user, children }: Props) {
         </main>
       </div>
       <MobileNav pathname={pathname} />
+      {assistantOpen && <AssistantPanel onClose={closeAssistant} />}
     </div>
   );
 }
