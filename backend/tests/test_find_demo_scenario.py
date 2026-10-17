@@ -23,7 +23,7 @@ loader_spec.loader.exec_module(loader)
 
 def test_the_grid_follows_the_demo_story():
     grid = finder.default_grid(E2E_TODAY)
-    phones = [p for p in grid if p.persona == "frequent_bnpl"]
+    phones = [p for p in grid if p.persona == "frequent_bnpl" and not p.buffer_sen]
     assert [p.request["total_price_sen"] for p in phones] == [60000, 65000, 70000, 75000, 79900]
     assert all(p.request["provider"] == "spaylater" for p in grid)
     assert all(p.request["num_installments"] == 3 for p in grid)
@@ -91,3 +91,36 @@ def test_no_safe_result_is_said_plainly():
     assert "No purchase in this grid comes back Safe" in page
     assert "No smallest change reaches Safe" in page
     assert "none reaches Safe" in page
+
+
+def test_buffer_probes_set_the_buffer_check_and_put_it_back(tmp_path):
+    """WP16: the savings buffer is a user setting, so a buffer probe sets it, checks, and the run
+    leaves the account with no buffer, as it found it."""
+    app = build_e2e_app()
+    with TestClient(app) as client:
+        loader.run(app.state.db, client, session=E2E_TODAY, accounts_file=tmp_path / "a.json",
+                   personas=["frequent_bnpl"])  # fmt: skip
+        account = loader.read_accounts(tmp_path / "a.json")["frequent_bnpl"]
+        auth = loader.login(client, account["username"], account["passphrase"])
+        probes = [p for p in finder.default_grid(E2E_TODAY) if p.buffer_sen]
+        assert probes and all("savings buffer" in p.label for p in probes)
+        results = finder.run_probes(client, {"frequent_bnpl": auth}, probes[:1], lambda _: None)
+        assert results[0]["buffer_sen"] == probes[0].buffer_sen
+        assert results[0]["http_status"] == 200
+        assert client.get("/api/settings", headers=auth).json()["savings_buffer_sen"] == 0
+
+
+def test_the_page_says_where_it_ran():
+    page = finder.render_markdown([], E2E_TODAY, "v2", where="the in-memory API")
+    assert "against the in-memory API" in page
+
+
+def test_safe_only_with_a_buffer_is_said_plainly():
+    summary = {"status": "ok", "band": "Safe", "score": 98, "probability": 0.02,
+               "probability_without_purchase": 0.0, "simulated_band": "Safe",
+               "suggestion_status": None, "suggestion_changes": [], "suggestion_band": None,
+               "top_factors": []}  # fmt: skip
+    results = [{"persona": "frequent_bnpl", "label": "Phone, savings buffer RM2,000 entered",
+                "http_status": 200, "buffer_sen": 200000, "summary": summary}]  # fmt: skip
+    page = finder.render_markdown(results, E2E_TODAY, "v2")
+    assert "Without a savings buffer, no purchase in this grid comes back Safe." in page

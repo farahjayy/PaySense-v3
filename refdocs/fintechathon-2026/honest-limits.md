@@ -22,4 +22,4 @@ PaySense's risk score is trained on **synthetic** students, not on real repaymen
 | coverage at 17–25 weeks | 0.38 spending, 0.33 income | `reports/engine1/band_calibration.md`, held-out rows 17–25 |
 | assumed generator parameters | 115 of 131 | `reports/datagen/README.md` ("16 of 131 parameters are cited; 115 are assumed") |
 
-Note: STATUS.md quotes "12.7%" for the v1 Safe-reachable rate; the committed v1 serving check says 11.9% (`reports/engine2/v1/serving_check.json`). This paragraph uses the reports (questions-wp16.md W9).
+Note: STATUS.md quotes "12.7%" for the v1 Safe-reachable rate; the committed v1 serving check says 11.9% (`reports/engine2/v1/serving_check.json`). This paragraph uses the reports (`questions.md` row 29).

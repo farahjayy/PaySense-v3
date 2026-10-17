@@ -10,8 +10,13 @@ import { CONSENT, fail, ok, RECS, wrapper } from "./topicTestUtils";
 
 const get = vi.fn();
 const post = vi.fn();
+const put = vi.fn();
 vi.mock("@/lib/api/client", () => ({
-  api: { GET: (...a: unknown[]) => get(...a), POST: (...a: unknown[]) => post(...a) },
+  api: {
+    GET: (...a: unknown[]) => get(...a),
+    POST: (...a: unknown[]) => post(...a),
+    PUT: (...a: unknown[]) => put(...a),
+  },
 }));
 
 describe("first-login consent", () => {
@@ -118,6 +123,48 @@ describe("AccountScreen", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Download my data" }));
     expect(await screen.findByText("Your file is ready.")).toBeInTheDocument();
     expect(create).toHaveBeenCalled();
+  });
+});
+
+describe("SavingsBuffer", () => {
+  beforeEach(() => {
+    get.mockReset();
+    put.mockReset();
+    get.mockImplementation((path: string) =>
+      Promise.resolve(
+        path === "/api/settings"
+          ? ok({ savings_buffer_sen: 0, onboarding_state: "complete" })
+          : ok({ ...CONSENT, accepted: true }),
+      ),
+    );
+  });
+
+  it("saves the savings buffer in sen and says what it changes", async () => {
+    put.mockResolvedValue(ok({ savings_buffer_sen: 100000, onboarding_state: "complete" }));
+    render(<AccountScreen />, { wrapper });
+    expect(
+      await screen.findByRole("heading", { name: "Savings you could fall back on" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/forecasts and risk checks start from it/i)).toBeInTheDocument();
+    await userEvent.type(await screen.findByLabelText("Savings buffer"), "1,000");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(put).toHaveBeenCalledWith("/api/settings", { body: { savings_buffer_sen: 100000 } });
+    expect(await screen.findByText("Saved: RM 1,000.00.")).toBeInTheDocument();
+  });
+
+  it("clears the buffer", async () => {
+    get.mockImplementation((path: string) =>
+      Promise.resolve(
+        path === "/api/settings"
+          ? ok({ savings_buffer_sen: 50000, onboarding_state: "complete" })
+          : ok({ ...CONSENT, accepted: true }),
+      ),
+    );
+    put.mockResolvedValue(ok({ savings_buffer_sen: 0, onboarding_state: "complete" }));
+    render(<AccountScreen />, { wrapper });
+    expect(await screen.findByText("Now: RM 500.00.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(put).toHaveBeenCalledWith("/api/settings", { body: { savings_buffer_sen: 0 } });
   });
 });
 

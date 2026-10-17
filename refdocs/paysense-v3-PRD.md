@@ -84,7 +84,7 @@ Confirmed from the founding context documents and the scaffold interview (2026-1
 | Variable series | Weekly (Mon–Sun) sums of (a) expense transactions not linked to a recurring item or BNPL plan and not of type `savings` — discretionary spend — and (b) income transactions not covered by a confirmed recurring income (irregular / gig income). The current, incomplete week is excluded. |
 | Forecast | Served model (P3 winner) forecasts each weekly series for the horizon: 3 months on the dashboard; through the last due date of the plan under evaluation for a risk check (bounded at 180 weeks, D-36). Weeks that straddle a month boundary are split by days. |
 | Uncertainty | Residual bootstrap: each path resamples the served model's rolling-origin forecast errors (moving-block bootstrap, block = 4 weeks), the same method for every candidate so the comparison is fair. 1,000 paths. |
-| Monthly margin | **No starting balance (D-27).** For each month of the horizon, per path: `margin = income − bills − BNPL instalments (incl. checkout payments) − discretionary spend`. Cumulative margin starts at RM0 at the start of the current month ("no savings assumed"; D-33) and accumulates month by month, the current month using its actual net so far plus the simulated remainder. |
+| Monthly margin | **No starting balance (D-27).** For each month of the horizon, per path: `margin = income − bills − BNPL instalments (incl. checkout payments) − discretionary spend`. Cumulative margin starts from the user's savings buffer (RM0 unless they enter one; D-50) at the start of the current month (D-33) and accumulates month by month, the current month using its actual net so far plus the simulated remainder. |
 | Outputs | P10/P50/P90 monthly and cumulative margin; **P(shortfall)** = share of paths where the cumulative margin at any month-end in the horizon is < RM0, i.e. the plan could not be paid from income alone; the month most likely to go negative. |
 | Health score (dashboard) | `round((1 − P(shortfall over next 3 months, no new purchase)) × 100)`, same Safe/Caution/At Risk bands as Engine 2. |
 | Gate | Fewer than 4 months of history → locked state with an import prompt (supervisor constraint). |
@@ -142,6 +142,7 @@ Confirmed from the founding context documents and the scaffold interview (2026-1
 | `upfront_to_income` — amount paid at checkout because the provider limit caps financing (D-28) / expected monthly income; 0 when the purchase fits the limit | Plan + limits | ↑ |
 | `limit_utilisation_with_purchase` — (unpaid financed amount on this provider + this plan's financed amount) / provider limit; 0 with `limit_known` = 0 when no limit is recorded | Limits | ↑ |
 | `limit_known` — 1 if the user recorded a limit for the provider, else 0 | Limits | none |
+| `savings_buffer_to_income` — savings buffer / expected monthly income (D-50) | User setting | ↓ |
 
 `income_to_due_gap_days` (instalment due days before the next income) was dropped in D-27: the label no longer depends on intra-month timing, so it would be a feature with no signal. It is shown to the user as a timing note instead. `balance_to_monthly_essentials` was dropped with the balance.
 
@@ -245,7 +246,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-31 | The synthetic population keeps answer keys under `truth`, builds the proposed purchase from the recorded limit only, draws repayment per student, and puts weekly-scale structure (not day-level) in the series | The first version leaked the true limit, applied a holder-level statistic per instalment and over-claimed difficulty; found by audit before any model saw it |
 | D-33 | The cumulative margin starts at RM0 at the start of the current month and includes this month's actual net so far (amends D-27's "RM0 today") | Read literally, income received earlier this month was ignored while the rest of the month's bills were counted, so users looked At Risk on any day after payday |
 | D-34 | Engine 1 serves the global LSTM (per kind), exported to ONNX; torch stays out of the API process | Best literature candidate by the D-06 rule: geometric-mean MASE 0.815 against 1.044 for the best benchmark, p = 2e-37, best on every dataset and history length; about 1 ms per forecast |
-| D-35 | Forecast gate = 4 calendar months and 17 complete weeks; incomplete-month rules (no data / no income / low spend); actual before `forecast_from`, rules and model after; error paths with a 1.5x widening | Four calendar months can hold eight weeks of data; stale ledgers must not read as zero spending; short histories must widen the bands, not report false certainty |
+| D-35 | Forecast gate = 4 calendar months and 17 complete weeks; incomplete-month rules (no data / no income / low spend); actual before `forecast_from`, rules and model after; error paths with a 1.5x widening (widening replaced by D-54) | Four calendar months can hold eight weeks of data; stale ledgers must not read as zero spending; short histories must widen the bands, not report false certainty |
 | D-36 | A risk check simulates to the last instalment of the plan (bounded at 180 weeks); the dashboard forecast keeps its own 52-week default | The 52-week cap truncated 3,834 of the first 10,000 labels and made long plans look safer; found by audit before any training |
 | D-37 | Engine 2 evaluation: a 10% lockbox scored once, both ablation arms tuned inside every fold, calibration fitted on single-repeat out-of-fold predictions and stored, subgroup results where the baseline is under 0.10, stress on the lockbox with an identity control | The first harness reported the winner on the folds that chose it and tuned the ablation on its own test folds |
 | D-38 | Content-Security-Policy with a per-request script nonce (proxy), every page rendered per request, connect-src limited to this origin and the API, styles keep unsafe-inline | The session token is readable by injected script; blocking injected script and limiting where a running one can send is the main control; inline style attributes cannot carry a nonce |
@@ -264,6 +265,9 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-51 | Apache-2.0 licence with NOTICE and THIRD_PARTY.md | Permissive with a patent grant; dependency licences checked compatible |
 | D-52 | The artefact's forecast-settings digest ignores line endings | A Windows-trained artefact refused to load on Linux (and in the Docker image) |
 | D-53 | The assistant's LLM is provider-agnostic (`LLM_PROVIDER`): Gemini free tier first, Claude via the Anthropic API as the upgrade | No credit yet; switching must be one setting (amends D-47's provider) |
+| D-54 | The forecast band's error record is widened by a factor by history length and series (`band_inflation.json`, fitted on development students); the artefact records its digest | One factor of 1.5 held the real total 61% / 50% of the time instead of 80% (replaces D-35's factor) |
+| D-55 | Export parity accepts a row beyond 1e-3 only with a proven float32 split flip, never beyond 1e-2 | ONNX keeps tree thresholds in float32 (amends D-40) |
+| D-56 | Serving keeps the user's forecast bias; re-centring the error record is reported as a sensitivity only | Re-centring changes labels little and without a consistent sign |
 
 ---
 
@@ -282,7 +286,7 @@ Unresolved. Anything marked `ASSUMED:` is a working assumption, not a confirmed 
 8. `ASSUMED:` (D-27) Shortfall is evaluated on the **cumulative** margin at each month-end starting from RM0 (savings not assumed), rather than on each month's margin alone. P5 reports the per-month definition as a sensitivity check.
 9. `ASSUMED:` (D-28) The provider limit caps the financed **total payable including the monthly fee**, and a provider's used limit = the sum of its unpaid instalment amounts. Confirm against a real SPayLater / TikTok / Atome checkout before P1 closes; an unset limit means no cap (stated on the report).
 10. `ASSUMED:` (D-27) Incomplete-month thresholds and the "unconfirmed income" series use the same candidate models and evaluation protocol as discretionary spend; both are fixed in P3/P4.
-11. Known limitation, deliberate (D-27): a student living off savings with no income looks At Risk, because savings are not credited. An optional "savings buffer" input is recorded as future work.
+11. ~~Known limitation, deliberate (D-27): a student living off savings with no income looks At Risk, because savings are not credited. An optional "savings buffer" input is recorded as future work.~~ Resolved by D-50 for a student who enters a savings buffer; without one the margin still starts at RM0.
 
 UAT ethics/consent approval: not required (author, 2026-10-08) — testers use synthetic persona data only.
 
@@ -296,7 +300,7 @@ UAT ethics/consent approval: not required (author, 2026-10-08) — testers use s
 | Engine 2 | Code name for BNPL risk classification. Same rule. |
 | Known flows | Income, bills and instalments with known dates and amounts — placed, not forecast. |
 | Discretionary spend | Expenses not tied to a recurring item or BNPL plan; the only forecast quantity. |
-| Margin | Income less bills, BNPL instalments (including any checkout payment) and discretionary spending over a month. Cumulative margin starts at RM0 today — savings are not assumed (D-27). |
+| Margin | Income less bills, BNPL instalments (including any checkout payment) and discretionary spending over a month. Cumulative margin starts from the savings buffer the user enters, RM0 by default (D-50). |
 | Shortfall | The cumulative margin at a month-end is below RM0 in a simulated path: the plan could not be met from income alone. |
 | P(shortfall) | Share of the 1,000 Monte Carlo paths with a shortfall within the horizon. |
 | Financed amount / checkout payment | The part of a purchase the provider's remaining limit can cover, and the excess the user pays at checkout (D-28). |

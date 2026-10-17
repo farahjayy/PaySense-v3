@@ -10,8 +10,16 @@ import { Dialog } from "@/components/ui/Dialog";
 import { TextField } from "@/components/ui/fields";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorState, Skeleton } from "@/components/ui/States";
-import { useConsent, useDeleteData, useExportData } from "@/lib/api/topic";
+import { MoneyInput } from "@/components/ui/MoneyInput";
+import {
+  useConsent,
+  useDeleteData,
+  useExportData,
+  useSetSavingsBuffer,
+  useSettings,
+} from "@/lib/api/topic";
 import { formatDate } from "@/lib/format";
+import { formatRm } from "@/lib/money";
 
 const PHRASE = "delete my data";
 
@@ -20,12 +28,74 @@ export function AccountScreen() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="Your data"
-        intro="What PaySense keeps, and your right to take it with you or delete it (PDPA)."
+        intro="Your savings buffer, what PaySense keeps, and your right to take it with you or delete it (PDPA)."
       />
+      <SavingsBuffer />
       <Notice />
       <Export />
       <Delete />
     </div>
+  );
+}
+
+function SavingsBuffer() {
+  const settings = useSettings();
+  const save = useSetSavingsBuffer();
+  const [sen, setSen] = useState<number | null>(null);
+  return (
+    <Card>
+      <CardTitle>Savings you could fall back on</CardTitle>
+      <CardCaption>
+        Money you have put aside and would use if a month ran short. Your forecasts and risk checks
+        start from it instead of RM 0. Leave it at nothing if you would rather not count on savings.
+      </CardCaption>
+      {settings.isPending ? (
+        <Skeleton lines={2} label="Loading your savings buffer" />
+      ) : settings.isError ? (
+        <ErrorState message={settings.error.message} onRetry={() => settings.refetch()} />
+      ) : (
+        <form
+          className="mt-3 flex flex-wrap items-end gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (sen !== null) save.mutate(sen);
+          }}
+        >
+          <div className="min-w-48 flex-1">
+            <MoneyInput
+              label="Savings buffer"
+              valueSen={sen}
+              onChange={setSen}
+              hint={
+                settings.data.savings_buffer_sen > 0
+                  ? `Now: ${formatRm(settings.data.savings_buffer_sen)}.`
+                  : "Now: none."
+              }
+            />
+          </div>
+          <Button type="submit" disabled={sen === null || save.isPending}>
+            Save
+          </Button>
+          {settings.data.savings_buffer_sen > 0 && (
+            <Button variant="secondary" disabled={save.isPending} onClick={() => save.mutate(0)}>
+              Clear
+            </Button>
+          )}
+        </form>
+      )}
+      {save.isSuccess && (
+        <p role="status" className="mt-2 text-[12px] text-success">
+          {save.data.savings_buffer_sen > 0
+            ? `Saved: ${formatRm(save.data.savings_buffer_sen)}.`
+            : "Cleared: no savings buffer."}
+        </p>
+      )}
+      {save.isError && (
+        <p role="alert" className="mt-2 text-[12px] text-danger">
+          {save.error.message}
+        </p>
+      )}
+    </Card>
   );
 }
 

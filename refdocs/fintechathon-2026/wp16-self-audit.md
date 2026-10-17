@@ -1,6 +1,6 @@
 # WP16 — ml-auditor checklist, run by hand before training
 
-> The worktree session that built WP16 could not start the `ml-auditor` agent (a fork may not start subagents). It went through the agent's checklist (`.claude/agents/ml-auditor.md`) itself, read-only, before the full training run. The main session should still run the real agent on the merged branch (questions-wp16.md W8).
+> The worktree session that built WP16 could not start the `ml-auditor` agent (a fork may not start subagents). It went through the agent's checklist (`.claude/agents/ml-auditor.md`) itself, read-only, before the full training run. The main session should still run the real agent on the merged branch (`questions.md` row 28).
 
 | # | Check | Result | Evidence |
 |---|---|---|---|

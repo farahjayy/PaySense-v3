@@ -20,6 +20,7 @@ export type Recommendation = Schemas["RecommendationOut"];
 export type RecommendationList = Schemas["RecommendationListOut"];
 export type Consent = Schemas["ConsentOut"];
 export type AccountExport = Schemas["AccountExportOut"];
+export type UserSettings = Schemas["SettingsOut"];
 
 export const topicKeys = {
   budgets: ["budgets"] as const,
@@ -29,6 +30,7 @@ export const topicKeys = {
   recommendations: ["recommendations"] as const,
   alerts: ["alerts"] as const,
   consent: ["consent"] as const,
+  settings: ["settings"] as const,
 };
 
 export function useBudgets() {
@@ -109,6 +111,29 @@ export function useAlerts() {
   return useQuery({
     queryKey: topicKeys.alerts,
     queryFn: async () => unwrap(api.GET("/api/alerts")),
+  });
+}
+
+export function useSettings() {
+  return useQuery({
+    queryKey: topicKeys.settings,
+    queryFn: async () => unwrap(api.GET("/api/settings")),
+  });
+}
+
+/** The savings buffer (D-50): every forecast, risk check, recommendation and alert starts from
+ * it, so all of them are refetched after a change. */
+export function useSetSavingsBuffer() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (savingsBufferSen: number) =>
+      unwrap(api.PUT("/api/settings", { body: { savings_buffer_sen: savingsBufferSen } })),
+    onSuccess: (data) => {
+      client.setQueryData(topicKeys.settings, data);
+      void client.invalidateQueries({
+        predicate: (query) => query.queryKey[0] !== topicKeys.settings[0],
+      });
+    },
   });
 }
 

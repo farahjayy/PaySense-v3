@@ -15,10 +15,10 @@ Worktree branch from af32943; `cd backend && uv sync`. Reproduce v1 first: `ml.d
 7. **Honest limits (WP17-C1)** from the regenerated reports.
 
 ## Wrap-up
-Merge notes for CHANGELOG, STATUS, DECISIONS, PRD; questions-wp16.md; commit on the worktree branch.
+Merge notes for CHANGELOG, STATUS, DECISIONS, PRD; questions (now rows 21–29 of `questions.md`); commit on the worktree branch.
 
 ## What actually ran (deviations from the tasks above)
-- **Task 4:** the coverage table (v2 ×1.5 against the fitted v3 table, on the 60 held-out Engine 1 test students) is written by `band_calibration.py` itself into `reports/engine1/band_calibration.md`; `ml.engine1_eval.serving_check` was not re-run, because MoneyData and Berka could not be downloaded here (questions-wp16.md W5). The monotone rule was dropped (plan, Approach; ASSUMED 40).
+- **Task 4:** the coverage table (v2 ×1.5 against the fitted v3 table, on the 60 held-out Engine 1 test students) is written by `band_calibration.py` itself into `reports/engine1/band_calibration.md`; `ml.engine1_eval.serving_check` was not re-run, because MoneyData and Berka could not be downloaded here (`questions.md` row 25). The monotone rule was dropped (plan, Approach; ASSUMED 40).
 - **Task 5:** the comparison is `ml/engine2_train/compare_versions.py` (not `bias_sensitivity.py`): one script writes the v1/v2 side-by-side and the C6 sensitivity to `reports/engine2/versions.md`, `tables/versions.csv` and `tables/bias_sensitivity.csv`.
-- **Task 6:** the ml-auditor checklist was run by hand (`refdocs/fintechathon-2026/wp16-self-audit.md`): a worktree fork may not start subagents (W8). The v2 export first refused on parity (one row 0.00144 > 1e-3); the cause was proven to be a float32 threshold flip and `export.py` now accepts such a row only with that proof and never beyond 1e-2 (D-55).
-- **Not re-run:** the P3 Engine 1 evaluation — the regenerated weekly cohort is byte-identical to v1's (ASSUMED 39, W4).
+- **Task 6:** the ml-auditor checklist was run by hand (`refdocs/fintechathon-2026/wp16-self-audit.md`): a worktree fork may not start subagents (`questions.md` row 28). The v2 export first refused on parity (one row 0.00144 > 1e-3); the cause was proven to be a float32 threshold flip and `export.py` now accepts such a row only with that proof and never beyond 1e-2 (D-55).
+- **Not re-run:** the P3 Engine 1 evaluation — the regenerated weekly cohort is byte-identical to v1's (ASSUMED 39, `questions.md` row 24).
