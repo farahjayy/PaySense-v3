@@ -28,8 +28,13 @@ export function ModelScreen() {
     <div className="mx-auto max-w-3xl space-y-4">
       <PageHeader
         title="About the model"
-        intro="How the forecast and the BNPL risk check work, what they were built from, and where they are weak."
+        intro="How the forecast, the BNPL risk check and the assistant work, what they were built from, and where they are weak."
       />
+      <p className="text-[13px] leading-relaxed text-ink-secondary">
+        PaySense was built as a university final-year project in Malaysia and extended for the
+        FinTechathon (Topic A: an AI assistant for personal finance). It is a working prototype for
+        students deciding whether to buy now and pay later; it is not a bank&apos;s product.
+      </p>
       <ModelVersions />
       <Section id="forecast" title="Financial health forecast">
         <p>
@@ -53,6 +58,28 @@ export function ModelScreen() {
         <p>
           Your repayment history (late or overdue instalments) is shown next to the result but is
           never part of the score.
+        </p>
+      </Section>
+      <Section id="never" title="What it never looks at">
+        <p>
+          The score is worked out from money only: your income and spending pattern, your bills and
+          instalments, the purchase, the provider&apos;s terms, your limits and any savings you
+          enter. It never uses your age, gender, ethnicity, nationality or employment, and your
+          repayment history is shown beside the result but never scored.
+        </p>
+      </Section>
+      <Section id="assistant" title="The assistant">
+        <p>
+          The assistant reads your question, runs the same forecast and risk check you can run
+          yourself, and explains the result in words. It never works out a score, a forecast or an
+          amount itself: every figure it says must come from those tools, or its answer is replaced
+          by the tools&apos; own summary.
+        </p>
+        <p>
+          It can propose a change (a plan, a budget, a transaction, an import) but it cannot make
+          one: nothing changes until you press Confirm on the card. Your message and the figures it
+          needs are sent to the assistant&apos;s model provider, as the privacy notice explains; if
+          the provider is unavailable, the quick actions still work without it.
         </p>
       </Section>
       <Section id="bands" title="Reading the result">
@@ -88,12 +115,21 @@ export function ModelScreen() {
       <Section id="limits" title="Where it is weak">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            The range around the forecast is a little too narrow: real outcomes land inside it less
-            often than the stated 8 in 10.
+            The risk check was trained on simulated students, not on real repayments. Its accuracy
+            is accuracy at copying the forecast&apos;s simulation, not at predicting who repays.
           </li>
           <li>
-            Savings you hold are not counted as money you can fall back on, so a student with
-            savings but little income may look worse off than they are.
+            Most of the risk comes from where you already stand before you buy. When a purchase is
+            not Safe, usually no small change makes it Safe, and the page says so rather than
+            inventing one.
+          </li>
+          <li>
+            The range around the forecast is too narrow: real outcomes land inside it less often
+            than the stated 8 in 10, most of all with short histories and for income.
+          </li>
+          <li>
+            Savings are counted only if you enter them (under Your data). With none entered, the
+            forecast starts from RM 0, so a student with savings may look worse off than they are.
           </li>
           <li>
             Short histories give less reliable ranges. If a month is missing or your ledger is out

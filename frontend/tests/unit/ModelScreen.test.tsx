@@ -54,8 +54,23 @@ describe("ModelScreen", () => {
     render(<ModelScreen />, { wrapper });
     expect(screen.getByText(/under a 10% chance/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /where it is weak/i })).toBeInTheDocument();
-    expect(screen.getByText(/savings you hold are not counted/i)).toBeInTheDocument();
+    expect(screen.getByText(/savings are counted only if you enter them/i)).toBeInTheDocument();
     expect(screen.getByText(/not financial advice/i)).toBeInTheDocument();
+  });
+
+  it("says what the score never uses, what the assistant can and cannot do, and its honest limits", () => {
+    render(<ModelScreen />, { wrapper });
+    expect(screen.getByRole("region", { name: /what it never looks at/i })).toHaveTextContent(
+      /age, gender, ethnicity, nationality or employment/i,
+    );
+    const assistant = screen.getByRole("region", { name: /the assistant/i });
+    expect(assistant).toHaveTextContent(/never works out a score, a forecast or an amount/i);
+    expect(assistant).toHaveTextContent(/nothing changes until you press confirm/i);
+    expect(
+      screen.getByText(/trained on simulated students, not on real repayments/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/no small change makes it safe/i)).toBeInTheDocument();
+    expect(screen.getByText(/FinTechathon/)).toBeInTheDocument();
   });
 
   it("has one h1 and every section is a labelled region", async () => {
