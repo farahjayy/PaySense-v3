@@ -193,7 +193,7 @@ export function useProviderLimits() {
 }
 
 /** What a change to the ledger makes stale: everything the forecast is built from. */
-function useInvalidateLedger() {
+export function useInvalidateLedger() {
   const client = useQueryClient();
   return () =>
     Promise.all(
