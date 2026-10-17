@@ -12,13 +12,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { RiskResult } from "@/components/risk/RiskResult";
+import { AccountScreen } from "@/components/screens/AccountScreen";
+import { BudgetsScreen } from "@/components/screens/BudgetsScreen";
 import { CategoriesScreen } from "@/components/screens/CategoriesScreen";
+import { InsightsScreen } from "@/components/screens/InsightsScreen";
 import { DashboardScreen } from "@/components/screens/DashboardScreen";
 import { ImportScreen } from "@/components/screens/ImportScreen";
 import { ModelScreen } from "@/components/screens/ModelScreen";
 import { PlansScreen } from "@/components/screens/PlansScreen";
 import { RecurringScreen } from "@/components/screens/RecurringScreen";
 import { TransactionsScreen } from "@/components/screens/TransactionsScreen";
+
+import { BUDGET_STATUS, CONSENT, RECS } from "./topicTestUtils";
 
 const get = vi.fn();
 vi.mock("@/lib/api/client", () => ({
@@ -103,6 +108,43 @@ const TXN = {
 
 const DATA: Record<string, unknown> = {
   "/api/forecast": FORECAST,
+  "/api/alerts": { items: [], checked_rules: [], notes: [] },
+  "/api/budgets/status": BUDGET_STATUS,
+  "/api/recommendations": RECS,
+  "/api/account/consent": { ...CONSENT, accepted: true, accepted_at: "2026-10-18T10:00:00Z" },
+  "/api/insights/bills": {
+    as_of: "2026-10-10",
+    window_days: 30,
+    collision_window_days: 7,
+    recurring: {
+      count: 0,
+      monthly_total_sen: 0,
+      monthly_income_sen: null,
+      bills_share: null,
+      items: [],
+    },
+    increases: [],
+    collisions: [],
+    upcoming: [],
+    upcoming_total_sen: 0,
+  },
+  "/api/insights/spending": {
+    month: "2026-09",
+    previous_month: null,
+    income_sen: 0,
+    spend_sen: 1850,
+    savings_sen: 0,
+    left_over_sen: -1850,
+    savings_rate: null,
+    set_aside_rate: null,
+    headline: "You spent RM 18.50 this month.",
+    headline_rule: "spent",
+    categories: [],
+    movers: [],
+    unusual: [],
+    unusual_note: null,
+    mad_k: 3,
+  },
   "/api/bills": {
     months: [
       {
@@ -145,10 +187,38 @@ const DATA: Record<string, unknown> = {
   },
   "/api/categories": {
     categories: [
-      { name: "Food", builtin: true, locked: true, assignable: true, note: null, transaction_count: 1 },
-      { name: "Refund", builtin: true, locked: true, assignable: true, note: "Money back.", transaction_count: 0 },
-      { name: "BNPL", builtin: true, locked: true, assignable: false, note: "Added by plans.", transaction_count: 0 },
-      { name: "Gym", builtin: false, locked: false, assignable: true, note: null, transaction_count: 2 },
+      {
+        name: "Food",
+        builtin: true,
+        locked: true,
+        assignable: true,
+        note: null,
+        transaction_count: 1,
+      },
+      {
+        name: "Refund",
+        builtin: true,
+        locked: true,
+        assignable: true,
+        note: "Money back.",
+        transaction_count: 0,
+      },
+      {
+        name: "BNPL",
+        builtin: true,
+        locked: true,
+        assignable: false,
+        note: "Added by plans.",
+        transaction_count: 0,
+      },
+      {
+        name: "Gym",
+        builtin: false,
+        locked: false,
+        assignable: true,
+        note: null,
+        transaction_count: 2,
+      },
     ],
   },
   "/api/plans": [PLAN],
@@ -216,6 +286,9 @@ const SCREENS: [string, ReactNode, string][] = [
   ["plans", <PlansScreen key="p" />, "Headphones"],
   ["import", <ImportScreen key="i" />, "Choose a file"],
   ["model", <ModelScreen key="m" />, "gradient-boosted trees"],
+  ["budgets", <BudgetsScreen key="b" />, "Close to the limit"],
+  ["insights", <InsightsScreen key="n" />, "Transport is over budget"],
+  ["account", <AccountScreen key="a" />, "You accepted version"],
 ];
 
 describe("accessibility (axe)", () => {

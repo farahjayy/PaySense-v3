@@ -115,3 +115,11 @@ def test_one_users_budgets_are_invisible_and_untouchable_by_another(api, amir, s
 )
 def test_every_budget_route_needs_a_session(api, method, path):
     assert api.request(method.upper(), path, json={}).status_code == 401
+
+
+def test_status_defaults_to_the_servers_current_month(api, amir):
+    api.put("/api/budgets", json={"category": "Food", "limit_sen": 10000}, headers=amir)
+    spend(api, amir, "2026-03-02", 2500)
+    body = api.get("/api/budgets/status", headers=amir).json()
+    assert body["month"] == "2026-03" and body["is_current"] is True
+    assert body["items"][0]["spent_sen"] == 2500

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 
+import { AlertStrip } from "@/components/dashboard/AlertStrip";
 import { GettingStarted } from "@/components/dashboard/GettingStarted";
 import { BillsDue } from "@/components/forecast/BillsDue";
 import { Notices } from "@/components/forecast/Notices";
@@ -31,6 +32,7 @@ export function DashboardScreen() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader title={`Hi, ${name}`} intro="Where your money is heading, and what you owe." />
+      <AlertStrip />
       <GettingStarted />
       <Outlook />
       <div className="grid gap-6 lg:grid-cols-5">

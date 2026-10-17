@@ -98,6 +98,7 @@ function respond(forecast: unknown, extra: Record<string, unknown> = {}) {
     "/api/recurring-items": [],
     "/api/provider-limits": [],
     "/api/plans": [],
+    "/api/alerts": NO_ALERTS,
     ...extra,
   };
   get.mockImplementation(async (path: string) => ({
@@ -106,6 +107,8 @@ function respond(forecast: unknown, extra: Record<string, unknown> = {}) {
     response: { ok: true, status: 200 },
   }));
 }
+
+const NO_ALERTS = { items: [], checked_rules: [], notes: [] };
 
 describe("DashboardScreen", () => {
   beforeEach(() => {
@@ -162,7 +165,14 @@ describe("DashboardScreen", () => {
             response: { ok: false, status: 500 },
           }
         : {
-            data: path === "/api/bills" ? BILLS : path === "/api/summary/months" ? SUMMARY : [],
+            data:
+              path === "/api/bills"
+                ? BILLS
+                : path === "/api/summary/months"
+                  ? SUMMARY
+                  : path === "/api/alerts"
+                    ? NO_ALERTS
+                    : [],
             error: undefined,
             response: { ok: true, status: 200 },
           },
@@ -177,7 +187,9 @@ describe("DashboardScreen", () => {
     respond(OK);
     render(<DashboardScreen />, { wrapper });
 
-    expect(await screen.findByText(/imagine you start october 2026 with rm 0/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/imagine you start october 2026 with rm 0/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/by the end of each month/i)).toBeInTheDocument();
   });
 
@@ -198,6 +210,8 @@ describe("DashboardScreen", () => {
     render(<DashboardScreen />, { wrapper });
 
     expect(await screen.findByText("BNPL instalments due")).toBeInTheDocument();
-    expect(await screen.findByRole("table", { name: /income, spending and net by month/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("table", { name: /income, spending and net by month/i }),
+    ).toBeInTheDocument();
   });
 });

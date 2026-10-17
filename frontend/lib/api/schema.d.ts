@@ -559,7 +559,8 @@ export interface paths {
         };
         /**
          * Budget Status
-         * @description Each budget against the month's spending (the month summary's definition, D-45).
+         * @description Each budget against the month's spending (the month summary's definition, D-45). Without
+         *     `month`, the current month in Malaysia (the server's clock, never the browser's).
          */
         get: operations["budget_status"];
         put?: never;
@@ -4829,8 +4830,8 @@ export interface operations {
     };
     budget_status: {
         parameters: {
-            query: {
-                month: string;
+            query?: {
+                month?: string | null;
             };
             header?: never;
             path?: never;

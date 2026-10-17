@@ -15,7 +15,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, TodayDep
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
-from app.api.summary import MonthParam
 from app.api.types import Sen, text
 from app.core.errors import not_found, unprocessable
 from app.db import budgets as budgets_repo
@@ -180,10 +179,14 @@ def delete_budget(category: CategoryQuery, user: CurrentUser, db: DbDep) -> Resp
 
 @router.get("/status", response_model=BudgetStatusOut)
 def budget_status(
-    month: MonthParam, user: CurrentUser, db: DbDep, today: TodayDep
+    user: CurrentUser,
+    db: DbDep,
+    today: TodayDep,
+    month: Annotated[str | None, Query(pattern=r"^(20\d{2}|2100)-(0[1-9]|1[0-2])$")] = None,
 ) -> BudgetStatusOut:
-    """Each budget against the month's spending (the month summary's definition, D-45)."""
-    return status_for(db, user.id, month, today)
+    """Each budget against the month's spending (the month summary's definition, D-45). Without
+    `month`, the current month in Malaysia (the server's clock, never the browser's)."""
+    return status_for(db, user.id, month or today.strftime("%Y-%m"), today)
 
 
 @router.post("/suggest", response_model=BudgetSuggestionOut)

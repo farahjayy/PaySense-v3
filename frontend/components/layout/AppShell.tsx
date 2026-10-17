@@ -19,10 +19,13 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: "/transactions", label: "Transactions", icon: "≡", mobile: true },
   { href: "/categories", label: "Categories", icon: "#", mobile: false },
   { href: "/recurring", label: "Recurring", icon: "↻", mobile: false },
+  { href: "/insights", label: "Insights", icon: "✦", mobile: false },
+  { href: "/budgets", label: "Budgets", icon: "◎", mobile: false },
   { href: "/plans", label: "Plans", icon: "▤", mobile: true },
   { href: "/risk", label: "Risk check", icon: "◔", mobile: true },
   { href: "/import", label: "Import", icon: "⇪", mobile: true },
   { href: "/model", label: "About the model", icon: "ⓘ", mobile: false },
+  { href: "/account", label: "Your data", icon: "⚿", mobile: false },
 ];
 
 function navLinkClass(active: boolean): string {
