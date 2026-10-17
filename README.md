@@ -100,4 +100,4 @@ This repository contains **no real personal financial data**. All personas and t
 
 ## License
 
-Not yet chosen — all rights reserved until a license file is added.
+Apache License 2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). Third-party licences: `THIRD_PARTY.md` (being written, WP10).

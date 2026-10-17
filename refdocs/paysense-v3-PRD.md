@@ -257,6 +257,12 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-44 | Merchant text ignores month names ("Rent july" = "Rent august") | Each month looked like a different payee, so monthly items were never detected or matched |
 | D-45 | Spending by category uses the month summary's definition of spent; transfers ignored, refunds netted off the total, savings shown beside spending (`ASSUMED:` not subtracted), BNPL its own row | One definition of "spent" on every screen |
 | D-46 | The plan preview carries `fee_sen` and `total_cost_sen` from the server; the card says who pays what | The frontend computes no money; the old labels hid the fee and the real cost |
+| D-47 | Competition variant: an assistant (Claude via the Anthropic API, key server-side) turns requests into calls on the existing engines; the LLM narrates and proposes, never produces a score, forecast or amount; number-checked narration; guided mode without a key | The theme asks for an agent that completes real tasks; the numbers stay in the measured engines (overrides D-05 for the assistant layer only) |
+| D-48 | Three permission tiers (read, propose, write); the model has no write tool; writes run only from a user-confirmed, single-use, expiring pending action; full audit log | Permission tiers are scored; prompt injection can at most propose |
+| D-49 | v3 login hardened: passphrase second factor, login rate limits, token revocation, write quotas, ledger cap, pagination, plan-create race fixed | Username-only login is the first security finding; the supervisor's rule bound the FYP only |
+| D-50 | Optional savings buffer in Engine 1 (margin starts from it) and Engine 2 (new feature); labels regenerated, Engine 2 retrained, old and new numbers both reported | A student living on savings was wrongly At Risk (amends D-27) |
+| D-51 | Apache-2.0 licence with NOTICE and THIRD_PARTY.md | Permissive with a patent grant; dependency licences checked compatible |
+| D-52 | The artefact's forecast-settings digest ignores line endings | A Windows-trained artefact refused to load on Linux (and in the Docker image) |
 
 ---
 

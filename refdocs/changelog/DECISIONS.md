@@ -290,6 +290,53 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Why.** The old labels ("Pay at checkout", "Financed", "Total you will repay") did not say who pays whom, and never showed the fee or what the purchase really costs (RM3,850.85 for a RM3,500 camera). The frontend computes no money, so the figures come from the server.
 **Trade-off.** The card states, in words, that the fee is counted against the limit; that is still `ASSUMED` 5 (D-28) until a real checkout is recorded.
 
+## D-47 — Competition variant: an assistant layer where the LLM narrates and proposes, the engines decide
+*2026-10-17 · author decision (FinTechathon 2026, Topic A); overrides D-05 for the assistant layer only*
+
+**Decision.** PaySense v3 adds an assistant (`backend/app/assistant/`) that turns requests ("can I afford an RM799 phone on SPayLater over 3 months?") into calls on the existing domain functions and engines, in process. The LLM (Claude via the Anthropic API, model from `ASSISTANT_MODEL`, key `ANTHROPIC_API_KEY` server-side only) **narrates and proposes; it never produces a score, forecast or amount**. Every figure shown comes from a tool result rendered as a card; every figure in the narration is checked against the tool results and the user's message, and a template sentence replaces any narration that fails. With no key, or with the LLM unavailable, the same tools run in guided mode (buttons and forms, template wording). D-05's fixed candidate lists for both engines are unchanged.
+**Why.** The competition theme is "an AI agent that completes real tasks"; v2 is decision support with no agent. Keeping the numbers in the engines preserves everything v2 measured and keeps the LLM out of the money path.
+**Rejected.** The LLM computing affordability itself (unverifiable numbers, breaks D-05 and the no-fabricated-numbers rule); a scripted chatbot with no model (does not meet the theme); calling the LLM from the browser (exposes the key and widens the CSP).
+**Trade-off.** A third-party processor sees derived figures (privacy notes and consent in WP19); cost and availability depend on the provider, bounded by per-user and global daily caps. `ASSUMED:` six tool calls per turn suffice for the hero workflow.
+
+## D-48 — Three permission tiers; writes only through a user-confirmed pending action
+*2026-10-17 · author decision; design by Claude*
+
+**Decision.** Tier 0 tools read the signed-in user's data; Tier 1 tools compute or parse and change nothing (risk check, plan preview, budget suggestion, paste parsing, `propose_action`); Tier 2 functions write (add transaction, confirm import, create plan, set or delete a budget). **The model has no Tier 2 tool.** `propose_action` validates the payload with the API's own Pydantic models and stores a pending action (table `assistant_actions`: per user, expiring, single use). The UI renders the confirm card from the validated payload; only `POST /api/assistant/actions/{id}/confirm`, after the user presses Confirm, runs the Tier 2 function, after checking same user, not expired, still pending (atomic status change). `user_id` always comes from the session; any `user_id` in tool arguments is rejected. Every message, tool call, proposal, confirmation, refusal and fallback is written to `assistant_events`.
+**Why.** This is the "permission-tier implementation" the security self-assessment is scored on, and it makes prompt injection unable to write: the worst an injected instruction can do is propose, and a person sees the exact payload.
+**Rejected.** Giving the model write tools behind a "confirm" sentence in the chat (the model could skip it); a signed stateless token for the pending action (no single use, no audit row).
+**Trade-off.** One extra click per write; a pending action expires (`ASSUMED:` 10 minutes) and must be proposed again.
+
+## D-49 — Login hardened in the competition copy
+*2026-10-17 · author decision; overrides D-03 for v3 only (the FYP keeps username-only login)*
+
+**Decision.** v3 adds a second factor and closes the deferred abuse gaps: a per-user passphrase (scrypt hash with per-user salt, set at seeding, compared in constant time, one generic error), login rate limits per IP and per username, token revocation through `users.token_version` (logout increments it; older tokens are refused), per-user daily write quotas, a ledger-size cap, cursor pagination on transactions, and a database-level guard against the concurrent plan-create race.
+**Why.** Username-only login is the first item any security reviewer raises; the competition scores security at 30% and the supervisor's constraint applied to the FYP, not to this copy.
+**Rejected.** Supabase Auth or email codes (a mail provider and a sign-up flow for a judged demo with seeded accounts); passwords chosen by users (no sign-up exists; seeded passphrases are delivered privately).
+**Trade-off.** Judges need two values to log in. Seeded passphrases must be delivered outside the repo. `ASSUMED:` the scrypt cost parameters (n=2^14, r=8, p=1) and the quota and cap sizes, fixed in the WP18 plan.
+
+## D-50 — Optional savings buffer in both engines
+*2026-10-17 · author decision; amends D-27 (D-27's known limitation "a student living on savings looks At Risk")*
+
+**Decision.** A user may enter a savings buffer (`user_settings.savings_buffer_sen`, default 0). Engine 1's cumulative margin starts from the buffer instead of RM0, so shortfall means running through the buffer. Engine 2 gains the buffer as a feature, defined only in `engines/risk/features.py`; the synthetic generator gives profiles a buffer; labels are regenerated by simulating Engine 1 (D-07); Engine 2 is retrained and re-evaluated under the D-37 protocol (the existing lockbox scored once more, recorded). This retrain also carries the forecast-band recalibration and the bias-term sensitivity (WP16).
+**Why.** A student with savings and no income is not at risk of missing an instalment; the v2 model said she was. Fixing it removes an unfair result a judge can find in one try.
+**Rejected.** Treating savings as income (double counts when spent); a post-hoc override of the band (the calibrated probability would no longer mean what it says).
+**Trade-off.** Every published Engine 2 number changes; the v2 numbers stay in the reports as the previous version and both are shown. Scoring the lockbox again is disclosed. `ASSUMED:` the generator's buffer distribution (no cited source for Malaysian students' savings yet).
+
+## D-51 — Licence: Apache-2.0
+*2026-10-17 · author decision (sole owner of the code)*
+
+**Decision.** The repository is licensed under Apache-2.0 (`LICENSE`, `NOTICE`); third-party dependency and dataset licences are listed in `THIRD_PARTY.md`.
+**Why.** Permissive, with an explicit patent grant and a NOTICE mechanism that matches the attribution the dependencies need (CC-BY `caniuse-lite`, LGPL `sharp-libvips` used unmodified, MoneyData CC BY 4.0). Checked: the runtime Python dependencies (53, `pip-licenses`) and the frontend production dependencies (72, `license-checker-rseidelsohn`) are all compatible.
+**Rejected.** MIT (no patent grant); no licence (judges and teammates could not reuse the code).
+
+## D-52 — Artefact settings digests ignore line endings
+*2026-10-17 · Claude decision (found on the first Linux run)*
+
+**Decision.** The Engine 2 artefact check accepts the forecast-settings file (`models/engine1/v1/metadata.json`) when its stored digest matches the file with LF or with CRLF line endings; new exports record the LF digest.
+**Why.** The artefact was trained on a Windows checkout, where git writes CRLF, so it recorded the CRLF digest; a Linux checkout (and the Docker image for Render) holds LF, so the server refused to load the model and 17 tests failed. Proven by hashing the Linux file with CRLF restored: it equals the stored digest. Line endings are not settings.
+**Rejected.** Editing the stored digest by hand (an artefact is written by its script); forcing CRLF in `.gitattributes` (breaks the next Linux export the other way).
+**Trade-off.** Any other change to the file still refuses the model, as before.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)
@@ -310,3 +357,8 @@ Not decisions — guesses made to keep moving. Each one must be confirmed or kil
 13. `ASSUMED:` (D-37) The PTPTN stress scenario is "the next disbursement does not arrive within the horizon" (the later ones are unchanged), applied only to students whose detected recurring items include a semester income. A shorter delay (weeks) was not tested.
 14. `ASSUMED:` (D-37) The lockbox is every tenth profile index (10%) and the subgroup threshold is a simulated shortfall chance of 0.10 without the purchase (the Safe edge). Both were fixed before the full run, after the first harness and a 3-fold logistic sanity check on version-2 development labels (CHANGELOG); they were not fixed before any model had been looked at.
 15. `ASSUMED:` (D-45) Money logged as type Savings is shown beside Spent and is not subtracted from spending or from "left over". The author asked for it to be subtracted; that would change the month summary and Engine 1's series (D-27), so it needs her confirmation before it is built.
+16. `ASSUMED:` (D-47) Six tool calls per assistant turn suffice for the hero workflow (bills, forecast, risk check, suggestion, proposal).
+17. `ASSUMED:` (D-48) A pending action expires after 10 minutes.
+18. `ASSUMED:` (D-49) scrypt parameters n=2^14, r=8, p=1; write-quota and ledger-cap sizes are fixed in the WP18 plan.
+19. `ASSUMED:` (D-50) The generator's savings-buffer distribution has no cited Malaysian source yet.
+20. `ASSUMED:` (WP2) Budget states: near at 80% of the limit, over at 100%; the suggestion keeps a buffer before splitting the discretionary pool.

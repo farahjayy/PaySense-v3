@@ -5,6 +5,18 @@
 
 ---
 
+## Competition variant (FinTechathon 2026, Topic A)
+
+This copy has its **own Supabase project** (`paysense-v3`); the FYP repo is frozen at tag `fyp-final` and never touched from here. Scope and order: `refdocs/fintechathon-2026/work-packages.md`. Overrides, each with an ADR:
+- **D-05 → D-47:** an assistant layer uses an LLM. The LLM **narrates and proposes; it never produces a score, forecast or amount**. Engine candidates are unchanged.
+- **D-48:** three permission tiers; the model has **no write tool**; writes run only from a user-confirmed pending action.
+- **D-03 → D-49:** login is hardened in this copy (passphrase factor, token revocation, quotas).
+- **D-27 → D-50:** optional savings buffer in both engines (retrain, report old and new numbers).
+- Rule 7 (no dates or deadlines in docs) **still applies** to repo docs.
+- Cloud sessions push their own `claude/...` working branch; only the author merges and pushes `main`.
+
+---
+
 ## Order of authority (when docs conflict, surface it — don't resolve silently)
 
 0. `refdocs/STATUS.md` — **where we are right now.** Phase checklist + the current module's progress. Check this first, every session.
