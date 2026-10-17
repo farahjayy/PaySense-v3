@@ -263,6 +263,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-50 | Optional savings buffer in Engine 1 (margin starts from it) and Engine 2 (new feature); labels regenerated, Engine 2 retrained, old and new numbers both reported | A student living on savings was wrongly At Risk (amends D-27) |
 | D-51 | Apache-2.0 licence with NOTICE and THIRD_PARTY.md | Permissive with a patent grant; dependency licences checked compatible |
 | D-52 | The artefact's forecast-settings digest ignores line endings | A Windows-trained artefact refused to load on Linux (and in the Docker image) |
+| D-53 | The assistant's LLM is provider-agnostic (`LLM_PROVIDER`): Gemini free tier first, Claude via the Anthropic API as the upgrade | No credit yet; switching must be one setting (amends D-47's provider) |
 
 ---
 

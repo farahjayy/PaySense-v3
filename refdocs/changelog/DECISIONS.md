@@ -337,6 +337,14 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 **Rejected.** Editing the stored digest by hand (an artefact is written by its script); forcing CRLF in `.gitattributes` (breaks the next Linux export the other way).
 **Trade-off.** Any other change to the file still refuses the model, as before.
 
+## D-53 — The assistant's LLM is provider-agnostic: Gemini free tier first, Claude as the upgrade
+*2026-10-18 · author decision (no API credit yet); amends D-47's provider*
+
+**Decision.** `assistant/llm.py` defines one provider-neutral interface; `LLM_PROVIDER` selects `gemini` (Google Gemini API with function calling, free tier; the default) or `anthropic` (Claude via the Messages API, after credit is added). Tool schemas are generated once from the Pydantic models and translated per provider. Everything else in D-47 and D-48 is provider-independent: tiers, confirm, number check, untrusted-data rule, caps, audit log, guided mode.
+**Why.** The team has no API credit yet; development, tests (fake LLM) and a working chat must not wait on it, and switching later must be one setting.
+**Rejected.** Waiting for credit (blocks the demo path); a local model (weak tool use, no hosting for it on Render's small instance); hard-wiring one provider (the switch would mean rewriting the loop).
+**Trade-off.** Two adapters to maintain and test. Free-tier inputs may be used by the provider to improve its products and rate limits are low: acceptable only because every account is a synthetic persona; stated in the security report and on the model page. Live evaluation results are reported per provider.
+
 ---
 
 ## Working assumptions (`ASSUMED:`)

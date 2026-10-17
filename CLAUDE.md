@@ -9,6 +9,7 @@
 
 This copy has its **own Supabase project** (`paysense-v3`); the FYP repo is frozen at tag `fyp-final` and never touched from here. Scope and order: `refdocs/fintechathon-2026/work-packages.md`. Overrides, each with an ADR:
 - **D-05 → D-47:** an assistant layer uses an LLM. The LLM **narrates and proposes; it never produces a score, forecast or amount**. Engine candidates are unchanged.
+- **D-53:** the LLM is provider-agnostic: Gemini free tier first, Claude (Anthropic API) as the upgrade.
 - **D-48:** three permission tiers; the model has **no write tool**; writes run only from a user-confirmed pending action.
 - **D-03 → D-49:** login is hardened in this copy (passphrase factor, token revocation, quotas).
 - **D-27 → D-50:** optional savings buffer in both engines (retrain, report old and new numbers).

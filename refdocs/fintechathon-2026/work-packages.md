@@ -21,7 +21,7 @@ Submission items this work feeds: technical documentation, deck, demo video, sou
 | 2 | Headline demo = **goal-driven assistant**: the user states a goal ("I want an RM799 phone"); the assistant runs the workflow (bills → forecast → risk check → safest option → proposal) and asks the user to confirm before anything is written. | D-47 |
 | 3 | Assistant tasks: (1) can I afford X; (2) safest way to buy it; (3) create the plan after confirmation; (4) explain this month's bills and commitments; (5) check / set a category budget; (6) add a transaction by chat; (7) import by chat (paste text, preview, confirm); (8) "how am I doing" (insights and recommendations). | D-47 |
 | 4 | Budgeting = per-category monthly limits with progress, pace and alerts, plus **"suggest a budget"** (plain arithmetic over income, bills, instalments and recent spend; no new model). | — |
-| 5 | LLM = Claude via the Anthropic API (paid credit, key held **server-side only**). Model name is an env setting. No key or LLM down = **guided mode** (quick actions and forms on the same tool layer, template wording). | D-47 |
+| 5 | LLM is **provider-agnostic** behind one interface (`LLM_PROVIDER`): **Google Gemini free tier first** (`gemini`), **Claude via the Anthropic API** as the upgrade once credit is added (`anthropic`). Keys held **server-side only**; model names are env settings. No key or LLM down = **guided mode** (quick actions and forms on the same tool layer, template wording). | D-47, D-53 |
 | 6 | Three permission tiers (section 3). The model has **no write tools**; writes run only from the confirm endpoint after a button press. | D-48 |
 | 7 | **Login is hardened in the copy**: a passphrase second factor, token revocation at logout, per-user write quotas, a ledger cap, pagination, the plan-create race fixed. Overrides D-03 for v3 only; the FYP keeps username-only login. | D-49 |
 | 8 | **Optional savings buffer** is added to both engines: Engine 1 starts the cumulative margin from the buffer, Engine 2 gains the feature, labels are regenerated and Engine 2 is retrained and re-evaluated. Published numbers will change and are reported as a new version beside the old ones. Amends D-27. | D-50 |
@@ -132,10 +132,10 @@ Agree the OpenAPI shapes for `/assistant/chat`, `/assistant/status`, `/assistant
 - **Done when:** replay, expiry, wrong-user, double-confirm and tampered-payload tests pass; every confirm writes an audit row.
 
 #### WP4c — LLM loop and guardrails [M]
-- `assistant/llm.py`: thin wrapper over the Anthropic Messages API with tool use, behind an interface so tests use a **fake LLM** and never touch the network.
+- `assistant/llm.py`: one provider-neutral interface (messages, tool schemas, tool calls, token usage) with three implementations: `GeminiLLM` (Google Gemini API, function calling; the free-tier default), `AnthropicLLM` (Messages API with tool use; the upgrade), and `FakeLLM` for tests, which never touch the network. Tool schemas are generated once and translated per provider. The live evaluation (WP6) records which provider and model ran.
 - `assistant/agent.py`: loop with max tool calls, token caps, timeout; system prompt (role, scope, "never state numbers that are not in tool results", untrusted-data rule, ask for missing purchase fields, use `list_providers_and_limits` for valid instalment counts); number check with template fallback; refusal of out-of-scope requests; opening turn built from `get_alerts`.
 - `POST /api/assistant/chat` → `{reply, steps[], cards[], pending_actions[], mode}`; `GET /api/assistant/status` → `llm` or `guided`.
-- Settings: `ANTHROPIC_API_KEY` (optional), `ASSISTANT_MODEL` (Sonnet-class default for tool-use reliability; verify the ID in the Console), `ASSISTANT_ENABLED`, per-user daily token budget, global daily cap. Token usage logged.
+- Settings: `LLM_PROVIDER` (`gemini` | `anthropic`, default `gemini`), `GEMINI_API_KEY` and `ANTHROPIC_API_KEY` (both optional `SecretStr`), `ASSISTANT_MODEL` (per provider; verify IDs in each console), `ASSISTANT_ENABLED`, per-user daily token budget, global daily cap. Token usage logged. The provider in use and its data terms are shown on the model page and in the security report (free tiers may use inputs to improve the provider's products; demo data is synthetic).
 - **Done when:** with the fake LLM, scripted conversations produce the expected tool sequences; the number check rejects an invented figure; no key → guided mode; the key never appears in logs or responses.
 
 #### WP4d — Import by chat [M]
@@ -265,7 +265,7 @@ Persona `frequent_bnpl`, signed in with username and passphrase, history loaded.
 | # | Point | Resolution |
 |---|---|---|
 | 1 | Pending-action storage | Database table (single use, audit) |
-| 2 | Default model and cap | Sonnet-class default, Haiku-class as the cheap option; per-user daily budget and a global daily cap |
+| 2 | Default model and cap | Gemini free tier first; Claude (Sonnet-class) after credit is added; per-user daily budget and a global daily cap |
 | 3 | How much of the steps panel to show | Every tool call with its tier and inputs |
 | 4 | `transactions.source = 'assistant'` | No; the audit log records the origin |
 | 5 | Budget buffer rule, 80% / 100% | `ASSUMED`, logged in DECISIONS |

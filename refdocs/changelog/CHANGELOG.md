@@ -28,6 +28,11 @@ Rules that make this file worth keeping:
 
 ## [Unreleased]
 
+### 2026-10-18 — The assistant's LLM becomes provider-agnostic (D-53)
+- **Decided:** D-53 — Gemini free tier first, Claude via the Anthropic API once credit is added, selected by `LLM_PROVIDER`; amends D-47's provider only.
+- **Changed:** work-packages.md (locked decision 5, WP4c settings and adapters, WP11 keys, open point 2), DECISIONS.md, PRD §7, CLAUDE.md competition section.
+- **Verified:** nothing verified this session (docs only).
+
 ### 2026-10-17 — Final competition scope, ADRs D-47 to D-52, Apache-2.0, and a Linux model-loading fix
 - **Reported:** the author asked for the final, maximum-effect list of changes for the FinTechathon entry, with no cuts, and decided: harden login (D4), add the savings buffer and retrain (C5), use the Anthropic API, Apache-2.0, sole owner of the code.
 - **Diagnosed:** on the first Linux run (this cloud session) 3 tests failed and 14 errored with `ArtefactError: the forecast settings (window, horizon, scaling) differ`. The Engine 2 artefact stores the SHA-256 of `models/engine1/v1/metadata.json` as checked out on Windows (CRLF). Proven: hashing the Linux (LF) file with CRLF restored gives exactly the stored digest `db1a7635…`. The same refusal would have stopped the Docker image on Render.
