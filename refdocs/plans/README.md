@@ -58,3 +58,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp17-engine-follow-ups.md](2026-10-18-wp17-engine-follow-ups.md) | WP17 honest limits, model page (fairness, assistant, limits), checkout question | ✅ Done |
 | [2026-10-18-wp7-ui-flow-polish.md](2026-10-18-wp7-ui-flow-polish.md) | WP7 first screen, Try this, budget strip, login wording, local terms, phone widths | ✅ Done |
 | [2026-10-18-wp9-execution-evidence.md](2026-10-18-wp9-execution-evidence.md) | WP9 demo run through the API, test evidence collector, video script | ✅ Done |
+| [2026-10-18-wp10-repo-licence-docs.md](2026-10-18-wp10-repo-licence-docs.md) | WP10 README, THIRD_PARTY, CREDITS, file structure, torch-free tests | ✅ Done |

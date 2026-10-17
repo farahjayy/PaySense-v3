@@ -19,7 +19,7 @@ from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from ml.uat.load import UatDataError
+from ml.uat.errors import UatDataError
 
 PERSONA_DIR = Path(__file__).resolve().parents[3] / "data" / "personas"
 DATE_FORMAT = "%d/%m/%Y"

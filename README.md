@@ -1,103 +1,130 @@
-# PaySense v3
+# PaySense
 
-An AI-driven decision support system that helps Malaysian university students make informed Buy Now, Pay Later (BNPL) purchasing decisions — by forecasting their financial health and classifying the risk of a proposed BNPL purchase before they commit.
+**Think before you split.** PaySense helps Malaysian university students decide whether a buy-now-pay-later (BNPL) plan fits *before* they commit. It forecasts the student's money from their own records, scores the risk of a proposed plan, explains why, and lets them ask an AI assistant in plain words. The assistant reads and works things out through the app's own tools; it never makes up a figure and never changes anything until the student presses **Confirm**.
 
-**Status:** scaffolded 2026-10-08 — no application code yet. See [`refdocs/STATUS.md`](refdocs/STATUS.md).
+Built for the FinTechathon (Topic A: an AI assistant for personal finance) from PaySense v2, a Final Year Project (BSc (Hons) Computer Science, Universiti Teknologi PETRONAS). See [`CREDITS.md`](CREDITS.md).
 
-**v3 is the FinTechaton 2026 Shenzhen competition variant, forked from PaySense v2** (the final year project; original at `College\FYP\PaySense_v2`, GitHub `PaySense-v2`). This repo is `PaySense-v3` and uses its own Supabase project. The competition-specific differences are listed in the PRD.
-
-Built on the Final Year Project, BSc (Hons) Computer Science, Universiti Teknologi PETRONAS — Nur Farah Binti Ahmad Nazri. Supervisor: Dr. Nazleeni Samiha Bt Haron.
+> PaySense gives estimates from a student's own records. It is **not financial advice and not a credit decision**.
 
 ## What it does
 
-- **Financial health forecasting.** Places the student's known income, bills and BNPL instalments on their exact dates, forecasts only their variable spending (and income, when it is irregular), and simulates 1,000 possible futures to show the projected monthly margin with a P10–P90 band and the probability that income alone cannot cover the plan. No account balance is needed.
-- **BNPL risk classification.** Before a purchase, scores the probability that the student will not be able to pay an instalment in full — Safe / Caution / At Risk — using a calibrated classifier trained on simulated shortfall outcomes for a synthetic population of Malaysian students.
-- **Explanations.** The top reasons behind every score (SHAP) and the smallest change that would make the purchase Safe — fewer instalments, waiting until after the next allowance, a lower price, another provider.
-- **BNPL across providers.** SPayLater, TikTok PayLater, Atome and any other provider (entered manually) in one place, with provider-accurate schedules for the three named providers, the total monthly commitment, a due-date timeline and reminders.
-- **Ledger.** Manual entry and CSV import with preview, recurring income and bills, a monthly income/expense/net summary.
+| | |
+|---|---|
+| **Financial health forecast** | Places known income, bills and instalments on their dates, forecasts the variable part with a global LSTM (chosen over ARIMA, Prophet and simple benchmarks), and simulates 1,000 futures: a running-margin chart with an 80% band, a health score and the chance of running short. A savings buffer the student enters is counted; nothing else is assumed. |
+| **BNPL risk check** | For a purchase on SPayLater, TikTok PayLater, Atome or any other provider: the exact instalment schedule from the provider's rules, a Safe / Caution / At Risk band from a calibrated LightGBM model (chosen over random forest, XGBoost and logistic regression), the reasons (exact Shapley values), and the smallest change that reaches Safe, or an honest "none does". |
+| **Assistant** | Chat or quick actions. Three permission tiers: read, compute, and write — writes only from a proposal the student confirms on a card built from the stored proposal. Every figure in its answer is checked against the tools' results. Works with Gemini or Claude behind one interface; falls back to guided mode (no model) when the provider is unavailable. |
+| **Budgets, bills, insights** | Category budgets with pace, a suggested budget with its arithmetic shown, bill and instalment collisions, spending insights, ranked recommendations and alerts, all from rules over the student's own data. |
+| **Ledger** | Manual entry, CSV / Excel import with preview and duplicate flags, import by pasting messy text into the assistant, recurring items, categories. |
+| **Privacy** | Consent before the assistant sends anything to a provider; download or delete all your data; every database query scoped to the signed-in user. |
 
-## Requirements
+## Architecture
 
-- Python (version pinned in `backend/.python-version` during P0) managed by [uv](https://docs.astral.sh/uv/)
-- Node.js 20+ (developed on 24)
-- A Supabase project (free tier, Singapore region)
+```
+ Browser (Next.js, TypeScript)              FastAPI backend (Python)                       Supabase Postgres
+ ┌──────────────────────────┐   HTTPS    ┌─────────────────────────────────────────┐    ┌──────────────────┐
+ │ screens, charts,         │──────────▶ │ api/  routes (auth, quotas, rate limits) │    │ RLS on, no anon  │
+ │ assistant panel,         │  bearer    │ db/   repositories, user_id first ──────┼──▶ │ policies; service│
+ │ confirm cards            │  token     │ domain/  sen maths, schedules, budgets   │    │ key server-side  │
+ │ (no money arithmetic,    │ ◀───────── │ engines/ forecasting (LSTM, ONNX) + risk │    └──────────────────┘
+ │  types from OpenAPI)     │   JSON     │          (LightGBM, ONNX, Shapley)       │
+ └──────────────────────────┘            │ assistant/ tools, policy, pending        │    ┌──────────────────┐
+                                         │   actions, number check, audit log ─────┼──▶ │ LLM provider     │
+                                         └─────────────────────────────────────────┘    │ (Gemini / Claude)│
+ backend/ml/ (offline): synthetic population, evaluation, training, ONNX export ──▶ backend/models/ (served artefacts)
+```
 
-## Setup
+The model never holds a write tool and never produces a score, forecast or amount (ADRs D-47, D-48). Details: [`SECURITY.md`](SECURITY.md) and [`refdocs/paysense-v3-PRD.md`](refdocs/paysense-v3-PRD.md).
+
+## Measured results
+
+All generated by scripts; nothing typed in by hand.
+
+| What | Where |
+|---|---|
+| Engine 1 evaluation (benchmarks, statistical tests, band coverage) | [`reports/engine1/`](reports/engine1/) |
+| Engine 2 training, lockbox, calibration, v1 vs v2, bias sensitivity | [`reports/engine2/`](reports/engine2/) (start with `versions.md`) |
+| Assistant live evaluation (task success, number-check fallbacks, latency, tokens) | [`reports/assistant/`](reports/assistant/) |
+| The demo story run through the API; the demo grid of purchases; tests; security scans | [`evidence/`](evidence/) |
+
+## Honest limits
+
+PaySense's risk score is trained on **synthetic** students, not on real repayment outcomes: 10,000 generated profiles whose label is the chance, simulated by the forecasting engine, that the student's running margin goes below zero once the plan is added. Those labels are often already decided: **52.7%** are exactly 0 or 1, **46.0%** of students are already short (a 10% or higher chance) before any purchase, and the purchase changes the risk band for only **10.7%** — so the model mostly reproduces each student's starting position, and its accuracy (lockbox Brier 0.0142 against 0.1674 for always guessing the average) is accuracy at copying the simulation, not at predicting real defaults. The shown score lands in the same band as a direct simulation of the same purchase **92.0%** of the time. When a purchase is not Safe, a smallest change that reaches Safe exists for only **12.6%** of results (14 of 111), because most of those students are short before they buy anything; the app says so instead of inventing a fix. The forecast's 80% band is still too narrow in places: after this version's recalibration it holds the real 13-week total **69%** of the time for spending (was 61%) and **53%** for income (was 50%) — about the nominal 80% for spending only once a student has 26 or more weeks of history, and only 33–38% for the shortest (17–25 week) histories — so probabilities are more extreme than a calibrated forecast would give. The savings buffer, most generator parameters (115 of 131) and the band check itself rest on assumptions or synthetic data, not on measured Malaysian student finances.
+
+The sources of every figure in this paragraph are listed in [`refdocs/fintechathon-2026/honest-limits.md`](refdocs/fintechathon-2026/honest-limits.md).
+
+## Run it locally
+
+Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), Node.js 20 or later, a Supabase project (free tier) for the database. Commands work the same on Windows, macOS and Linux.
 
 ```bash
-git clone <this repo>
-cd backend
-cp .env.example .env      # fill in — see refdocs/guides/env_setup.md
-uv sync
-cd ../frontend
-cp .env.example .env.local
-npm install
+git clone <this repo> && cd PaySense-v3
+cd backend && cp .env.example .env    # fill in: refdocs/guides/env_setup.md
+uv sync                               # runtime + dev + ml groups; `uv sync --no-group ml` for the API and its tests only
+cd ../frontend && cp .env.example .env.local && npm install
 ```
 
-Apply the SQL files in `backend/migrations/` to your Supabase project in order, then seed a user:
+Apply `backend/migrations/0001` to `0006` in order in the Supabase SQL editor ([`backend/migrations/README.md`](backend/migrations/README.md)), check the lock-down with `cd backend && uv run python scripts/check_rls.py`, then:
 
 ```bash
-cd backend
-uv run python scripts/seed_users.py --username demo --display "Demo" --persona budget_conscious
+cd backend && uv run uvicorn app.main:app --reload --port 8000      # terminal 1
+cd frontend && npm run dev                                          # terminal 2: http://localhost:3000
 ```
 
-## Usage
+## Demo accounts
 
-```bash
-# terminal 1
-cd backend && uv run uvicorn app.main:app --reload --port 8000
-# terminal 2
-cd frontend && npm run dev   # http://localhost:3000 → log in with the seeded username
+Accounts are made by the operator; there is no public sign-up. `cd backend && uv run python scripts/load_personas.py` creates one account per synthetic persona (frequent BNPL user, budget-conscious, irregular income), loads its history and writes the usernames and generated passphrases to the gitignored `data/private/persona_accounts.json`. Judges receive theirs privately with the submission; no credential is ever in this repository. A single tester: `uv run python scripts/seed_users.py --username <name> --display <Name> --persona <persona>`.
+
+## Tests
+
+| What | Command |
+|---|---|
+| Backend lint and format | `cd backend && uv run ruff check . && uv run ruff format --check .` |
+| Backend tests (in-memory database; `-m integration` hits the real one) | `cd backend && uv run pytest` |
+| Backend tests without the ML stack (no torch) | `cd backend && uv run --no-group ml pytest --ignore=tests/ml` |
+| Frontend | `cd frontend && npm run lint && npx tsc --noEmit && npm run test && npm run build` |
+| API types match the backend | `cd frontend && npm run check:api` (after a backend change: `npm run gen:api`) |
+| Browser journeys, desktop and phone | `cd frontend && npx playwright test` (starts both servers on an in-memory backend) |
+| Everything, with outputs kept in `evidence/tests/` | `cd backend && uv run python scripts/collect_test_evidence.py` |
+
+## Deployment
+
+The API runs on Render from `render.yaml` (Docker, `backend/Dockerfile`), the frontend on Vercel. Steps, variables and the smoke test: [`refdocs/guides/deployment.md`](refdocs/guides/deployment.md).
+
+## Security
+
+See [`SECURITY.md`](SECURITY.md): the three permission tiers, every control with its test, the threat model, the known-risk list and the scans. Report a vulnerability privately to the author through GitHub.
+
+## Repository layout
+
+```
+backend/app/        the API: api/ routes, db/ repositories, domain/ pure logic, engines/ forecasting + risk, assistant/
+backend/ml/         offline only: synthetic population, Engine 1 evaluation, Engine 2 training, UAT analysis
+backend/models/     the served model artefacts and their metadata
+backend/migrations/ SQL, applied in order
+backend/scripts/    seeding, persona loading, evaluation, demo run, evidence, scans
+frontend/           Next.js app: app/ routes, components/, lib/ (API client from OpenAPI), tests/
+data/               synthetic personas and manifests (raw third-party data and private data are gitignored)
+reports/            generated evaluation reports
+evidence/           generated demo, test and scan evidence
+refdocs/            PRD, status, decisions, plans, guides, competition documents
 ```
 
-(The backend and frontend commands above exist as of P0. The backend needs `backend/.env` for anything that touches the database; see `refdocs/guides/env_setup.md`.)
-
-## Project layout
-
-Entries marked *(planned)* do not exist yet and arrive with their phase; everything else is built (P0).
-
-```
-PaySense_v2/
-├── backend/
-│   ├── app/
-│   │   ├── api/            auth, health, deps, rate limiter, response schemas; (planned) transactions, imports, recurring, plans, forecast, risk, dashboard
-│   │   ├── core/           settings (fail-fast env), security (session tokens), errors (envelope)
-│   │   ├── db/             Supabase client; ScopedTable (the user-isolation boundary); users, user_settings
-│   │   ├── domain/         (planned) ledger, schedule (sen maths), providers, categorize, recurring detection
-│   │   ├── engines/        (planned)
-│   │   │   ├── forecasting/   financial health forecasting (component model + Monte Carlo)
-│   │   │   └── risk/          BNPL risk classification (features.py, model, SHAP, counterfactuals)
-│   │   ├── export_openapi.py  writes the OpenAPI document with no credentials (used by `npm run gen:api`)
-│   │   └── seed.py         tester account seeding
-│   ├── ml/                 (planned) datagen/, engine1_eval/, engine2_train/
-│   ├── models/             (planned) served artefacts + metadata
-│   ├── migrations/         0001_init.sql + how to apply it
-│   ├── scripts/            seed_users.py, check_rls.py
-│   └── tests/              unit tests on an in-memory fake (fakes.py); integration/ hits real Supabase; e2e_server.py backs Playwright
-├── frontend/               Next.js app: app/ (login, (app) shell), components/, lib/ (session, api client + generated schema.d.ts), tests/unit + tests/e2e
-├── data/                   (planned) personas/ (committed synthetic CSVs), external/ (download scripts), private/ (gitignored, never committed)
-├── reports/                spikes/ so far; generated evaluation tables and figures later
-└── refdocs/                PRD, status, decisions, plans, guides, context
-```
+More: [`refdocs/guides/file-structure.md`](refdocs/guides/file-structure.md).
 
 ## Documentation
 
 | Doc | What's in it |
 |---|---|
-| [`refdocs/STATUS.md`](refdocs/STATUS.md) | Where the build actually is right now |
-| [`refdocs/paysense-v3-PRD.md`](refdocs/paysense-v3-PRD.md) | Scope, architecture, both engine designs, roadmap, decision log |
-| [`refdocs/changelog/CHANGELOG.md`](refdocs/changelog/CHANGELOG.md) | Session-by-session history |
-| [`refdocs/changelog/DECISIONS.md`](refdocs/changelog/DECISIONS.md) | Why things are the way they are |
-| [`refdocs/guides/env_setup.md`](refdocs/guides/env_setup.md) | Every environment variable and where to get it |
-| [`refdocs/guides/checklist.md`](refdocs/guides/checklist.md) | Pre-ship checklist |
-| [`refdocs/context/`](refdocs/context/) | v1 lessons, research brief, academic constraints, BNPL billing rules |
-| [`refdocs/guides/kickoff-superprompt.md`](refdocs/guides/kickoff-superprompt.md) | The prompt that starts (or resumes) a build session |
-| [`CLAUDE.md`](CLAUDE.md) | Operating brief for AI sessions on this repo |
+| [`refdocs/STATUS.md`](refdocs/STATUS.md) | Where the build is now |
+| [`refdocs/paysense-v3-PRD.md`](refdocs/paysense-v3-PRD.md) | Scope, architecture, engine designs, decision log |
+| [`refdocs/changelog/`](refdocs/changelog/) | Session history and the decision records |
+| [`refdocs/fintechathon-2026/`](refdocs/fintechathon-2026/) | Work packages, demo scenario, honest limits, questions for the author |
+| [`refdocs/guides/env_setup.md`](refdocs/guides/env_setup.md) | Every environment variable |
 
-## Data & privacy
+## Data and privacy
 
-This repository contains **no real personal financial data**. All personas and training data are synthetic, generated from published Malaysian statistics (sources in `refdocs/context/research-2026-10-08.md`). The predecessor prototype (PaySense v1) is published separately.
+No real personal financial data is in this repository. Personas and training data are synthetic; the two public datasets used only as benchmarks are downloaded by scripts and never committed (see [`THIRD_PARTY.md`](THIRD_PARTY.md)). The database is in Singapore (a cross-border transfer under Malaysia's PDPA, stated in the consent notice).
 
-## License
+## Licence
 
-Apache License 2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). Third-party licences: `THIRD_PARTY.md` (being written, WP10).
+Apache License 2.0: [`LICENSE`](LICENSE), [`NOTICE`](NOTICE). Third-party software and data: [`THIRD_PARTY.md`](THIRD_PARTY.md).

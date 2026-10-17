@@ -8,14 +8,11 @@ from pathlib import Path
 
 import yaml
 
+from ml.uat.errors import UatDataError
 from ml.uat.sus import LIKERT_MAX, LIKERT_MIN, SUS_ITEMS
 
 CLARITY_ITEMS = 4
 INVENTED_MARK = "# INVENTED"
-
-
-class UatDataError(ValueError):
-    """A response file that cannot be trusted."""
 
 
 @dataclass(frozen=True)

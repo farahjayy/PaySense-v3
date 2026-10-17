@@ -6,8 +6,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from skl2onnx import to_onnx
-from sklearn.linear_model import LogisticRegression
+
+pytest.importorskip("skl2onnx", reason="builds a test artefact; needs the ml dependency group")
+from skl2onnx import to_onnx  # noqa: E402
+from sklearn.linear_model import LogisticRegression  # noqa: E402
 
 from app.engines.forecasting.bands import BAND_FILE, text_digest
 from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR

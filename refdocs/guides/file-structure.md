@@ -1,6 +1,6 @@
 # File structure
 
-Where things live and which direction imports may go. Entries marked *(planned)* do not exist yet and arrive with their phase.
+Where things live and which direction imports may go.
 
 ## Import rules
 
@@ -18,43 +18,42 @@ backend/ml/          offline: may import app.domain and app.db.plans helpers; ap
 
 | Folder | Holds |
 |---|---|
-| `core/` | settings (fail-fast env), session tokens, the error envelope, request-body limit |
-| `api/` | one router per resource: auth, health, providers, provider_limits, transactions, summary, recurring, imports, plans, bills; shared `deps`, `types`, `schemas`, `rate_limit` |
-| `db/` | Supabase client, `ScopedTable` (the isolation boundary), and a repository per table |
-| `domain/` | `money` (sen maths), `schedule` (instalment schedules), `plan_builder` (the one function behind preview and save), `plans`, `providers`, `categorize`, `flows` (income / spend / refund / transfer), `csv_import`, `bills` |
-| `engines/` | *(planned, P4–P6)* `forecasting/` and `risk/` (`features.py` is the only place Engine 2 features are computed) |
+| `core/` | settings (fail-fast env), session tokens, passphrase hashing, the error envelope, request-body limit |
+| `api/` | one router per resource: auth, health, providers, provider_limits, transactions, summary, categories, recurring, imports, plans, bills, forecast, risk, model_info, budgets, insights, recommendations (and alerts), settings (savings buffer), account (consent, export, delete), assistant; shared `deps` (user, quotas), `types`, `schemas`, `rate_limit` |
+| `db/` | Supabase client, `ScopedTable` (the isolation boundary), a repository per table, `locks` (per-user row locks), `account` (export and delete across every user table) |
+| `domain/` | pure logic, no I/O: `money` (sen maths), `schedule`, `plan_builder`, `plans`, `providers`, `categorize`, `categories`, `flows`, `csv_import`, `upload`, `bills`, `bill_analysis`, `breakdown`, `budgets`, `insights`, `recommendations`, `merchants`, `consent` |
+| `engines/forecasting/` | Engine 1: series building, the served LSTM (ONNX), the band table (`bands.py`), the Monte Carlo simulation, the dashboard summary |
+| `engines/risk/` | Engine 2: `features.py` (the only place its features are computed), the artefact loader and its start-up checks, assessment, exact Shapley reasons, counterfactual search, sentence templates |
+| `assistant/` | the AI assistant: `tools` (Tier 0/1, the model's only tools), `writes` (Tier 2, confirm-only), `policy`, `executor`, `actions` (pending proposals), `llm` (Gemini, Claude and a fake behind one interface), `agent` (the loop and its caps), `numbers` (the number check), `paste` (import by chat), `guided`, `prompt` |
 
 ## Offline ML (`backend/ml/`)
 
 | Module | Purpose |
 |---|---|
-| `datagen/params.yaml`, `sources.md`, `params.py` | every parameter of the synthetic population, each either cited to a key in `sources.md` or marked `assumed` with a reason; the loader refuses anything else |
-| `datagen/rng.py`, `calendar.py`, `types.py` | named deterministic random streams, week/month helpers, plain data types |
-| `datagen/income.py`, `bills.py`, `discretionary.py`, `merchants.py` | the component generators (allowance / PTPTN / part-time / gig income, rent and subscriptions, everyday spending) |
-| `datagen/bnpl.py`, `purchase.py` | existing BNPL plans built with the app's own `propose_plan`, and the proposed purchase Engine 2 is asked about |
-| `datagen/profile.py` | `generate_profile`: one student, assembled from the components |
-| `datagen/personas.py` | the three UAT persona CSVs (`data/personas/`) |
-| `datagen/export.py` | streams the population to `data/synthetic/` (`profiles.jsonl`, `weekly_series.csv`, `MANIFEST.json`) |
-| `datagen/report.py`, `report_stats.py` | the generated distribution report in `reports/datagen/` |
-| `engine1_eval/`, `engine2_train/` | *(planned, P3 and P5)* |
+| `datagen/` | the synthetic student population: every parameter cited or marked `assumed` (`params.yaml`, `sources.md`), component generators, profiles (with the savings buffer), the three persona CSVs, the generated report |
+| `engine1_eval/` | Engine 1 evaluation on MoneyData, Berka and the synthetic cohort (benchmarks, AutoARIMA, Prophet, global LSTM, statistical tests), the serving check, the band calibration |
+| `engine2_train/` | labels from Engine 1's simulation, cross-validation of the four candidates, tuning, calibration, the lockbox, ONNX export with parity, stress tests, serving check, version comparison |
+| `uat/` | UAT kit analysis (SUS, clarity, decision switches) and the persona date shifter |
 
-## Data and reports
+## Data, reports and evidence
 
 | Path | Status |
 |---|---|
-| `data/personas/*.csv` | committed, synthetic, byte-for-byte reproducible |
-| `data/synthetic/` | outputs gitignored; only `MANIFEST.json` and `.gitignore` are committed |
-| `data/private/` | gitignored, never committed |
-| `data/external/` | *(planned, P3)* download scripts and raw third-party datasets (raw files ignored) |
-| `reports/datagen/` | generated by `python -m ml.datagen.report`; never hand-edited |
-| `reports/engine1/`, `reports/engine2/` | *(planned, P3 and P5)* |
+| `data/personas/*.csv` | committed, synthetic, reproducible |
+| `data/synthetic/`, `data/engine2/` | outputs gitignored; only manifests are committed |
+| `data/external/` | download scripts; raw third-party files gitignored |
+| `data/private/` | gitignored, never committed (persona account passphrases live here) |
+| `reports/datagen/`, `engine1/`, `engine2/`, `assistant/` | generated by their scripts; never hand-edited |
+| `evidence/` | generated demo run, demo grid, test outputs and scans (`evidence/README.md` lists the commands) |
 
 ## Tests
 
 | Folder | Covers |
 |---|---|
-| `backend/tests/` | repositories, auth, errors, OpenAPI, isolation, on an in-memory fake (`fakes.py`) |
+| `backend/tests/` | repositories, auth, errors, OpenAPI, isolation, scripts, on an in-memory fake (`fakes.py`) |
 | `backend/tests/domain/`, `api/` | pure functions; routes through the real app on the fake database |
-| `backend/tests/ml/` | the generator, including the import-boundary test |
+| `backend/tests/engines/` | both engines and their artefact checks |
+| `backend/tests/assistant/` | tools, policy, tool isolation, actions, LLM adapters (mocked transport), the loop, the number check, paste grounding, scenario and security suites |
+| `backend/tests/ml/` | the generator, evaluation and training code, and the import-boundary test (needs the `ml` group) |
 | `backend/tests/integration/` | real Supabase; skipped without credentials (`-m integration`) |
-| `frontend/tests/unit`, `e2e` | Vitest + Testing Library; Playwright against a fake-backed server |
+| `frontend/tests/unit`, `e2e` | Vitest + Testing Library + axe; Playwright (desktop and phone) against an in-memory backend with a scripted model |
