@@ -13,6 +13,7 @@ the number check.
 import datetime as dt
 import logging
 import time
+from dataclasses import replace
 from typing import Any
 
 from app.api.assistant import ChatIn, ChatOut
@@ -124,6 +125,7 @@ def run_chat(ctx: ToolContext, llm: LLM | None, body: ChatIn) -> ChatOut:
     if llm is None:
         return _fallback(ctx, [], "no model configured", None)
     check_budget(ctx)
+    ctx = replace(ctx, pasted_text=body.pasted_text)
 
     specs = [ToolSpec(t.name, t.description, t.input_schema()) for t in MODEL_TOOLS.values()]
     turns = (

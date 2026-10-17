@@ -72,6 +72,7 @@ class RunToolIn(BaseModel):
 
     tool: Annotated[str, Field(min_length=1, max_length=60, pattern=r"^[a-z_]+$")]
     arguments: dict[str, Any] = {}
+    pasted_text: text(MAX_MESSAGE_CHARS, required=False) | None = None
 
 
 class BudgetDeleteIn(BaseModel):
@@ -409,9 +410,11 @@ def chat(body: ChatIn, ctx: ContextDep, llm: LlmDep) -> ChatOut:
 def run_tool(body: RunToolIn, ctx: ContextDep) -> ChatOut:
     """Guided mode: one Tier 0 or Tier 1 tool from a button or a small form. No model is called;
     the reply is the step's own sentence."""
+    from dataclasses import replace
+
     from app.assistant.guided import run_guided
 
-    return run_guided(ctx, body.tool, body.arguments)
+    return run_guided(replace(ctx, pasted_text=body.pasted_text), body.tool, body.arguments)
 
 
 CONFIRM_LIMIT = rate_limited("assistant-confirm", 10, 60)

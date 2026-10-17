@@ -41,6 +41,7 @@
 | C3a Assistant tools (WP4a) | 16 tools (Tier 0/1), policy, executor, guided mode; writes separate | ✅ Done (in-memory) |
 | C3b Pending actions and audit (WP4b) | Propose, single-use confirm, decline, audit log | 🔶 Built and green on the in-memory database; migration 0004 not applied |
 | C3c LLM loop (WP4c) | Gemini / Anthropic / fake behind one interface; caps, number check, fallback, budgets, audit | ✅ Done — fake-LLM suite green; two live Gemini turns pass the number check; Anthropic adapter tested against a mocked transport only |
+| C3d Import by chat (WP4d) | Pasted rows grounded in the paste, duplicates flagged, confirm through a pending action | ✅ Done (in-memory) |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:

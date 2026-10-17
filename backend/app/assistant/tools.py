@@ -232,6 +232,49 @@ def _propose(ctx: ToolContext, args: Any) -> ToolOutput:
     )
 
 
+def _parse_paste(ctx: ToolContext, args: Any) -> ToolOutput:
+    from app.assistant import paste
+    from app.assistant.actions import action_out, propose
+
+    pasted = ctx.pasted_text or ""
+    if not pasted.strip():
+        raise api_error(422, "no_pasted_text", "Paste the transactions into the paste box first.")
+    if len(pasted) > paste.MAX_PASTE_CHARS:
+        raise api_error(422, "paste_too_long", "That paste is too long: 8,000 characters at most.")
+    if args.rows:
+        kept, rejected = paste.ground_rows(args.rows, pasted)
+    else:
+        kept, rejected = paste.parse_deterministically(pasted)
+    stored: list[str] = []
+    if kept:
+        days = [dt.date.fromisoformat(r["date"]) for r in kept]
+        stored = txn_repo.fingerprints_between(ctx.db, ctx.user_id, min(days), max(days))
+    flagged = paste.with_duplicates(kept, stored)
+    fresh = [row for row, duplicate in flagged if not duplicate]
+    out = contract.PastePreviewOut(
+        rows=[contract.PastedRowOut(**row, duplicate=dup) for row, dup in flagged],
+        rejected=[contract.RejectedRowOut(index=r.index, reason=r.reason) for r in rejected],
+        duplicate_count=len(flagged) - len(fresh),
+    )
+    pending = None
+    if fresh:
+        pending = action_out(propose(ctx, "confirm_import", {"rows": fresh}, origin="paste"))
+    card, data = _card("paste_preview", "Transactions from your paste", out)
+    return ToolOutput(
+        f"Read {len(kept)} row(s) from the paste: {len(fresh)} new, "
+        f"{len(kept) - len(fresh)} already in your ledger, {len(rejected)} rejected.",
+        card,
+        data,
+        pending_action=pending,
+    )
+
+
+def _paste_args() -> type[BaseModel]:
+    from app.assistant.paste import PasteArgs
+
+    return PasteArgs
+
+
 def _propose_args() -> type[BaseModel]:
     from app.assistant.actions import ProposeArgs
 
@@ -292,5 +335,11 @@ MODEL_TOOLS: dict[str, Tool] = {
              "savings, category, description), create_plan (payload: the same fields as "
              "check_purchase_risk), set_budget (payload: category, limit_sen) or delete_budget "
              "(payload: category). Amounts are integer sen.", _propose_args(), _propose),
+        Tool("parse_pasted_transactions", 1, "Import transactions the user pasted (the "
+             "<pasted_text> block). Give one row per transaction you read: date (YYYY-MM-DD), "
+             "amount_sen (integer sen exactly as written), type, and the category and description "
+             "if shown. The server checks every amount and date against the pasted text, flags "
+             "duplicates and shows a preview with Confirm; nothing is saved until the user "
+             "confirms. Never add rows that are not in the paste.", _paste_args(), _parse_paste),
     )
 }  # fmt: skip

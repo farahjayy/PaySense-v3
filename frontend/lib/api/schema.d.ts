@@ -2343,6 +2343,8 @@ export interface components {
             arguments: {
                 [key: string]: unknown;
             };
+            /** Pasted Text */
+            pasted_text?: string | null;
         };
         /** SetBudgetAction */
         SetBudgetAction: {

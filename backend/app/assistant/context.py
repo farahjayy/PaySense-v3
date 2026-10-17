@@ -15,6 +15,9 @@ class ToolContext:
     today: date
     settings: Settings
     predictor: Any = None  # the risk model; None when no artefact is loaded
+    # this turn's pasted text, from the server's own copy of the request (import by chat, WP4d);
+    # tools ground what the model read against it, never against the model's arguments
+    pasted_text: str | None = None
 
     @property
     def forecaster(self) -> Any:
