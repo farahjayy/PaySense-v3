@@ -161,3 +161,8 @@ def test_guided_run_accepts_a_paste(api, amir):
     body = res.json()
     assert body["cards"][0]["data"]["rows"][0]["amount_sen"] == 1500
     assert body["pending_actions"][0]["type"] == "confirm_import"
+
+
+def test_an_amount_written_against_rm_is_grounded():
+    kept, rejected = ground_rows([row("2026-10-12", 1500)], "12/10 Grab ride RM15.00")
+    assert len(kept) == 1 and rejected == []

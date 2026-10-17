@@ -58,3 +58,8 @@ def test_the_users_own_message_is_a_source_but_history_is_not():
 def test_small_counts_need_no_source():
     assert unsupported("You have 2 plans and 3 bills.", set()) == []
     assert unsupported("You have 13 plans.", set()) == ["13"]
+
+
+def test_a_figure_glued_to_rm_or_a_word_is_still_checked():
+    assert unsupported("You can spend RM450 more.", set()) == ["450"]
+    assert unsupported("Costs RM799.00 in total.", allowed_figures([{"x_sen": 79900}], [])) == []

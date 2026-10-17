@@ -7,7 +7,9 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
-NUMBER = re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?")
+# Any run of digits not continuing another number: "RM450" and "x2" are read as 450 and 2, so a
+# figure glued to a currency or a word cannot slip past the check.
+NUMBER = re.compile(r"(?<![\d.,])\d[\d,]*(?:\.\d+)?")
 DATE = re.compile(r"^(\d{4})-(\d{2})(?:-(\d{2}))?")
 # ASSUMED 28 (WP4c): whole numbers up to 12 need no source — counts such as "3 instalments" or
 # "2 plans", which the model may say in words or digits.
