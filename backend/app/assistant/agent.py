@@ -25,6 +25,8 @@ from app.assistant.prompt import OUT_OF_SCOPE, system_prompt
 from app.assistant.tools import MODEL_TOOLS
 from app.core.errors import api_error
 from app.db import assistant_events as events
+from app.db import user_settings
+from app.domain.consent import CONSENT_VERSION
 
 logger = logging.getLogger("paysense")
 
@@ -124,6 +126,14 @@ def run_chat(ctx: ToolContext, llm: LLM | None, body: ChatIn) -> ChatOut:
     )  # fmt: skip
     if llm is None:
         return _fallback(ctx, [], "no model configured", None)
+    if not user_settings.has_consented(ctx.db, ctx.user_id, CONSENT_VERSION):
+        events.record(ctx.db, ctx.user_id, "refusal", status="consent_required")
+        raise api_error(
+            403,
+            "consent_required",
+            "Read and accept the privacy notice before the assistant sends anything to its "
+            "model provider. The quick actions work without it.",
+        )
     check_budget(ctx)
     ctx = replace(ctx, pasted_text=body.pasted_text)
 

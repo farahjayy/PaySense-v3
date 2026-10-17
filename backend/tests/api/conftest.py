@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 from app.seed import seed_user
-from tests.fakes import TEST_PASSPHRASE, FakeSupabase, give_test_passphrase
+from tests.fakes import TEST_PASSPHRASE, FakeSupabase, accept_test_consent, give_test_passphrase
 
 
 @pytest.fixture
@@ -15,6 +15,8 @@ def fake_db() -> FakeSupabase:
     seed_user(db, username="siti", display_name="Siti", persona="budget_conscious")
     give_test_passphrase(db, "amir")
     give_test_passphrase(db, "siti")
+    accept_test_consent(db, "amir")
+    accept_test_consent(db, "siti")
     return db
 
 

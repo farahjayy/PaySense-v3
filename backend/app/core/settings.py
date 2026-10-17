@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     assistant_redact_descriptions: bool = False
     assistant_max_tool_calls: int = Field(default=6, ge=1, le=12)  # ASSUMED 16 (D-47)
     assistant_max_output_tokens: int = Field(default=1024, ge=64, le=8192)
-    assistant_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
+    assistant_timeout_seconds: float = Field(default=45.0, gt=0, le=120)
     assistant_history_turns: int = Field(default=8, ge=0, le=12)
     # ASSUMED 29: a turn costs about 6-12k tokens (measured on Gemini), so ~20 turns per user a day
     assistant_user_daily_tokens: int = Field(default=200_000, ge=0)

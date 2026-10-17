@@ -51,3 +51,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp4c-llm-loop.md](2026-10-18-wp4c-llm-loop.md) | WP4c LLM loop and guardrails, provider-agnostic (D-47, D-53) | Done (Gemini live; Anthropic mocked) |
 | [2026-10-18-wp4d-import-by-chat.md](2026-10-18-wp4d-import-by-chat.md) | WP4d Import by chat: grounded parsing of pasted transactions | Done |
 | [2026-10-18-wp6-assistant-evaluation.md](2026-10-18-wp6-assistant-evaluation.md) | WP6 Assistant scenario and security suites, live evaluation | In progress |
+| [2026-10-18-wp19-privacy.md](2026-10-18-wp19-privacy.md) | WP19 Privacy: consent, export my data, delete my data, responsible use | In progress |

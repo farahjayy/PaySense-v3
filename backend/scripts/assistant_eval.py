@@ -120,7 +120,7 @@ def judge(s: Scenario, status: int, body: dict[str, Any], plans_before: int, pla
     return not reasons, reasons
 
 
-def build_app(llm: Any = None):
+def build_app(llm: Any = None, overrides: dict[str, Any] | None = None):
     from app.api.deps import get_today
     from app.core.settings import Settings
     from app.engines.risk.artefact import load_if_present
@@ -133,6 +133,7 @@ def build_app(llm: Any = None):
         supabase_service_key="not-used-in-memory",
         session_secret="e" * 48,
         cors_origins="http://localhost:3000",
+        **(overrides or {}),
     )
     db = FakeSupabase()
     app = create_app(settings, db=db, predictor=load_if_present())
@@ -145,11 +146,12 @@ def build_app(llm: Any = None):
 def _fresh_user(client: TestClient, db: Any, n: int) -> dict[str, str]:
     from app.seed import seed_user
     from tests.assistant.conftest import load_persona
-    from tests.fakes import TEST_PASSPHRASE, give_test_passphrase
+    from tests.fakes import TEST_PASSPHRASE, accept_test_consent, give_test_passphrase
 
     name = f"eval{n}"
     user, _ = seed_user(db, username=name, display_name="Eval", persona="frequent_bnpl")
     give_test_passphrase(db, name)
+    accept_test_consent(db, name)
     load_persona(db, user["id"])
     token = client.post(
         "/api/auth/login", json={"username": name, "passphrase": TEST_PASSPHRASE}
@@ -157,8 +159,14 @@ def _fresh_user(client: TestClient, db: Any, n: int) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}, user["id"]
 
 
-def run(runs: int, pause: float, llm: Any = None, sleep: Callable[[float], None] = time.sleep):
-    app, db = build_app(llm)
+def run(
+    runs: int,
+    pause: float,
+    llm: Any = None,
+    sleep: Callable[[float], None] = time.sleep,
+    overrides: dict[str, Any] | None = None,
+):
+    app, db = build_app(llm, overrides)
     client = TestClient(app)
     outcomes: list[Outcome] = []
     status = None
@@ -267,8 +275,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--pause", type=float, default=4.0, help="seconds between turns")
+    parser.add_argument("--model", default=None, help="override ASSISTANT_MODEL for this run")
+    parser.add_argument("--timeout", type=float, default=None, help="seconds per turn")
     args = parser.parse_args()
-    outcomes, status = run(args.runs, args.pause)
+    overrides: dict[str, Any] = {}
+    if args.model:
+        overrides["assistant_model"] = args.model
+    if args.timeout:
+        overrides["assistant_timeout_seconds"] = args.timeout
+    outcomes, status = run(args.runs, args.pause, overrides=overrides)
     if not status or status.get("mode") != "llm":
         print("No model is configured (set LLM_PROVIDER and its key).", file=sys.stderr)
         return 2

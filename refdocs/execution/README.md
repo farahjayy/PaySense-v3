@@ -52,3 +52,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-18-wp4c-llm-loop.md](2026-10-18-wp4c-llm-loop.md) | [../plans/2026-10-18-wp4c-llm-loop.md](../plans/2026-10-18-wp4c-llm-loop.md) | Done (Gemini live; Anthropic mocked) |
 | [2026-10-18-wp4d-import-by-chat.md](2026-10-18-wp4d-import-by-chat.md) | [../plans/2026-10-18-wp4d-import-by-chat.md](../plans/2026-10-18-wp4d-import-by-chat.md) | Done |
 | [2026-10-18-wp6-assistant-evaluation.md](2026-10-18-wp6-assistant-evaluation.md) | [../plans/2026-10-18-wp6-assistant-evaluation.md](../plans/2026-10-18-wp6-assistant-evaluation.md) | In progress |
+| [2026-10-18-wp19-privacy.md](2026-10-18-wp19-privacy.md) | [../plans/2026-10-18-wp19-privacy.md](../plans/2026-10-18-wp19-privacy.md) | In progress |

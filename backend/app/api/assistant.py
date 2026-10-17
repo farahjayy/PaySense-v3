@@ -38,6 +38,7 @@ ActionType = Literal[
 ]
 ActionStatus = Literal["pending", "confirmed", "declined", "expired", "failed"]
 ASSISTANT_RESPONSES: dict[int | str, dict[str, Any]] = {
+    403: {"model": ErrorEnvelope, "description": "The privacy notice has not been accepted"},
     429: {"model": ErrorEnvelope, "description": "Too many requests, or the daily budget is used"},
     503: {"model": ErrorEnvelope, "description": "The assistant is switched off"},
 }

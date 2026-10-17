@@ -25,7 +25,9 @@ from app.core.settings import Settings
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
-DEFAULT_MODELS = {"gemini": "gemini-3.8-flash", "anthropic": "claude-sonnet-5-5"}
+# Gemini default: the free tier allows only 20 requests a day on gemini-3.8-flash (measured);
+# the lite model has its own, larger allowance and passed every live scenario (ASSUMED 29).
+DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite", "anthropic": "claude-sonnet-5-5"}
 
 
 class LLMError(Exception):

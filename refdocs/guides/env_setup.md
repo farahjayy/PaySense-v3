@@ -39,7 +39,7 @@ Last updated: 2026-10-08
 | `LLM_PROVIDER` | `gemini` | `gemini`, `anthropic` or `none` (D-53). No key for the chosen provider = guided mode |
 | `GEMINI_API_KEY` | unset → guided mode | Google AI Studio → Get API key. Server-side only (`SecretStr`), never logged or returned. Free-tier prompts may be used by Google to improve its products: synthetic personas only |
 | `ANTHROPIC_API_KEY` | unset → guided mode | https://console.anthropic.com/settings/keys. Server-side only. Used when `LLM_PROVIDER=anthropic` |
-| `ASSISTANT_MODEL` | `gemini-3.8-flash` / `claude-sonnet-5-5` | Model name for the chosen provider; check it in the provider's console |
+| `ASSISTANT_MODEL` | `gemini-3.1-flash-lite` / `claude-sonnet-5-5` | Model name for the chosen provider; check it in the provider's console |
 | `ASSISTANT_REDACT_DESCRIPTIONS` | `false` | `true` hides transaction descriptions from the model |
 | `ASSISTANT_MAX_TOOL_CALLS` | `6` | Tool calls per turn before the turn stops |
 | `ASSISTANT_MAX_OUTPUT_TOKENS` | `1024` | Output-token cap per model call |

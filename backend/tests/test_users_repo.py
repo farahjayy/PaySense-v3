@@ -62,7 +62,8 @@ def test_default_settings_are_created_without_any_balance(db):
 
     assert settings["onboarding_state"] == "new"
     # D-27: the forecast runs on flows, so there is no balance to store.
-    assert set(settings) == {"user_id", "onboarding_state"}
+    assert "balance" not in " ".join(settings)
+    assert settings["consent_version"] is None  # WP19: nobody has accepted the notice yet
     assert user_settings.get(db, user["id"])["onboarding_state"] == "new"
 
 

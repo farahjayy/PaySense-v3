@@ -18,6 +18,7 @@ from postgrest import APIError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import (
+    account,
     assistant,
     auth,
     bills,
@@ -193,6 +194,7 @@ def create_app(
     app.include_router(insights.router, prefix="/api")
     app.include_router(recommendations.router, prefix="/api")
     app.include_router(assistant.router, prefix="/api")
+    app.include_router(account.router, prefix="/api")
     return app
 
 

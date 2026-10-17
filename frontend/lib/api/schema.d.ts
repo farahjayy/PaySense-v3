@@ -810,10 +810,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Consent
+         * @description The current privacy and assistant notice, and whether this person has accepted it.
+         */
+        get: operations["get_consent"];
+        put?: never;
+        /** Accept Consent */
+        post: operations["accept_consent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Data
+         * @description Everything PaySense holds about you, as JSON (no passphrase hash).
+         */
+        post: operations["export_data"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Data
+         * @description Delete every row you own in every table. Your account stays, empty.
+         */
+        post: operations["delete_data"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountExportOut */
+        AccountExportOut: {
+            /**
+             * Exported At
+             * Format: date-time
+             */
+            exported_at: string;
+            /** User */
+            user: {
+                [key: string]: unknown;
+            };
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            } | null;
+            /** Tables */
+            tables: {
+                [key: string]: {
+                    [key: string]: unknown;
+                }[];
+            };
+        };
         /** ActionResultOut */
         ActionResultOut: {
             /** Id */
@@ -1432,6 +1515,29 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** ConsentIn */
+        ConsentIn: {
+            /** Version */
+            version: string;
+        };
+        /** ConsentOut */
+        ConsentOut: {
+            /** Version */
+            version: string;
+            /** Accepted */
+            accepted: boolean;
+            /** Accepted At */
+            accepted_at: string | null;
+            /** Sections */
+            sections: components["schemas"]["ConsentSectionOut"][];
+        };
+        /** ConsentSectionOut */
+        ConsentSectionOut: {
+            /** Title */
+            title: string;
+            /** Text */
+            text: string;
+        };
         /** CreatePlanAction */
         CreatePlanAction: {
             /** Id */
@@ -1495,6 +1601,26 @@ export interface components {
              */
             type: "delete_budget";
             payload: components["schemas"]["BudgetDeleteIn"];
+        };
+        /** DeleteIn */
+        DeleteIn: {
+            /**
+             * Confirmation
+             * @description Type exactly "delete my data"
+             * @constant
+             */
+            confirmation: "delete my data";
+            /** Passphrase */
+            passphrase: string;
+        };
+        /** DeleteOut */
+        DeleteOut: {
+            /** Deleted */
+            deleted: {
+                [key: string]: number;
+            };
+            /** Message */
+            message: string;
         };
         /** DueItemOut */
         DueItemOut: {
@@ -5002,6 +5128,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description The privacy notice has not been accepted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description The request body or parameters are invalid */
             422: {
                 headers: {
@@ -5062,6 +5197,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description The privacy notice has not been accepted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description The request body or parameters are invalid */
             422: {
                 headers: {
@@ -5115,6 +5259,15 @@ export interface operations {
             };
             /** @description Not logged in, or the session is invalid */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The privacy notice has not been accepted */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5229,6 +5382,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description The privacy notice has not been accepted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description No such record for this user */
             404: {
                 headers: {
@@ -5334,6 +5496,184 @@ export interface operations {
             };
             /** @description The proposal has expired */
             410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_consent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    accept_consent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not the current version */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    export_data: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountExportOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_data: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Wrong passphrase */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

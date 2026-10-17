@@ -57,3 +57,18 @@ def advance_onboarding_state(db: Database, user_id: str, state: str) -> dict[str
     if ONBOARDING_STATES.index(state) <= ONBOARDING_STATES.index(current["onboarding_state"]):
         return current
     return set_onboarding_state(db, uid, state)
+
+
+def accept_consent(db: Database, user_id: str, version: str) -> dict[str, Any]:
+    """Record that the user accepted this version of the privacy notice (WP19)."""
+    import datetime as dt
+
+    uid = require_user_id(user_id)
+    create_default(db, uid)
+    patch = {"consent_version": version, "consent_at": dt.datetime.now(dt.UTC).isoformat()}
+    return db.table("user_settings").update(patch).eq("user_id", uid).execute().data[0]
+
+
+def has_consented(db: Database, user_id: str, version: str) -> bool:
+    row = get(db, user_id)
+    return bool(row) and row.get("consent_version") == version

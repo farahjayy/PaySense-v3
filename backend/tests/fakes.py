@@ -39,7 +39,7 @@ UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
 # table -> defaults applied on insert (callables are invoked per row)
 DEFAULTS: dict[str, dict[str, Any]] = {
     "users": {"persona": None, "passphrase_hash": None, "token_version": 0},
-    "user_settings": {"onboarding_state": "new"},
+    "user_settings": {"onboarding_state": "new", "consent_version": None, "consent_at": None},
     "transactions": {
         "is_bnpl": False,
         "source": "manual",
@@ -125,6 +125,17 @@ def give_test_passphrase(db: "FakeSupabase", username: str) -> None:
     for row in db.rows("users"):
         if row["username"].lower() == username.lower():
             row["passphrase_hash"] = _TEST_HASH[0]
+
+
+def accept_test_consent(db: "FakeSupabase", username: str) -> None:
+    """Mark a seeded fake user as having accepted the current privacy notice (WP19)."""
+    from app.domain.consent import CONSENT_VERSION
+
+    user = next(u for u in db.rows("users") if u["username"].lower() == username.lower())
+    for row in db.rows("user_settings"):
+        if row["user_id"] == user["id"]:
+            row["consent_version"] = CONSENT_VERSION
+            row["consent_at"] = _now()
 
 
 def _now() -> str:

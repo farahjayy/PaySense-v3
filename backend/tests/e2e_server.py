@@ -14,7 +14,7 @@ from app.core.settings import Settings
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from app.main import create_app
 from app.seed import seed_user
-from tests.fakes import TEST_PASSPHRASE, FakeSupabase, give_test_passphrase
+from tests.fakes import TEST_PASSPHRASE, FakeSupabase, accept_test_consent, give_test_passphrase
 
 E2E_ORIGIN = "http://localhost:3100"
 E2E_USERNAME = "e2e"
@@ -57,11 +57,13 @@ def build_e2e_app():
     usernames = [E2E_USERNAME] + [
         f"{E2E_USERNAME}-{project}-{journey}"
         for project in ("desktop", "phone")
-        for journey in ("import", "screens", "risk", "spending", "logout")
+        for journey in ("import", "screens", "risk", "spending", "logout", "consent")
     ]
     for username in usernames:
         seed_user(db, username=username, display_name=E2E_DISPLAY_NAME, persona="frequent_bnpl")
         give_test_passphrase(db, username)
+        if not username.endswith("consent"):  # one account per project sees the notice
+            accept_test_consent(db, username)
     app = create_app(settings, db=db, predictor=StubModel())
     app.dependency_overrides[get_today] = lambda: E2E_TODAY
     return app

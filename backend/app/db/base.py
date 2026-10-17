@@ -284,6 +284,13 @@ class ScopedTable:
         payload = [{**row, OWNER_COLUMN: uid} for row in rows]
         return list(self._db.table(self._table).insert(payload).execute().data)
 
+    def delete_all(self, user_id: str) -> int:
+        """Delete every one of the caller's rows in this table (WP19 "delete my data"). Scoped
+        by construction: the only filter is the caller's own id."""
+        uid = require_user_id(user_id)
+        deleted = self._db.table(self._table).delete().eq(OWNER_COLUMN, uid).execute().data
+        return len(deleted)
+
     def delete_many(self, user_id: str, row_ids: Sequence[str]) -> int:
         """Delete the caller's rows with these ids (malformed or foreign ids are ignored), in
         batches so the request URL stays short."""
