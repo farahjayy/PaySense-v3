@@ -54,6 +54,7 @@
 | C7 Execution evidence (WP9) | Demo run through the API, test-evidence collector, video script | ✅ Done — live demo run: 20 requests, 0 failed, plan / budget / paste confirmed, injection ignored (`evidence/demo-run/`); `evidence/tests/` is written at the final full run |
 | C7 Repo, licence and docs (WP10) | README, THIRD_PARTY, CREDITS, file structure, tests without the ML stack | ✅ Done — torch-free run 2043 passed, 1 skipped; NOTICE name waits on the author (questions.md 35) |
 | C7 Deployment (WP11) | Image, blueprint, guide; the deploy | 🔶 Prepared — Docker image built and run here (models load, 82 MiB idle), smoke passes up to login (503 until migration 0003); the deploy needs the author (questions.md 36) |
+| C7 Submission pack (WP12) | Technical documentation, deck outline, summary | ✅ Drafts in `refdocs/fintechathon-2026/submission/`; slides, video and form are the author's |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:

@@ -28,6 +28,10 @@ Rules that make this file worth keeping:
 
 ## [Unreleased]
 
+### 2026-10-18 — WP12: submission pack drafts
+- **Changed:** `refdocs/fintechathon-2026/submission/summary.md` (registration summary, 163 words), `technical-documentation.md` (context box for readers outside Malaysia; architecture; the forecast, the risk check and the assistant with their measured results, each figure naming its generated source; security design in summary; honest limits; evidence index), `deck-outline.md` (ten slides, source per figure). README: the assistant's tiers named as in `SECURITY.md`.
+- **Known issues / next steps:** the slides, the video and the registration form are the author's; re-copy the figures after any re-run (the drafts name each source).
+
 ### 2026-10-18 — WP11: deployment preparation (the image built and run for the first time)
 - **Changed:** `render.yaml` (service renamed `paysense-v3-api` so it cannot collide with v2's; `SESSION_TTL_HOURS` 12 now that logout revokes; the assistant's provider and keys as prompted values; `ASSISTANT_GLOBAL_DAILY_TOKENS`, `ASSISTANT_USER_DAILY_TOKENS`, `ASSISTANT_DAILY_REQUESTS`, `DAILY_WRITE_QUOTA`); `refdocs/guides/deployment.md` rewritten for v3 (what was and was not verified, migrations 0003–0006 first, persona and judge accounts, the live demo run, a checklist with the assistant and the savings buffer). Question 36.
 - **Verified:** the Docker image was built for the first time: `docker build` with a test-only copy of `backend/Dockerfile` (base image from `mirror.gcr.io` because Docker Hub answered 429; the local `uv` binary because ghcr.io blobs are blocked here; the proxy CA in the build stage) — every other line as written; `docker run` with the session's configuration → start-up complete with both artefacts loaded, `/api/health` 200, **82 MiB** idle, image 471 MB. `scripts/smoke_live.py` against it → service, CORS, anonymous refusal PASS; login **503** (the real database has no `passphrase_hash` until migration 0003).
