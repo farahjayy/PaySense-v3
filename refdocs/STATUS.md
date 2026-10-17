@@ -44,6 +44,7 @@
 | C3d Import by chat (WP4d) | Pasted rows grounded in the paste, duplicates flagged, confirm through a pending action | ✅ Done (in-memory) |
 | C5b Privacy (WP19) | Consent, export, delete my data | 🔶 Built and green in memory and in the browser (consent journey); migration 0006 not applied |
 | C6b Topic screens (WP3) | Budgets, insights, recommendations, alert strip | ✅ Done (Vitest, axe, Playwright desktop + phone) |
+| C3e Assistant evaluation (WP6) | Scenario and security suites; live evaluation | ✅ Done — suites green with the fake LLM; live: 32/33 turns on gemini-3.1-flash-lite (one provider 503), `reports/assistant/` |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:
