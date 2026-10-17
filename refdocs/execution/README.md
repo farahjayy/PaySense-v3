@@ -60,3 +60,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-18-wp7-ui-flow-polish.md](2026-10-18-wp7-ui-flow-polish.md) | [../plans/2026-10-18-wp7-ui-flow-polish.md](../plans/2026-10-18-wp7-ui-flow-polish.md) | ✅ Done |
 | [2026-10-18-wp9-execution-evidence.md](2026-10-18-wp9-execution-evidence.md) | [../plans/2026-10-18-wp9-execution-evidence.md](../plans/2026-10-18-wp9-execution-evidence.md) | ✅ Done |
 | [2026-10-18-wp10-repo-licence-docs.md](2026-10-18-wp10-repo-licence-docs.md) | [../plans/2026-10-18-wp10-repo-licence-docs.md](../plans/2026-10-18-wp10-repo-licence-docs.md) | ✅ Done |
+| [2026-10-18-wp11-deployment-prep.md](2026-10-18-wp11-deployment-prep.md) | [../plans/2026-10-18-wp11-deployment-prep.md](../plans/2026-10-18-wp11-deployment-prep.md) | 🔶 Prepared; deploy needs the author |

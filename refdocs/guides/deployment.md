@@ -6,33 +6,35 @@
 
 | Verified here | How |
 |---|---|
-| The API runs with only its runtime dependencies (no torch, pandas, scikit-learn) | A clean environment built with `uv sync --frozen --no-default-groups`; the app imports; every third-party import in `app/` resolves |
-| Memory | The API in that environment: 100 MB idle, 112 MB after importing a persona and 30 forecasts; forecast p50 10 ms, p95 13 ms (warm). The Render free plan has 512 MB |
-| The frontend builds for production and runs under the Content-Security-Policy | `next build` and `next start`; every script tag carries the request's nonce; 12 Playwright tests (desktop and phone) pass against that build with no policy violations |
-| The smoke script | `backend/scripts/smoke_live.py`, tested against the real app on the in-memory database |
+| **The Docker image builds and runs** | `docker build` of `backend/Dockerfile` with two substitutions forced by this environment's network (the base image pulled from `mirror.gcr.io` because Docker Hub answered 429, and the local `uv` binary because `ghcr.io` blobs are blocked); every other line ran as written. The container started with the session's configuration, loaded both models (start-up refuses any artefact mismatch), answered `/api/health`, and idled at **82 MiB**; image 471 MB. Render pulls from Docker Hub and ghcr.io itself, so it uses the Dockerfile unchanged |
+| The smoke script against that container | `smoke_live.py`: the service answers, CORS allows the origin, anonymous calls are refused; **login answers 503** because the real database does not yet have migration 0003's `passphrase_hash` column. Expected until the migrations are applied |
+| The API runs with only its runtime dependencies | `uv sync --frozen --no-default-groups` (what the image runs); the backend test suite also passes without the ML group (`uv run --no-group ml pytest --ignore=tests/ml`) |
+| The frontend builds for production and runs under the Content-Security-Policy | `npm run build`; 26 Playwright journeys on desktop and phone with no policy violations, and no sideways scroll at 360 / 375 px |
+| The assistant against the real provider | `scripts/assistant_eval.py --runs 3` (33 / 33) and `scripts/demo_run.py --in-memory` on the in-memory API with the real Gemini key |
 
-| **Not** verified — do these on first deploy | Why |
+| **Not** verified — do these on deploy | Why |
 |---|---|
-| The Docker image | The Docker daemon was not running where this was prepared, so `backend/Dockerfile` has never been built. If the Render build fails, the log will say which line; the Dockerfile is short |
-| Anything against the real Supabase | No project existed; the migration has never been applied |
+| Migrations 0003–0006 on the real Supabase project | They cannot be applied from the build session (`questions.md`); every v3 feature that stores something needs them |
+| Anything v3 against the real database | Login itself needs 0003 |
 | `FORWARDED_ALLOW_IPS` | Render's proxy addresses must be read from its documentation or observed (below) |
 | A phone browser on the live URL | Needs the live URL |
 
 ## Order of operations
 
-1. **Supabase project** (free tier is fine). Region **Southeast Asia (Singapore)**. Note the project URL and the *secret / service_role* key (Project Settings → API). Never put that key anywhere public.
-2. **Apply the migration.** Supabase → SQL Editor → paste `backend/migrations/0001_init.sql` → run. It has never been applied, so expect to read an error message at least once; send it over and it is a small fix. Then run `cd backend && uv run python scripts/check_rls.py` (needs `SUPABASE_ANON_KEY`) to confirm an anonymous client reads nothing.
-3. **Local `.env`** (`backend/.env`, from `.env.example`): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, a generated `SESSION_SECRET`, `CORS_ORIGINS=http://localhost:3000`. Run `cd backend && uv run pytest -m integration` once; these 20 tests hit the real database.
-4. **Seed testers** (needs `backend/.env`): `uv run python scripts/seed_testers.py --roster ../uat/testers.csv`.
-5. **Render** (the API). New → Blueprint → pick this repository; it reads `render.yaml`. Fill in the prompted values:
+1. **Supabase** (the `paysense-v3` project, Singapore; 0001 and 0002 are applied). Apply **`backend/migrations/0003_login_hardening.sql`, `0004_budgets_assistant.sql`, `0005_savings_buffer.sql`, `0006_privacy.sql`**, in order, in the SQL editor, each from the branch head (0003 changed after it was first written). Then `cd backend && uv run python scripts/check_rls.py` (every table answers the anonymous key with 401) and `uv run pytest -m integration` (the `test_v3_migrations.py` tests stop skipping once the tables exist).
+2. **Local `.env`** (`backend/.env`): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `CORS_ORIGINS`, and for the assistant `LLM_PROVIDER` and its key (`env_setup.md`).
+3. **Demo and judge accounts**: start the API locally on the real database, then `cd backend && uv run python scripts/load_personas.py --api http://localhost:8000`. Usernames and generated passphrases go to the gitignored `data/private/persona_accounts.json`; deliver judges theirs privately. Check the demo against the real model and data: `uv run python scripts/find_demo_scenario.py --api http://localhost:8000` and `uv run python scripts/demo_run.py --api http://localhost:8000` (both write `evidence/`).
+4. **Render** (the API). New → Blueprint → this repository; it reads `render.yaml` (service **`paysense-v3-api`**, so it cannot collide with the v2 service). Fill in the prompted values:
    - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` from step 1.
-   - `CORS_ORIGINS`: leave a placeholder now and set it after step 6.
+   - `GEMINI_API_KEY` (or `ANTHROPIC_API_KEY` with `LLM_PROVIDER=anthropic`). Left empty, the assistant runs in guided mode.
+   - `CORS_ORIGINS`: a placeholder now, the Vercel URL after step 5.
    - `FORWARDED_ALLOW_IPS`: see "Proxy addresses" below.
-   - `SESSION_SECRET` is generated for you.
-   Deploys are manual (`autoDeploy: false`). The first build installs about 120 MB of dependencies.
-6. **Vercel** (the app). Import the repository, root directory `frontend`. Set `NEXT_PUBLIC_API_BASE_URL` to the Render URL **before** the first build (it is baked into the bundle; changing it later needs a redeploy). Deploy.
-7. **Close the loop.** Set Render's `CORS_ORIGINS` to the Vercel URL (no trailing slash, no path) and redeploy the API. The CSP already allows the app to call only the origin in `NEXT_PUBLIC_API_BASE_URL`.
-8. **Smoke test.** `cd backend && uv run python scripts/smoke_live.py --api https://<service>.onrender.com --origin https://<app>.vercel.app --username <a seeded tester>`. All seven lines must say PASS.
+   - `SESSION_SECRET` is generated for you; the token budgets, assistant cap and write quota have values in the blueprint.
+   Deploys are manual (`autoDeploy: false`).
+5. **Vercel** (the app). Import the repository, root directory `frontend`. Set `NEXT_PUBLIC_API_BASE_URL` to the Render URL **before** the first build (it is baked into the bundle). Deploy.
+6. **Close the loop.** Set Render's `CORS_ORIGINS` to the Vercel URL (no trailing slash) and redeploy the API.
+7. **Smoke test.** `SMOKE_PASSPHRASE=<that tester's passphrase> uv run python scripts/smoke_live.py --api https://<service>.onrender.com --origin https://<app>.vercel.app --username <a persona account>`. All seven lines must say PASS.
+8. **The demo on the live URL**: `uv run python scripts/demo_run.py --api https://<service>.onrender.com` (writes `evidence/demo-run/`), then the checklist below on a phone.
 
 ## Proxy addresses
 
@@ -48,9 +50,11 @@ Render's free web services stop after about fifteen minutes without traffic, and
 
 ## Live functional checklist (fresh browser session, then again on a phone)
 
-Run it as one of the seeded testers, on the live URL, in a private window.
+Run it as one of the persona accounts, on the live URL, in a private window.
 
-- [ ] The login page loads; the wrong username shows an error and stays; the right one lands on the dashboard.
+- [ ] The login page loads; a wrong passphrase shows one generic error and stays; the right one shows the privacy notice once, then the dashboard.
+- [ ] Ask PaySense: the opening turn lists what needs attention; "Can I afford an RM799 phone on SPayLater over 3 months?" shows the risk card and the steps; "Go ahead" shows a confirm card, and nothing is saved until Confirm.
+- [ ] Your data: enter a savings buffer, check the same purchase again, clear the buffer; download your data.
 - [ ] The dashboard says the forecast is locked and why (no history yet).
 - [ ] Import: choose a persona CSV (use `data/personas/budget_conscious.csv`; see "Persona dates" in `uat/README.md`), review, add. The count in the success message matches the preview.
 - [ ] The dashboard now shows a score, a band, the chart and "Show the numbers". Reload: still signed in.
@@ -72,4 +76,4 @@ Run it as one of the seeded testers, on the live URL, in a private window.
 
 ## Known limits to say out loud to testers
 
-The first request after idle can be slow on the free plan; the app has no per-user write quota or ledger-size cap yet (fine for five to seven testers); only SPayLater, TikTok PayLater and Atome follow built-in rules.
+The first request after idle can be slow on the free plan; the assistant's free-tier provider can be slow or unavailable at busy times (it falls back to guided mode); only SPayLater, TikTok PayLater and Atome follow built-in rules. The full list is in `SECURITY.md` and the README's honest limits.

@@ -4,7 +4,7 @@
 
 services:
   - type: web
-    name: paysense-api
+    name: paysense-v3-api # not "paysense-api": that name belongs to the v2 (FYP) service
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
@@ -20,8 +20,23 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       - key: SESSION_TTL_HOURS
-        value: "4" # a study session is under an hour; logout cannot revoke a token, so keep it short
+        value: "12" # logout revokes every session (D-49); the TTL bounds a token nobody logs out
       - key: CORS_ORIGINS
         sync: false # the Vercel URL, e.g. https://paysense.vercel.app, no trailing slash
       - key: FORWARDED_ALLOW_IPS
         sync: false # the platform's proxy range, never "*" (see the guide)
+      # The assistant (D-53). Without a key it runs in guided mode (no model): safe to deploy first.
+      - key: LLM_PROVIDER
+        value: gemini # or anthropic once credit is available; "none" switches the model off
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ASSISTANT_GLOBAL_DAILY_TOKENS
+        value: "3000000" # the cap across all users; never deploy a public URL without it
+      - key: ASSISTANT_USER_DAILY_TOKENS
+        value: "200000"
+      - key: ASSISTANT_DAILY_REQUESTS
+        value: "300"
+      - key: DAILY_WRITE_QUOTA
+        value: "300"
