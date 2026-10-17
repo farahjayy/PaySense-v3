@@ -54,7 +54,7 @@ The sources of every figure in this paragraph are listed in [`refdocs/fintechath
 
 ## Run it locally
 
-Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), Node.js 20 or later, a Supabase project (free tier) for the database. Commands work the same on Windows, macOS and Linux.
+Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), Node.js 24 (`frontend/.nvmrc`; at least 22.22, which jsdom and undici in the test toolchain require), a Supabase project (free tier) for the database. Commands work the same on Windows, macOS and Linux.
 
 ```bash
 git clone <this repo> && cd PaySense-v3

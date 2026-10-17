@@ -14,7 +14,13 @@ import {
 } from "@/lib/assistant";
 import { todayIso } from "@/lib/format";
 
-export type RunTool = (tool: string, args: Record<string, unknown>, pastedText?: string) => void;
+/** Runs one Tier 0/1 tool. `label` is what the person pressed, shown as their turn in the chat. */
+export type RunTool = (
+  tool: string,
+  args: Record<string, unknown>,
+  pastedText?: string,
+  label?: string,
+) => void;
 
 const INPUT =
   "h-9 w-full rounded-lg border border-line bg-surface px-2.5 text-[13px] text-ink focus:border-accent focus:outline-none";
@@ -49,7 +55,7 @@ export function GuidedActions({ onRun, busy }: { onRun: RunTool; busy: boolean }
             size="sm"
             variant="secondary"
             disabled={busy}
-            onClick={() => onRun(q.tool, {})}
+            onClick={() => onRun(q.tool, {}, undefined, q.label)}
           >
             {q.label}
           </Button>
@@ -133,7 +139,7 @@ function PurchaseForm({ onRun, busy }: FormProps) {
       label="Check a purchase"
       onSubmit={(e) => {
         e.preventDefault();
-        if (args) onRun("check_purchase_risk", args);
+        if (args) onRun("check_purchase_risk", args, undefined, "Check a purchase");
       }}
     >
       <Field label="What are you buying?">
@@ -202,7 +208,7 @@ function BudgetForm({ onRun, busy }: FormProps) {
       label="Set a budget"
       onSubmit={(e) => {
         e.preventDefault();
-        if (args) onRun("propose_action", args);
+        if (args) onRun("propose_action", args, undefined, "Set a budget");
       }}
     >
       <div className="grid grid-cols-2 gap-2">
@@ -248,7 +254,7 @@ function TransactionFormView({ onRun, busy }: FormProps) {
       label="Add a transaction"
       onSubmit={(e) => {
         e.preventDefault();
-        if (args) onRun("propose_action", args);
+        if (args) onRun("propose_action", args, undefined, "Add a transaction");
       }}
     >
       <div className="grid grid-cols-2 gap-2">
@@ -317,7 +323,7 @@ function PasteForm({ onRun, busy }: FormProps) {
       label="Paste transactions"
       onSubmit={(e) => {
         e.preventDefault();
-        if (text.trim()) onRun("parse_pasted_transactions", {}, text);
+        if (text.trim()) onRun("parse_pasted_transactions", {}, text, "Paste transactions");
       }}
     >
       <Field label="A statement with Date, Description and Amount columns">

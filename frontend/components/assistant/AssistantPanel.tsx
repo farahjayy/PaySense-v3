@@ -24,6 +24,7 @@ import {
   type ChatTurn,
   type PanelState,
 } from "@/lib/assistant";
+import { usePhoneLayout } from "@/lib/media";
 
 type Entry =
   | { id: number; role: "user"; text: string }
@@ -60,6 +61,25 @@ function Notice({ state, text }: { state: PanelState; text: string }) {
   );
 }
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+
+/** Keep Tab and Shift+Tab inside `root`: from the last control back to the first, and back. */
+function trapTab(event: KeyboardEvent, root: HTMLElement) {
+  const items = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE));
+  if (items.length === 0) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  const active = document.activeElement;
+  if (event.shiftKey && (active === first || !root.contains(active))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || !root.contains(active))) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 type Props = {
   onClose: () => void;
   /** A question a page put in the box (n changes on every request, so the same one can repeat). */
@@ -89,6 +109,8 @@ export function AssistantPanel({ onClose, prompt = null }: Props) {
   const [refused, setRefused] = useState<PanelState | null>(null);
   const nextId = useRef(1);
   const input = useRef<HTMLTextAreaElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const phone = usePhoneLayout();
   const busy = chat.isPending || run.isPending;
   const guided = status.data?.mode === "guided" || refused === "consent" || refused === "budget";
 
@@ -154,8 +176,8 @@ export function AssistantPanel({ onClose, prompt = null }: Props) {
     );
   }
 
-  const runTool: RunTool = (tool, args, pastedText) => {
-    add({ role: "user", text: toolLabel(tool) });
+  const runTool: RunTool = (tool, args, pastedText, label) => {
+    add({ role: "user", text: label ?? toolLabel(tool) });
     run.mutate(
       {
         tool,
@@ -178,11 +200,17 @@ export function AssistantPanel({ onClose, prompt = null }: Props) {
 
   return (
     <div
+      ref={dialog}
       role="dialog"
-      aria-modal="false"
+      aria-modal={phone ? "true" : "false"}
       aria-labelledby={titleId}
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose();
+        // On a phone the panel covers the page, so the keyboard stays inside it (a modal);
+        // on a desktop it sits beside the page and Tab may leave it.
+        if (event.key === "Tab" && phone && dialog.current) {
+          trapTab(event, dialog.current);
+        }
       }}
       onClick={(event) => {
         // A link to another screen closes the panel, which would otherwise cover it on a phone.

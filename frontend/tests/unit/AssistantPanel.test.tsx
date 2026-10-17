@@ -301,6 +301,57 @@ describe("AssistantPanel", () => {
   });
 });
 
+function phoneWidth(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: (query: string) => ({
+      matches,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }),
+  });
+}
+
+describe("the panel on a phone and on a desktop", () => {
+  it("is a modal dialog on a phone and keeps the keyboard inside it", async () => {
+    routes();
+    phoneWidth(true);
+    render(<AssistantPanel onClose={vi.fn()} />, { wrapper });
+    const dialog = screen.getByRole("dialog", { name: "Ask PaySense" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    const close = screen.getByRole("button", { name: "Close" });
+    close.focus();
+    await userEvent.tab({ shift: true }); // backwards from the first control
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).not.toBe(close);
+    await userEvent.tab(); // and forwards from the last one, back to the first
+    expect(document.activeElement).toBe(close);
+  });
+
+  it("is a side panel beside the page on a desktop", () => {
+    routes();
+    phoneWidth(false);
+    render(<AssistantPanel onClose={vi.fn()} />, { wrapper });
+    expect(screen.getByRole("dialog", { name: "Ask PaySense" })).toHaveAttribute(
+      "aria-modal",
+      "false",
+    );
+  });
+});
+
+describe("what a quick action says in the conversation", () => {
+  it("shows the button's own words, not the tool's name", async () => {
+    routes(GUIDED_STATUS);
+    post.mockResolvedValue(ok(reply({ mode: "guided", reply: "Checked 1 budget(s).", cards: [] })));
+    render(<AssistantPanel onClose={vi.fn()} />, { wrapper });
+    await userEvent.click(await screen.findByRole("button", { name: "My budgets" }));
+    const log = screen.getByRole("log", { name: "Conversation" });
+    expect(log).toHaveTextContent("You: My budgets");
+    expect(log).not.toHaveTextContent("Get budget status");
+  });
+});
+
 describe("opening the assistant from a page", () => {
   it("puts the page's prompt in the message box without sending it", async () => {
     routes();
