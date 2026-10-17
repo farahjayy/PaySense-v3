@@ -8,12 +8,12 @@ in `confirm`, after the person presses a button on a card built from the validat
 import datetime as dt
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.bills import BillsOut
 from app.api.budgets import BudgetIn, BudgetListOut, BudgetOut, BudgetStatusOut, BudgetSuggestionOut
-from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, SettingsDep, TodayDep, rate_limited
 from app.api.forecast import ForecastOut
 from app.api.imports import ConfirmIn, ConfirmOut
 from app.api.insights import BillAnalysisOut, SpendingInsightsOut
@@ -197,6 +197,26 @@ class PastePreviewCard(_Card):
     data: PastePreviewOut
 
 
+CARD_TYPES: dict[str, type[_Card]] = {
+    "risk": RiskCard,
+    "forecast": ForecastCard,
+    "month_summary": MonthSummaryCard,
+    "category_spending": CategorySpendingCard,
+    "transactions": TransactionsCard,
+    "bills": BillsCard,
+    "bill_analysis": BillAnalysisCard,
+    "spending_insights": SpendingInsightsCard,
+    "plans": PlansCard,
+    "plan_preview": PlanPreviewCard,
+    "providers": ProvidersCard,
+    "budgets": BudgetsCard,
+    "budget_status": BudgetStatusCard,
+    "budget_suggestion": BudgetSuggestionCard,
+    "recommendations": RecommendationsCard,
+    "alerts": RecommendationsCard,
+    "paste_preview": PastePreviewCard,
+}
+
 Card = Annotated[
     RiskCard
     | ForecastCard
@@ -325,9 +345,34 @@ def chat(body: ChatIn, user: CurrentUser, db: DbDep) -> ChatOut:
     raise _not_built()
 
 
-@router.post("/run", response_model=ChatOut, responses=ASSISTANT_RESPONSES)
-def run_tool(body: RunToolIn, user: CurrentUser, db: DbDep) -> ChatOut:
-    raise _not_built()
+def tool_context(
+    request: Request, user: CurrentUser, db: DbDep, today: TodayDep, settings: SettingsDep
+) -> Any:
+    """Who and when every assistant call runs for: the session's user, never an argument."""
+    from app.assistant.context import ToolContext
+
+    return ToolContext(
+        db=db,
+        user_id=user.id,
+        today=today,
+        settings=settings,
+        predictor=getattr(request.app.state, "predictor", None),
+    )
+
+
+ContextDep = Annotated[Any, Depends(tool_context)]
+ASSISTANT_LIMIT = rate_limited("assistant", 30, 60)
+
+
+@router.post(
+    "/run", response_model=ChatOut, responses=ASSISTANT_RESPONSES, dependencies=[ASSISTANT_LIMIT]
+)
+def run_tool(body: RunToolIn, ctx: ContextDep) -> ChatOut:
+    """Guided mode: one Tier 0 or Tier 1 tool from a button or a small form. No model is called;
+    the reply is the step's own sentence."""
+    from app.assistant.guided import run_guided
+
+    return run_guided(ctx, body.tool, body.arguments)
 
 
 @router.get("/actions/{action_id}", response_model=PendingActionOut, responses=NOT_FOUND_RESPONSE)

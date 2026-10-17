@@ -7,7 +7,7 @@ restart cannot lose an upload and one user's preview can never be confirmed by a
 
 import datetime as dt
 import logging
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
@@ -113,12 +113,18 @@ def preview_csv(file: UploadFile, user: CurrentUser, db: DbDep) -> ImportPreview
     dependencies=[WRITE_QUOTA, rate_limited("import-confirm", 10, 60)],
 )
 def confirm_import(body: ConfirmIn, user: CurrentUser, db: DbDep) -> ConfirmOut:
+    return import_rows_for(db, user.id, body)
+
+
+def import_rows_for(db: Any, user_id: str, body: ConfirmIn) -> ConfirmOut:
+    """The one write path for imported rows: the import screen and the assistant's confirmed
+    `confirm_import` (import by chat) both use it."""
     created = transactions.bulk_create(
-        db, user.id, [row.model_dump() for row in body.rows], source="csv"
+        db, user_id, [row.model_dump() for row in body.rows], source="csv"
     )
     try:
-        user_settings.advance_onboarding_state(db, user.id, "history_imported")
+        user_settings.advance_onboarding_state(db, user_id, "history_imported")
     except Exception:
         # The rows are already saved; failing the request now would invite a duplicate retry.
-        logger.exception("Could not record onboarding progress for user %s", user.id)
+        logger.exception("Could not record onboarding progress for user %s", user_id)
     return ConfirmOut(created=created)

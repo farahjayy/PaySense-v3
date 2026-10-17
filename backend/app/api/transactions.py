@@ -142,8 +142,14 @@ def list_transactions(
 
 @router.post("", response_model=TransactionOut, status_code=201, dependencies=[WRITE_QUOTA])
 def create_transaction(body: TransactionIn, user: CurrentUser, db: DbDep) -> TransactionOut:
-    _require_own_recurring_item(db, user.id, body.recurring_item_id)
-    row = transactions.create(db, user.id, **body.model_dump())
+    return create_for(db, user.id, body)
+
+
+def create_for(db: Any, user_id: str, body: TransactionIn) -> TransactionOut:
+    """The one write path for a typed transaction: the route and the assistant's confirmed
+    `add_transaction` both use it."""
+    _require_own_recurring_item(db, user_id, body.recurring_item_id)
+    row = transactions.create(db, user_id, **body.model_dump())
     return TransactionOut.model_validate(row)
 
 

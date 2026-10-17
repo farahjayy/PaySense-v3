@@ -734,7 +734,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Run Tool */
+        /**
+         * Run Tool
+         * @description Guided mode: one Tier 0 or Tier 1 tool from a button or a small form. No model is called;
+         *     the reply is the step's own sentence.
+         */
         post: operations["run_tool"];
         delete?: never;
         options?: never;

@@ -269,7 +269,12 @@ def create_plan(body: PlanIn, user: CurrentUser, db: DbDep, today: TodayDep) -> 
 
 @router.get("", response_model=list[PlanOut])
 def list_plans(user: CurrentUser, db: DbDep, today: TodayDep) -> list[PlanOut]:
-    return [_plan_out(row, today) for row in plans_repo.list_with_instalments(db, user.id)]
+    return plans_for(db, user.id, today)
+
+
+def plans_for(db: Any, user_id: str, today: dt.date) -> list[PlanOut]:
+    """Shared by the route and the assistant's `list_plans` tool."""
+    return [_plan_out(row, today) for row in plans_repo.list_with_instalments(db, user_id)]
 
 
 @router.get("/{plan_id}", response_model=PlanOut, responses=NOT_FOUND_RESPONSE)

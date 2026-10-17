@@ -1,6 +1,7 @@
 """Environment-driven settings. A missing required variable fails at startup, by name."""
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field, SecretStr, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,6 +25,22 @@ class Settings(BaseSettings):
     # ASSUMED (D-49): writes one person may make per Malaysian day, across every write route.
     # A busy real user makes tens; an import is one write however many rows it holds.
     daily_write_quota: int = Field(default=300, ge=0)
+
+    # ---- the assistant (ADRs D-47, D-48, D-53). Keys are optional: none means guided mode.
+    assistant_enabled: bool = True
+    llm_provider: Literal["gemini", "anthropic", "none"] = "gemini"
+    gemini_api_key: SecretStr | None = None
+    anthropic_api_key: SecretStr | None = None
+    assistant_model: str | None = None  # None: the provider adapter's default model
+    # Transaction descriptions are user text; hide them from the LLM provider if preferred.
+    assistant_redact_descriptions: bool = False
+    assistant_max_tool_calls: int = Field(default=6, ge=1, le=12)  # ASSUMED 16 (D-47)
+    assistant_max_output_tokens: int = Field(default=1024, ge=64, le=8192)
+    assistant_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
+    assistant_history_turns: int = Field(default=8, ge=0, le=12)
+    assistant_user_daily_tokens: int = Field(default=60_000, ge=0)
+    assistant_global_daily_tokens: int = Field(default=1_500_000, ge=0)
+    assistant_action_ttl_minutes: int = Field(default=10, ge=1, le=60)  # ASSUMED 17 (D-48)
 
     @field_validator("cors_origins")
     @classmethod

@@ -3,7 +3,7 @@ one month's spending went by category (ADR D-45)."""
 
 import calendar
 import datetime as dt
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Query
 
@@ -40,7 +40,12 @@ class MonthSummaryOut(ApiModel):
 
 @router.get("/months", response_model=MonthSummaryOut)
 def months(user: CurrentUser, db: DbDep, today: TodayDep) -> MonthSummaryOut:
-    rows = transactions.list_for_summary(db, user.id)
+    return months_for(db, user.id, today)
+
+
+def months_for(db: Any, user_id: str, today: dt.date) -> MonthSummaryOut:
+    """Shared by the route and the assistant's `get_month_summary` tool."""
+    rows = transactions.list_for_summary(db, user_id)
     span = history_span(rows, today)
     return MonthSummaryOut(
         months=[MonthOut(**vars(m)) for m in month_summary(rows)],
@@ -72,10 +77,15 @@ MonthParam = Annotated[str, Query(pattern=r"^(20\d{2}|2100)-(0[1-9]|1[0-2])$")]
 @router.get("/categories", response_model=CategorySummaryOut)
 def categories(month: MonthParam, user: CurrentUser, db: DbDep) -> CategorySummaryOut:
     """Spending by category for one calendar month, biggest first."""
+    return categories_for(db, user.id, month)
+
+
+def categories_for(db: Any, user_id: str, month: str) -> CategorySummaryOut:
+    """Shared by the route and the assistant's `get_spending_by_category` tool."""
     year, number = int(month[:4]), int(month[5:])
     first = dt.date(year, number, 1)
     last = dt.date(year, number, calendar.monthrange(year, number)[1])
-    rows = transactions.list_for_breakdown(db, user.id, first, last)
+    rows = transactions.list_for_breakdown(db, user_id, first, last)
     result = category_breakdown(rows, month)
     return CategorySummaryOut(
         month=result.month,

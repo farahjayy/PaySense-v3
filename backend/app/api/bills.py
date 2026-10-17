@@ -1,6 +1,7 @@
 """Monthly bills: every instalment due across all of the user's plans, grouped by month."""
 
 import datetime as dt
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -40,5 +41,10 @@ class BillsOut(ApiModel):
 
 @router.get("", response_model=BillsOut)
 def bills(user: CurrentUser, db: DbDep, today: TodayDep) -> BillsOut:
-    plans = plans_repo.list_with_instalments(db, user.id)
+    return bills_by_month_for(db, user.id, today)
+
+
+def bills_by_month_for(db: Any, user_id: str, today: dt.date) -> BillsOut:
+    """Shared by the route and the assistant's `get_bills_by_month` tool."""
+    plans = plans_repo.list_with_instalments(db, user_id)
     return BillsOut.model_validate(monthly_bills(plans, today))
