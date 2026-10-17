@@ -1,7 +1,7 @@
 [project]
 name = "paysense-backend"
 version = "0.1.0"
-description = "PaySense v2 API: financial health forecasting and BNPL risk classification"
+description = "PaySense v3 API: financial health forecasting and BNPL risk classification"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.142",

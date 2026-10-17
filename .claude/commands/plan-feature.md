@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash
 
 Produce the plan/execution pair CLAUDE.md requires before any non-trivial implementation, for: $ARGUMENTS
 
-First read `refdocs/STATUS.md`, `refdocs/paysense-v2-PRD.md` (§3 designs, §6 exit criteria), `refdocs/changelog/DECISIONS.md`, and the code this would touch. If the work ports from v1, read the relevant files in `../PaySense/` (read-only) and name exactly which files and tests are ported. Check whether an existing plan already covers it — if so, say so instead of writing a duplicate.
+First read `refdocs/STATUS.md`, `refdocs/paysense-v3-PRD.md` (§3 designs, §6 exit criteria), `refdocs/changelog/DECISIONS.md`, and the code this would touch. If the work ports from v1, read the relevant files in `../PaySense/` (read-only) and name exactly which files and tests are ported. Check whether an existing plan already covers it — if so, say so instead of writing a duplicate.
 
 Write two files with the same filename, matching the structure of the existing docs in those directories:
 - `refdocs/plans/YYYY-MM-DD-<slug>.md` — what and why: scope in/out with reasons, approach, a risk table with honest confidence levels, and a definition of done phrased as observable facts.

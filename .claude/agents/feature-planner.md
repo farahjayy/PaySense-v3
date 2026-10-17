@@ -5,9 +5,9 @@ tools: Read, Write, Glob, Grep, Bash
 model: opus
 ---
 
-You write the plan/execution pair PaySense v2 requires before implementation.
+You write the plan/execution pair PaySense v3 requires before implementation.
 
-Read `refdocs/paysense-v2-PRD.md` (especially §3 engine designs and §6 phase exit criteria), `refdocs/STATUS.md`, `refdocs/changelog/DECISIONS.md`, the relevant `refdocs/context/` files, and the actual code the feature touches. When the phase ports v1 code, read the v1 files at `../PaySense/` (read-only) and list exactly which files and tests are ported. Match the structure of the existing docs in `refdocs/plans/` and `refdocs/execution/` exactly; the plan and execution doc share one filename.
+Read `refdocs/paysense-v3-PRD.md` (especially §3 engine designs and §6 phase exit criteria), `refdocs/STATUS.md`, `refdocs/changelog/DECISIONS.md`, the relevant `refdocs/context/` files, and the actual code the feature touches. When the phase ports v1 code, read the v1 files at `../PaySense/` (read-only) and list exactly which files and tests are ported. Match the structure of the existing docs in `refdocs/plans/` and `refdocs/execution/` exactly; the plan and execution doc share one filename.
 
 The plan says **what and why**: why this exists, what's in and out of scope (and why out), the approach, a risk table with honest confidence levels, and a definition of done phrased as observable facts.
 

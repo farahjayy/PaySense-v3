@@ -3,7 +3,7 @@ description: Where is this project actually at?
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-Tell me where PaySense v2 actually stands.
+Tell me where PaySense v3 actually stands.
 
 Read `refdocs/STATUS.md`, the last few `refdocs/changelog/CHANGELOG.md` entries, and any in-progress execution doc. Then check reality: `git log --oneline -10`, `git status`, and the code for the current phase. If tests exist, say whether STATUS's verification ledger is backed by a recent real run.
 

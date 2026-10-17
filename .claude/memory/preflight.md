@@ -1,4 +1,4 @@
-# Preflight — PaySense v2 Session Start
+# Preflight — PaySense v3 Session Start
 
 > Read this at the start of every session, before touching code.
 > One page, six questions, then you can build. CLAUDE.md is the reference; this is the gate.
@@ -68,7 +68,7 @@ The changelog entry is mandatory after any session that changed code, made a dec
 |---|---|
 | `refdocs/STATUS.md` | Where the build actually is |
 | `CLAUDE.md` | Operating brief — rules, constraints, stack |
-| `refdocs/paysense-v2-PRD.md` | Scope, both engine designs, roadmap, decision log |
+| `refdocs/paysense-v3-PRD.md` | Scope, both engine designs, roadmap, decision log |
 | `refdocs/changelog/DECISIONS.md` | Settled calls — read before re-debating |
 | `refdocs/guides/env_setup.md` | Every env var, where to get it |
 | `refdocs/guides/checklist.md` | Pre-ship checklist |

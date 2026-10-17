@@ -1,6 +1,6 @@
-# PaySense v2 — Claude Context
+# PaySense v3 — Claude Context
 
-> Read this file at the start of every session, then run through `.claude/memory/preflight.md` — it's the six-question gate that turns these rules into something you actually did. PaySense v2 is an AI-driven decision support system that helps Malaysian university students make informed BNPL purchasing decisions by combining financial health forecasting with BNPL risk classification — the final FYP product (UTP), built after the v1 experiment.
+> Read this file at the start of every session, then run through `.claude/memory/preflight.md` — it's the six-question gate that turns these rules into something you actually did. PaySense v3 is an AI-driven decision support system that helps Malaysian university students make informed BNPL purchasing decisions by combining financial health forecasting with BNPL risk classification — forked from PaySense v2 (the UTP final-year project, commit `cdd43cf`) for the FinTechaton 2026 Shenzhen competition. v2 lives separately at `C:\Users\User\Documents\College\FYP\PaySense_v2` and is a read-only reference from this repo — never edit it from a v3 session. The competition-specific differences are recorded in the PRD and `refdocs/changelog/DECISIONS.md`.
 > The PRD is the source of truth; this file is the short operating brief; preflight is the gate. Keep all three short.
 
 ---
@@ -8,12 +8,12 @@
 ## Order of authority (when docs conflict, surface it — don't resolve silently)
 
 0. `refdocs/STATUS.md` — **where we are right now.** Phase checklist + the current module's progress. Check this first, every session.
-1. `refdocs/paysense-v2-PRD.md` — **what & why.** Owns scope, architecture, both engine designs, roadmap, Decision Log.
+1. `refdocs/paysense-v3-PRD.md` — **what & why.** Owns scope, architecture, both engine designs, roadmap, Decision Log.
 2. `refdocs/changelog/DECISIONS.md` — **settled calls.** Read before re-debating an architectural choice.
 3. `refdocs/plans/*.md` — **what to build & why.**
 4. `refdocs/execution/*.md` — **how & in what order.**
 5. `refdocs/guides/` — **operational reference.** `env_setup.md` (every variable, where to get it), `checklist.md` (pre-ship).
-6. `refdocs/paysense-v2-sources.md` and `refdocs/context/` — **raw research and founding context** (v1 lessons, research brief, academic constraints, BNPL billing rules).
+6. `refdocs/paysense-v3-sources.md` and `refdocs/context/` — **raw research and founding context** (v1 lessons, research brief, academic constraints, BNPL billing rules).
 
 If two docs disagree, stop and ask. Don't pick one and move on.
 
@@ -113,4 +113,4 @@ P0 Foundation → P1 Ledger & BNPL domain → P2 Synthetic population → P3 Eng
 
 ---
 
-*Companion brief to `refdocs/paysense-v2-PRD.md`. Last updated: 2026-10-08.*
+*Companion brief to `refdocs/paysense-v3-PRD.md`. Last updated: 2026-10-08.*

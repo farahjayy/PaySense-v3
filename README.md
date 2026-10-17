@@ -1,10 +1,12 @@
-# PaySense v2
+# PaySense v3
 
 An AI-driven decision support system that helps Malaysian university students make informed Buy Now, Pay Later (BNPL) purchasing decisions — by forecasting their financial health and classifying the risk of a proposed BNPL purchase before they commit.
 
 **Status:** scaffolded 2026-10-08 — no application code yet. See [`refdocs/STATUS.md`](refdocs/STATUS.md).
 
-Final Year Project, BSc (Hons) Computer Science, Universiti Teknologi PETRONAS — Nur Farah Binti Ahmad Nazri. Supervisor: Dr. Nazleeni Samiha Bt Haron.
+**v3 is the FinTechaton 2026 Shenzhen competition variant, forked from PaySense v2** (the final year project; original at `College\FYP\PaySense_v2`, GitHub `PaySense-v2`). This repo is `PaySense-v3` and uses its own Supabase project. The competition-specific differences are listed in the PRD.
+
+Built on the Final Year Project, BSc (Hons) Computer Science, Universiti Teknologi PETRONAS — Nur Farah Binti Ahmad Nazri. Supervisor: Dr. Nazleeni Samiha Bt Haron.
 
 ## What it does
 
@@ -83,7 +85,7 @@ PaySense_v2/
 | Doc | What's in it |
 |---|---|
 | [`refdocs/STATUS.md`](refdocs/STATUS.md) | Where the build actually is right now |
-| [`refdocs/paysense-v2-PRD.md`](refdocs/paysense-v2-PRD.md) | Scope, architecture, both engine designs, roadmap, decision log |
+| [`refdocs/paysense-v3-PRD.md`](refdocs/paysense-v3-PRD.md) | Scope, architecture, both engine designs, roadmap, decision log |
 | [`refdocs/changelog/CHANGELOG.md`](refdocs/changelog/CHANGELOG.md) | Session-by-session history |
 | [`refdocs/changelog/DECISIONS.md`](refdocs/changelog/DECISIONS.md) | Why things are the way they are |
 | [`refdocs/guides/env_setup.md`](refdocs/guides/env_setup.md) | Every environment variable and where to get it |

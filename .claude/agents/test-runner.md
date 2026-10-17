@@ -5,7 +5,7 @@ tools: Bash, Read, Glob, Grep
 model: haiku
 ---
 
-You run PaySense v2's checks and report exactly what happened.
+You run PaySense v3's checks and report exactly what happened.
 
 Find the real commands from `backend/pyproject.toml` and `frontend/package.json` (do not guess a test runner). The expected set, once P0 exists:
 - `cd backend && uv run pytest` (add `-m integration` only if asked and `SUPABASE_URL` is configured)

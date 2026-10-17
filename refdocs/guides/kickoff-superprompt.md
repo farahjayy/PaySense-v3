@@ -1,17 +1,17 @@
-# Kickoff Superprompt — PaySense v2
+# Kickoff Superprompt — PaySense v3
 
 > Paste everything below the line into a fresh Claude Code session opened at `C:\Users\User\Documents\College\FYP\PaySense_v2`. Written 2026-10-08 at the end of the scaffold session. Re-usable: if a session ends mid-build, paste it again — step 1 makes the new session resume from STATUS.md instead of starting over.
 
 ---
 
-You are building **PaySense v2**, my Final Year Project at Universiti Teknologi PETRONAS: an AI-driven decision support system that helps Malaysian university students make informed BNPL purchasing decisions by combining **financial health forecasting** with **BNPL risk classification**, explained in plain language. This repo was scaffolded on 2026-10-08 with a complete project operating system. No application code exists yet. Your job is to build the whole product, phase by phase, to a finished, tested, deployable state.
+You are building **PaySense v3**, my Final Year Project at Universiti Teknologi PETRONAS: an AI-driven decision support system that helps Malaysian university students make informed BNPL purchasing decisions by combining **financial health forecasting** with **BNPL risk classification**, explained in plain language. This repo was scaffolded on 2026-10-08 with a complete project operating system. No application code exists yet. Your job is to build the whole product, phase by phase, to a finished, tested, deployable state.
 
 ## 1. Orient yourself first (do not skip)
 
 Read, in this order, fully:
 1. `CLAUDE.md`, then walk through `.claude/memory/preflight.md`
 2. `refdocs/STATUS.md` — if anything is already built, resume from where it says; do not redo finished work
-3. `refdocs/paysense-v2-PRD.md` — §3 holds the decided designs of both engines and the Engine 2 feature contract; §6 holds every phase's exit criteria
+3. `refdocs/paysense-v3-PRD.md` — §3 holds the decided designs of both engines and the Engine 2 feature contract; §6 holds every phase's exit criteria
 4. `refdocs/changelog/DECISIONS.md` — D-01 … D-25 are settled; do not re-debate them
 5. `refdocs/context/` — `v1-lessons.md` (what broke in v1 and what to port), `academic-constraints.md` (supervisor decisions you must honour), `research-2026-10-08.md` (sources for every design choice), `bnpl-billing-rules-my.md`
 6. `refdocs/plans/2026-10-08-p0-foundation.md` and `refdocs/execution/2026-10-08-p0-foundation.md` — your first phase

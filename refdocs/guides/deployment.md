@@ -1,4 +1,4 @@
-# Deployment — PaySense v2
+# Deployment — PaySense v3
 
 > For the author. Nothing in the repository deploys itself: every step below is yours to run, and each one that costs money or makes something public says so. Variable names and where to get them are in `env_setup.md`; this file is the order of operations and the checks.
 

@@ -1,4 +1,4 @@
-# PaySense v2 — Product Requirements Document (PRD)
+# PaySense v3 — Product Requirements Document (PRD)
 
 > PaySense is an AI-driven decision support system that helps Malaysian university students make informed Buy Now, Pay Later (BNPL) purchasing decisions. It integrates **financial health forecasting** (projecting the student's monthly margin — income less bills, instalments and spending — with uncertainty, from their own transaction history, known income, bills and existing BNPL instalments; no account balance is needed) with **BNPL risk classification** (scoring a proposed purchase, before commitment, by the probability that the student cannot meet the plan from their income within the plan's horizon), and explains every result in plain language with what would make it safe. v2 is the final FYP product; v1 (`../PaySense/`) was the experiment it learns from.
 
@@ -6,7 +6,7 @@
 - **Users:** Malaysian university students who hold a bank (debit/savings) account and e-wallets but typically **no credit card** — BNPL is their main form of credit. In the evaluation build: 5–7 UAT testers on pre-seeded usernames, across 3 personas.
 - **Status:** Scaffolded 2026-10-08 — pre-implementation
 - **Last updated:** 2026-10-08
-- **Source of record:** [paysense-v2-sources.md](paysense-v2-sources.md)
+- **Source of record:** [paysense-v3-sources.md](paysense-v3-sources.md)
 - **Founding context:** [context/v1-lessons.md](context/v1-lessons.md) · [context/research-2026-10-08.md](context/research-2026-10-08.md) · [context/academic-constraints.md](context/academic-constraints.md) · [context/bnpl-billing-rules-my.md](context/bnpl-billing-rules-my.md)
 
 ---

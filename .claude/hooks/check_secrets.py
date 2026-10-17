@@ -25,7 +25,7 @@ import re
 import sys
 
 # (label, regex) — order matters only for message readability.
-# Trimmed for PaySense v2 (2026-10-08): Supabase keys (legacy JWT service_role and
+# Trimmed for PaySense v3 (2026-10-08): Supabase keys (legacy JWT service_role and
 # new sb_secret_ format), the session-signing secret, the optional Anthropic key,
 # GitHub tokens (the author pushes to GitHub), private keys. Dropped: AWS, OpenAI,
 # Slack, Google, Stripe (unused), and the 32-char hex pattern (model metadata

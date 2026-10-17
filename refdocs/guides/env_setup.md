@@ -1,4 +1,4 @@
-# Environment Setup — PaySense v2
+# Environment Setup — PaySense v3
 
 > **Security:** never commit a real value from this file. `.env*` is gitignored; `.env.example` carries the *names* with blank values and is committed.
 > Never paste a real token into a plan, an execution doc, a changelog entry, or a chat transcript. If one leaks, rotate it — don't just delete the message.

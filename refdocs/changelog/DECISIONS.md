@@ -1,8 +1,8 @@
-# Architectural Decisions — PaySense v2
+# Architectural Decisions — PaySense v3
 
 > Record decisions here so they aren't re-debated in future sessions.
 > Format: **Decision** → **Why** → **Trade-offs / what was rejected**.
-> Canonical one-line list lives in `refdocs/paysense-v2-PRD.md` §7; this file expands the load-bearing ones under the same id.
+> Canonical one-line list lives in `refdocs/paysense-v3-PRD.md` §7; this file expands the load-bearing ones under the same id.
 
 An ADR is worth writing when the decision (a) is expensive to reverse, (b) will look arbitrary to a future reader, or (c) had a real alternative someone will propose again. Everything else is just a commit message.
 

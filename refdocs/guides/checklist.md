@@ -1,4 +1,4 @@
-# Pre-Ship Checklist — PaySense v2
+# Pre-Ship Checklist — PaySense v3
 
 > Run the relevant section before pushing, deploying, or calling a phase done.
 > Not every item applies to every change — use judgement based on what actually changed. But read the list; that's where you notice the thing you forgot.
@@ -33,7 +33,7 @@
 
 ## New dependency
 
-- [ ] Recorded in `refdocs/paysense-v2-sources.md` with its license and why it was chosen
+- [ ] Recorded in `refdocs/paysense-v3-sources.md` with its license and why it was chosen
 - [ ] License is compatible with this project's distribution (public repo; avoid AGPL for served code)
 - [ ] Its actual docs/types were read — the API was not recalled from memory
 - [ ] Considered-and-rejected alternatives noted, so nobody re-derives that comparison

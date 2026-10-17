@@ -1,4 +1,4 @@
-# PaySense v2 — Sources & References
+# PaySense v3 — Sources & References
 
 > Raw research and external dependencies. The PRD is the *decided* view; this file is the *considered* view — including things that were looked at and rejected, which is often the more useful half.
 > Record a source when it's chosen, and again when it's rejected. "We already tried that and here's why it didn't fit" is the single most expensive fact to re-derive.
