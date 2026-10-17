@@ -39,5 +39,6 @@ def delete_everything(db: Database, user_id: str) -> dict[str, int]:
     """Remove every row the user owns in every table; reset their settings; keep the account."""
     uid = require_user_id(user_id)
     counts = {table: ScopedTable(db, table).delete_all(uid) for table in USER_TABLES}
-    db.table("user_settings").update({"onboarding_state": "new"}).eq("user_id", uid).execute()
+    reset = {"onboarding_state": "new", "savings_buffer_sen": 0}
+    db.table("user_settings").update(reset).eq("user_id", uid).execute()
     return counts

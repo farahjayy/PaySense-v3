@@ -39,7 +39,12 @@ UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
 # table -> defaults applied on insert (callables are invoked per row)
 DEFAULTS: dict[str, dict[str, Any]] = {
     "users": {"persona": None, "passphrase_hash": None, "token_version": 0},
-    "user_settings": {"onboarding_state": "new", "consent_version": None, "consent_at": None},
+    "user_settings": {
+        "onboarding_state": "new",
+        "savings_buffer_sen": 0,
+        "consent_version": None,
+        "consent_at": None,
+    },
     "transactions": {
         "is_bnpl": False,
         "source": "manual",

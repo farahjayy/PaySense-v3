@@ -204,3 +204,36 @@ def test_the_calendar_position_of_ptptn_varies_across_dated_profiles():
             gaps.add(((p.as_of - max(lumps)).days) // 30)
 
     assert len(gaps) >= 4  # as-of days fall at different points of the PTPTN cycle
+
+
+# --- the savings buffer (ADR D-50) ---
+def test_some_profiles_have_a_savings_buffer_and_others_none():
+    buffers = [profile(i).savings_buffer_sen for i in range(300)]
+    share_with = sum(b > 0 for b in buffers) / len(buffers)
+    assert 0.3 < share_with < 0.7
+    assert all(b >= 0 and b % 1000 == 0 for b in buffers)
+
+
+def test_a_buffer_never_exceeds_its_cap_in_months_of_income():
+    cap = PARAMS["savings.cap_months_of_income"]
+    floor = PARAMS["savings.income_floor_sen"]
+    for i in range(300):
+        p = profile(i)
+        base = max(p.expected_monthly_income_sen, floor)
+        assert p.savings_buffer_sen <= cap * base + 1000
+
+
+def test_the_buffer_has_its_own_stream_so_nothing_else_moved():
+    """The buffer is drawn from a new named stream: every other part of a profile is what v1's
+    generator made (the committed synthetic manifest still matches, checked in WP16)."""
+    p = profile(7)
+    assert p.transactions and p.purchase  # generated as before
+    assert p == profile(7)
+
+
+def test_the_careful_persona_keeps_savings_more_often():
+    def share(persona):
+        values = [profile(i, persona=persona).savings_buffer_sen for i in range(200)]
+        return sum(v > 0 for v in values) / len(values)
+
+    assert share("budget_conscious") > share("frequent_bnpl")

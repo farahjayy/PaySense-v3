@@ -81,6 +81,7 @@ def run(predictor: Predictor, profiles: int = DEFAULT_PROFILES) -> dict[str, Any
                 known["rows"], known["items"], known["plans"], known["limits"],
                 request_for(known), known["as_of"], forecaster, predictor,
                 seed=profile_seed(SERVING_SEED, index),
+                savings_buffer_sen=known["savings_buffer_sen"],
             )  # fmt: skip
         except ProposalError as err:
             rejected[err.code] += 1
@@ -96,6 +97,7 @@ def run(predictor: Predictor, profiles: int = DEFAULT_PROFILES) -> dict[str, Any
             checked = run_check(
                 known["rows"], known["items"], known["plans"], known["limits"], best.request,
                 known["as_of"], forecaster, predictor, seed=profile_seed(SERVING_SEED, index),
+                savings_buffer_sen=known["savings_buffer_sen"],
             )  # fmt: skip
             suggested_simulated = checked.p_simulated
         rows.append(
@@ -241,7 +243,7 @@ The ledgers here come from the generator through the same detection the labels u
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Serving check for the Engine 2 artefact.")
     parser.add_argument("--profiles", type=int, default=DEFAULT_PROFILES)
-    parser.add_argument("--model", type=Path, default=MODEL_ROOT / "v1")
+    parser.add_argument("--model", type=Path, default=MODEL_ROOT / "v2")
     parser.add_argument("--out", type=Path, default=REPORT_DIR)
     args = parser.parse_args(argv)
     predictor = load_engine2(args.model)

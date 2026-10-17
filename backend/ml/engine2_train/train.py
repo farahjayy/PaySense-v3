@@ -26,8 +26,7 @@ from typing import Any
 import joblib
 import numpy as np
 
-from app.engines.forecasting.service import DASHBOARD_MONTHS, ERROR_INFLATION
-from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEEKS
+from app.engines.risk.artefact import live_constants
 from app.engines.risk.features import ENGINE1_FEATURES, FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from ml.engine2_train.calibrate import choose_calibration, fit_calibrator
 from ml.engine2_train.cv import CvResult, cross_validate, nadeau_bengio, nadeau_bengio_interval
@@ -132,12 +131,7 @@ def _serving_facts(manifest: dict[str, Any]) -> dict[str, Any]:
     keys = ("label_version", "horizon_max_weeks", "served_model_files", "paths", "seed")
     return {
         "labels_manifest": {key: manifest.get(key) for key in keys},
-        "serving_constants": {
-            "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
-            "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
-            "ERROR_INFLATION": ERROR_INFLATION,
-            "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
-        },
+        "serving_constants": live_constants(),
     }
 
 

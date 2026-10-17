@@ -22,8 +22,9 @@ from typing import Any
 import numpy as np
 import onnxruntime
 
+from app.engines.forecasting.bands import BAND_FILE, text_digest
 from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
-from app.engines.forecasting.service import DASHBOARD_MONTHS, ERROR_INFLATION
+from app.engines.forecasting.service import DASHBOARD_MONTHS
 from app.engines.forecasting.serving import ARTEFACT_VERSION as ENGINE1_VERSION
 from app.engines.forecasting.serving import SERVED_MODEL
 from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEEKS
@@ -36,12 +37,16 @@ MODEL_ROOT = Path(__file__).resolve().parents[3] / "models" / "engine2"
 MODEL_FILE = "model.onnx"
 METADATA_FILE = "metadata.json"
 
-LIVE_CONSTANTS = {
-    "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
-    "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
-    "ERROR_INFLATION": ERROR_INFLATION,
-    "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
-}
+
+def live_constants() -> dict[str, Any]:
+    """What every label depended on besides the network files. The band table (WP16, C2) is
+    recorded by its digest: a label made with other bands is a different label."""
+    return {
+        "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
+        "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
+        "BAND_RULE_SHA256": text_digest(BAND_FILE) if BAND_FILE.exists() else None,
+        "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
+    }
 
 
 def clamp_probability(value: float) -> float:
@@ -84,7 +89,7 @@ def _check_matches_running_code(meta: Mapping[str, Any], folder: Path) -> None:
     if list(meta.get("feature_names", [])) != list(FEATURE_NAMES):
         raise ArtefactError("the model's feature order differs from the code's feature order")
     recorded = meta.get("serving_constants", {})
-    for name, live in LIVE_CONSTANTS.items():
+    for name, live in live_constants().items():
         if recorded.get(name) != live:
             raise ArtefactError(
                 f"{name} was {recorded.get(name)!r} when the model's labels were made but is "
@@ -126,7 +131,7 @@ def _check_matches_running_code(meta: Mapping[str, Any], folder: Path) -> None:
 
 
 class OnnxPredictor:
-    """Calibrated probability from the 16 features, and which features pushed it up."""
+    """Calibrated probability from the Engine 2 features, and which features pushed it up."""
 
     def __init__(self, folder: Path, meta: Mapping[str, Any]) -> None:
         self.version: str = str(meta["version"])

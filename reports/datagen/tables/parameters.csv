@@ -122,3 +122,11 @@ purchase.income_floor_sen,10000,sen,assumed,RM100: a student with no visible inc
 purchase.price_floor_sen,1000,sen,assumed,Smallest proposed price (RM10).
 purchase.price_cap_sen,5000000,sen,assumed,"Largest proposed price (RM50,000)."
 purchase.price_to_monthly_income_range,"[0.02, 3.0]",ratio,assumed,"Proposed-purchase price as a multiple of expected monthly income, sampled log-uniformly so Engine 2 sees clearly safe, borderline and clearly unaffordable cases. Chosen for coverage, not realism."
+savings.probability.frequent_bnpl,0.35,ratio,assumed,No published share of Malaysian students with savings. Lower for the persona that already relies on BNPL.
+savings.probability.budget_conscious,0.65,ratio,assumed,As above; the careful persona is the most likely to keep some savings.
+savings.probability.irregular_income,0.45,ratio,assumed,As above; gig earners keep some cash between payouts.
+savings.median_months_of_income,1.0,ratio,assumed,"Median buffer, for students who have one, as a multiple of their expected monthly income. Chosen so a typical buffer covers about one month."
+savings.sigma,0.9,log_ratio,assumed,Spread of the log-normal buffer; wide enough to include a few weeks to several months.
+savings.cap_months_of_income,6.0,ratio,assumed,"Largest buffer, in months of income, so one extreme draw cannot dominate training."
+savings.income_floor_sen,50000,sen,assumed,"RM500: the base a buffer is scaled from when the student's regular income is lower, so a student with no visible income can still hold savings."
+savings.round_to_sen,1000,sen,assumed,"Buffers are whole RM10, the way a person would type them."

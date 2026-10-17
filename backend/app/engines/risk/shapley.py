@@ -7,7 +7,7 @@ same scale as the number a student sees, calibration included), with no approxim
 internals: every coalition of the features that differ goes through the model in one batch.
 
 A feature that already equals the reference contributes exactly 0 and is left out of the
-coalitions, so the batch is at most 2**16 = 65,536 rows for the 16 Engine 2 features.
+coalitions, so the batch is at most 2**17 = 131,072 rows for the 17 Engine 2 features.
 """
 
 from collections.abc import Callable
@@ -15,8 +15,9 @@ from math import factorial
 
 import numpy as np
 
-# The batch holds 2**m rows for m differing features; 16 is every Engine 2 feature (65,536 rows).
-MAX_ACTIVE = 16
+# The batch holds 2**m rows for m differing features; 17 is every Engine 2 feature (131,072 rows,
+# about 18 MB of float64 for one explanation).
+MAX_ACTIVE = 17
 
 Model = Callable[[np.ndarray], np.ndarray]
 

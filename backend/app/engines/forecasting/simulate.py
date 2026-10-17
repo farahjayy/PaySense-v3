@@ -6,8 +6,9 @@ There is no starting balance. For each simulated path and each month of the hori
              - known bills - BNPL instalments (including checkout payments)
              - forecast discretionary spend
 
-The cumulative margin starts at RM0 at the START OF THE CURRENT MONTH ("no savings assumed") and
-accumulates month by month; what has already come in and gone out this month is the
+The cumulative margin starts at the person's savings buffer (RM0 when they recorded none, ADR D-50,
+which amends D-27's "no savings assumed") at the START OF THE CURRENT MONTH and accumulates month by
+month; what has already come in and gone out this month is the
 `month_to_date_sen` net, so a student paid on the 1st is not treated as if that income never
 arrived (ADR D-33 amends D-27's "RM0 today").
 P(shortfall) is the share of paths whose cumulative margin is below RM0 at ANY month-end of the
@@ -168,7 +169,10 @@ def simulate(
     month_to_date_sen: int = 0,
     fallback_errors: bool = False,
     max_weeks: int = MAX_WEEKS,
+    starting_buffer_sen: int = 0,
 ) -> Simulation:
+    if starting_buffer_sen < 0:
+        raise ValueError("a savings buffer cannot be negative")
     if series.start is None or series.weeks == 0:
         raise ValueError("a forecast needs at least one complete week of history")
     first_monday = series.start + timedelta(days=DAYS_PER_WEEK * series.weeks)
@@ -208,7 +212,8 @@ def simulate(
     fixed = np.array([f.income_sen - f.bills_sen - f.instalments_sen for f in flows], dtype=float)
     margin = fixed + income @ weights - spend @ weights
     margin[:, 0] += month_to_date_sen  # actual net of the days of this month already gone
-    cumulative = np.cumsum(margin, axis=1)
+    # running through the savings buffer is a shortfall; dipping into it is not (D-50)
+    cumulative = np.cumsum(margin, axis=1) + starting_buffer_sen
     negative = cumulative < 0
     p_negative = negative.mean(axis=0)
     p_shortfall = float(negative.any(axis=1).mean())

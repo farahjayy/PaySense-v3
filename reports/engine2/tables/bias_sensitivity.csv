@@ -1,0 +1,20 @@
+measure,value
+profiles,10000
+mean_label_served,0.3662295
+mean_label_recentred,0.3524783
+mean_change,-0.0137512
+mean_absolute_change,0.042852999999999995
+p95_absolute_change,0.21499999999999997
+band_agreement,0.9179
+transition Safe -> Safe,4562
+transition Safe -> Caution,105
+transition Safe -> At Risk,21
+transition Caution -> Safe,244
+transition Caution -> Caution,617
+transition Caution -> At Risk,145
+transition At Risk -> Safe,35
+transition At Risk -> Caution,271
+transition At Risk -> At Risk,4000
+mean change budget_conscious,-0.028050277918140475
+mean change frequent_bnpl,-0.0330413555427915
+mean change irregular_income,0.034594140625000006

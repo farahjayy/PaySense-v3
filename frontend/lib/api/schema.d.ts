@@ -872,6 +872,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["get_settings"];
+        /**
+         * Put Settings
+         * @description Set the savings buffer. The next forecast and risk check start the running margin from it.
+         */
+        put: operations["put_settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2498,6 +2519,24 @@ export interface components {
              */
             type: "set_budget";
             payload: components["schemas"]["BudgetIn"];
+        };
+        /** SettingsIn */
+        SettingsIn: {
+            /**
+             * Savings Buffer Sen
+             * @description Savings to fall back on, integer sen; 0 means none
+             */
+            savings_buffer_sen: number;
+        };
+        /** SettingsOut */
+        SettingsOut: {
+            /** Savings Buffer Sen */
+            savings_buffer_sen: number;
+            /**
+             * Onboarding State
+             * @enum {string}
+             */
+            onboarding_state: "new" | "history_imported" | "complete";
         };
         /** SimulationOut */
         SimulationOut: {
@@ -5675,6 +5714,86 @@ export interface operations {
             };
             /** @description Wrong passphrase */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    put_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

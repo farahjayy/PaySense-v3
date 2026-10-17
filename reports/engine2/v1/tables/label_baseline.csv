@@ -1,0 +1,11 @@
+measure,value
+share_label_exactly_0,0.3355
+share_label_exactly_1,0.209
+share_label_within_stop_margin,0.5844
+monte_carlo_noise_floor_brier,0.0001
+share_p_without_exactly_0,0.4077
+share_p_without_exactly_1,0.118
+share_p_without_below_safe_edge,0.4689
+share_p_without_at_or_above_safe_edge,0.5311
+share_purchase_moves_the_band,0.1145
+share_purchase_changes_label_by_under_001,0.6632

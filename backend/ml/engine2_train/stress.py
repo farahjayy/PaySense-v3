@@ -149,6 +149,7 @@ def run_variant(
             rows=known["rows"], items=known["items"], plans=known["plans"],
             proposal=known["proposal"], provider_limits=known["limits"], today=known["as_of"],
             forecaster=forecaster, seed=profile_seed(master_seed, index), paths=paths,
+            savings_buffer_sen=known["savings_buffer_sen"],
         )  # fmt: skip
         if built is None:
             locked += 1

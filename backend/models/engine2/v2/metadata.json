@@ -1,0 +1,142 @@
+{
+  "baseline": {
+    "active_plans_with_purchase": 1.0,
+    "bnpl_outstanding_to_income": 0.2310950072937744,
+    "disc_volatility": 55.64731136418115,
+    "disc_weekly_p50": 37.2680514334552,
+    "disc_weekly_p90": 250.38396756090992,
+    "dsr_with_purchase": 0.2997855446896875,
+    "income_p10_monthly": 1040.2907759727948,
+    "instalment_amount": 35.016666666666666,
+    "instalment_to_income": 0.02933544764211159,
+    "limit_known": 0.0,
+    "limit_utilisation_with_purchase": 0.0,
+    "margin_cum_p10_without": 957.65,
+    "margin_monthly_p50_without": 443.83,
+    "monthly_fee_rate": 1.5,
+    "num_instalments": 6.0,
+    "savings_buffer_to_income": 0.568540253428765,
+    "upfront_to_income": 0.0
+  },
+  "baseline_profiles": 4235,
+  "calibrator": {
+    "coef": 0.9452857919400824,
+    "intercept": 0.004097319277921629,
+    "kind": "platt"
+  },
+  "explanation": {
+    "method": "baseline_shapley",
+    "reference": "the median, feature by feature, of the development profiles whose label is Safe (below 0.10): a typical student who is not at risk (ADR D-40)"
+  },
+  "family": "lightgbm",
+  "feature_names": [
+    "disc_weekly_p50",
+    "disc_weekly_p90",
+    "disc_volatility",
+    "margin_monthly_p50_without",
+    "margin_cum_p10_without",
+    "income_p10_monthly",
+    "instalment_amount",
+    "num_instalments",
+    "monthly_fee_rate",
+    "instalment_to_income",
+    "dsr_with_purchase",
+    "active_plans_with_purchase",
+    "bnpl_outstanding_to_income",
+    "upfront_to_income",
+    "limit_utilisation_with_purchase",
+    "limit_known",
+    "savings_buffer_to_income"
+  ],
+  "feature_schema_hash": "10c5b74d0b8dfdbe",
+  "label": {
+    "engine1_metadata_sha256": "4efc39de7b0f3b2b86cd3020413a62f1c18e769e0b95b29a50b660e3856daa4e",
+    "horizon_max_weeks": 180,
+    "label_version": "3",
+    "paths": 1000,
+    "seed": 20251228,
+    "served_model": "lstm",
+    "served_model_files": {
+      "lstm_income.onnx": "87186798ef3821b42c21690df626a921707bf81291b26f14c71538222cedf36d",
+      "lstm_spend.onnx": "56b0e083483091d9c1e5d265e06ead1ab5393e118ef8c777d6d63c94f0acdb9a"
+    }
+  },
+  "logit_eps": 1e-06,
+  "metrics": {
+    "constant_baseline_brier": 0.16802986834128394,
+    "cv_brier": 0.013018431070705381,
+    "lockbox_band_agreement": 0.918,
+    "lockbox_calibrated": {
+      "auc_at_030": 0.9905980620908679,
+      "brier": 0.014180202448308175,
+      "calibration_slope": 1.0161906082103394,
+      "ece": 0.011011468284867458,
+      "log_loss": 0.2561158299252535
+    },
+    "lockbox_constant_brier": 0.1674210957311605,
+    "lockbox_logistic_brier": 0.020049933694849274,
+    "lockbox_raw": {
+      "auc_at_030": 0.9905980620908679,
+      "brier": 0.014346427962207683,
+      "calibration_slope": 0.9605079489553044,
+      "ece": 0.011884106704700718,
+      "log_loss": 0.25626050796157573
+    }
+  },
+  "monotone_constraints": true,
+  "onnx_sha256": "3b6791fd76c7c60cb64e155b7a5ae22347784c7b7af2b05fa13cc1385b19600e",
+  "parity": {
+    "onnx_vs_trained_model": {
+      "explained_by_float32_thresholds": [
+        {
+          "diff": 0.0014377874192808004,
+          "feature": "limit_utilisation_with_purchase",
+          "row": 540,
+          "threshold": 0.9999924143851443,
+          "value": 0.9999924187287724
+        }
+      ],
+      "max_abs_diff": 0.0014377874192808004,
+      "rows": 3000,
+      "rows_over_1e-6": 1
+    },
+    "served_vs_trained_calibrated": {
+      "max_abs_diff": 0.0016654927180198564,
+      "rows": 3000,
+      "rows_over_1e-6": 1
+    }
+  },
+  "serving_constants": {
+    "BAND_RULE_SHA256": "e876f6b1ce910b4473ffd9660d7b0daa90dc245da4774298ac9a1b74403cdb27",
+    "BOOTSTRAP_BLOCK": 4,
+    "DASHBOARD_MONTHS": 3,
+    "RISK_CHECK_MAX_WEEKS": 180
+  },
+  "training": {
+    "config": "full",
+    "development_profiles": 9000,
+    "final_params": {
+      "colsample_bytree": 0.8188190955205956,
+      "learning_rate": 0.12159519563464402,
+      "min_child_samples": 23,
+      "n_estimators": 100,
+      "num_leaves": 17,
+      "subsample": 0.7450583414005654
+    },
+    "git_commit": "d0a342498b498812eafbdc7df6fc390d1c577f42+dirty",
+    "labels_sha256": "e1bd36b1fc20d435745279ed846b307d6eeea3767984d3b2106fc9217601442c",
+    "lockbox_profiles": 1000,
+    "versions": {
+      "lightgbm": "4.7.0",
+      "numpy": "2.5.3",
+      "onnxruntime": "1.30.0",
+      "optuna": "5.0.0",
+      "python": "3.12.3",
+      "scikit-learn": "1.9.1",
+      "scipy": "1.18.1",
+      "torch": "2.14.1+cpu",
+      "xgboost": "3.4.1"
+    }
+  },
+  "version": "v2"
+}

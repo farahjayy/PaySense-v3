@@ -129,3 +129,10 @@ def test_the_assistant_will_not_call_the_model_before_consent(api, amir, fake_db
 )  # fmt: skip
 def test_account_routes_need_a_session(api, method, path):
     assert api.request(method.upper(), path, json={}).status_code == 401
+
+
+def test_delete_also_clears_the_savings_buffer(api, amir):
+    """D-50's buffer is the user's data too: delete resets it to none."""
+    assert api.put("/api/settings", json={"savings_buffer_sen": 50000}, headers=amir).is_success
+    assert api.post("/api/account/delete", json=DELETE, headers=amir).is_success
+    assert api.get("/api/settings", headers=amir).json()["savings_buffer_sen"] == 0

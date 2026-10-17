@@ -91,10 +91,10 @@ def test_the_model_is_called_once_with_every_coalition_of_the_features_that_diff
     assert sizes == [(8, 4)]
 
 
-def test_sixteen_features_are_a_single_batch_of_65536_rows():
+def test_seventeen_features_are_a_single_batch_of_131072_rows():
     rng = np.random.default_rng(0)
-    w = rng.normal(size=16)
-    x, b = rng.normal(size=16), rng.normal(size=16)
+    w = rng.normal(size=17)
+    x, b = rng.normal(size=17), rng.normal(size=17)
     shapes = []
 
     def f(batch):
@@ -102,7 +102,7 @@ def test_sixteen_features_are_a_single_batch_of_65536_rows():
         return sigmoid(batch @ w)
 
     got = baseline_shapley(f, x, b)
-    assert shapes == [(65536, 16)]
+    assert shapes == [(131072, 17)]
     assert got.sum() == pytest.approx(f(x[None, :])[0] - f(b[None, :])[0], abs=1e-9)
 
 

@@ -27,14 +27,14 @@ def test_without_a_risk_model_it_says_so_and_still_names_the_forecast_model(api,
 
 
 @pytest.mark.skipif(
-    not (MODEL_ROOT / "v1" / "metadata.json").exists(), reason="no risk model exported yet"
+    not (MODEL_ROOT / "v2" / "metadata.json").exists(), reason="no risk model exported yet"
 )
 def test_with_the_shipped_risk_model_it_reports_what_it_was_trained_on_and_how_well(api, amir):
     api.app.dependency_overrides[get_today] = lambda: None
     api.app.state.predictor = load_if_present()
     out = api.get("/api/model-info", headers=amir).json()["risk"]
 
-    assert out["available"] is True and out["family"] == "lightgbm" and out["version"] == "v1"
+    assert out["available"] is True and out["family"] == "lightgbm" and out["version"] == "v2"
     assert out["development_profiles"] == 9000
     assert 0 < out["lockbox_brier"] < out["constant_brier"] < 1
     assert len(out["feature_schema_hash"]) == 16

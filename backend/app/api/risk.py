@@ -38,7 +38,7 @@ from app.api.schemas import (
 from app.core.errors import api_error, not_found, unprocessable
 from app.db import plans as plans_repo
 from app.db import provider_limits as limits_repo
-from app.db import recurring_items, risk_checks, transactions
+from app.db import recurring_items, risk_checks, transactions, user_settings
 from app.domain.plan_builder import ProposalError
 from app.engines.forecasting.simulate import band as band_of
 from app.engines.risk.assess import assess
@@ -316,10 +316,11 @@ def _evaluate(
     items = recurring_items.list_items(db, user_id, active_only=True)
     plans = plans_repo.list_with_instalments(db, user_id)
     limits = {r["provider"]: r["limit_sen"] for r in limits_repo.list_limits(db, user_id)}
+    buffer = user_settings.get_savings_buffer(db, user_id)  # D-50: the margin starts from it
     try:
         found = assess(
             rows, items, plans, limits, _request(body), today, forecaster, predictor,
-            seed=daily_seed(user_id, today),
+            seed=daily_seed(user_id, today), savings_buffer_sen=buffer,
         )  # fmt: skip
     except ProposalError as err:
         raise unprocessable(err.code, err.message) from err

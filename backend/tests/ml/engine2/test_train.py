@@ -282,7 +282,7 @@ def test_load_labels_skips_locked_profiles_and_ignores_the_answer_keys(tmp_path)
     data = load_labels(path)
 
     assert list(data.index) == [0, 2] and list(data.y) == [0.25, 0.75]
-    assert data.x.shape == (2, 16) and data.names == FEATURE_NAMES
+    assert data.x.shape == (2, 17) and data.names == FEATURE_NAMES
 
 
 def test_load_labels_refuses_an_empty_file(tmp_path):
@@ -311,7 +311,7 @@ def test_the_lockbox_is_every_tenth_profile_and_the_development_set_is_the_rest(
     assert set(lockbox.index) == {i for i in range(200) if i % LOCKBOX_EVERY == 0}
     assert set(development.index).isdisjoint(lockbox.index)
     assert len(development) + len(lockbox) == 200
-    assert development.x.shape[1] == 16 and len(lockbox.y) == len(lockbox.x)
+    assert development.x.shape[1] == 17 and len(lockbox.y) == len(lockbox.x)
 
 
 def test_taking_a_subset_of_rows_keeps_every_array_aligned():

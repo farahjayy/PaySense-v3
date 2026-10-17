@@ -9,8 +9,9 @@ import pytest
 from skl2onnx import to_onnx
 from sklearn.linear_model import LogisticRegression
 
+from app.engines.forecasting.bands import BAND_FILE, text_digest
 from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
-from app.engines.forecasting.service import DASHBOARD_MONTHS, ERROR_INFLATION
+from app.engines.forecasting.service import DASHBOARD_MONTHS
 from app.engines.forecasting.serving import ARTEFACT_VERSION, SERVED_MODEL
 from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEEKS
 from app.engines.risk.artefact import ArtefactError, load_engine2, load_if_present
@@ -55,7 +56,7 @@ def metadata(onnx_bytes: bytes, **overrides) -> dict:
         "serving_constants": {
             "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
             "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
-            "ERROR_INFLATION": ERROR_INFLATION,
+            "BAND_RULE_SHA256": text_digest(BAND_FILE),
             "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
         },
     }
@@ -123,11 +124,33 @@ def test_contributions_explain_the_gap_from_the_baseline_student_on_the_shown_sc
                 "serving_constants": {
                     "RISK_CHECK_MAX_WEEKS": 52,
                     "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
-                    "ERROR_INFLATION": ERROR_INFLATION,
+                    "BAND_RULE_SHA256": text_digest(BAND_FILE),
                     "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
                 }
             },
             "RISK_CHECK_MAX_WEEKS",
+        ),
+        (
+            {
+                "serving_constants": {
+                    "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
+                    "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
+                    "BAND_RULE_SHA256": "0" * 64,  # labels made with other bands (WP16, C2)
+                    "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
+                }
+            },
+            "BAND_RULE_SHA256",
+        ),
+        (
+            {
+                "serving_constants": {  # the v2 artefact recorded one widening factor
+                    "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
+                    "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
+                    "ERROR_INFLATION": 1.5,
+                    "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
+                }
+            },
+            "BAND_RULE_SHA256",
         ),
         ({"label": {"horizon_max_weeks": 52, "served_model_files": {}}}, "horizon"),
         (
