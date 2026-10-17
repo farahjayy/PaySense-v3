@@ -242,3 +242,37 @@ def test_a_malformed_tool_call_from_the_model_is_an_error_step(chat):
                         input_tokens=1, output_tokens=1)  # fmt: skip
     body = chat([weird, say("Sorry.")]).json()
     assert body["steps"][0]["status"] == "error"
+
+
+# ------------------------------------------------------------------ transient provider errors
+def test_a_transient_provider_error_is_retried_once_within_the_turn(chat, fake_db, monkeypatch):
+    """Live evaluation: a provider HTTP 503 ("high demand") mid-turn sent the turn to guided
+    mode although the tools had worked. One retry inside the deadline recovers it."""
+    monkeypatch.setattr("app.assistant.agent.RETRY_PAUSE_SECONDS", 0)
+    busy = LLMError("the model's provider answered HTTP 503: high demand", retryable=True)
+    res = chat([call("get_bill_analysis"), busy, say("You owe nothing this month.")],
+               message="What do I owe this month?")  # fmt: skip
+    body = res.json()
+    assert body["mode"] == "llm" and body["reply"] == "You owe nothing this month."
+    assert ("retry", None, "provider_busy") in events(fake_db)
+
+
+def test_a_second_transient_error_in_one_turn_falls_back(chat, monkeypatch):
+    monkeypatch.setattr("app.assistant.agent.RETRY_PAUSE_SECONDS", 0)
+    busy = LLMError("HTTP 503", retryable=True)
+    body = chat([call("get_bill_analysis"), busy, busy], message="What do I owe?").json()
+    assert body["mode"] == "guided"
+    assert body["cards"]  # the card the tool made is kept
+
+
+def test_a_permanent_provider_error_is_not_retried(chat, fake_db):
+    body = chat([LLMError("HTTP 400: bad request")], message="What do I owe?").json()
+    assert body["mode"] == "guided"
+    assert not [e for e in events(fake_db) if e[0] == "retry"]
+
+
+def test_provider_status_codes_that_are_worth_one_retry():
+    from app.assistant.llm import RETRYABLE_STATUS
+
+    assert {429, 500, 502, 503, 504} <= RETRYABLE_STATUS
+    assert 400 not in RETRYABLE_STATUS and 401 not in RETRYABLE_STATUS

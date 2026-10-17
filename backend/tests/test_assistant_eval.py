@@ -78,3 +78,18 @@ def test_a_failing_model_is_reported_as_failing():
     )
     assert not by["set_budget"].success
     assert by["ambiguous"].success is False  # no question mark
+
+
+def test_the_go_ahead_scenario_sends_the_earlier_turns_as_history():
+    """The live "Go ahead with that." pattern: the model sees the check it is agreeing to."""
+    seen = []
+
+    def model(system, messages, tools):
+        if messages[-1].role == "user" and messages[-1].text == "Go ahead with that.":
+            seen.append([(m.role, m.text) for m in messages[:-1]])
+        return scripted(system, messages, tools)
+
+    ev.run(1, 0, llm=FakeLLM([model] * 40), sleep=lambda _: None)
+    (history,) = seen
+    assert [role for role, _ in history] == ["assistant", "user", "assistant", "user", "assistant"]
+    assert "RM799" in history[1][1]

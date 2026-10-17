@@ -10,7 +10,7 @@
 | 4 | Ask in plain words | The assistant panel: the question, the risk card, "What I did" with the tiers, the confirm card. | `evidence/demo-run/SUMMARY.md` |
 | 5 | The forecast, measured | Served LSTM vs ARIMA, Prophet and benchmarks: MASE 0.8153 vs 1.0438 for the best benchmark, 242 series, Holm-adjusted Wilcoxon. | `reports/engine1/README.md` |
 | 6 | The risk check, measured | LightGBM + Platt: lockbox Brier 0.0142 vs logistic 0.0200 vs constant 0.1674; reasons from exact Shapley values; the smallest change, or "none does". | `reports/engine2/versions.md` |
-| 7 | An assistant that cannot invent or act | Three tiers; no write tool; the number check; untrusted data; guided mode. Live evaluation 33 / 33. | `reports/assistant/README.md` |
+| 7 | An assistant that cannot invent or act | Three tiers; no write tool; the number check; untrusted data; guided mode. Live evaluation 36 / 36 (and the run before the retry fix, 32 / 36, said out loud). | `reports/assistant/README.md` |
 | 8 | Security | The controls in one diagram; the independent review; scans clean for the backend and the frontend's production dependencies; the known-risk list exists and is public. | `SECURITY.md`, `evidence/scans/SUMMARY.md` |
 | 9 | Honest limits | The honest-limits paragraph in short: synthetic labels, risk mostly decided before the purchase, a band still too narrow for short histories; Safe on the demo personas only with a savings buffer. | `honest-limits.md`, `demo-scenario.md` |
 | 10 | What is next | Real repayment outcomes with consent, a population error record for short histories, the deployed pilot. Thank you. | — |

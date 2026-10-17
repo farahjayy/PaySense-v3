@@ -31,7 +31,18 @@ DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite", "anthropic": "claude-sonnet
 
 
 class LLMError(Exception):
-    """The provider could not give a usable answer. The message never contains a key."""
+    """The provider could not give a usable answer. The message never contains a key.
+    `retryable`: a transient provider state (busy, rate limited, briefly unreachable) that one
+    retry inside the turn's deadline may get past."""
+
+    def __init__(self, message: str, *, retryable: bool = False) -> None:
+        super().__init__(message)
+        self.retryable = retryable
+
+
+# Provider answers worth one retry: rate limiting and the transient server errors (the free tier's
+# "high demand" is a 503). A 4xx other than 429 is our request's fault and is never retried.
+RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 
 
 @dataclass(frozen=True)
@@ -156,13 +167,16 @@ def _post(client: httpx.Client, url: str, *, headers: dict[str, str], body: dict
     except httpx.TimeoutException as err:
         raise LLMError("the model did not answer in time") from err
     except httpx.HTTPError as err:
-        raise LLMError(f"the model could not be reached ({type(err).__name__})") from err
+        raise LLMError(
+            f"the model could not be reached ({type(err).__name__})", retryable=True
+        ) from err
     if response.status_code == 429:
-        raise LLMError("the model's provider is rate limiting requests (HTTP 429)")
+        raise LLMError("the model's provider is rate limiting requests (HTTP 429)", retryable=True)
     if response.status_code >= 400:
         raise LLMError(
             f"the model's provider answered HTTP {response.status_code}: "
-            + _redact(response.text, headers)[:300]
+            + _redact(response.text, headers)[:300],
+            retryable=response.status_code in RETRYABLE_STATUS,
         )
     try:
         return response.json()

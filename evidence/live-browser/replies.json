@@ -1,0 +1,26 @@
+[
+ {
+  "step": "status line",
+  "reply": "Assistant on (gemini)"
+ },
+ {
+  "step": "Can I afford an RM799 phone on SPayLater over 3 months?",
+  "reply": "This purchase is rated as \"At Risk\" because you are already running short each month. The model suggests that choosing an item priced around RM 400 would be a safer option. Please note that this is not financial advice; you decide."
+ },
+ {
+  "step": "What's the safest way to buy it?",
+  "reply": "The risk check indicates that this purchase remains \"At Risk\" regardless of the instalment plan. The safest suggestion is to choose an item priced at about RM 400, as your current monthly budget is already showing a shortfall. Please remember that this is not financial advice and you are responsible for your final decision."
+ },
+ {
+  "step": "Go ahead with that.",
+  "reply": "I have proposed the SPayLater plan for your phone as requested. Please check the card to confirm the details; nothing will be saved until you do so."
+ },
+ {
+  "step": "Confirm",
+  "reply": "Plan added and its risk report saved."
+ },
+ {
+  "step": "What do I owe this month?",
+  "reply": "Here is what I found: Read instalments due across 3 month(s)."
+ }
+]

@@ -46,7 +46,7 @@ export function StepsList({ steps }: { steps: Step[] }) {
 export function AssistantMessage({ reply }: { reply: ChatReply }) {
   return (
     <div className="space-y-2.5">
-      <p className="whitespace-pre-line text-[14px] leading-relaxed text-ink">
+      <p data-reply className="whitespace-pre-line text-[14px] leading-relaxed text-ink">
         {reply.reply.replace(/\*\*/g, "")}
       </p>
       {reply.narration_replaced && (

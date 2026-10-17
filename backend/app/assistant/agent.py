@@ -28,6 +28,9 @@ from app.db import assistant_events as events
 from app.db import locks, user_settings
 from app.domain.consent import CONSENT_VERSION
 
+RETRY_PAUSE_SECONDS = 2.0  # before the one retry of a transient provider error in a turn
+MIN_RETRY_SECONDS = 5.0  # time the retry still needs inside the turn's deadline
+
 logger = logging.getLogger("paysense")
 
 REFUSAL = (
@@ -170,6 +173,7 @@ def _turn(ctx: ToolContext, llm: LLM, body: ChatIn, allowance: int) -> ChatOut:
     used_in = used_out = 0
     deadline = time.monotonic() + settings.assistant_timeout_seconds
     final: str | None = None
+    retried = False
     while True:
         remaining = deadline - time.monotonic()
         try:
@@ -182,6 +186,19 @@ def _turn(ctx: ToolContext, llm: LLM, body: ChatIn, allowance: int) -> ChatOut:
                 max_output_tokens=settings.assistant_max_output_tokens, timeout=remaining,
             )  # fmt: skip
         except LLMError as err:
+            if (
+                err.retryable
+                and not retried
+                and remaining > RETRY_PAUSE_SECONDS + MIN_RETRY_SECONDS
+            ):
+                # one transient provider error per turn is retried (the free tier's 503s); the
+                # tools already run are not repeated, only the model call
+                retried = True
+                events.record(ctx.db, ctx.user_id, "retry", status="provider_busy",
+                              provider=llm.provider, model=llm.model,
+                              detail={"reason": str(err)[:300]})  # fmt: skip
+                time.sleep(RETRY_PAUSE_SECONDS)
+                continue
             if used_in or used_out:
                 events.record(ctx.db, ctx.user_id, "reply", status="fallback",
                               provider=llm.provider, model=llm.model,

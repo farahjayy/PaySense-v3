@@ -10,7 +10,7 @@
 | The smoke script against that container | `smoke_live.py`: the service answers, CORS allows the origin, anonymous calls are refused; **login answers 503** because the real database does not yet have migration 0003's `passphrase_hash` column. Expected until the migrations are applied |
 | The API runs with only its runtime dependencies | `uv sync --frozen --no-default-groups` (what the image runs); the backend test suite also passes without the ML group (`uv run --no-group ml pytest --ignore=tests/ml`) |
 | The frontend builds for production and runs under the Content-Security-Policy | `npm run build`; 26 Playwright journeys on desktop and phone with no policy violations, and no sideways scroll at 360 / 375 px |
-| The assistant against the real provider | `scripts/assistant_eval.py --runs 3` (33 / 33) and `scripts/demo_run.py --in-memory` on the in-memory API with the real Gemini key |
+| The assistant against the real provider | `scripts/assistant_eval.py --runs 3` (36 / 36), `scripts/demo_run.py --in-memory`, and the browser journey `npx playwright test -c playwright.live.config.ts`, all with the real Gemini key |
 
 | **Not** verified — do these on deploy | Why |
 |---|---|

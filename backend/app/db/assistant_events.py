@@ -9,7 +9,7 @@ from app.db.client import Database
 TABLE = "assistant_events"
 KINDS = frozenset(
     {"message", "reply", "tool_call", "proposal", "confirm", "decline", "refusal", "fallback",
-     "error"}
+     "retry", "error"}
 )  # fmt: skip
 MAX_TEXT = 2000  # free text in `detail` is cut to this many characters
 

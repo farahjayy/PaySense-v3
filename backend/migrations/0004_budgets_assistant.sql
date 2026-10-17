@@ -51,7 +51,7 @@ create table assistant_events (
     id uuid primary key default gen_random_uuid(),
     user_id uuid not null references users(id) on delete cascade,
     kind text not null check (kind in ('message', 'reply', 'tool_call', 'proposal', 'confirm',
-                                        'decline', 'refusal', 'fallback', 'error')),
+                                        'decline', 'refusal', 'fallback', 'retry', 'error')),
     tier int check (tier between 0 and 2),
     tool text,
     status text,
