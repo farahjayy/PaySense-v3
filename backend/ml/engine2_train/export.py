@@ -40,6 +40,9 @@ from ml.engine2_train.train import RUNS_DIR
 PARITY_SAMPLE = 2000
 MIN_REFERENCE_PROFILES = 100
 LOOSE_TOLERANCE = 1e-3  # a feature within float32 rounding of a split can flip one tree
+# A row further off than LOOSE_TOLERANCE is accepted only when a split is PROVEN to go the other way
+# because ONNX stores the threshold as float32 (WP16), and never by more than this.
+MAX_FLIP_DIFF = 1e-2
 
 
 class ExportError(RuntimeError):
@@ -49,6 +52,39 @@ class ExportError(RuntimeError):
 def within_tolerance(diff: np.ndarray) -> bool:
     """True only if every difference is a finite number no larger than the tolerance (NaN fails)."""
     return bool(np.isfinite(diff).all() and diff.max() <= LOOSE_TOLERANCE)
+
+
+def float32_split_flips(
+    dump: dict[str, Any], row: np.ndarray, names: Sequence[str]
+) -> list[tuple[str, float, float]]:
+    """Splits of a LightGBM model dump that send `row` the other way once the threshold and the
+    value are stored as float32 (what ONNX Runtime evaluates): (feature, value, threshold)."""
+    flips: list[tuple[str, float, float]] = []
+
+    def walk(node: dict[str, Any]) -> None:
+        if "split_feature" not in node:
+            return
+        feature, threshold = int(node["split_feature"]), float(node["threshold"])
+        value = float(row[feature])
+        exact = value <= threshold
+        stored = float(np.float32(value)) <= float(np.float32(threshold))
+        if exact != stored:
+            flips.append((names[feature], value, threshold))
+        walk(node["left_child"])
+        walk(node["right_child"])
+
+    for tree in dump.get("tree_info", []):
+        walk(tree["tree_structure"])
+    return flips
+
+
+def accept_parity(diff: np.ndarray, explained: np.ndarray) -> bool:
+    """Every difference finite; any beyond LOOSE_TOLERANCE explained by a float32 split flip and
+    no larger than MAX_FLIP_DIFF."""
+    if not np.isfinite(diff).all():
+        return False
+    over = diff > LOOSE_TOLERANCE
+    return bool(np.all(explained[over]) and np.all(diff[over] <= MAX_FLIP_DIFF))
 
 
 def reference_student(development: Any) -> tuple[dict[str, float], int]:
@@ -118,8 +154,28 @@ def export(
     onnx_bytes = convert(fitted, len(FEATURE_NAMES))
     checked = np.vstack([lockbox.x, development.x[:PARITY_SAMPLE]])
     model_parity = parity(fitted, onnx_bytes, checked)
-    if not within_tolerance(np.array([model_parity["max_abs_diff"]])):
+    diff = np.abs(_raw_probability(onnx_bytes, checked) - fitted.predict(checked))
+    explained = np.zeros(len(diff), dtype=bool)
+    flips: list[dict[str, Any]] = []
+    booster = getattr(fitted.model, "booster_", None)
+    if booster is not None:
+        dump = booster.dump_model()
+        for row in np.flatnonzero(diff > LOOSE_TOLERANCE):
+            found = float32_split_flips(dump, checked[row], FEATURE_NAMES)
+            explained[row] = bool(found)
+            flips += [
+                {
+                    "row": int(row),
+                    "feature": f,
+                    "value": v,
+                    "threshold": t,
+                    "diff": float(diff[row]),
+                }
+                for f, v, t in found
+            ]
+    if not accept_parity(diff, explained):
         raise ExportError(f"ONNX output differs from the trained model: {model_parity}")
+    model_parity["explained_by_float32_thresholds"] = flips
 
     metadata = {
         "version": version,
@@ -186,7 +242,7 @@ def export(
         served = predictor.predict_batch(checked)
         trained = Calibrator.from_dict(calibrator).apply(fitted.predict(checked))
         end_to_end = np.abs(served - trained)
-        if not within_tolerance(end_to_end):
+        if not accept_parity(end_to_end, explained):  # the same proven float32 flips only
             raise ExportError(f"the served artefact differs from the trained model: {end_to_end}")
         metadata["parity"]["served_vs_trained_calibrated"] = {
             "rows": int(len(checked)),
