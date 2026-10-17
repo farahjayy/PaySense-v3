@@ -6,6 +6,8 @@
 
 **Fork (2026-10-18):** this repo is PaySense v3, the FinTechaton 2026 Shenzhen variant forked from v2 at `cdd43cf`; docs relabelled, competition scope is `refdocs/fintechathon-2026/work-packages.md` (WP0–WP19) with ADRs D-47 to D-52.
 
+**Right now (2026-10-18, end of the autonomous build):** WP0–WP19 are built, tested and pushed on `claude/fervent-tesla-2rh1ov`, except what needs the author: apply migrations 0003–0006 in the Supabase SQL editor (then `scripts/check_rls.py`, `pytest -m integration`, `load_personas.py`, `find_demo_scenario.py` and `demo_run.py` against the real database), deploy (WP11, the image is built and runs), and the answers in `refdocs/fintechathon-2026/questions.md`. Final verification: `evidence/tests/SUMMARY.md`.
+
 **Competition (2026-10-18):** autonomous build of WP0–WP19 in dependency order on `claude/fervent-tesla-2rh1ov`; questions collected in `refdocs/fintechathon-2026/questions.md`. WP1 done on the real v3 database (see C1). D-53 (the author's, provider-agnostic LLM) is implemented in WP4c.
 
 **Competition (2026-10-17):** WP0 done except the `fyp-final` tag (author). Final scope written; ADRs D-47 to D-52; Apache-2.0. A Linux checkout refused the risk model (line endings, D-52) — fixed, so the Docker image can now load it. **Next: WP1**, which needs the v3 Supabase credentials in the environment it runs in.
@@ -55,7 +57,7 @@
 | C7 Repo, licence and docs (WP10) | README, THIRD_PARTY, CREDITS, file structure, tests without the ML stack | ✅ Done — torch-free run 2043 passed, 1 skipped; NOTICE name waits on the author (questions.md 35) |
 | C7 Deployment (WP11) | Image, blueprint, guide; the deploy | 🔶 Prepared — Docker image built and run here (models load, 82 MiB idle), smoke passes up to login (503 until migration 0003); the deploy needs the author (questions.md 36) |
 | C7 Submission pack (WP12) | Technical documentation, deck outline, summary | ✅ Drafts in `refdocs/fintechathon-2026/submission/`; slides, video and form are the author's |
-| C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
+| C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ✅ Built and pushed (rows above); 🔶 waiting on the author: migrations 0003–0006 on the real database and the real-database checks after them, the deploy (WP11), the NOTICE name, a real checkout example — `refdocs/fintechathon-2026/questions.md` |
 
 Status vocabulary — use these exactly, and never round up:
 - ⬜ **Not started**
