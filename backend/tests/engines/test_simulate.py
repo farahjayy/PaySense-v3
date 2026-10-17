@@ -342,7 +342,7 @@ def test_whole_error_paths_are_joined_so_a_wrong_level_stays_wrong():
 def test_path_resampling_gives_bands_of_the_right_order_for_a_drifting_level():
     from app.engines.forecasting.errors import rolling_error_paths, widen
     from app.engines.forecasting.models import MovingAverage
-    from app.engines.forecasting.service import ERROR_INFLATION
+    from app.engines.forecasting.service import V1_ERROR_INFLATION as ERROR_INFLATION
     from app.engines.forecasting.simulate import path_bootstrap
 
     def ar1(seed, n, phi=0.5, sd=1000.0):
@@ -379,3 +379,51 @@ def test_the_simulation_summarises_spend_and_income_for_engine_two():
     assert 5000 < result.weekly_spend_p50_sen < 7000
     assert result.weekly_spend_p90_sen > result.weekly_spend_p50_sen
     assert result.monthly_income_p10_sen == pytest.approx(100000)  # known income only; no variable
+
+
+# --- the savings buffer (ADR D-50) ---
+def test_a_savings_buffer_starts_the_running_margin_above_zero():
+    known = flows(MONTHS, income=100000, bills=30000)
+    without = run(known, errors=np.zeros(50), paths=10)
+    buffered = simulate(
+        series=series(), known=known, forecaster=LastValue(), spend_errors=np.zeros(50),
+        income_errors=np.zeros(0), start=TODAY, end=END, paths=10, seed=1,
+        starting_buffer_sen=50000,
+    )  # fmt: skip
+    assert buffered.monthly_margin_p50_sen == without.monthly_margin_p50_sen
+    pairs = zip(
+        buffered.cumulative_margin_p50_sen, without.cumulative_margin_p50_sen, strict=True
+    )
+    assert [b - w for b, w in pairs] == [50000] * 4
+
+
+def test_a_buffer_large_enough_turns_a_shortfall_into_none():
+    known = flows(MONTHS, income=0, bills=30000)
+    short = run(known, errors=np.zeros(50), paths=10)
+    covered = simulate(
+        series=series(), known=known, forecaster=LastValue(), spend_errors=np.zeros(50),
+        income_errors=np.zeros(0), start=TODAY, end=END, paths=10, seed=1,
+        starting_buffer_sen=10_000_000,
+    )  # fmt: skip
+    assert short.p_shortfall == 1.0
+    assert covered.p_shortfall == 0.0
+
+
+def test_a_buffer_never_makes_things_worse():
+    known = flows(MONTHS, income=60000, bills=20000, instalments=10000)
+    plain = run(known)
+    buffered = simulate(
+        series=series(), known=known, forecaster=LastValue(), spend_errors=NOISE,
+        income_errors=np.zeros(0), start=TODAY, end=END, paths=2000, seed=1,
+        starting_buffer_sen=20000,
+    )  # fmt: skip
+    assert buffered.p_shortfall <= plain.p_shortfall
+
+
+def test_a_negative_buffer_is_refused():
+    with pytest.raises(ValueError):
+        simulate(
+            series=series(), known=flows(MONTHS), forecaster=LastValue(),
+            spend_errors=NOISE, income_errors=np.zeros(0), start=TODAY, end=END,
+            starting_buffer_sen=-1,
+        )  # fmt: skip

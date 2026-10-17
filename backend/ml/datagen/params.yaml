@@ -475,3 +475,38 @@ purchase:
     unit: ratio
     assumed: true
     why: "Proposed-purchase price as a multiple of expected monthly income, sampled log-uniformly so Engine 2 sees clearly safe, borderline and clearly unaffordable cases. Chosen for coverage, not realism."
+
+# The optional savings buffer (ADR D-50, WP16): money the student could fall back on. It is a
+# stock, not a flow, so it never appears in the ledger or the Engine 1 cohort. No published figure
+# for Malaysian students' savings was found (ASSUMED 19); the values span "none" to several months
+# of income so Engine 2 learns how much a buffer protects.
+savings:
+  probability:
+    frequent_bnpl: {value: 0.35, unit: ratio, assumed: true, why: "No published share of Malaysian students with savings. Lower for the persona that already relies on BNPL."}
+    budget_conscious: {value: 0.65, unit: ratio, assumed: true, why: "As above; the careful persona is the most likely to keep some savings."}
+    irregular_income: {value: 0.45, unit: ratio, assumed: true, why: "As above; gig earners keep some cash between payouts."}
+  median_months_of_income:
+    value: 1.0
+    unit: ratio
+    assumed: true
+    why: "Median buffer, for students who have one, as a multiple of their expected monthly income. Chosen so a typical buffer covers about one month."
+  sigma:
+    value: 0.9
+    unit: log_ratio
+    assumed: true
+    why: "Spread of the log-normal buffer; wide enough to include a few weeks to several months."
+  cap_months_of_income:
+    value: 6.0
+    unit: ratio
+    assumed: true
+    why: "Largest buffer, in months of income, so one extreme draw cannot dominate training."
+  income_floor_sen:
+    value: 50000
+    unit: sen
+    assumed: true
+    why: "RM500: the base a buffer is scaled from when the student's regular income is lower, so a student with no visible income can still hold savings."
+  round_to_sen:
+    value: 1000
+    unit: sen
+    assumed: true
+    why: "Buffers are whole RM10, the way a person would type them."

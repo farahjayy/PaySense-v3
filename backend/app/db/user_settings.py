@@ -6,6 +6,7 @@ from postgrest import APIError
 
 from app.db.base import require_user_id
 from app.db.client import Database
+from app.domain.money import MAX_AMOUNT_SEN
 
 UNIQUE_VIOLATION = "23505"
 ONBOARDING_STATES = ("new", "history_imported", "complete")
@@ -57,3 +58,25 @@ def advance_onboarding_state(db: Database, user_id: str, state: str) -> dict[str
     if ONBOARDING_STATES.index(state) <= ONBOARDING_STATES.index(current["onboarding_state"]):
         return current
     return set_onboarding_state(db, uid, state)
+
+
+def get_savings_buffer(db: Database, user_id: str) -> int:
+    """The savings the user recorded as a fall-back (ADR D-50), in sen; 0 when none."""
+    row = get(db, user_id)
+    return int((row or {}).get("savings_buffer_sen") or 0)
+
+
+def set_savings_buffer(db: Database, user_id: str, savings_buffer_sen: int) -> dict[str, Any]:
+    """Record the buffer (0 clears it); creates the settings row if it is somehow missing."""
+    uid = require_user_id(user_id)
+    value = savings_buffer_sen
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= MAX_AMOUNT_SEN:
+        raise ValueError("savings_buffer_sen must be a whole number of sen, 0 or more")
+    create_default(db, uid)
+    return (
+        db.table("user_settings")
+        .update({"savings_buffer_sen": value})
+        .eq("user_id", uid)
+        .execute()
+        .data[0]
+    )

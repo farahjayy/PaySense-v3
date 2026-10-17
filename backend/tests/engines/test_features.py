@@ -48,9 +48,10 @@ def inputs(**overrides):
     return dataclasses.replace(base, **overrides)
 
 
-def test_there_are_sixteen_features_in_a_fixed_order():
-    assert len(FEATURE_NAMES) == 16 and len(set(FEATURE_NAMES)) == 16
-    assert FEATURE_NAMES[0] == "disc_weekly_p50" and FEATURE_NAMES[-1] == "limit_known"
+def test_there_are_seventeen_features_in_a_fixed_order():
+    assert len(FEATURE_NAMES) == 17 and len(set(FEATURE_NAMES)) == 17
+    assert FEATURE_NAMES[-1] == "savings_buffer_to_income"  # added last (D-50), order kept
+    assert FEATURE_NAMES[0] == "disc_weekly_p50" and FEATURE_NAMES[-2] == "limit_known"
 
 
 def test_every_feature_has_a_monotone_direction_of_minus_one_zero_or_one():
@@ -148,7 +149,7 @@ def test_ratios_are_capped_so_one_extreme_profile_cannot_dominate_training():
 def test_features_come_back_in_the_declared_order_as_a_vector():
     vector = features.as_vector(compute_features(inputs()))
 
-    assert len(vector) == 16 and vector[FEATURE_NAMES.index("num_instalments")] == 3
+    assert len(vector) == 17 and vector[FEATURE_NAMES.index("num_instalments")] == 3
 
 
 def test_the_schema_hash_changes_with_names_order_or_directions():
@@ -216,3 +217,25 @@ def test_the_engine_one_features_are_the_six_forecast_derived_ones():
     assert FEATURE_NAMES[:6] == features.ENGINE1_FEATURES
     assert set(features.ENGINE1_FEATURES) <= set(FEATURE_NAMES)
     assert "instalment_amount" not in features.ENGINE1_FEATURES
+
+
+# --- the savings buffer (ADR D-50) ---
+def test_the_buffer_is_measured_in_months_of_income_and_lowers_risk():
+    values = compute_features(inputs(savings_buffer_sen=300000))
+    assert values["savings_buffer_to_income"] == 1.5  # RM3,000 against RM2,000 a month
+    assert MONOTONE_DIRECTIONS["savings_buffer_to_income"] == -1
+
+
+def test_no_buffer_is_zero_and_the_default():
+    assert compute_features(inputs())["savings_buffer_to_income"] == 0.0
+    assert compute_features(inputs(savings_buffer_sen=0))["savings_buffer_to_income"] == 0.0
+
+
+def test_a_buffer_with_no_income_is_capped_not_infinite():
+    values = compute_features(inputs(savings_buffer_sen=5000, expected_monthly_income_sen=0))
+    assert values["savings_buffer_to_income"] == features.RATIO_CAP
+
+
+def test_the_buffer_feature_changed_the_schema_hash_from_v1():
+    assert FEATURE_SCHEMA_HASH != "2066b37e13182a5e"  # the v1 artefact's hash
+    assert features.DEFINITIONS_VERSION == "v2"

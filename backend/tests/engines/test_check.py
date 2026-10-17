@@ -59,12 +59,12 @@ def check(predictor=None, req=None, rows=None, plans=EXISTING, limits=None, **kw
     )
 
 
-def test_the_predictor_sees_all_sixteen_features_in_the_declared_order():
+def test_the_predictor_sees_all_seventeen_features_in_the_declared_order():
     stub = StubPredictor()
     result = check(stub)
 
     assert result.status == "ok"
-    assert len(stub.seen) == 1 and len(stub.seen[0]) == len(FEATURE_NAMES) == 16
+    assert len(stub.seen) == 1 and len(stub.seen[0]) == len(FEATURE_NAMES) == 17
     assert list(result.features) == list(FEATURE_NAMES)
     assert stub.seen[0] == [result.features[name] for name in FEATURE_NAMES]
 

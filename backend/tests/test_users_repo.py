@@ -61,8 +61,10 @@ def test_default_settings_are_created_without_any_balance(db):
     settings = user_settings.create_default(db, user["id"])
 
     assert settings["onboarding_state"] == "new"
-    # D-27: the forecast runs on flows, so there is no balance to store.
-    assert set(settings) == {"user_id", "onboarding_state"}
+    # D-27: the forecast runs on flows, so there is no balance to store. D-50 adds only the
+    # savings buffer the person chooses to record (0 until they do), never a synced balance.
+    assert set(settings) == {"user_id", "onboarding_state", "savings_buffer_sen"}
+    assert settings["savings_buffer_sen"] == 0
     assert user_settings.get(db, user["id"])["onboarding_state"] == "new"
 
 

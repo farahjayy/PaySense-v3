@@ -81,6 +81,7 @@ def run(predictor: Predictor, profiles: int = DEFAULT_PROFILES) -> dict[str, Any
                 known["rows"], known["items"], known["plans"], known["limits"],
                 request_for(known), known["as_of"], forecaster, predictor,
                 seed=profile_seed(SERVING_SEED, index),
+                savings_buffer_sen=known["savings_buffer_sen"],
             )  # fmt: skip
         except ProposalError as err:
             rejected[err.code] += 1
@@ -96,6 +97,7 @@ def run(predictor: Predictor, profiles: int = DEFAULT_PROFILES) -> dict[str, Any
             checked = run_check(
                 known["rows"], known["items"], known["plans"], known["limits"], best.request,
                 known["as_of"], forecaster, predictor, seed=profile_seed(SERVING_SEED, index),
+                savings_buffer_sen=known["savings_buffer_sen"],
             )  # fmt: skip
             suggested_simulated = checked.p_simulated
         rows.append(

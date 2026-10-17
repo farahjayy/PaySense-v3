@@ -2,7 +2,7 @@
 
 Pipeline: the provider's own rules turn the request into a schedule (capped by the recorded limit,
 D-28) -> the forecast is simulated with and without that schedule -> `features.py` turns both into
-the 16 model inputs -> the trained model gives the shown probability. The simulated probability
+the 17 model inputs -> the trained model gives the shown probability. The simulated probability
 for the same purchase (the exact training label, D-07) is returned beside it and their gap is
 meant to be logged, so a model that drifts from its own simulation shows up.
 
@@ -24,7 +24,7 @@ from app.engines.risk.features import as_vector, compute_features
 
 
 class Predictor(Protocol):
-    """The trained, calibrated model: 16 feature values in, a probability out."""
+    """The trained, calibrated model: 17 feature values in, a probability out."""
 
     version: str
     feature_schema_hash: str
@@ -135,6 +135,7 @@ def run_check(
     paths: int = DEFAULT_PATHS,
     seed: int = 0,
     cache: dict[Any, Any] | None = None,
+    savings_buffer_sen: int = 0,
 ) -> CheckResult:
     """Raises `ProposalError` when the plan rules reject the request (the API maps it to 422)."""
     rows, items, plans = list(rows), list(items), list(plans)
@@ -152,12 +153,13 @@ def run_check(
     )
     built = build_feature_inputs(
         rows, items, plans, proposal, provider_limits, today, forecaster,
-        seed=seed, paths=paths, cache=cache,
+        seed=seed, paths=paths, cache=cache, savings_buffer_sen=savings_buffer_sen,
     )  # fmt: skip
     if built is None:
         refusal = build_forecast(
-            rows=rows, items=items, plans=plans, today=today, forecaster=forecaster, seed=seed
-        )
+            rows=rows, items=items, plans=plans, today=today, forecaster=forecaster, seed=seed,
+            savings_buffer_sen=savings_buffer_sen,
+        )  # fmt: skip
         return _refusal(refusal, proposal)
 
     features = compute_features(built.inputs)

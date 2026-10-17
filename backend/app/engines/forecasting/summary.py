@@ -141,6 +141,8 @@ def build_feature_inputs(
     seed: int = 0,
     paths: int = 1000,
     cache: dict[Any, Any] | None = None,
+    savings_buffer_sen: int = 0,
+    recentre_errors: bool = False,
 ) -> Built | None:
     """Engine 2 inputs and both simulations, or None if the ledger is locked.
 
@@ -153,21 +155,25 @@ def build_feature_inputs(
     ledger is read once (completeness, weekly series, the rolling forecast-error pass) and the
     "without the purchase" simulation is run once per distinct plan end. The numbers are
     identical.
+
+    `savings_buffer_sen` starts both running margins (ADR D-50) and is a feature of its own.
     """
     rows, items, plans = list(rows), list(items), list(plans)
     cache = {} if cache is None else cache
     prep = cache.get("prep")
     if prep is None:
-        prep = cache["prep"] = prepare_ledger(rows, items, today, forecaster)
+        prep = cache["prep"] = prepare_ledger(
+            rows, items, today, forecaster, recentre_errors=recentre_errors
+        )
     if not isinstance(prep, LedgerPrep):  # locked
         return None
     plan_end = max((i.due_date for i in proposal.instalments), default=today)
     end = max(horizon_end(today), plan_end)
     common = dict(
         today=today, forecaster=forecaster, end=end, paths=paths, seed=seed,
-        max_weeks=RISK_CHECK_MAX_WEEKS,
+        max_weeks=RISK_CHECK_MAX_WEEKS, savings_buffer_sen=savings_buffer_sen,
     )  # fmt: skip
-    key = ("without", end, paths, seed)
+    key = ("without", end, paths, seed, savings_buffer_sen)
     if key not in cache:
         cache[key] = forecast_prepared(prep, plans, **common)
     without = cache[key]
@@ -184,5 +190,6 @@ def build_feature_inputs(
         ),
         engine1=_engine1(without),
         expected_monthly_income_sen=expected_monthly_income(rows, today),
+        savings_buffer_sen=savings_buffer_sen,
     )
     return Built(inputs, without, with_plan)

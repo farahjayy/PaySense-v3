@@ -10,7 +10,7 @@ from pydantic import Field
 from app.api.deps import CurrentUser, DbDep, TodayDep, rate_limited
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
 from app.db import plans as plans_repo
-from app.db import recurring_items, transactions
+from app.db import recurring_items, transactions, user_settings
 from app.engines.forecasting.service import STALE_AFTER_DAYS, build_forecast
 from app.engines.forecasting.serving import served_forecaster
 from app.engines.forecasting.simulate import Forecaster
@@ -82,6 +82,7 @@ def forecast_for(db: Any, user_id: str, today: dt.date, model: Forecaster) -> Fo
         today=today,
         forecaster=model,
         seed=daily_seed(user_id, today),
+        savings_buffer_sen=user_settings.get_savings_buffer(db, user_id),  # D-50
     )
     simulation = result.simulation
     shown = None

@@ -40,6 +40,23 @@ class StudentProfile:
     bnpl: BnplResult
     purchase: PurchaseProposal
     expected_monthly_income_sen: int
+    savings_buffer_sen: int = 0  # D-50: a stock, never in the ledger or the Engine 1 cohort
+
+
+def _savings_buffer(
+    params: Params, persona: str, monthly_income_sen: int, rng: np.random.Generator
+) -> int:
+    """The savings the student could fall back on (ASSUMED 19): none for some, else a log-normal
+    number of months of income, capped, in whole RM10."""
+    if rng.random() >= params[f"savings.probability.{persona}"]:
+        return 0
+    base = max(monthly_income_sen, int(params["savings.income_floor_sen"]))
+    months = float(params["savings.median_months_of_income"]) * float(
+        np.exp(rng.normal(0.0, float(params["savings.sigma"])))
+    )
+    months = min(months, float(params["savings.cap_months_of_income"]))
+    step = int(params["savings.round_to_sen"])
+    return int(round(base * months / step)) * step
 
 
 def _choose_persona(params: Params, master_seed: int, index: int) -> str:
@@ -107,6 +124,8 @@ def generate_profile(
         bnpl=bnpl,
         purchase=purchase,
         expected_monthly_income_sen=monthly_income,
+        # its own stream (WP16), so adding it moved none of the draws above
+        savings_buffer_sen=_savings_buffer(params, persona, monthly_income, stream("savings")),
     )
 
 

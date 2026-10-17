@@ -22,6 +22,7 @@ VALUES = {
     "upfront_to_income": 0.2,
     "limit_utilisation_with_purchase": 0.9,
     "limit_known": 0.0,
+    "savings_buffer_to_income": 0.0,
 }
 
 
@@ -79,5 +80,5 @@ def test_figures_and_the_contribution_are_carried_for_the_report():
 
 
 def test_a_contribution_vector_of_the_wrong_length_is_an_error_not_a_misalignment():
-    with pytest.raises(ValueError, match="16"):
+    with pytest.raises(ValueError, match="17"):
         select_factors(VALUES, [0.1] * 15)

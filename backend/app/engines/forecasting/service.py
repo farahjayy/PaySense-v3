@@ -18,6 +18,7 @@ import numpy as np
 from app.domain.flows import as_date, month_summary
 from app.domain.merchants import normalise_merchant
 from app.domain.schedule import add_months
+from app.engines.forecasting.bands import inflation_for
 from app.engines.forecasting.completeness import SuspectMonth, assess
 from app.engines.forecasting.errors import mean_forecast_errors, rolling_error_paths, widen
 from app.engines.forecasting.flows import ProposedPlan, known_flows, unlogged_occurrences_net
@@ -37,11 +38,10 @@ DASHBOARD_MONTHS = 3
 MIN_SERIES_WEEKS = 17  # about four months of complete weeks: enough to score the model at all
 MIN_ERROR_PATHS = 2  # fewer past error paths than this and the bands come from the fallback
 STALE_AFTER_DAYS = 14  # the ledger has not been updated for this long: warn
-# ASSUMED: the error record of a short history understates future uncertainty (it cannot see a
-# level that drifts further than it has so far), so recorded errors are widened by this factor.
-# Chosen from a simulation of drifting weekly series; coverage is still below nominal for short
-# histories, which the serving report states rather than claims otherwise.
-ERROR_INFLATION = 1.5
+# The single widening factor of engine version v2 (ASSUMED, chosen from a simulation of drifting
+# series). Kept only so the WP16 band check can report v2 beside v3; serving now widens by
+# history length (`bands.py`, change C2).
+V1_ERROR_INFLATION = 1.5
 KIND_TO_TYPE = {"income": "income", "bill": "expense"}
 
 
@@ -115,13 +115,30 @@ class LedgerPrep:
     unmatched: tuple[str, ...]
 
 
+def error_record(
+    values: np.ndarray, start: date, forecaster: Forecaster, kind: str
+) -> tuple[np.ndarray, bool]:
+    """The user's own signed error paths for one series, unwidened, and whether they had to come
+    from the fallback (a record too short to score the model: the series' own spread is used
+    instead, never zero noise). Shared with the band calibration so it measures what is served."""
+    paths = rolling_error_paths(values, start, forecaster_for(forecaster, kind))
+    if len(paths) < MIN_ERROR_PATHS:
+        return mean_forecast_errors(values), True
+    return paths, False
+
+
 def prepare_ledger(
     rows: Iterable[Mapping[str, Any]],
     items: Iterable[Mapping[str, Any]],
     today: date,
     forecaster: Forecaster,
+    recentre_errors: bool = False,
 ) -> LedgerPrep | Forecast:
-    """The plan-independent half of a forecast, or the locked forecast if the ledger is too thin."""
+    """The plan-independent half of a forecast, or the locked forecast if the ledger is too thin.
+
+    `recentre_errors` removes the record's mean error before resampling, so the model's own level
+    bias is NOT carried into the future paths. It exists only for the bias-term sensitivity of
+    the labels (WP16, C6); serving never sets it."""
     rows = [r for r in rows if as_date(r["date"]) <= today]  # nothing from the future
     completeness = assess(rows, today)
     if completeness.status == "locked":
@@ -136,16 +153,14 @@ def prepare_ledger(
         return _locked("needs_four_months", months, suspects, series.weeks)
 
     forecast_from = series.start + timedelta(days=7 * series.weeks)
-    spend_errors = rolling_error_paths(
-        series.spend, series.start, forecaster_for(forecaster, "spend")
-    )
-    income_errors = rolling_error_paths(
-        series.income, series.start, forecaster_for(forecaster, "income")
-    )
-    fallback = len(spend_errors) < MIN_ERROR_PATHS or len(income_errors) < MIN_ERROR_PATHS
-    if fallback:  # too short to score the model: use the series own spread, never zero noise
-        spend_errors = mean_forecast_errors(series.spend)
-        income_errors = mean_forecast_errors(series.income)
+    spend_errors, spend_fallback = error_record(series.spend, series.start, forecaster, "spend")
+    income_errors, income_fallback = error_record(series.income, series.start, forecaster, "income")
+    fallback = spend_fallback or income_fallback
+    if recentre_errors:
+        spend_errors = spend_errors - spend_errors.mean() if spend_errors.size else spend_errors
+        income_errors = (
+            income_errors - income_errors.mean() if income_errors.size else income_errors
+        )
     error_std = float(np.std(spend_errors)) if spend_errors.size else 0.0
     first_of_month = date(forecast_from.year, forecast_from.month, 1)
     return LedgerPrep(
@@ -155,8 +170,8 @@ def prepare_ledger(
         suspects=suspects,
         series=series,
         forecast_from=forecast_from,
-        spend_errors=widen(spend_errors, ERROR_INFLATION),
-        income_errors=widen(income_errors, ERROR_INFLATION),
+        spend_errors=widen(spend_errors, inflation_for(series.weeks, "spend")),
+        income_errors=widen(income_errors, inflation_for(series.weeks, "income")),
         fallback=fallback,
         error_std=error_std,
         month_to_date_sen=month_to_date_net(rows, first_of_month, forecast_from)
@@ -176,8 +191,10 @@ def forecast_prepared(
     paths: int = DEFAULT_PATHS,
     seed: int = 0,
     max_weeks: int = MAX_WEEKS,
+    savings_buffer_sen: int = 0,
 ) -> Forecast:
-    """The plan-dependent half: known flows for this plan, then the simulation."""
+    """The plan-dependent half: known flows for this plan, then the simulation. The running
+    margin starts from `savings_buffer_sen` (ADR D-50)."""
     horizon = max(end or horizon_end(today), prep.forecast_from)
     known = known_flows(prep.confirmed, list(plans), prep.forecast_from, horizon, proposed)
     simulation = simulate(
@@ -193,6 +210,7 @@ def forecast_prepared(
         month_to_date_sen=prep.month_to_date_sen,
         fallback_errors=prep.fallback,
         max_weeks=max_weeks,
+        starting_buffer_sen=savings_buffer_sen,
     )
     return Forecast(
         status="ok",
@@ -221,8 +239,11 @@ def build_forecast(
     paths: int = DEFAULT_PATHS,
     seed: int = 0,
     max_weeks: int = MAX_WEEKS,
+    savings_buffer_sen: int = 0,
 ) -> Forecast:
     prep = prepare_ledger(rows, items, today, forecaster)
     if isinstance(prep, Forecast):
         return prep
-    return forecast_prepared(prep, plans, today, forecaster, proposed, end, paths, seed, max_weeks)
+    return forecast_prepared(
+        prep, plans, today, forecaster, proposed, end, paths, seed, max_weeks, savings_buffer_sen
+    )

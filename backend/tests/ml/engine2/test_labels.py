@@ -42,7 +42,7 @@ class Blind:
         return getattr(self._real, name)
 
 
-def test_a_label_is_a_probability_with_all_sixteen_features():
+def test_a_label_is_a_probability_with_all_seventeen_features():
     record = label_profile(profile(0), MODEL, SEED, paths=200)
 
     assert record is not None
@@ -171,7 +171,8 @@ def test_a_label_records_the_per_month_definition_beside_the_cumulative_one():
 def test_the_manifest_records_the_provenance_of_the_run(tmp_path):
     manifest = generate_labels(PARAMS, SEED, 3, tmp_path, paths=100, forecaster=MODEL)
 
-    assert manifest["label_version"] == "2"
+    assert manifest["label_version"] == "3"
+    assert len(manifest["band_rule_sha256"]) == 64 and manifest["recentre_errors"] is False
     assert {"python", "numpy", "onnxruntime", "scipy"} <= set(manifest["versions"])
     assert "git_commit" in manifest and manifest["capped_profiles"] == 0
     assert manifest["horizon_max_weeks"] >= 160
@@ -215,3 +216,49 @@ def test_a_run_refuses_to_resume_with_fewer_profiles_than_are_already_written(tm
         generate_labels(PARAMS, SEED, 2, tmp_path, paths=100, forecaster=MODEL, resume=True)
 
     assert (tmp_path / LABELS_FILE).read_bytes() == before  # nothing was cut
+
+
+# --- WP16: the savings buffer (D-50) and the bias-term sensitivity (C6) ---
+def test_the_profiles_buffer_starts_the_label_and_is_a_feature():
+    index = next(i for i in range(60) if profile(i).savings_buffer_sen > 0)
+    record = label_profile(profile(index), MODEL, SEED, paths=200)
+    assert record["features"]["savings_buffer_to_income"] > 0
+    assert prepare(profile(index))["savings_buffer_sen"] == profile(index).savings_buffer_sen
+
+
+def test_a_buffer_never_raises_the_label():
+    from dataclasses import replace
+
+    for index in range(12):
+        with_buffer = profile(index)
+        if with_buffer.savings_buffer_sen == 0:
+            continue
+        without = replace(with_buffer, savings_buffer_sen=0)
+        a = label_profile(with_buffer, MODEL, SEED, paths=200)
+        b = label_profile(without, MODEL, SEED, paths=200)
+        if a and b:
+            assert a["label"] <= b["label"] + 1e-12
+
+
+def test_recentred_errors_are_a_separate_run_that_records_the_switch(tmp_path):
+    plain = generate_labels(PARAMS, SEED, 3, tmp_path / "plain", paths=100, forecaster=MODEL)
+    centred = generate_labels(
+        PARAMS, SEED, 3, tmp_path / "centred", paths=100, forecaster=MODEL, recentre_errors=True
+    )
+    assert plain["recentre_errors"] is False and centred["recentre_errors"] is True
+    assert plain["label_version"] == centred["label_version"] == "3"
+
+
+def test_recentring_removes_the_records_mean_error():
+    from app.engines.forecasting.service import prepare_ledger
+
+    known = prepare(profile(2))
+    plain = prepare_ledger(known["rows"], known["items"], known["as_of"], MODEL)
+    centred = prepare_ledger(
+        known["rows"], known["items"], known["as_of"], MODEL, recentre_errors=True
+    )
+    assert abs(float(centred.spend_errors.mean())) < 1e-6
+    assert abs(float(centred.income_errors.mean())) < 1e-6
+    assert np.allclose(
+        plain.spend_errors - plain.spend_errors.mean(), centred.spend_errors, atol=1e-6
+    )

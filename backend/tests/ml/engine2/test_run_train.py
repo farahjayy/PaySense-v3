@@ -216,7 +216,7 @@ def test_the_constants_serving_will_need_are_copied_into_the_record(tiny):
 
     constants = record["serving_constants"]
     assert set(constants) == {
-        "RISK_CHECK_MAX_WEEKS", "DASHBOARD_MONTHS", "ERROR_INFLATION", "BOOTSTRAP_BLOCK"
+        "RISK_CHECK_MAX_WEEKS", "DASHBOARD_MONTHS", "BAND_RULE_SHA256", "BOOTSTRAP_BLOCK"
     }  # fmt: skip
     assert constants["RISK_CHECK_MAX_WEEKS"] >= 160
     assert {"label_version", "horizon_max_weeks", "served_model_files"} <= set(

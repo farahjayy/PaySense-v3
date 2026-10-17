@@ -200,7 +200,7 @@ def test_a_heavy_purchase_on_a_thin_income_has_a_higher_label_than_a_light_one()
 def test_the_features_compute_from_the_inputs():
     values = compute_features(build().inputs)
 
-    assert len(values) == 16 and all(np.isfinite(v) for v in values.values())
+    assert len(values) == 17 and all(np.isfinite(v) for v in values.values())
     assert values["num_instalments"] == 3 and values["instalment_amount"] == 200.0
 
 

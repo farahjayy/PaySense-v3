@@ -24,7 +24,7 @@ import numpy as np
 
 from app.engines.forecasting.errors import rolling_error_paths, widen
 from app.engines.forecasting.onnx_model import load_served
-from app.engines.forecasting.service import ERROR_INFLATION
+from app.engines.forecasting.service import V1_ERROR_INFLATION as ERROR_INFLATION
 from app.engines.forecasting.simulate import path_bootstrap
 from ml.engine1_eval.data import Series
 from ml.engine1_eval.harness import EvalConfig, evaluate_series

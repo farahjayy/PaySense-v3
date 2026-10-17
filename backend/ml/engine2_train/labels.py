@@ -27,6 +27,7 @@ from typing import Any
 
 import numpy as np
 
+from app.engines.forecasting.bands import BAND_FILE, text_digest
 from app.engines.forecasting.recurring import detect
 from app.engines.forecasting.serving import served_forecaster
 from app.engines.forecasting.simulate import RISK_CHECK_MAX_WEEKS, Forecaster
@@ -42,9 +43,11 @@ DEFAULT_PROFILES = 10_000
 LABELS_FILE = "labels.jsonl"
 MANIFEST_FILE = "MANIFEST.json"
 RUN_FILE = "labels.run.json"  # the settings a partial file was made with (for --resume)
-LABEL_VERSION = "2"  # bump when the way a label is made changes
+LABEL_VERSION = "3"  # bump when the way a label is made changes
 # 2: the simulation runs to the plan's last instalment (D-36) and each profile has its own as-of
 #    day (D-31 note); the feature schema hash now covers the window constants (audit M2).
+# 3: WP16 - the running margin starts from the profile's savings buffer (D-50) and the forecast
+#    band is widened by history length (C2, `band_inflation.json`).
 PROGRESS_EVERY = 250
 Transform = Callable[[list[dict[str, Any]], date], list[dict[str, Any]]]
 
@@ -109,13 +112,19 @@ def prepare(
         "proposal": profile.purchase.proposal,
         "limits": dict(profile.bnpl.limits),
         "as_of": as_of,
+        "savings_buffer_sen": profile.savings_buffer_sen,  # what the student would record (D-50)
     }
 
 
 def label_profile(
-    profile: StudentProfile, forecaster: Forecaster, master_seed: int, paths: int = 1000
+    profile: StudentProfile,
+    forecaster: Forecaster,
+    master_seed: int,
+    paths: int = 1000,
+    recentre_errors: bool = False,
 ) -> dict[str, Any] | None:
-    """The label and features for one profile, or None if its ledger is locked."""
+    """The label and features for one profile, or None if its ledger is locked.
+    `recentre_errors` is the C6 sensitivity run only (the served bias term removed)."""
     known = prepare(profile)
     built = build_feature_inputs(
         rows=known["rows"],
@@ -127,6 +136,8 @@ def label_profile(
         forecaster=forecaster,
         seed=profile_seed(master_seed, profile.index),
         paths=paths,
+        savings_buffer_sen=known["savings_buffer_sen"],
+        recentre_errors=recentre_errors,
     )
     if built is None:
         return None
@@ -160,10 +171,11 @@ def iter_labels(
     forecaster: Forecaster,
     paths: int,
     first: int = 0,
+    recentre_errors: bool = False,
 ) -> Iterator[dict[str, Any]]:
     for index in range(first, count):
         profile = generate_dated_profile(params, master_seed, index)
-        record = label_profile(profile, forecaster, master_seed, paths)
+        record = label_profile(profile, forecaster, master_seed, paths, recentre_errors)
         if record is None:
             yield {
                 "index": index,
@@ -181,7 +193,12 @@ def served_model_files(forecaster: Forecaster) -> Any:
 
 
 def _settings(
-    params: Params, master_seed: int, paths: int, forecaster: Forecaster, count: int
+    params: Params,
+    master_seed: int,
+    paths: int,
+    forecaster: Forecaster,
+    count: int,
+    recentre_errors: bool = False,
 ) -> dict:
     """Everything a label depends on besides the profile index: two runs agree only if these do.
     `profiles` (the count asked for) is recorded but not compared on resume: a run may be extended,
@@ -195,6 +212,8 @@ def _settings(
         "horizon_max_weeks": RISK_CHECK_MAX_WEEKS,
         "served_model": getattr(forecaster, "name", "unknown"),
         "served_model_files": served_model_files(forecaster),
+        "band_rule_sha256": text_digest(BAND_FILE),
+        "recentre_errors": recentre_errors,
         "git_commit": git_commit(),
         "profiles": count,
     }
@@ -252,13 +271,14 @@ def generate_labels(
     forecaster: Forecaster | None = None,
     resume: bool = False,
     on_progress: Callable[[int], None] | None = None,
+    recentre_errors: bool = False,
 ) -> dict[str, Any]:
     """Write `labels.jsonl` and `MANIFEST.json`. With `resume`, keep what an interrupted run of the
     same settings already wrote and continue after it (the result equals an uninterrupted run)."""
     forecaster = forecaster or served_forecaster()
     out_dir.mkdir(parents=True, exist_ok=True)
     target, sidecar = out_dir / LABELS_FILE, out_dir / RUN_FILE
-    settings = _settings(params, master_seed, paths, forecaster, count)
+    settings = _settings(params, master_seed, paths, forecaster, count, recentre_errors)
     first = _resume_point(target, sidecar, settings) if resume else 0
     if first > count:
         raise ValueError(
@@ -268,7 +288,9 @@ def generate_labels(
         target.write_bytes(b"")
     sidecar.write_text(json.dumps(settings, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     with target.open("a", encoding="utf-8", newline="\n") as handle:
-        for record in iter_labels(params, master_seed, count, forecaster, paths, first):
+        for record in iter_labels(
+            params, master_seed, count, forecaster, paths, first, recentre_errors
+        ):
             handle.write(json.dumps(record, separators=(",", ":")) + "\n")
             handle.flush()
             if on_progress and (record["index"] + 1) % PROGRESS_EVERY == 0:
@@ -302,6 +324,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--paths", type=int, default=1000)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--resume", action="store_true", help="continue an interrupted run")
+    parser.add_argument(
+        "--recentre-errors",
+        action="store_true",
+        help="C6 sensitivity only: remove each record's mean error (never used for training)",
+    )
     args = parser.parse_args(argv)
     manifest = generate_labels(
         load_params(),
@@ -310,6 +337,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         args.out,
         args.paths,
         resume=args.resume,
+        recentre_errors=args.recentre_errors,
         on_progress=lambda n: print(f"labelled {n}", flush=True),  # noqa: T201
     )
     print(f"labelled {manifest['profiles']} profiles ({manifest['locked_profiles']} locked)")  # noqa: T201

@@ -16,7 +16,9 @@ from dataclasses import dataclass
 
 SEN_PER_RM = 100
 RATIO_CAP = 10.0  # a ratio above ten months of income is "far beyond affordable"; cap the rest
-DEFINITIONS_VERSION = "v1"  # bump when a feature's definition (not just its name) changes
+DEFINITIONS_VERSION = "v2"  # bump when a feature's definition (not just its name) changes
+# v2 (WP16, D-50): the savings buffer feature; Engine 1's running margin starts from the buffer, so
+# every margin feature's value can change too.
 # Windows and caps that change feature VALUES without changing a name or a direction. They are part
 # of the schema hash (the builder in `forecasting/summary.py` imports them), so changing one makes
 # an artefact trained under the old values refuse to serve.
@@ -49,6 +51,9 @@ MONOTONE_DIRECTIONS: dict[str, int] = {
     "upfront_to_income": 1,
     "limit_utilisation_with_purchase": 1,
     "limit_known": 0,
+    # D-50: savings the person can fall back on, in months of expected income; added last so the
+    # earlier features keep their positions
+    "savings_buffer_to_income": -1,
 }
 FEATURE_NAMES: tuple[str, ...] = tuple(MONOTONE_DIRECTIONS)
 # The features that come from Engine 1's forecast; the ablation retrains without them to show how
@@ -109,6 +114,7 @@ class FeatureInputs:
     commitments: Commitments
     engine1: Engine1Summary
     expected_monthly_income_sen: int
+    savings_buffer_sen: int = 0  # D-50: what the person recorded; 0 when nothing was
 
 
 def _rm(sen: float) -> float:
@@ -154,6 +160,7 @@ def compute_features(data: FeatureInputs) -> dict[str, float]:
         "upfront_to_income": _ratio(plan.upfront_sen, income),
         "limit_utilisation_with_purchase": utilisation,
         "limit_known": 1.0 if limit is not None else 0.0,
+        "savings_buffer_to_income": _ratio(data.savings_buffer_sen, income),
     }
     return {name: values[name] for name in FEATURE_NAMES}
 

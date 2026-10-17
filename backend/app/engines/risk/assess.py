@@ -54,6 +54,7 @@ def assess(
     predictor: Predictor,
     seed: int,
     paths: int = DEFAULT_PATHS,
+    savings_buffer_sen: int = 0,
 ) -> Assessment:
     """Raises `ProposalError` when the plan rules reject the request."""
 
@@ -63,7 +64,7 @@ def assess(
     def check(candidate: RiskRequest, at: int = paths) -> CheckResult:
         return run_check(
             rows, items, plans, provider_limits, candidate, today, forecaster, predictor,
-            paths=at, seed=seed, cache=cache,
+            paths=at, seed=seed, cache=cache, savings_buffer_sen=savings_buffer_sen,
         )  # fmt: skip
 
     result = check(request)

@@ -37,6 +37,7 @@ from app.api import (
     summary,
     transactions,
 )
+from app.api import settings as settings_api  # `settings` is create_app's parameter name
 from app.api.rate_limit import DailyQuota, LoginRateLimiter, RequestRateLimiter
 from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.settings import MissingSettingsError, Settings, get_settings
@@ -193,6 +194,7 @@ def create_app(
     app.include_router(insights.router, prefix="/api")
     app.include_router(recommendations.router, prefix="/api")
     app.include_router(assistant.router, prefix="/api")
+    app.include_router(settings_api.router, prefix="/api")
     return app
 
 

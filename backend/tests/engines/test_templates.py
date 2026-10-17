@@ -39,6 +39,7 @@ VALUES = {
     "upfront_to_income": 0.2,
     "limit_utilisation_with_purchase": 0.9,
     "limit_known": 0.0,
+    "savings_buffer_to_income": 0.42,
 }
 
 EXPECTED = {
@@ -58,6 +59,7 @@ EXPECTED = {
     "upfront_to_income": [str(half_up(0.2 * 100))],
     "limit_utilisation_with_purchase": [str(half_up(0.9 * 100))],
     "limit_known": [],
+    "savings_buffer_to_income": ["0.4"],
 }
 
 
@@ -137,3 +139,9 @@ def test_a_value_that_is_not_a_finite_number_is_refused_not_printed():
     for bad in (math.nan, math.inf):
         with pytest.raises(ValueError, match="finite"):
             render_factor("disc_weekly_p50", {**VALUES, "disc_weekly_p50": bad})
+
+
+def test_no_savings_buffer_is_said_without_a_number():
+    factor = render_factor("savings_buffer_to_income", {**VALUES, "savings_buffer_to_income": 0.0})
+    assert figures_in(factor.text) == [] and factor.figures == ()
+    assert "savings" in factor.text
