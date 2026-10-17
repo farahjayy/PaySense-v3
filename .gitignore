@@ -71,3 +71,6 @@ reports/uat/*
 
 # Author's working material: real bank statements and screenshots. Public repo (D-14): never commit.
 progress_material/
+
+# Agent worktrees (local only)
+.claude/worktrees/
