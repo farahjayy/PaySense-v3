@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { AppShell } from "@/components/layout/AppShell";
 import type { AssistantStatus } from "@/lib/assistant";
+import { useOpenAssistant } from "@/lib/assistantLauncher";
 
 import { BUDGET_ACTION, CARDS, reply } from "./assistantFixtures";
 
@@ -297,6 +298,31 @@ describe("AssistantPanel", () => {
       rules: { "color-contrast": { enabled: false } },
     });
     expect(result.violations.map((v) => v.id)).toEqual([]);
+  });
+});
+
+describe("opening the assistant from a page", () => {
+  it("puts the page's prompt in the message box without sending it", async () => {
+    routes();
+    const user = { id: "u1", username: "amir", display_name: "Amir", persona: null } as const;
+    function Page() {
+      const open = useOpenAssistant();
+      return (
+        <button type="button" onClick={() => open?.("What's the safest way to buy it?")}>
+          try it
+        </button>
+      );
+    }
+    render(
+      <AppShell user={user}>
+        <Page />
+      </AppShell>,
+      { wrapper },
+    );
+    await userEvent.click(screen.getByRole("button", { name: "try it" }));
+    expect(screen.getByRole("dialog", { name: "Ask PaySense" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Your message")).toHaveValue("What's the safest way to buy it?");
+    expect(post).not.toHaveBeenCalled();
   });
 });
 

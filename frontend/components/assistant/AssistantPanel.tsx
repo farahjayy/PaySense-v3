@@ -60,20 +60,30 @@ function Notice({ state, text }: { state: PanelState; text: string }) {
   );
 }
 
-type Props = { onClose: () => void };
+type Props = {
+  onClose: () => void;
+  /** A question a page put in the box (n changes on every request, so the same one can repeat). */
+  prompt?: { text: string; n: number } | null;
+};
 
 /**
  * The assistant (WP5, D-47, D-48). It reads and works things out through the app's own tools;
  * every figure comes from those tools and every change waits for a Confirm press.
  */
-export function AssistantPanel({ onClose }: Props) {
+export function AssistantPanel({ onClose, prompt = null }: Props) {
   const titleId = useId();
   const status = useAssistantStatus();
   const opening = useAssistantOpening(true);
   const chat = useAssistantChat();
   const run = useAssistantRun();
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(prompt?.text ?? "");
+  const [shownPrompt, setShownPrompt] = useState(prompt);
+  if (prompt !== shownPrompt) {
+    // a page asked again while the panel was open: put its question in the box (not sent)
+    setShownPrompt(prompt);
+    if (prompt) setMessage(prompt.text);
+  }
   const [pasted, setPasted] = useState("");
   const [showPaste, setShowPaste] = useState(false);
   const [refused, setRefused] = useState<PanelState | null>(null);
@@ -85,6 +95,10 @@ export function AssistantPanel({ onClose }: Props) {
   useEffect(() => {
     input.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (prompt) input.current?.focus(); // the person still presses Send
+  }, [prompt]);
 
   function add(entry: NewEntry) {
     setEntries((current) => [...current, { ...entry, id: nextId.current++ } as Entry]);

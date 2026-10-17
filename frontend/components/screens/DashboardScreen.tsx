@@ -3,7 +3,9 @@
 import dynamic from "next/dynamic";
 
 import { AlertStrip } from "@/components/dashboard/AlertStrip";
+import { BudgetStrip } from "@/components/dashboard/BudgetStrip";
 import { GettingStarted } from "@/components/dashboard/GettingStarted";
+import { TryThis } from "@/components/dashboard/TryThis";
 import { BillsDue } from "@/components/forecast/BillsDue";
 import { Notices } from "@/components/forecast/Notices";
 import { RecentMonths } from "@/components/forecast/RecentMonths";
@@ -31,13 +33,18 @@ export function DashboardScreen() {
   const name = auth.session?.user.display_name ?? "";
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <PageHeader title={`Hi, ${name}`} intro="Where your money is heading, and what you owe." />
+      <PageHeader
+        title={`Hi, ${name}`}
+        intro="Where your money is heading, what you owe, and whether the next buy-now-pay-later plan fits."
+      />
       <AlertStrip />
       <GettingStarted />
       <Outlook />
+      <TryThis />
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2">
           <BillsCard />
+          <BudgetStrip />
         </div>
         <div className="lg:col-span-3">
           <RecentCard />

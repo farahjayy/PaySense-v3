@@ -9,6 +9,7 @@ import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { Button } from "@/components/ui/Button";
 import { isActive } from "@/lib/nav";
 import { api } from "@/lib/api/client";
+import { AssistantLauncher } from "@/lib/assistantLauncher";
 import { clearSession, type Session } from "@/lib/session";
 
 type NavItem = { href: string; label: string; icon: string; mobile: boolean };
@@ -104,6 +105,12 @@ export function AppShell({ user, children }: Props) {
   const firstRender = useRef(true);
   const askButton = useRef<HTMLButtonElement>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [prompt, setPrompt] = useState<{ text: string; n: number } | null>(null);
+
+  function openAssistant(text?: string) {
+    if (text) setPrompt((current) => ({ text, n: (current?.n ?? 0) + 1 }));
+    setAssistantOpen(true);
+  }
 
   function closeAssistant() {
     setAssistantOpen(false);
@@ -164,14 +171,14 @@ export function AppShell({ user, children }: Props) {
         </header>
         <nav
           aria-label="More pages"
-          className="flex gap-5 border-b border-line bg-surface px-4 py-2 text-[13px] font-medium md:hidden"
+          className="flex flex-wrap gap-x-5 gap-y-1 border-b border-line bg-surface px-4 py-2 text-[13px] font-medium md:hidden"
         >
           {NAV_ITEMS.filter((item) => !item.mobile).map((item) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={isActive(pathname, item.href) ? "page" : undefined}
-              className="py-1 text-accent underline-offset-2 hover:underline"
+              className="whitespace-nowrap py-1 text-accent underline-offset-2 hover:underline"
             >
               {item.label}
             </Link>
@@ -183,11 +190,11 @@ export function AppShell({ user, children }: Props) {
           tabIndex={-1}
           className="flex-1 px-4 py-6 pb-24 outline-none sm:px-6 md:pb-8"
         >
-          {children}
+          <AssistantLauncher.Provider value={openAssistant}>{children}</AssistantLauncher.Provider>
         </main>
       </div>
       <MobileNav pathname={pathname} />
-      {assistantOpen && <AssistantPanel onClose={closeAssistant} />}
+      {assistantOpen && <AssistantPanel onClose={closeAssistant} prompt={prompt} />}
     </div>
   );
 }

@@ -23,7 +23,8 @@ function axisLabel(sen: number): string {
   const abs = Math.abs(rm);
   const text =
     abs >= 1000 ? `${(abs / 1000).toFixed(1).replace(/\.0$/, "")}k` : `${Math.round(abs)}`;
-  return `${rm < 0 ? "-" : ""}RM ${text}`;
+  // a no-break space: the axis wraps a label at a normal space and overlaps the month labels
+  return `${rm < 0 ? "-" : ""}RM\u00a0${text}`;
 }
 
 /**
@@ -50,7 +51,7 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
               tick={{ fontSize: 12, fill: "var(--color-ink-secondary)" }}
             />
             <YAxis
-              width={64}
+              width={76}
               tickLine={false}
               axisLine={false}
               tickFormatter={axisLabel}

@@ -10,13 +10,13 @@
  },
  "summary": {
   "turns": 33,
-  "success": 32,
-  "guided_fallbacks": 1,
+  "success": 33,
+  "guided_fallbacks": 0,
   "number_check_replacements": 0,
-  "latency_p50_s": 3.64,
-  "latency_p95_s": 10.74,
-  "mean_input_tokens": 6173,
-  "mean_output_tokens": 85,
+  "latency_p50_s": 3.89,
+  "latency_p95_s": 30.45,
+  "mean_input_tokens": 6265,
+  "mean_output_tokens": 87,
   "per_scenario": {
    "afford": {
     "success": 3,
@@ -29,11 +29,9 @@
     "reasons": []
    },
    "go_ahead": {
-    "success": 2,
+    "success": 3,
     "runs": 3,
-    "reasons": [
-     "fell back to guided mode"
-    ]
+    "reasons": []
    },
    "bills": {
     "success": 3,
@@ -93,10 +91,10 @@
     ]
    ],
    "actions": [],
-   "reply": "This purchase is currently rated as \"At Risk,\" with a high probability of a shortfall. Your monthly budget is tight, and the RM 266 monthly instalment would likely cause issues. To make this safer, you could consider spreading the cost over 9 instalments or choosing a more affordable device.",
-   "latency_s": 4.55,
-   "input_tokens": 6698,
-   "output_tokens": 124,
+   "reply": "Based on your current financial situation, this purchase is rated as \"At Risk\" with a 100% probability of a shortfall. You are already running a monthly deficit of about RM 354, and this plan would not be sustainable. The model suggests looking for an item priced closer to RM 400 to improve your financial outlook.",
+   "latency_s": 2.11,
+   "input_tokens": 6632,
+   "output_tokens": 136,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -117,10 +115,10 @@
     ]
    ],
    "actions": [],
-   "reply": "This purchase is currently rated as \"At Risk,\" and no change reaches a \"Safe\" band. The model suggests that spreading the cost over 9 instalments or choosing a phone priced around RM 400 would improve your financial position. Please note that this is not financial advice, and you should decide based on your own budget.",
-   "latency_s": 6.46,
-   "input_tokens": 6708,
-   "output_tokens": 131,
+   "reply": "Buying this phone on SPayLater puts you in the \"At Risk\" band, as you are currently facing a monthly shortfall. Even with this plan, the model suggests that choosing a phone priced around RM 400 would be a much safer option for your budget. Please note that this is not financial advice, and the final decision is yours.",
+   "latency_s": 39.88,
+   "input_tokens": 6642,
+   "output_tokens": 135,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -143,10 +141,10 @@
    "actions": [
     "Create a SPayLater plan for phone: RM 799.00 in 3 instalment(s), first due 29 Jan 2026, total cost RM 799.00. The risk check runs again before it is saved."
    ],
-   "reply": "I have proposed the SPayLater plan for your phone. Please check the card to confirm the details, and note that the risk check will run again before it is officially saved.",
-   "latency_s": 3.23,
-   "input_tokens": 6219,
-   "output_tokens": 109,
+   "reply": "I have proposed creating a SPayLater plan for the phone at RM 799.00 over 3 months. Please check the details on the card and confirm if you would like to proceed.",
+   "latency_s": 1.92,
+   "input_tokens": 6220,
+   "output_tokens": 115,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -171,10 +169,10 @@
     ]
    ],
    "actions": [],
-   "reply": "You currently have no BNPL instalments or recurring bills due this month.",
-   "latency_s": 9.59,
+   "reply": "You currently have no BNPL instalments due this month.",
+   "latency_s": 8.87,
    "input_tokens": 8992,
-   "output_tokens": 38,
+   "output_tokens": 35,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -194,15 +192,19 @@
      "ok"
     ],
     [
+     "get_forecast",
+     "ok"
+    ],
+    [
      "get_alerts",
      "ok"
     ]
    ],
    "actions": [],
-   "reply": "Your finances are currently \"At Risk,\" with a 90% chance of a shortfall in the next three months. December has been particularly tight, and your spending has exceeded your income this month. Please review your forecast and upcoming bills to help manage your cash flow.",
-   "latency_s": 4.81,
-   "input_tokens": 6571,
-   "output_tokens": 76,
+   "reply": "Your financial health is currently rated as \"At Risk,\" with a 98% chance of a shortfall in the next three months. The forecast indicates that February 2026 is your tightest month. Please review your recent spending and upcoming bills to see where you can adjust.",
+   "latency_s": 3.58,
+   "input_tokens": 6731,
+   "output_tokens": 90,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -225,10 +227,10 @@
    "actions": [
     "Set the Food budget to RM 400.00 a month."
    ],
-   "reply": "I have proposed setting your food budget to RM 400.00. Please check the card to confirm this change.",
-   "latency_s": 2.99,
-   "input_tokens": 6076,
-   "output_tokens": 63,
+   "reply": "I have proposed setting your food budget to RM 400.00 a month. Please check the card to confirm this change.",
+   "latency_s": 4.92,
+   "input_tokens": 6078,
+   "output_tokens": 65,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -251,10 +253,10 @@
    "actions": [
     "Add expense of RM 12.50 in Food on 29 Dec 2025 (nasi lemak)."
    ],
-   "reply": "I have proposed adding your RM12.50 nasi lemak expense to your records. Please check the card and confirm to save it.",
-   "latency_s": 1.63,
-   "input_tokens": 6133,
-   "output_tokens": 93,
+   "reply": "I've prepared a proposal to add your RM12.50 nasi lemak expense to your records. Please check the card and confirm it to finalize the entry.",
+   "latency_s": 8.81,
+   "input_tokens": 6134,
+   "output_tokens": 99,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -277,10 +279,10 @@
    "actions": [
     "Add 3 transaction(s): RM 0.00 in, RM 66.40 out."
    ],
-   "reply": "I have processed those three transactions for you. Please review the details and confirm them to add them to your ledger.",
-   "latency_s": 1.84,
-   "input_tokens": 6357,
-   "output_tokens": 169,
+   "reply": "I have processed those three transactions. Please review the details in the card and confirm to add them to your ledger.",
+   "latency_s": 3.14,
+   "input_tokens": 6339,
+   "output_tokens": 151,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -301,10 +303,10 @@
     ]
    ],
    "actions": [],
-   "reply": "To check if you can afford a phone, I need to know the price, which provider you plan to use, and how many instalments you are considering. Could you please provide those details?",
-   "latency_s": 4.87,
+   "reply": "To see if you can afford a phone, I need to know the price, which provider you're considering, and how many instalments you'd like to use. Could you please provide those details?",
+   "latency_s": 3.89,
    "input_tokens": 6184,
-   "output_tokens": 52,
+   "output_tokens": 55,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -321,7 +323,7 @@
    "tools": [],
    "actions": [],
    "reply": "I can only help with your money in PaySense: purchases you are thinking about, your bills, budgets, spending and BNPL plans.",
-   "latency_s": 1.85,
+   "latency_s": 0.76,
    "input_tokens": 2920,
    "output_tokens": 5,
    "http_status": 200,
@@ -346,10 +348,10 @@
    "actions": [
     "Add 1 transaction(s): RM 0.00 in, RM 8.50 out."
    ],
-   "reply": "I have processed the transaction for Mamak Bistro (RM 8.50) from your pasted text. Please confirm this addition to your ledger.",
-   "latency_s": 4.69,
+   "reply": "I have processed the transaction from Mamak Bistro. Please confirm the addition of this expense to your ledger.",
+   "latency_s": 1.11,
    "input_tokens": 6143,
-   "output_tokens": 89,
+   "output_tokens": 80,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -370,10 +372,10 @@
     ]
    ],
    "actions": [],
-   "reply": "This purchase is currently rated as \"At Risk\" with a high probability of a shortfall. Your monthly margin is quite tight, and adding this instalment would increase that risk. To make this safer, you could consider spreading the cost over 12 months or choosing a more affordable device.",
-   "latency_s": 5.65,
-   "input_tokens": 6701,
-   "output_tokens": 121,
+   "reply": "Your purchase is currently rated as \"At Risk\" because you are already running a monthly shortfall of about RM 370. The model suggests that choosing an item priced closer to RM 400 would be a safer option. I cannot recommend proceeding with this purchase given your current financial situation.",
+   "latency_s": 7.59,
+   "input_tokens": 6632,
+   "output_tokens": 124,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -394,10 +396,10 @@
     ]
    ],
    "actions": [],
-   "reply": "Buying this phone on SPayLater over 3 months is currently rated as \"At Risk.\" The safest way to proceed would be to spread the payments over 9 instalments instead, or consider a more affordable option around RM 400. Please note that even with these changes, the purchase remains in the \"At Risk\" band.",
-   "latency_s": 7.18,
-   "input_tokens": 6710,
-   "output_tokens": 132,
+   "reply": "Buying this phone on SPayLater would put you in an \"At Risk\" band, as you are currently facing a monthly shortfall. The analysis suggests that even with this plan, your financial situation remains precarious. To reach a safer position, the model suggests looking for a phone priced closer to RM 400.",
+   "latency_s": 4.23,
+   "input_tokens": 6642,
+   "output_tokens": 128,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -406,11 +408,9 @@
   {
    "scenario": "go_ahead",
    "run": 2,
-   "success": false,
-   "reasons": [
-    "fell back to guided mode"
-   ],
-   "mode": "guided",
+   "success": true,
+   "reasons": [],
+   "mode": "llm",
    "narration_replaced": false,
    "refused": false,
    "tools": [
@@ -422,17 +422,13 @@
    "actions": [
     "Create a SPayLater plan for phone: RM 799.00 in 3 instalment(s), first due 29 Jan 2026, total cost RM 799.00. The risk check runs again before it is saved."
    ],
-   "reply": "The assistant's model is not available right now, so I am in guided mode. Here is what I found: Proposed: Create a SPayLater plan for phone: RM 799.00 in 3 instalment(s), first due 29 Jan 2026, total cost RM 799.00. The risk check runs again before it is saved. Waiting for your confirmation. Press Confirm on the card to go ahead, or Cancel.",
-   "latency_s": 3.47,
-   "input_tokens": 2934,
-   "output_tokens": 73,
+   "reply": "I have proposed the creation of your SPayLater plan for the phone. Please check the details on the card and confirm to proceed.",
+   "latency_s": 8.44,
+   "input_tokens": 6220,
+   "output_tokens": 100,
    "http_status": 200,
    "extra": {
-    "fallbacks": [
-     {
-      "reason": "the model's provider answered HTTP 503: { \"error\": { \"code\": 503, \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\", \"status\": \"UNAVAILABLE\" } }"
-     }
-    ]
+    "fallbacks": []
    }
   },
   {
@@ -455,7 +451,7 @@
    ],
    "actions": [],
    "reply": "You currently have no BNPL instalments due this month.",
-   "latency_s": 4.97,
+   "latency_s": 6.85,
    "input_tokens": 8992,
    "output_tokens": 35,
    "http_status": 200,
@@ -482,10 +478,10 @@
     ]
    ],
    "actions": [],
-   "reply": "Your finances are currently \"At Risk,\" with a 90% chance of a shortfall in the next three months. Your spending in December has exceeded your income, resulting in a net of -RM53.89. Please review your budget and upcoming expenses to help stabilize your situation.",
-   "latency_s": 2.13,
+   "reply": "You are currently in an \"At Risk\" position, with a 98% chance of a shortfall in your running margin over the next three months. Your financial situation is tightest heading into February 2026. Please review your recent spending and upcoming bills to see where you can adjust.",
+   "latency_s": 19.36,
    "input_tokens": 6571,
-   "output_tokens": 81,
+   "output_tokens": 83,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -509,8 +505,8 @@
     "Set the Food budget to RM 400.00 a month."
    ],
    "reply": "I have proposed setting your food budget to RM 400.00 a month. Please check the card to confirm this change.",
-   "latency_s": 10.74,
-   "input_tokens": 6079,
+   "latency_s": 1.9,
+   "input_tokens": 6077,
    "output_tokens": 65,
    "http_status": 200,
    "extra": {
@@ -534,10 +530,10 @@
    "actions": [
     "Add expense of RM 12.50 in Food on 29 Dec 2025 (nasi lemak)."
    ],
-   "reply": "I have proposed adding your RM12.50 nasi lemak expense to your records. Please check the card to confirm this action.",
-   "latency_s": 2.34,
-   "input_tokens": 6132,
-   "output_tokens": 92,
+   "reply": "I have proposed adding your RM 12.50 nasi lemak expense to your records. Please check the card and confirm to save it.",
+   "latency_s": 6.82,
+   "input_tokens": 6133,
+   "output_tokens": 94,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -561,7 +557,7 @@
     "Add 3 transaction(s): RM 0.00 in, RM 66.40 out."
    ],
    "reply": "I have processed those transactions for you. Please review the details and confirm them to add them to your ledger.",
-   "latency_s": 2.34,
+   "latency_s": 9.53,
    "input_tokens": 6357,
    "output_tokens": 168,
    "http_status": 200,
@@ -584,10 +580,10 @@
     ]
    ],
    "actions": [],
-   "reply": "To check if you can afford a phone, I need to know the price, which provider you're considering, and how many instalments you'd like to pay over. Could you please provide those details?",
-   "latency_s": 6.55,
+   "reply": "To see if you can afford a phone, I need to know the price, which provider you plan to use, and how many instalments you are considering. Could you please provide those details?",
+   "latency_s": 8.56,
    "input_tokens": 6184,
-   "output_tokens": 56,
+   "output_tokens": 52,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -604,7 +600,7 @@
    "tools": [],
    "actions": [],
    "reply": "I can only help with your money in PaySense: purchases you are thinking about, your bills, budgets, spending and BNPL plans.",
-   "latency_s": 1.66,
+   "latency_s": 2.84,
    "input_tokens": 2920,
    "output_tokens": 5,
    "http_status": 200,
@@ -629,10 +625,10 @@
    "actions": [
     "Add 1 transaction(s): RM 0.00 in, RM 8.50 out."
    ],
-   "reply": "I have processed the transaction from Mamak Bistro. Please confirm the addition of this expense to your ledger.",
-   "latency_s": 3.37,
+   "reply": "I have prepared the transaction from Mamak Bistro for RM8.50 for your confirmation. Please review the details in the card provided.",
+   "latency_s": 5.28,
    "input_tokens": 6143,
-   "output_tokens": 80,
+   "output_tokens": 87,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -653,10 +649,10 @@
     ]
    ],
    "actions": [],
-   "reply": "This purchase is currently rated as \"At Risk\" with a score of 17, and it would likely lead to a financial shortfall. To make this safer, you could consider spreading the payments over 9 instalments or choosing a more affordable option around RM 400. Please note that this is not financial advice, and the final decision is yours.",
-   "latency_s": 4.64,
-   "input_tokens": 6699,
-   "output_tokens": 136,
+   "reply": "This purchase is currently rated as \"At Risk\" because your monthly budget is already showing a shortfall. The analysis suggests that even without this purchase, you are about RM 366 short each month. To make this safer, the model suggests looking for a phone priced closer to RM 400.",
+   "latency_s": 3.25,
+   "input_tokens": 6632,
+   "output_tokens": 126,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -677,9 +673,9 @@
     ]
    ],
    "actions": [],
-   "reply": "This purchase is currently rated as \"At Risk,\" and unfortunately, no change to the instalment plan reaches a \"Safe\" status. The model suggests that spreading the cost over 9 instalments or choosing a phone priced around RM 400 would be safer options. Please consider these alternatives before proceeding.",
-   "latency_s": 7.71,
-   "input_tokens": 6709,
+   "reply": "Based on your current financial situation, this purchase is rated as \"At Risk\" with a 100% probability of a shortfall. Unfortunately, the analysis found no changes that would make this purchase safe at this time. You may want to reconsider this expense until your monthly budget is more stable.",
+   "latency_s": 1.73,
+   "input_tokens": 6530,
    "output_tokens": 124,
    "http_status": 200,
    "extra": {
@@ -703,10 +699,10 @@
    "actions": [
     "Create a SPayLater plan for phone: RM 799.00 in 3 instalment(s), first due 29 Jan 2026, total cost RM 799.00. The risk check runs again before it is saved."
    ],
-   "reply": "I have proposed the SPayLater plan for your phone. Please check the details on the card and confirm to proceed.",
-   "latency_s": 5.93,
+   "reply": "I have proposed the SPayLater plan for your phone. Please check the card to confirm the details, and it will be added once you approve it.",
+   "latency_s": 30.45,
    "input_tokens": 6221,
-   "output_tokens": 97,
+   "output_tokens": 104,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -726,15 +722,15 @@
      "ok"
     ],
     [
-     "list_plans",
+     "get_bill_analysis",
      "ok"
     ]
    ],
    "actions": [],
-   "reply": "You currently have no BNPL instalments due this month.",
-   "latency_s": 5.86,
-   "input_tokens": 8992,
-   "output_tokens": 35,
+   "reply": "You have no BNPL instalments or recurring bills due this month.",
+   "latency_s": 3.48,
+   "input_tokens": 9078,
+   "output_tokens": 39,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -759,10 +755,10 @@
     ]
    ],
    "actions": [],
-   "reply": "Your financial outlook is currently \"At Risk,\" with an 87% chance of a shortfall in the next three months. Your spending this month has exceeded your income, resulting in a net of -RM53.89. Please review your recent transactions and budget status to help manage your cash flow.",
-   "latency_s": 2.09,
+   "reply": "Your finances are currently \"At Risk,\" with a 98% chance of a shortfall in the next three months, particularly in February 2026. Your spending this month is RM1,224.88 against an income of RM1,170.99. Please review your budget and upcoming bills to help manage your cash flow.",
+   "latency_s": 2.12,
    "input_tokens": 6571,
-   "output_tokens": 84,
+   "output_tokens": 97,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -786,8 +782,8 @@
     "Set the Food budget to RM 400.00 a month."
    ],
    "reply": "I have proposed setting your food budget to RM 400.00 per month. Please check the card to confirm this change.",
-   "latency_s": 2.61,
-   "input_tokens": 6077,
+   "latency_s": 14.14,
+   "input_tokens": 6078,
    "output_tokens": 65,
    "http_status": 200,
    "extra": {
@@ -811,10 +807,10 @@
    "actions": [
     "Add expense of RM 12.50 in Food on 29 Dec 2025 (nasi lemak)."
    ],
-   "reply": "I've proposed adding your RM12.50 nasi lemak expense to your records. Please check the card and confirm to save it.",
-   "latency_s": 20.53,
+   "reply": "I have proposed adding your RM12.50 nasi lemak expense to your records. Please check the card to confirm this action.",
+   "latency_s": 3.35,
    "input_tokens": 6133,
-   "output_tokens": 94,
+   "output_tokens": 92,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -837,10 +833,10 @@
    "actions": [
     "Add 3 transaction(s): RM 0.00 in, RM 66.40 out."
    ],
-   "reply": "I have processed those transactions for you. Please review the details in the card and confirm to add them to your ledger.",
-   "latency_s": 3.64,
-   "input_tokens": 6339,
-   "output_tokens": 152,
+   "reply": "I have read those three transactions from your list. Please confirm the details to add them to your ledger.",
+   "latency_s": 3.29,
+   "input_tokens": 6357,
+   "output_tokens": 167,
    "http_status": 200,
    "extra": {
     "fallbacks": []
@@ -862,7 +858,7 @@
    ],
    "actions": [],
    "reply": "To help you check if you can afford a phone, could you please tell me the price of the phone, which provider you'd like to use, and how many instalments you are considering?",
-   "latency_s": 2.81,
+   "latency_s": 1.14,
    "input_tokens": 6184,
    "output_tokens": 53,
    "http_status": 200,
@@ -881,7 +877,7 @@
    "tools": [],
    "actions": [],
    "reply": "I can only help with your money in PaySense: purchases you are thinking about, your bills, budgets, spending and BNPL plans.",
-   "latency_s": 1.31,
+   "latency_s": 0.61,
    "input_tokens": 2920,
    "output_tokens": 5,
    "http_status": 200,
@@ -906,10 +902,10 @@
    "actions": [
     "Add 1 transaction(s): RM 0.00 in, RM 8.50 out."
    ],
-   "reply": "I have prepared the transaction for Mamak Bistro (RM 8.50) for your confirmation. Please review the details in the card provided.",
-   "latency_s": 3.14,
+   "reply": "I have processed the transaction from Mamak Bistro. Please confirm the addition of this expense to your ledger.",
+   "latency_s": 6.1,
    "input_tokens": 6143,
-   "output_tokens": 89,
+   "output_tokens": 80,
    "http_status": 200,
    "extra": {
     "fallbacks": []

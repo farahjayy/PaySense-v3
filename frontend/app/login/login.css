@@ -449,3 +449,34 @@
     animation: none !important;
   }
 }
+
+/* WP7: the responsible-use line and the context box under the form */
+.login-theme .lg-note {
+  margin-top: 1rem;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--lg-ink-2);
+}
+
+.login-theme .lg-terms {
+  margin-top: 0.75rem;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--lg-ink-2);
+}
+
+.login-theme .lg-terms summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--lg-ink);
+}
+
+.login-theme .lg-terms ul {
+  margin-top: 0.5rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+.login-theme .lg-terms li + li {
+  margin-top: 0.35rem;
+}

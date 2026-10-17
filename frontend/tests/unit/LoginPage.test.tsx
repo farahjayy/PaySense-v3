@@ -38,6 +38,27 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText(/username/i)).toBeVisible();
   });
 
+  it("asks for the passphrase and says what PaySense is not", () => {
+    render(<LoginPage />);
+
+    expect(screen.getByText("Enter your username and passphrase to start.")).toBeVisible();
+    expect(screen.queryByText(/there is no password/i)).toBeNull();
+    const note = screen.getByText(/not financial advice/i);
+    expect(note).toHaveTextContent(/not a credit decision/i);
+    expect(note).toHaveTextContent(/nothing changes until you confirm/i);
+  });
+
+  it("explains the local terms for readers outside Malaysia", () => {
+    const { container } = render(<LoginPage />);
+
+    const box = container.querySelector("details");
+    expect(box).not.toBeNull();
+    expect(within(box as HTMLElement).getByText(/new to BNPL in Malaysia/i)).toBeInTheDocument();
+    for (const term of [/ringgit/i, /SPayLater/, /TikTok PayLater/, /Atome/, /PTPTN/]) {
+      expect(box).toHaveTextContent(term);
+    }
+  });
+
   it("does not show any figure that is not the user's own", () => {
     const { container } = render(<LoginPage />);
 

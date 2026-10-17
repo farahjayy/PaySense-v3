@@ -99,6 +99,7 @@ function respond(forecast: unknown, extra: Record<string, unknown> = {}) {
     "/api/provider-limits": [],
     "/api/plans": [],
     "/api/alerts": NO_ALERTS,
+    "/api/budgets/status": { ...BUDGET_STATUS_EMPTY },
     ...extra,
   };
   get.mockImplementation(async (path: string) => ({
@@ -109,6 +110,20 @@ function respond(forecast: unknown, extra: Record<string, unknown> = {}) {
 }
 
 const NO_ALERTS = { items: [], checked_rules: [], notes: [] };
+const BUDGET_STATUS_EMPTY = {
+  month: "2026-10",
+  is_current: true,
+  days_in_month: 31,
+  days_elapsed: 9,
+  items: [],
+  total_limit_sen: 0,
+  total_spent_sen: 0,
+  refund_sen: 0,
+  month_spend_sen: 0,
+  unbudgeted_spend_sen: 0,
+  near_at: 0.8,
+  over_at: 1,
+};
 
 describe("DashboardScreen", () => {
   beforeEach(() => {
@@ -172,7 +187,9 @@ describe("DashboardScreen", () => {
                   ? SUMMARY
                   : path === "/api/alerts"
                     ? NO_ALERTS
-                    : [],
+                    : path === "/api/budgets/status"
+                      ? BUDGET_STATUS_EMPTY
+                      : [],
             error: undefined,
             response: { ok: true, status: 200 },
           },

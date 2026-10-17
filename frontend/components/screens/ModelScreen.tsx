@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { ModelVersions } from "@/components/model/ModelVersions";
 import { Card } from "@/components/ui/Card";
+import { LocalTerms } from "@/components/ui/LocalTerms";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
@@ -35,6 +36,7 @@ export function ModelScreen() {
         FinTechathon (Topic A: an AI assistant for personal finance). It is a working prototype for
         students deciding whether to buy now and pay later; it is not a bank&apos;s product.
       </p>
+      <LocalTerms className="rounded-card border border-line bg-surface p-4 text-[13px] leading-relaxed text-ink-secondary [&_li+li]:mt-1.5 [&_summary]:cursor-pointer [&_summary]:font-semibold [&_summary]:text-ink [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5" />
       <ModelVersions />
       <Section id="forecast" title="Financial health forecast">
         <p>

@@ -10,17 +10,17 @@
 | Measure | Value |
 |---|---|
 | Turns | 33 |
-| Task success | 32 / 33 |
-| Guided-mode fallbacks (provider error or timeout) | 1 |
+| Task success | 33 / 33 |
+| Guided-mode fallbacks (provider error or timeout) | 0 |
 | Narration replaced by the number check | 0 |
-| Latency p50 / p95 (s) | 3.64 / 10.74 |
-| Mean tokens per turn (input / output) | 6173 / 85 |
+| Latency p50 / p95 (s) | 3.89 / 30.45 |
+| Mean tokens per turn (input / output) | 6265 / 87 |
 
 | Scenario | Success | What went wrong |
 |---|---|---|
 | afford | 3/3 | - |
 | safest | 3/3 | - |
-| go_ahead | 2/3 | fell back to guided mode |
+| go_ahead | 3/3 | - |
 | bills | 3/3 | - |
 | insights | 3/3 | - |
 | set_budget | 3/3 | - |
