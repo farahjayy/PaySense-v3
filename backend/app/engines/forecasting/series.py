@@ -13,7 +13,7 @@ week with nothing in it is an explicit zero. Everything is integer sen.
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
@@ -34,6 +34,35 @@ class WeeklySeries:
     @property
     def weeks(self) -> int:
         return len(self.spend)
+
+
+RowKind = Literal["spend", "refund", "income"]
+
+
+def covered_keys(covered: Iterable[tuple[str, str]]) -> set[tuple[str, str]]:
+    """`(type, normalised merchant)` keys of confirmed recurring items; a nameless one is dropped
+    because it would match nothing."""
+    keys = {(kind, normalise_merchant(text)) for kind, text in covered}
+    return {(kind, text) for kind, text in keys if text}
+
+
+def classify_row(row: Mapping[str, Any], keys: set[tuple[str, str]]) -> RowKind | None:
+    """What a transaction is in Engine 1's forecast series: discretionary `spend`, a `refund`
+    netted against it, unscheduled `income`, or None (a transfer, savings, a plan payment or a
+    confirmed recurring item, all of which are known flows instead). Shared with the budget
+    suggestion so both use one definition of discretionary spending."""
+    category = row.get("category")
+    if category == TRANSFER or row["type"] == "savings":
+        return None
+    if category == REFUND:
+        return "refund"
+    if _is_plan_payment(row) or _is_covered(row, keys):
+        return None
+    if row["type"] == "expense":
+        return "spend"
+    if row["type"] == "income":
+        return "income"
+    return None
 
 
 def _is_covered(row: Mapping[str, Any], covered: set[tuple[str, str]]) -> bool:
@@ -63,26 +92,16 @@ def build_weekly_series(
 ) -> WeeklySeries:
     """`covered` holds `(type, merchant text)` of confirmed recurring items; a transaction whose
     own `recurring_item_id` is set is covered as well."""
-    keys = {(kind, normalise_merchant(text)) for kind, text in covered}
-    keys = {(kind, text) for kind, text in keys if text}  # a nameless item matches nothing
+    keys = covered_keys(covered)
     events: list[tuple[date, str, int]] = []
     latest: date | None = None  # the last day anything at all was logged
     for row in rows:
         day = as_date(row["date"])
         if day < today and (latest is None or day > latest):
             latest = day
-        amount = int(row["amount_sen"])
-        category = row.get("category")
-        if category == TRANSFER or row["type"] == "savings":
-            continue
-        if category == REFUND:
-            events.append((day, "refund", amount))
-        elif _is_plan_payment(row) or _is_covered(row, keys):
-            continue
-        elif row["type"] == "expense":
-            events.append((day, "spend", amount))
-        elif row["type"] == "income":
-            events.append((day, "income", amount))
+        kind = classify_row(row, keys)
+        if kind is not None:
+            events.append((day, kind, int(row["amount_sen"])))
     if not events:
         return WeeklySeries(None, np.zeros(0, dtype=np.int64), np.zeros(0, dtype=np.int64))
 

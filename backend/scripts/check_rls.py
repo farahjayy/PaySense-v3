@@ -24,6 +24,7 @@ TABLES = (
     "provider_limits",
     "user_categories",
     "user_locks",
+    "budgets",
 )
 
 

@@ -537,7 +537,10 @@ export interface paths {
         };
         /** List Budgets */
         get: operations["list_budgets"];
-        /** Set Budget */
+        /**
+         * Set Budget
+         * @description Create or replace the monthly limit for one spending category.
+         */
         put: operations["set_budget"];
         post?: never;
         /** Delete Budget */
@@ -554,7 +557,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Budget Status */
+        /**
+         * Budget Status
+         * @description Each budget against the month's spending (the month summary's definition, D-45).
+         */
         get: operations["budget_status"];
         put?: never;
         post?: never;
@@ -573,7 +579,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Suggest Budget */
+        /**
+         * Suggest Budget
+         * @description Suggested limits with the working shown. Stores nothing: saving one is a separate PUT.
+         */
         post: operations["suggest_budget"];
         delete?: never;
         options?: never;
@@ -1053,6 +1062,16 @@ export interface components {
             total_limit_sen: number;
             /** Total Spent Sen */
             total_spent_sen: number;
+            /**
+             * Refund Sen
+             * @description Refunds this month; taken off the month's spending
+             */
+            refund_sen: number;
+            /**
+             * Month Spend Sen
+             * @description The month summary's spending (gross less refunds)
+             */
+            month_spend_sen: number;
             /**
              * Unbudgeted Spend Sen
              * @description Spending this month in categories with no budget

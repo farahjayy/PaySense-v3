@@ -7,16 +7,21 @@ spending-by-category panel can never disagree.
 """
 
 import datetime as dt
-from typing import Annotated, Literal
+from dataclasses import asdict
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, TodayDep
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
 from app.api.summary import MonthParam
 from app.api.types import Sen, text
-from app.core.errors import api_error
+from app.core.errors import not_found, unprocessable
+from app.db import budgets as budgets_repo
+from app.db import plans as plans_repo
+from app.db import recurring_items, transactions
+from app.domain import budgets as domain
 
 router = APIRouter(prefix="/budgets", tags=["budgets"], responses=PROTECTED_RESPONSES)
 
@@ -72,6 +77,8 @@ class BudgetStatusOut(ApiModel):
     items: list[BudgetStatusItemOut]
     total_limit_sen: int
     total_spent_sen: int
+    refund_sen: int = Field(description="Refunds this month; taken off the month's spending")
+    month_spend_sen: int = Field(description="The month summary's spending (gross less refunds)")
     unbudgeted_spend_sen: int = Field(
         description="Spending this month in categories with no budget"
     )
@@ -104,30 +111,84 @@ class BudgetSuggestionOut(ApiModel):
     notes: list[str]
 
 
-def _not_built():
-    return api_error(501, "not_implemented", "This is not available yet.")
+# ------------------------------------------------------------------ shared with the assistant
+def _month_range(month: str) -> tuple[dt.date, dt.date]:
+    first, last = domain._month_bounds(month)
+    return first, last
 
 
+def list_for(db: Any, user_id: str) -> BudgetListOut:
+    return BudgetListOut(
+        budgets=[BudgetOut.model_validate(r) for r in budgets_repo.list_budgets(db, user_id)]
+    )
+
+
+def status_for(db: Any, user_id: str, month: str, today: dt.date) -> BudgetStatusOut:
+    first, last = _month_range(month)
+    rows = transactions.list_for_breakdown(db, user_id, first, last)
+    result = domain.budget_status(budgets_repo.list_budgets(db, user_id), rows, month, today)
+    return BudgetStatusOut.model_validate(asdict(result))
+
+
+def suggest_for(db: Any, user_id: str, month: str | None, today: dt.date) -> BudgetSuggestionOut:
+    target = month or today.strftime("%Y-%m")
+    result = domain.suggest_budget(
+        recurring_items.list_items(db, user_id, active_only=True),
+        plans_repo.list_with_instalments(db, user_id),
+        transactions.list_for_forecast(db, user_id, today),
+        target,
+        today,
+    )
+    return BudgetSuggestionOut.model_validate(asdict(result))
+
+
+def clean_category(raw: str) -> str:
+    try:
+        return domain.budget_category(raw)
+    except ValueError as err:
+        raise unprocessable("invalid_budget_category", str(err)) from err
+
+
+def set_for(db: Any, user_id: str, body: BudgetIn) -> BudgetOut:
+    """The one write path for a budget: the route and the assistant's confirm both use it."""
+    row = budgets_repo.set_budget(db, user_id, clean_category(body.category), body.limit_sen)
+    return BudgetOut.model_validate(row)
+
+
+def delete_for(db: Any, user_id: str, category: str) -> None:
+    if not budgets_repo.delete_budget(db, user_id, category.strip()):
+        raise not_found("budget_not_found", "There is no budget for that category.")
+
+
+# ------------------------------------------------------------------ routes
 @router.get("", response_model=BudgetListOut)
 def list_budgets(user: CurrentUser, db: DbDep) -> BudgetListOut:
-    raise _not_built()
+    return list_for(db, user.id)
 
 
 @router.put("", response_model=BudgetOut, dependencies=[WRITE_QUOTA])
 def set_budget(body: BudgetIn, user: CurrentUser, db: DbDep) -> BudgetOut:
-    raise _not_built()
+    """Create or replace the monthly limit for one spending category."""
+    return set_for(db, user.id, body)
 
 
 @router.delete("", status_code=204, responses=NOT_FOUND_RESPONSE, dependencies=[WRITE_QUOTA])
-def delete_budget(category: CategoryQuery, user: CurrentUser, db: DbDep) -> None:
-    raise _not_built()
+def delete_budget(category: CategoryQuery, user: CurrentUser, db: DbDep) -> Response:
+    delete_for(db, user.id, category)
+    return Response(status_code=204)
 
 
 @router.get("/status", response_model=BudgetStatusOut)
-def budget_status(month: MonthParam, user: CurrentUser, db: DbDep) -> BudgetStatusOut:
-    raise _not_built()
+def budget_status(
+    month: MonthParam, user: CurrentUser, db: DbDep, today: TodayDep
+) -> BudgetStatusOut:
+    """Each budget against the month's spending (the month summary's definition, D-45)."""
+    return status_for(db, user.id, month, today)
 
 
 @router.post("/suggest", response_model=BudgetSuggestionOut)
-def suggest_budget(body: BudgetSuggestIn, user: CurrentUser, db: DbDep) -> BudgetSuggestionOut:
-    raise _not_built()
+def suggest_budget(
+    body: BudgetSuggestIn, user: CurrentUser, db: DbDep, today: TodayDep
+) -> BudgetSuggestionOut:
+    """Suggested limits with the working shown. Stores nothing: saving one is a separate PUT."""
+    return suggest_for(db, user.id, body.month, today)

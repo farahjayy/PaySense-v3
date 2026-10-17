@@ -77,6 +77,11 @@ def _match_text(item: Mapping[str, Any]) -> str:
     return item.get("match_text") or item["name"]
 
 
+def confirmed_covered(items: Iterable[Mapping[str, Any]]) -> list[tuple[str, str]]:
+    """`(transaction type, merchant text)` of the active confirmed recurring items."""
+    return [(KIND_TO_TYPE[i["kind"]], _match_text(i)) for i in items if i.get("active", True)]
+
+
 def _unmatched(rows: list[Mapping[str, Any]], items: list[Mapping[str, Any]]) -> tuple[str, ...]:
     seen = {(r["type"], normalise_merchant(r.get("description"))) for r in rows}
     return tuple(
@@ -124,8 +129,7 @@ def prepare_ledger(
     months, suspects = completeness.months_of_history, completeness.suspect_months
 
     confirmed = [i for i in items if i.get("active", True)]
-    covered = [(KIND_TO_TYPE[i["kind"]], _match_text(i)) for i in confirmed]
-    series = build_weekly_series(rows, today, covered)
+    series = build_weekly_series(rows, today, confirmed_covered(confirmed))
     if series.weeks == 0:  # e.g. only savings, plan payments or confirmed items so far
         return _locked("no_usable_history", months, suspects)
     if series.weeks < MIN_SERIES_WEEKS:

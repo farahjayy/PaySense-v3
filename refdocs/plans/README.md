@@ -42,3 +42,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp1-real-run.md](2026-10-18-wp1-real-run.md) | WP1 Real run: real database, uvicorn, smoke, persona accounts, demo scenarios, real-model journey | Done (anon RLS check needs the anon key) |
 | [2026-10-18-wp-api-contract.md](2026-10-18-wp-api-contract.md) | WP-API Contract first: stub routes and typed shapes for budgets, insights, recommendations, alerts, assistant | Done |
 | [2026-10-18-wp18-login-hardening.md](2026-10-18-wp18-login-hardening.md) | WP18 Login and abuse hardening: passphrase, token revocation, write quota, ledger cap, pagination, plan-create lock (D-49) | Done on the in-memory database (migration 0003 not applied) |
+| [2026-10-18-wp2-budgets.md](2026-10-18-wp2-budgets.md) | WP2 Budgets backend: per-category monthly limits, status with pace, suggest a budget | Done on the in-memory database (migration 0004 not applied) |
