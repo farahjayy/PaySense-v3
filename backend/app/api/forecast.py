@@ -2,7 +2,7 @@
 
 import datetime as dt
 import zlib
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends
 from pydantic import Field
@@ -70,13 +70,18 @@ def daily_seed(user_id: str, today: dt.date) -> int:
 # Each call runs the forecaster and 1,000 simulated futures, so one user may not loop on it.
 @router.get("", response_model=ForecastOut, dependencies=[rate_limited("forecast", 30, 60)])
 def forecast(user: CurrentUser, db: DbDep, today: TodayDep, model: ForecasterDep) -> ForecastOut:
+    return forecast_for(db, user.id, today, model)
+
+
+def forecast_for(db: Any, user_id: str, today: dt.date, model: Forecaster) -> ForecastOut:
+    """Engine 1 for one user: shared by the route, the recommendations and the assistant."""
     result = build_forecast(
-        rows=transactions.list_for_forecast(db, user.id, today),
-        items=recurring_items.list_items(db, user.id, active_only=True),
-        plans=plans_repo.list_with_instalments(db, user.id),
+        rows=transactions.list_for_forecast(db, user_id, today),
+        items=recurring_items.list_items(db, user_id, active_only=True),
+        plans=plans_repo.list_with_instalments(db, user_id),
         today=today,
         forecaster=model,
-        seed=daily_seed(user.id, today),
+        seed=daily_seed(user_id, today),
     )
     simulation = result.simulation
     shown = None

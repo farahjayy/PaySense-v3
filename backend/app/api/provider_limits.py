@@ -1,6 +1,6 @@
 """Per-provider limits (ADR D-28). A limit caps how much of a purchase the provider can finance."""
 
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Response
 from pydantic import BaseModel, ConfigDict
@@ -44,11 +44,16 @@ def _out(provider: NamedProvider, limit_sen: int | None, used_sen: int) -> Limit
     )
 
 
+def limits_for(db: Any, user_id: str) -> list[LimitOut]:
+    """Shared by the route, the recommendations and the assistant's provider tool."""
+    stored = {row["provider"]: row["limit_sen"] for row in limits_repo.list_limits(db, user_id)}
+    used = plans_repo.used_limits(db, user_id)
+    return [_out(p, stored.get(p), used.get(p, 0)) for p in NAMED_PROVIDERS]
+
+
 @router.get("", response_model=list[LimitOut])
 def list_limits(user: CurrentUser, db: DbDep) -> list[LimitOut]:
-    stored = {row["provider"]: row["limit_sen"] for row in limits_repo.list_limits(db, user.id)}
-    used = plans_repo.used_limits(db, user.id)
-    return [_out(p, stored.get(p), used.get(p, 0)) for p in NAMED_PROVIDERS]
+    return limits_for(db, user.id)
 
 
 @router.put("/{provider}", response_model=LimitOut, dependencies=[WRITE_QUOTA])

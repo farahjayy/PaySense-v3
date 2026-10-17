@@ -45,3 +45,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp2-budgets.md](2026-10-18-wp2-budgets.md) | WP2 Budgets backend: per-category monthly limits, status with pace, suggest a budget | Done on the in-memory database (migration 0004 not applied) |
 | [2026-10-18-wp13-bill-analysis.md](2026-10-18-wp13-bill-analysis.md) | WP13 Bill analysis: recurring bills, increases, 7-day collisions, next 30 days due | Done |
 | [2026-10-18-wp14-spending-insights.md](2026-10-18-wp14-spending-insights.md) | WP14 Spending insights: movers, unusual transactions, savings rate, rule-chosen headline | Done |
+| [2026-10-18-wp15-recommendations-alerts.md](2026-10-18-wp15-recommendations-alerts.md) | WP15 Ranked recommendations and proactive alerts over engine outputs | Done |

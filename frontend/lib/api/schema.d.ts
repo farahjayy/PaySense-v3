@@ -637,7 +637,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Recommendations */
+        /**
+         * Recommendations
+         * @description Ranked by a fixed rule order; each carries the figures it was made from.
+         */
         get: operations["recommendations"];
         put?: never;
         post?: never;
@@ -654,7 +657,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Alerts */
+        /**
+         * Alerts
+         * @description Only what needs attention now: a budget over its limit, payments colliding within a
+         *     week, an At Risk forecast.
+         */
         get: operations["alerts"];
         put?: never;
         post?: never;
@@ -2033,6 +2040,11 @@ export interface components {
         };
         /** RecommendationOut */
         RecommendationOut: {
+            /**
+             * Is Alert
+             * @description Needs attention now; the assistant opens with these
+             */
+            is_alert: boolean;
             /**
              * Rule
              * @description Stable rule key, e.g. 'forecast_shortfall'

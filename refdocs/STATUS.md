@@ -37,6 +37,7 @@
 | C2a Budgets (WP2) | Per-category limits, status with pace, suggest a budget | 🔶 Built and green on the in-memory database; migration 0004 not applied |
 | C2b Bill analysis (WP13) | Recurring bills, increases, collisions, next 30 days | ✅ Done (no new table; in-memory and API tests) |
 | C2c Spending insights (WP14) | Movers, unusual transactions, savings rate, headline | ✅ Done (no new table) |
+| C2d Recommendations and alerts (WP15) | Nine ranked rules over engine outputs, sources traced | ✅ Done (no new table) |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:

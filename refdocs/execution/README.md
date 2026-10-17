@@ -46,3 +46,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-18-wp2-budgets.md](2026-10-18-wp2-budgets.md) | [../plans/2026-10-18-wp2-budgets.md](../plans/2026-10-18-wp2-budgets.md) | Done on the in-memory database (migration 0004 not applied) |
 | [2026-10-18-wp13-bill-analysis.md](2026-10-18-wp13-bill-analysis.md) | [../plans/2026-10-18-wp13-bill-analysis.md](../plans/2026-10-18-wp13-bill-analysis.md) | Done |
 | [2026-10-18-wp14-spending-insights.md](2026-10-18-wp14-spending-insights.md) | [../plans/2026-10-18-wp14-spending-insights.md](../plans/2026-10-18-wp14-spending-insights.md) | Done |
+| [2026-10-18-wp15-recommendations-alerts.md](2026-10-18-wp15-recommendations-alerts.md) | [../plans/2026-10-18-wp15-recommendations-alerts.md](../plans/2026-10-18-wp15-recommendations-alerts.md) | Done |
