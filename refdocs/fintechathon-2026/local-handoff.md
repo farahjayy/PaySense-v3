@@ -12,6 +12,7 @@
 | `backend/.env.example` and `frontend/.env.example` | The session's permissions deny `.env*` files | `refdocs/guides/env_setup.md` lists every variable name to add |
 | MoneyData / Berka downloads (real-data band check) | Blocked by the cloud network policy | `questions.md` row 25 |
 | The Anthropic adapter against the real API | No credit yet | `questions.md` row 14 |
+| The live-model browser journey on your machine (optional; already run on cloud 3 times) | Needs the provider key in your environment | `cd frontend && npx playwright test -c playwright.live.config.ts` |
 | The `fyp-final` tag on the FYP repo | Another repository on the author's machine | row 1 |
 | The slides, the video recording, the registration form | The author's | `submission/`, `demo-video-script.md` |
 | Answers to the open questions | The author's decisions | `questions.md` |
@@ -31,4 +32,4 @@
 
 ## C. Checks that run without you
 
-Every push runs `.github/workflows/ci.yml`: backend lint and the full test suite (incl. the ML tests), the backend tests without the ML stack, the frontend lint, types, API contract, unit tests and build, the browser journeys on desktop and phone, and a secret scan of the whole history. None of it calls the model provider or the real database.
+Every push runs `.github/workflows/ci.yml` (green on the branch at the end of the cloud session): backend lint and the full test suite (incl. the ML tests), the backend tests without the ML stack, the frontend lint, types, API contract, unit tests and build, the browser journeys on desktop and phone, and a secret scan of the whole history. None of it calls the model provider or the real database.
