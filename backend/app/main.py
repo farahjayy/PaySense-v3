@@ -18,16 +18,20 @@ from postgrest import APIError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import (
+    assistant,
     auth,
     bills,
+    budgets,
     categories,
     forecast,
     health,
     imports,
+    insights,
     model_info,
     plans,
     provider_limits,
     providers,
+    recommendations,
     recurring,
     risk,
     summary,
@@ -48,6 +52,7 @@ _STATUS_CODES = {
     405: "method_not_allowed",
     409: "conflict",
     429: "too_many_requests",
+    501: "not_implemented",
 }
 _STATUS_MESSAGES = {
     404: "Not found.",
@@ -168,6 +173,10 @@ def create_app(
     app.include_router(forecast.router, prefix="/api")
     app.include_router(risk.router, prefix="/api")
     app.include_router(model_info.router, prefix="/api")
+    app.include_router(budgets.router, prefix="/api")
+    app.include_router(insights.router, prefix="/api")
+    app.include_router(recommendations.router, prefix="/api")
+    app.include_router(assistant.router, prefix="/api")
     return app
 
 

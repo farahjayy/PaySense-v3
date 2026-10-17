@@ -32,6 +32,7 @@
 | P10 Optional | LLM-phrased explanations, figure pack | ⬜ Not started (superseded for v3 by the assistant, D-47) |
 | C0 Competition setup (WP0) | Competition variant in CLAUDE.md, ADRs, licence, clean-Linux baseline | ✅ Done — baseline green on Linux after D-52 (backend 2059 without the 3 torch-only files, frontend 295); `fyp-final` tag left to the author |
 | C1 Real run (WP1) | Real database, uvicorn, smoke, persona accounts, demo scenario, real-model journey | ✅ Done — 20 integration tests pass on the v3 project; uvicorn on the real database answers the smoke script (7 PASS); three persona accounts loaded through the API (forecast `ok`, 6 months each); demo grid run on the real model (every purchase At Risk, none reaches Safe — `demo-scenario.md`); real-model Playwright journey passes. Not run: `check_rls.py` (needs `SUPABASE_ANON_KEY`) |
+| C1b Contract (WP-API) | Stub routes and typed shapes for budgets, insights, recommendations, alerts, assistant | ✅ Done — in `/openapi.json`, 401 without a session, types generated; routes answer 501 until built |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:

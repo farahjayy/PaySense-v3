@@ -507,10 +507,378 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Budgets */
+        get: operations["list_budgets"];
+        /** Set Budget */
+        put: operations["set_budget"];
+        post?: never;
+        /** Delete Budget */
+        delete: operations["delete_budget"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/budgets/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Budget Status */
+        get: operations["budget_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/budgets/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suggest Budget */
+        post: operations["suggest_budget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/insights/bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bill Analysis */
+        get: operations["bill_analysis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/insights/spending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Spending Insights */
+        get: operations["spending_insights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recommendations */
+        get: operations["recommendations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Alerts */
+        get: operations["alerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status */
+        get: operations["status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/opening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Opening
+         * @description The first turn: what needs attention now (the alerts), with no model call.
+         */
+        get: operations["opening"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chat */
+        post: operations["chat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Tool */
+        post: operations["run_tool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/actions/{action_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Action */
+        get: operations["get_action"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/actions/{action_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Action */
+        post: operations["confirm_action"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/actions/{action_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline Action */
+        post: operations["decline_action"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionResultOut */
+        ActionResultOut: {
+            /** Id */
+            id: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "add_transaction" | "confirm_import" | "create_plan" | "set_budget" | "delete_budget";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "confirmed" | "declined" | "expired" | "failed";
+            transaction: components["schemas"]["TransactionOut"] | null;
+            imported: components["schemas"]["ConfirmOut"] | null;
+            plan: components["schemas"]["RiskConfirmOut"] | null;
+            budget: components["schemas"]["BudgetOut"] | null;
+            /** Message */
+            message: string;
+        };
+        /** AddTransactionAction */
+        AddTransactionAction: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "confirmed" | "declined" | "expired" | "failed";
+            /**
+             * Summary
+             * @description Built by the server from the validated payload
+             */
+            summary: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "add_transaction";
+            payload: components["schemas"]["TransactionIn"];
+        };
+        /** AssistantStatusOut */
+        AssistantStatusOut: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "llm" | "guided";
+            /** Provider */
+            provider: string | null;
+            /** Model */
+            model: string | null;
+            /**
+             * Reason
+             * @description Why guided mode, when it is
+             */
+            reason: string | null;
+            /** Tokens Used Today */
+            tokens_used_today: number;
+            /** Daily Token Budget */
+            daily_token_budget: number;
+        };
+        /** BillAnalysisCard */
+        BillAnalysisCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "bill_analysis";
+            data: components["schemas"]["BillAnalysisOut"];
+        };
+        /** BillAnalysisOut */
+        BillAnalysisOut: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Window Days */
+            window_days: number;
+            /** Collision Window Days */
+            collision_window_days: number;
+            recurring: components["schemas"]["RecurringSummaryOut"];
+            /** Increases */
+            increases: components["schemas"]["BillIncreaseOut"][];
+            /** Collisions */
+            collisions: components["schemas"]["CollisionOut"][];
+            /** Upcoming */
+            upcoming: components["schemas"]["DueItemOut"][];
+            /** Upcoming Total Sen */
+            upcoming_total_sen: number;
+        };
+        /** BillIncreaseOut */
+        BillIncreaseOut: {
+            /** Item Id */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Previous Sen */
+            previous_sen: number;
+            /** Latest Sen */
+            latest_sen: number;
+            /** Change Sen */
+            change_sen: number;
+            /** Change Pct */
+            change_pct: number;
+            /**
+             * Previous Date
+             * Format: date
+             */
+            previous_date: string;
+            /**
+             * Latest Date
+             * Format: date
+             */
+            latest_date: string;
+        };
         /** BillItemOut */
         BillItemOut: {
             /** Plan Id */
@@ -553,6 +921,17 @@ export interface components {
             /** Items */
             items: components["schemas"]["BillItemOut"][];
         };
+        /** BillsCard */
+        BillsCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "bills";
+            data: components["schemas"]["BillsOut"];
+        };
         /** BillsOut */
         BillsOut: {
             /** Months */
@@ -563,6 +942,173 @@ export interface components {
             /** File */
             file: string;
         };
+        /** BudgetDeleteIn */
+        BudgetDeleteIn: {
+            /** Category */
+            category: string;
+        };
+        /**
+         * BudgetIn
+         * @description Set (create or replace) the monthly limit for one spending category.
+         */
+        BudgetIn: {
+            /** Category */
+            category: string;
+            /**
+             * Limit Sen
+             * @description Money in integer sen (100 sen = RM 1)
+             */
+            limit_sen: number;
+        };
+        /** BudgetListOut */
+        BudgetListOut: {
+            /** Budgets */
+            budgets: components["schemas"]["BudgetOut"][];
+        };
+        /** BudgetOut */
+        BudgetOut: {
+            /** Category */
+            category: string;
+            /** Limit Sen */
+            limit_sen: number;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** BudgetStatusCard */
+        BudgetStatusCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "budget_status";
+            data: components["schemas"]["BudgetStatusOut"];
+        };
+        /** BudgetStatusItemOut */
+        BudgetStatusItemOut: {
+            /** Category */
+            category: string;
+            /** Limit Sen */
+            limit_sen: number;
+            /** Spent Sen */
+            spent_sen: number;
+            /**
+             * Remaining Sen
+             * @description Limit less spent; negative when over
+             */
+            remaining_sen: number;
+            /**
+             * Percent
+             * @description Spent as a share of the limit (1.0 = 100%)
+             */
+            percent: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "ok" | "near" | "over";
+            /**
+             * Projected Sen
+             * @description Spent so far scaled to the whole month; None for a past or future month
+             */
+            projected_sen: number | null;
+            /** Projected State */
+            projected_state: ("ok" | "near" | "over") | null;
+        };
+        /** BudgetStatusOut */
+        BudgetStatusOut: {
+            /** Month */
+            month: string;
+            /** Is Current */
+            is_current: boolean;
+            /** Days In Month */
+            days_in_month: number;
+            /** Days Elapsed */
+            days_elapsed: number;
+            /** Items */
+            items: components["schemas"]["BudgetStatusItemOut"][];
+            /** Total Limit Sen */
+            total_limit_sen: number;
+            /** Total Spent Sen */
+            total_spent_sen: number;
+            /**
+             * Unbudgeted Spend Sen
+             * @description Spending this month in categories with no budget
+             */
+            unbudgeted_spend_sen: number;
+            /**
+             * Near At
+             * @description Share of the limit at which a budget is 'near'
+             */
+            near_at: number;
+            /** Over At */
+            over_at: number;
+        };
+        /** BudgetSuggestIn */
+        BudgetSuggestIn: {
+            /**
+             * Month
+             * @description The month to plan for; defaults to the current month
+             */
+            month?: string | null;
+        };
+        /** BudgetSuggestionCard */
+        BudgetSuggestionCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "budget_suggestion";
+            data: components["schemas"]["BudgetSuggestionOut"];
+        };
+        /**
+         * BudgetSuggestionOut
+         * @description The arithmetic, shown so the person can see how the numbers were reached.
+         */
+        BudgetSuggestionOut: {
+            /** Month */
+            month: string;
+            /** Income Sen */
+            income_sen: number;
+            /**
+             * Income Basis
+             * @enum {string}
+             */
+            income_basis: "recurring" | "average" | "none";
+            /** Bills Sen */
+            bills_sen: number;
+            /** Instalments Sen */
+            instalments_sen: number;
+            /** Buffer Sen */
+            buffer_sen: number;
+            /** Buffer Rate */
+            buffer_rate: number;
+            /**
+             * Pool Sen
+             * @description Income less bills, instalments and the buffer; never below 0
+             */
+            pool_sen: number;
+            /** Months Used */
+            months_used: string[];
+            /** Items */
+            items: components["schemas"]["SuggestedBudgetOut"][];
+            /** Notes */
+            notes: string[];
+        };
+        /** BudgetsCard */
+        BudgetsCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "budgets";
+            data: components["schemas"]["BudgetListOut"];
+        };
         /** BulkPayIn */
         BulkPayIn: {
             /**
@@ -572,12 +1118,6 @@ export interface components {
             paid_date?: string | null;
             /** Seqs */
             seqs: number[];
-        };
-        /** CategoryChangeOut */
-        CategoryChangeOut: {
-            category: components["schemas"]["CategoryOut"];
-            /** Moved */
-            moved: number;
         };
         /** CategoryDeleteOut */
         CategoryDeleteOut: {
@@ -626,6 +1166,17 @@ export interface components {
             count: number;
             /** Share */
             share: number;
+        };
+        /** CategorySpendingCard */
+        CategorySpendingCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "category_spending";
+            data: components["schemas"]["CategorySummaryOut"];
         };
         /** CategorySummaryOut */
         CategorySummaryOut: {
@@ -677,6 +1228,103 @@ export interface components {
             /** Evaluated */
             evaluated: number;
         };
+        /** ChatIn */
+        ChatIn: {
+            /** Message */
+            message: string;
+            /**
+             * History
+             * @default []
+             */
+            history: components["schemas"]["ChatTurnIn"][];
+        };
+        /** ChatOut */
+        ChatOut: {
+            /** Reply */
+            reply: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "llm" | "guided";
+            /** Provider */
+            provider: string | null;
+            /** Model */
+            model: string | null;
+            /** Steps */
+            steps: components["schemas"]["StepOut"][];
+            /** Cards */
+            cards: (components["schemas"]["RiskCard"] | components["schemas"]["ForecastCard"] | components["schemas"]["MonthSummaryCard"] | components["schemas"]["CategorySpendingCard"] | components["schemas"]["TransactionsCard"] | components["schemas"]["BillsCard"] | components["schemas"]["BillAnalysisCard"] | components["schemas"]["SpendingInsightsCard"] | components["schemas"]["PlansCard"] | components["schemas"]["PlanPreviewCard"] | components["schemas"]["ProvidersCard"] | components["schemas"]["BudgetsCard"] | components["schemas"]["BudgetStatusCard"] | components["schemas"]["BudgetSuggestionCard"] | components["schemas"]["RecommendationsCard"] | components["schemas"]["PastePreviewCard"])[];
+            /** Pending Actions */
+            pending_actions: (components["schemas"]["AddTransactionAction"] | components["schemas"]["ConfirmImportAction"] | components["schemas"]["CreatePlanAction"] | components["schemas"]["SetBudgetAction"] | components["schemas"]["DeleteBudgetAction"])[];
+            /**
+             * Narration Replaced
+             * @description True when the model's wording failed the number check and a template was used
+             */
+            narration_replaced: boolean;
+            /**
+             * Refused
+             * @description True when the request was out of scope
+             */
+            refused: boolean;
+        };
+        /**
+         * ChatTurnIn
+         * @description Earlier turns, as plain text only. Tool results are never accepted from the client: they
+         *     are always recomputed on the server, so forged history cannot inject a result.
+         */
+        ChatTurnIn: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Text */
+            text: string;
+        };
+        /** CollisionOut */
+        CollisionOut: {
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Total Sen */
+            total_sen: number;
+            /** Items */
+            items: components["schemas"]["DueItemOut"][];
+        };
+        /** ConfirmImportAction */
+        ConfirmImportAction: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "confirmed" | "declined" | "expired" | "failed";
+            /**
+             * Summary
+             * @description Built by the server from the validated payload
+             */
+            summary: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "confirm_import";
+            payload: components["schemas"]["ConfirmIn"];
+        };
         /** ConfirmIn */
         ConfirmIn: {
             /** Rows */
@@ -709,6 +1357,33 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** CreatePlanAction */
+        CreatePlanAction: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "confirmed" | "declined" | "expired" | "failed";
+            /**
+             * Summary
+             * @description Built by the server from the validated payload
+             */
+            summary: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "create_plan";
+            payload: components["schemas"]["PlanIn"];
+            preview: components["schemas"]["PlanPreviewOut"] | null;
+        };
         /** CurveOut */
         CurveOut: {
             /** Months */
@@ -719,6 +1394,57 @@ export interface components {
             cumulative_p50_sen: number[];
             /** Cumulative P90 Sen */
             cumulative_p90_sen: number[];
+        };
+        /** DeleteBudgetAction */
+        DeleteBudgetAction: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "confirmed" | "declined" | "expired" | "failed";
+            /**
+             * Summary
+             * @description Built by the server from the validated payload
+             */
+            summary: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "delete_budget";
+            payload: components["schemas"]["BudgetDeleteIn"];
+        };
+        /** DueItemOut */
+        DueItemOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "bill" | "instalment";
+            /** Name */
+            name: string;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Amount Sen */
+            amount_sen: number;
+            /** Provider Label */
+            provider_label: string | null;
+            /** Plan Id */
+            plan_id: string | null;
+            /** Seq */
+            seq: number | null;
+            /** Item Id */
+            item_id: string | null;
         };
         /** ErrorDetail */
         ErrorDetail: {
@@ -748,6 +1474,17 @@ export interface components {
             text: string;
             /** Contribution */
             contribution: number;
+        };
+        /** ForecastCard */
+        ForecastCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "forecast";
+            data: components["schemas"]["ForecastOut"];
         };
         /** ForecastModelOut */
         ForecastModelOut: {
@@ -933,11 +1670,63 @@ export interface components {
             /** Net Sen */
             net_sen: number;
         };
+        /** MonthSummaryCard */
+        MonthSummaryCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "month_summary";
+            data: components["schemas"]["MonthSummaryOut"];
+        };
         /** MonthSummaryOut */
         MonthSummaryOut: {
             /** Months */
             months: components["schemas"]["MonthOut"][];
             history: components["schemas"]["HistoryOut"] | null;
+        };
+        /** PastePreviewCard */
+        PastePreviewCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "paste_preview";
+            data: components["schemas"]["PastePreviewOut"];
+        };
+        /** PastePreviewOut */
+        PastePreviewOut: {
+            /** Rows */
+            rows: components["schemas"]["PastedRowOut"][];
+            /** Rejected */
+            rejected: components["schemas"]["RejectedRowOut"][];
+            /** Duplicate Count */
+            duplicate_count: number;
+        };
+        /** PastedRowOut */
+        PastedRowOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Amount Sen */
+            amount_sen: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "income" | "expense" | "savings";
+            /** Category */
+            category: string;
+            /** Description */
+            description: string | null;
+            /** Duplicate */
+            duplicate: boolean;
         };
         /** PayIn */
         PayIn: {
@@ -982,6 +1771,11 @@ export interface components {
             instalment_sen?: number | null;
             /** Total Payable Sen */
             total_payable_sen?: number | null;
+        };
+        /** PlanListOut */
+        PlanListOut: {
+            /** Plans */
+            plans: components["schemas"]["PlanOut"][];
         };
         /** PlanOut */
         PlanOut: {
@@ -1046,6 +1840,17 @@ export interface components {
             /** Item Name */
             item_name: string;
         };
+        /** PlanPreviewCard */
+        PlanPreviewCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "plan_preview";
+            data: components["schemas"]["PlanPreviewOut"];
+        };
         /** PlanPreviewOut */
         PlanPreviewOut: {
             /**
@@ -1095,6 +1900,17 @@ export interface components {
             /** Installments */
             installments: components["schemas"]["PreviewInstalmentOut"][];
         };
+        /** PlansCard */
+        PlansCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "plans";
+            data: components["schemas"]["PlanListOut"];
+        };
         /** PreviewInstalmentOut */
         PreviewInstalmentOut: {
             /** Seq */
@@ -1131,6 +1947,91 @@ export interface components {
             start_offset_months: number;
             /** Monthly Fee Applies */
             monthly_fee_applies: boolean;
+        };
+        /** ProvidersCard */
+        ProvidersCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "providers";
+            data: components["schemas"]["ProvidersCardOut"];
+        };
+        /** ProvidersCardOut */
+        ProvidersCardOut: {
+            /** Providers */
+            providers: components["schemas"]["ProviderOut"][];
+            /** Limits */
+            limits: components["schemas"]["LimitOut"][];
+        };
+        /** RecommendationListOut */
+        RecommendationListOut: {
+            /** Items */
+            items: components["schemas"]["RecommendationOut"][];
+            /**
+             * Checked Rules
+             * @description Every rule evaluated, fired or not
+             */
+            checked_rules: string[];
+            /** Notes */
+            notes: string[];
+        };
+        /** RecommendationOut */
+        RecommendationOut: {
+            /**
+             * Rule
+             * @description Stable rule key, e.g. 'forecast_shortfall'
+             */
+            rule: string;
+            /**
+             * Priority
+             * @description Lower comes first; fixed per rule
+             */
+            priority: number;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "high" | "medium" | "low";
+            /** Title */
+            title: string;
+            /** Detail */
+            detail: string;
+            /** Sources */
+            sources: components["schemas"]["SourceFigureOut"][];
+            action: components["schemas"]["SuggestedActionOut"] | null;
+        };
+        /** RecommendationsCard */
+        RecommendationsCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "alerts" | "recommendations";
+            data: components["schemas"]["RecommendationListOut"];
+        };
+        /** RecurringBillOut */
+        RecurringBillOut: {
+            /** Item Id */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Amount Sen */
+            amount_sen: number;
+            /**
+             * Cadence
+             * @enum {string}
+             */
+            cadence: "weekly" | "biweekly" | "monthly" | "semester" | "custom";
+            /**
+             * Monthly Sen
+             * @description The bill's cost per month, from its cadence
+             */
+            monthly_sen: number;
         };
         /** RecurringIn */
         RecurringIn: {
@@ -1222,6 +2123,32 @@ export interface components {
             /** Active */
             active?: boolean | null;
         };
+        /** RecurringSummaryOut */
+        RecurringSummaryOut: {
+            /** Count */
+            count: number;
+            /** Monthly Total Sen */
+            monthly_total_sen: number;
+            /**
+             * Monthly Income Sen
+             * @description Confirmed recurring income per month
+             */
+            monthly_income_sen: number | null;
+            /**
+             * Bills Share
+             * @description Bills as a share of that recurring income
+             */
+            bills_share: number | null;
+            /** Items */
+            items: components["schemas"]["RecurringBillOut"][];
+        };
+        /** RejectedRowOut */
+        RejectedRowOut: {
+            /** Index */
+            index: number;
+            /** Reason */
+            reason: string;
+        };
         /** RepaymentOut */
         RepaymentOut: {
             /**
@@ -1239,6 +2166,17 @@ export interface components {
             longest_miss_run: number;
             /** Reason */
             reason: string;
+        };
+        /** RiskCard */
+        RiskCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "risk";
+            data: components["schemas"]["RiskCheckOut"];
         };
         /** RiskCheckOut */
         RiskCheckOut: {
@@ -1304,6 +2242,47 @@ export interface components {
             /** Feature Schema Hash */
             feature_schema_hash: string | null;
         };
+        /**
+         * RunToolIn
+         * @description Guided mode: run one Tier 0 or Tier 1 tool directly (a button or a small form).
+         */
+        RunToolIn: {
+            /** Tool */
+            tool: string;
+            /**
+             * Arguments
+             * @default {}
+             */
+            arguments: {
+                [key: string]: unknown;
+            };
+        };
+        /** SetBudgetAction */
+        SetBudgetAction: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "confirmed" | "declined" | "expired" | "failed";
+            /**
+             * Summary
+             * @description Built by the server from the validated payload
+             */
+            summary: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "set_budget";
+            payload: components["schemas"]["BudgetIn"];
+        };
         /** SimulationOut */
         SimulationOut: {
             /** Months */
@@ -1340,6 +2319,127 @@ export interface components {
             row: number;
             /** Reason */
             reason: string;
+        };
+        /** SourceFigureOut */
+        SourceFigureOut: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: number | string;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "sen" | "percent" | "probability" | "count" | "date" | "text";
+            /**
+             * Source
+             * @description The tool or endpoint the figure came from
+             */
+            source: string;
+        };
+        /** SpendingInsightsCard */
+        SpendingInsightsCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "spending_insights";
+            data: components["schemas"]["SpendingInsightsOut"];
+        };
+        /** SpendingInsightsOut */
+        SpendingInsightsOut: {
+            /** Month */
+            month: string;
+            /** Previous Month */
+            previous_month: string | null;
+            /** Income Sen */
+            income_sen: number;
+            /** Spend Sen */
+            spend_sen: number;
+            /** Savings Sen */
+            savings_sen: number;
+            /**
+             * Saved Sen
+             * @description Income less spending; the 'left over' of the month
+             */
+            saved_sen: number;
+            /**
+             * Savings Rate
+             * @description saved / income; None when there is no income
+             */
+            savings_rate: number | null;
+            /** Headline */
+            headline: string;
+            /** Headline Rule */
+            headline_rule: string;
+            /** Categories */
+            categories: components["schemas"]["app__api__insights__CategoryChangeOut"][];
+            /** Movers */
+            movers: components["schemas"]["app__api__insights__CategoryChangeOut"][];
+            /** Unusual */
+            unusual: components["schemas"]["UnusualTransactionOut"][];
+            /** Unusual Note */
+            unusual_note: string | null;
+            /** Mad K */
+            mad_k: number;
+        };
+        /** StepOut */
+        StepOut: {
+            /** Tool */
+            tool: string;
+            /**
+             * Tier
+             * @enum {integer}
+             */
+            tier: 0 | 1 | 2;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "refused" | "error";
+            /** Inputs */
+            inputs: {
+                [key: string]: unknown;
+            };
+            /** Summary */
+            summary: string;
+        };
+        /** SuggestedActionOut */
+        SuggestedActionOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "link" | "propose";
+            /** Label */
+            label: string;
+            /** Href */
+            href: string | null;
+            /** Action Type */
+            action_type: "set_budget" | null;
+            /** Payload */
+            payload: {
+                [key: string]: string | number;
+            } | null;
+        };
+        /** SuggestedBudgetOut */
+        SuggestedBudgetOut: {
+            /** Category */
+            category: string;
+            /**
+             * Share
+             * @description This category's share of recent spending
+             */
+            share: number;
+            /**
+             * Recent Monthly Sen
+             * @description Average monthly spending in the months used
+             */
+            recent_monthly_sen: number;
+            /** Limit Sen */
+            limit_sen: number;
         };
         /** SuggestionOut */
         SuggestionOut: {
@@ -1407,6 +2507,15 @@ export interface components {
             /** Recurring Item Id */
             recurring_item_id?: string | null;
         };
+        /** TransactionListOut */
+        TransactionListOut: {
+            /** Transactions */
+            transactions: components["schemas"]["TransactionOut"][];
+            /** Limit */
+            limit: number;
+            /** Descriptions Redacted */
+            descriptions_redacted: boolean;
+        };
         /** TransactionOut */
         TransactionOut: {
             /** Id */
@@ -1458,6 +2567,37 @@ export interface components {
             /** Recurring Item Id */
             recurring_item_id?: string | null;
         };
+        /** TransactionsCard */
+        TransactionsCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "transactions";
+            data: components["schemas"]["TransactionListOut"];
+        };
+        /** UnusualTransactionOut */
+        UnusualTransactionOut: {
+            /** Transaction Id */
+            transaction_id: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Category */
+            category: string;
+            /** Description */
+            description: string | null;
+            /** Amount Sen */
+            amount_sen: number;
+            /** Median Sen */
+            median_sen: number;
+            /** Threshold Sen */
+            threshold_sen: number;
+        };
         /** UserOut */
         UserOut: {
             /** Id */
@@ -1475,6 +2615,33 @@ export interface components {
             model: string;
             /** Feature Schema Hash */
             feature_schema_hash: string;
+        };
+        /** CategoryChangeOut */
+        app__api__categories__CategoryChangeOut: {
+            category: components["schemas"]["CategoryOut"];
+            /** Moved */
+            moved: number;
+        };
+        /** CategoryChangeOut */
+        app__api__insights__CategoryChangeOut: {
+            /** Category */
+            category: string;
+            /** Spend Sen */
+            spend_sen: number;
+            /** Previous Sen */
+            previous_sen: number;
+            /** Change Sen */
+            change_sen: number;
+            /**
+             * Change Pct
+             * @description None when the category is new this month
+             */
+            change_pct: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "gone" | "up" | "down" | "same";
         };
     };
     responses: never;
@@ -2140,7 +3307,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CategoryChangeOut"];
+                    "application/json": components["schemas"]["app__api__categories__CategoryChangeOut"];
                 };
             };
             /** @description Not logged in, or the session is invalid */
@@ -3235,6 +4402,748 @@ export interface operations {
             };
             /** @description Not logged in, or the session is invalid */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_budgets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetListOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    set_budget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BudgetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_budget: {
+        parameters: {
+            query: {
+                category: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    budget_status: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetStatusOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    suggest_budget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BudgetSuggestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetSuggestionOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    bill_analysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillAnalysisOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    spending_insights: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpendingInsightsOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    recommendations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationListOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    alerts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationListOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssistantStatusOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    opening: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests, or the daily budget is used */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The assistant is switched off */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    chat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests, or the daily budget is used */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The assistant is switched off */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    run_tool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunToolIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests, or the daily budget is used */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The assistant is switched off */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_action: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddTransactionAction"] | components["schemas"]["ConfirmImportAction"] | components["schemas"]["CreatePlanAction"] | components["schemas"]["SetBudgetAction"] | components["schemas"]["DeleteBudgetAction"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    confirm_action: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionResultOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests, or the daily budget is used */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The assistant is switched off */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    decline_action: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionResultOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No such record for this user */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

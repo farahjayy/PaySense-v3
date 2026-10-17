@@ -40,3 +40,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-15-p7b-ledger-polish.md](2026-10-15-p7b-ledger-polish.md) | P7b Ledger polish: spending by category, categories, plainer wording, Excel guard, month names | Done (migration 0002 applied; Categories page verified on the real database) |
 | [2026-10-13-import-spreadsheets.md](2026-10-13-import-spreadsheets.md) | Import: Excel workbooks, and a file's own Type and Category columns taken as written | Done (not yet tried with a real .xlsx in a browser) |
 | [2026-10-18-wp1-real-run.md](2026-10-18-wp1-real-run.md) | WP1 Real run: real database, uvicorn, smoke, persona accounts, demo scenarios, real-model journey | Done (anon RLS check needs the anon key) |
+| [2026-10-18-wp-api-contract.md](2026-10-18-wp-api-contract.md) | WP-API Contract first: stub routes and typed shapes for budgets, insights, recommendations, alerts, assistant | Done |
