@@ -1,0 +1,40 @@
+$ npx playwright test  (in frontend/)
+
+Running 28 tests using 2 workers
+
+  ✓   1 [desktop] › tests/e2e/assistant.spec.ts:27:5 › guided mode: a quick action shows a card, and a budget saves only after Confirm (3.0s)
+  ✓   2 [desktop] › tests/e2e/assistant.spec.ts:58:5 › llm mode: asks if a phone is affordable, sees the risk check, proposes the plan and confirms it (3.2s)
+  ✓   3 [desktop] › tests/e2e/journey.spec.ts:28:5 › a new tester signs in, imports a persona statement and sees a forecast (2.8s)
+  ✓   5 [desktop] › tests/e2e/journey.spec.ts:71:5 › a visitor without a session is sent to the login page (595ms)
+  ✓   4 [desktop] › tests/e2e/journey.spec.ts:51:5 › every screen loads for a signed-in tester with its own title (3.1s)
+  ✓   7 [desktop] › tests/e2e/journey.spec.ts:120:5 › the transactions page shows where the month went, and picking a category filters the list (2.6s)
+  -   8 [desktop] › tests/e2e/layout.spec.ts:32:7 › every screen fits a 360 px phone without sideways scrolling
+  -   9 [desktop] › tests/e2e/layout.spec.ts:32:7 › every screen fits a 375 px phone without sideways scrolling
+  ✓   6 [desktop] › tests/e2e/journey.spec.ts:77:5 › a tester checks a purchase, tries the suggestion, adds the plan and reads the saved report (4.1s)
+  ✓  10 [desktop] › tests/e2e/login.spec.ts:9:5 › a visitor is sent to /login, signs in, and lands on the shell (1.3s)
+  ✓  11 [desktop] › tests/e2e/login.spec.ts:22:5 › a wrong passphrase shows one generic error and stays on /login (868ms)
+  ✓  12 [desktop] › tests/e2e/login.spec.ts:36:5 › the session survives a reload and ends on log out (1.9s)
+  ✓  13 [desktop] › tests/e2e/topic.spec.ts:12:5 › first login shows the privacy notice, which must be accepted before the app (1.6s)
+  ✓  14 [desktop] › tests/e2e/topic.spec.ts:24:5 › set a budget, add an expense, the bar moves, and the over-budget alert appears (3.3s)
+  ✓  15 [phone] › tests/e2e/assistant.spec.ts:27:5 › guided mode: a quick action shows a card, and a budget saves only after Confirm (2.6s)
+  ✓  17 [phone] › tests/e2e/journey.spec.ts:28:5 › a new tester signs in, imports a persona statement and sees a forecast (2.3s)
+  ✓  16 [phone] › tests/e2e/assistant.spec.ts:58:5 › llm mode: asks if a phone is affordable, sees the risk check, proposes the plan and confirms it (2.5s)
+  ✓  19 [phone] › tests/e2e/journey.spec.ts:71:5 › a visitor without a session is sent to the login page (519ms)
+  ✓  18 [phone] › tests/e2e/journey.spec.ts:51:5 › every screen loads for a signed-in tester with its own title (2.9s)
+  ✓  20 [phone] › tests/e2e/journey.spec.ts:77:5 › a tester checks a purchase, tries the suggestion, adds the plan and reads the saved report (3.7s)
+  ✓  21 [phone] › tests/e2e/journey.spec.ts:120:5 › the transactions page shows where the month went, and picking a category filters the list (2.0s)
+  ✓  22 [phone] › tests/e2e/layout.spec.ts:32:7 › every screen fits a 360 px phone without sideways scrolling (10.6s)
+  ✓  23 [phone] › tests/e2e/layout.spec.ts:32:7 › every screen fits a 375 px phone without sideways scrolling (10.8s)
+  ✓  25 [phone] › tests/e2e/login.spec.ts:22:5 › a wrong passphrase shows one generic error and stays on /login (761ms)
+  ✓  24 [phone] › tests/e2e/login.spec.ts:9:5 › a visitor is sent to /login, signs in, and lands on the shell (1.2s)
+  ✓  27 [phone] › tests/e2e/topic.spec.ts:12:5 › first login shows the privacy notice, which must be accepted before the app (1.4s)
+  ✓  26 [phone] › tests/e2e/login.spec.ts:36:5 › the session survives a reload and ends on log out (1.8s)
+  ✓  28 [phone] › tests/e2e/topic.spec.ts:24:5 › set a budget, add an expense, the bar moves, and the over-budget alert appears (2.2s)
+
+  2 skipped
+  26 passed (54.9s)
+[WebServer] warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+[WebServer] INFO:     Started server process [26920]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
