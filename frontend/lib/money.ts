@@ -33,3 +33,15 @@ export function formatRm(sen: number): string {
   const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return `${sen < 0 ? "-" : ""}RM ${grouped}.${cents}`;
 }
+
+/**
+ * A short label for a chart's money axis: "RM 650", "-RM 1.3k". The space is a no-break space,
+ * because the chart wraps a label at a normal space and the halves overlap the month labels.
+ */
+export function formatAxisRm(sen: number): string {
+  const rm = sen / SEN_PER_RM;
+  const abs = Math.abs(rm);
+  const text =
+    abs >= 1000 ? `${(abs / 1000).toFixed(1).replace(/\.0$/, "")}k` : `${Math.round(abs)}`;
+  return `${rm < 0 ? "-" : ""}RM ${text}`;
+}

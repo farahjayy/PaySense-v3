@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatRm, parseRm } from "@/lib/money";
+import { formatAxisRm, formatRm, parseRm } from "@/lib/money";
 
 // These cases mirror backend/tests/domain/test_money.py so the two sides agree on every amount.
 describe("parseRm", () => {
@@ -19,12 +19,22 @@ describe("parseRm", () => {
     expect(parseRm(text)).toBe(sen);
   });
 
-  it.each(["", "   ", "abc", "-5", "(12.00)", "12.345", "12.340", "1,23", "1,2345", ".5", "12.", "1 000"])(
-    "rejects %j rather than guessing",
-    (text) => {
-      expect(parseRm(text)).toBeNull();
-    },
-  );
+  it.each([
+    "",
+    "   ",
+    "abc",
+    "-5",
+    "(12.00)",
+    "12.345",
+    "12.340",
+    "1,23",
+    "1,2345",
+    ".5",
+    "12.",
+    "1 000",
+  ])("rejects %j rather than guessing", (text) => {
+    expect(parseRm(text)).toBeNull();
+  });
 
   it("never goes through a float", () => {
     // 0.1 + 0.2 style traps: not exactly representable as binary floats.
@@ -60,5 +70,16 @@ describe("formatRm", () => {
 
   it.each([0, 1, 99, 100, 123456, 987654321])("round-trips %i sen through parseRm", (sen) => {
     expect(parseRm(formatRm(sen))).toBe(sen);
+  });
+});
+
+describe("formatAxisRm", () => {
+  it("writes short chart-axis labels that never break across lines", () => {
+    expect(formatAxisRm(65000)).toBe("RM 650");
+    expect(formatAxisRm(-65000)).toBe("-RM 650");
+    expect(formatAxisRm(130000)).toBe("RM 1.3k");
+    expect(formatAxisRm(-190000)).toBe("-RM 1.9k");
+    expect(formatAxisRm(200000)).toBe("RM 2k");
+    expect(formatAxisRm(0)).toBe("RM 0");
   });
 });

@@ -13,19 +13,11 @@ import {
 
 import type { Forecast } from "@/lib/api/queries";
 import { chartSummary, marginPoints, marginTable } from "@/lib/forecast";
-import { formatRm } from "@/lib/money";
+import { formatAxisRm, formatRm } from "@/lib/money";
 
 type Simulation = NonNullable<Forecast["simulation"]>;
 
 /** Compact axis labels: "RM 1.2k" is readable at a glance; the table has the exact figures. */
-function axisLabel(sen: number): string {
-  const rm = sen / 100;
-  const abs = Math.abs(rm);
-  const text =
-    abs >= 1000 ? `${(abs / 1000).toFixed(1).replace(/\.0$/, "")}k` : `${Math.round(abs)}`;
-  // a no-break space: the axis wraps a label at a normal space and overlaps the month labels
-  return `${rm < 0 ? "-" : ""}RM\u00a0${text}`;
-}
 
 /**
  * Running margin month by month: the line is the most likely total, the shaded band is where it
@@ -54,7 +46,7 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
               width={76}
               tickLine={false}
               axisLine={false}
-              tickFormatter={axisLabel}
+              tickFormatter={formatAxisRm}
               tick={{ fontSize: 12, fill: "var(--color-ink-secondary)" }}
             />
             <ReferenceLine y={0} stroke="var(--color-danger)" strokeDasharray="4 3" />
@@ -146,8 +138,8 @@ export function MarginFan({ simulation }: { simulation: Simulation }) {
           </table>
         </div>
         <p className="mt-2 text-[12px] leading-relaxed text-ink-secondary">
-          Each figure is a typical value worked out on its own, so the columns do not add up line
-          by line: the typical total is not the sum of the typical months.
+          Each figure is a typical value worked out on its own, so the columns do not add up line by
+          line: the typical total is not the sum of the typical months.
         </p>
       </details>
     </figure>

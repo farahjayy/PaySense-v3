@@ -13,18 +13,10 @@ import {
 
 import type { RiskCheck } from "@/lib/api/queries";
 import { formatMonth } from "@/lib/format";
-import { formatRm } from "@/lib/money";
+import { formatAxisRm, formatRm } from "@/lib/money";
 
 type Curve = NonNullable<RiskCheck["with_plan_curve"]>;
 type Props = { withPlan: Curve; without: Curve };
-
-function axisLabel(sen: number): string {
-  const rm = sen / 100;
-  const abs = Math.abs(rm);
-  const text =
-    abs >= 1000 ? `${(abs / 1000).toFixed(1).replace(/\.0$/, "")}k` : `${Math.round(abs)}`;
-  return `${rm < 0 ? "-" : ""}RM ${text}`;
-}
 
 /** Most likely running margin with and without this purchase; the gap between the lines is its cost. */
 export function WithWithoutChart({ withPlan, without }: Props) {
@@ -58,10 +50,10 @@ export function WithWithoutChart({ withPlan, without }: Props) {
               tick={{ fontSize: 12, fill: "var(--color-ink-secondary)" }}
             />
             <YAxis
-              width={64}
+              width={76}
               tickLine={false}
               axisLine={false}
-              tickFormatter={axisLabel}
+              tickFormatter={formatAxisRm}
               tick={{ fontSize: 12, fill: "var(--color-ink-secondary)" }}
             />
             <ReferenceLine y={0} stroke="var(--color-danger)" strokeDasharray="4 3" />

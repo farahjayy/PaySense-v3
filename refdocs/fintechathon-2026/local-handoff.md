@@ -19,7 +19,7 @@
 
 ## B. Local steps, in order
 
-1. **Pull the branch** `claude/fervent-tesla-2rh1ov`; review and merge to `main` when satisfied (only the author merges).
+1. **Pull the branch** `claude/fervent-tesla-2rh1ov`; review and merge to `main` when satisfied (only the author merges). Prefer a **squash merge**: commit `d422555` added a production build folder (`frontend/.next-live/`, no credentials in it, checked) that the next commit removed; a squash keeps it out of `main`'s history.
 2. **Apply the migrations** in the Supabase SQL editor (project `paysense-v3`), each from the branch head: `0003_login_hardening.sql` (it changed after it was first written: the `assistant_chat` lock name), `0004_budgets_assistant.sql`, `0005_savings_buffer.sql`, `0006_privacy.sql`.
 3. **Check them:** `cd backend && uv run python scripts/check_rls.py` (needs `SUPABASE_ANON_KEY`; every table must answer 401), then `uv run pytest -m integration` (the `test_v3_migrations.py` tests stop skipping).
 4. **Run the app on the real database:** `uv run uvicorn app.main:app --port 8000` and `cd frontend && npm run dev`; sign in once in a browser.
