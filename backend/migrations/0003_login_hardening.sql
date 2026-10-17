@@ -5,8 +5,8 @@
 --     A user without one cannot log in; set it with scripts/seed_users.py --passphrase-file.
 --   * users.token_version: carried in every session token; logout increments it, so every older
 --     token is refused (revocation).
---   * user_locks: one row per (user, lock name) while a plan is being created, so two server
---     processes cannot both create the same plan. The primary key makes taking a lock atomic.
+--   * user_locks: one row per (user, lock name) while a plan is being created (or an assistant
+--     turn runs), so two server processes cannot both create the same plan. The primary key makes taking a lock atomic.
 --   * an index for the transaction list's keyset pagination (newest first by date, then id).
 --
 -- Same lock-down as every other table: RLS on, no policies, no anon/authenticated privileges.
@@ -19,7 +19,7 @@ alter table users add column token_version int not null default 0 check (token_v
 
 create table user_locks (
     user_id uuid not null references users(id) on delete cascade,
-    name text not null check (name in ('plan_create')),
+    name text not null check (name in ('plan_create', 'assistant_chat')),
     acquired_at timestamptz not null default now(),
     primary key (user_id, name)
 );

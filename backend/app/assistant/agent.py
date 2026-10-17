@@ -25,7 +25,7 @@ from app.assistant.prompt import OUT_OF_SCOPE, system_prompt
 from app.assistant.tools import MODEL_TOOLS
 from app.core.errors import api_error
 from app.db import assistant_events as events
-from app.db import user_settings
+from app.db import locks, user_settings
 from app.domain.consent import CONSENT_VERSION
 
 logger = logging.getLogger("paysense")
@@ -60,23 +60,31 @@ def _day_start_utc(today: dt.date) -> str:
     return start.astimezone(dt.UTC).isoformat()
 
 
-def check_budget(ctx: ToolContext) -> None:
+def check_budget(ctx: ToolContext) -> int:
+    """Refuse a turn when today's allowance is used; otherwise the tokens this turn may still use
+    (the smaller of the user's and everyone's remainder)."""
     since = _day_start_utc(ctx.today)
     settings = ctx.settings
-    if events.tokens_since(ctx.db, ctx.user_id, since) >= settings.assistant_user_daily_tokens:
+    mine = events.tokens_since(ctx.db, ctx.user_id, since)
+    if mine >= settings.assistant_user_daily_tokens:
         events.record(ctx.db, ctx.user_id, "refusal", status="user_daily_budget")
         raise api_error(
             429,
             "assistant_daily_budget",
             "You have used today's assistant allowance. The quick actions still work.",
         )
-    if events.global_tokens_since(ctx.db, since) >= settings.assistant_global_daily_tokens:
+    everyone = events.global_tokens_since(ctx.db, since)
+    if everyone >= settings.assistant_global_daily_tokens:
         events.record(ctx.db, ctx.user_id, "refusal", status="global_daily_budget")
         raise api_error(
             429,
             "assistant_daily_budget",
             "The assistant has reached today's limit for everyone. The quick actions still work.",
         )
+    return min(
+        settings.assistant_user_daily_tokens - mine,
+        settings.assistant_global_daily_tokens - everyone,
+    )
 
 
 def _template(records: list[executor.StepRecord]) -> str:
@@ -119,7 +127,6 @@ def _fallback(
 
 
 def run_chat(ctx: ToolContext, llm: LLM | None, body: ChatIn) -> ChatOut:
-    settings = ctx.settings
     events.record(
         ctx.db, ctx.user_id, "message",
         detail={"text": body.message, "pasted_chars": len(body.pasted_text or "")},
@@ -134,8 +141,19 @@ def run_chat(ctx: ToolContext, llm: LLM | None, body: ChatIn) -> ChatOut:
             "Read and accept the privacy notice before the assistant sends anything to its "
             "model provider. The quick actions work without it.",
         )
-    check_budget(ctx)
+    allowance = check_budget(ctx)
     ctx = replace(ctx, pasted_text=body.pasted_text)
+    # one turn at a time per user: parallel turns would each pass the budget check above
+    with locks.held(ctx.db, ctx.user_id, "assistant_chat") as taken:
+        if not taken:
+            raise api_error(
+                409, "assistant_busy", "The assistant is still answering your last message."
+            )
+        return _turn(ctx, llm, body, allowance)
+
+
+def _turn(ctx: ToolContext, llm: LLM, body: ChatIn, allowance: int) -> ChatOut:
+    settings = ctx.settings
 
     specs = [ToolSpec(t.name, t.description, t.input_schema()) for t in MODEL_TOOLS.values()]
     turns = (
@@ -148,6 +166,7 @@ def run_chat(ctx: ToolContext, llm: LLM | None, body: ChatIn) -> ChatOut:
     system = system_prompt(ctx.today)
 
     records: list[executor.StepRecord] = []
+    echoed: set[str] = set()  # figures the model wrote into its own arguments (D-47)
     used_in = used_out = 0
     deadline = time.monotonic() + settings.assistant_timeout_seconds
     final: str | None = None
@@ -156,6 +175,8 @@ def run_chat(ctx: ToolContext, llm: LLM | None, body: ChatIn) -> ChatOut:
         try:
             if remaining <= 0:
                 raise LLMError("the turn ran out of time")
+            if used_in + used_out >= allowance:
+                raise LLMError("today's assistant allowance ran out during this turn")
             response = llm.complete(
                 system, messages, specs,
                 max_output_tokens=settings.assistant_max_output_tokens, timeout=remaining,
@@ -177,6 +198,7 @@ def run_chat(ctx: ToolContext, llm: LLM | None, body: ChatIn) -> ChatOut:
                                 tool_calls=response.tool_calls, raw=response.raw))  # fmt: skip
         results = []
         for call in response.tool_calls:
+            echoed |= numbers.argument_figures(call.arguments)
             record = executor.run_tool(ctx, call.name, call.arguments, caller="model")
             records.append(record)
             events.record(
@@ -213,8 +235,11 @@ def run_chat(ctx: ToolContext, llm: LLM | None, body: ChatIn) -> ChatOut:
         sources = [r.data for r in records] + [
             r.pending_action.model_dump(mode="json") for r in records if r.pending_action
         ]
-        texts = [body.message, body.pasted_text or ""] + [r.step.summary for r in records]
-        bad = numbers.unsupported(final, numbers.allowed_figures(sources, texts))
+        person = [body.message, body.pasted_text or ""]
+        allowed = numbers.allowed_figures(
+            sources, [r.step.summary for r in records], echoed=echoed, trusted=person
+        )
+        bad = numbers.unsupported(final, allowed)
         if bad:
             reply, replaced = _template(records), True
             events.record(ctx.db, ctx.user_id, "fallback", status="number_check",

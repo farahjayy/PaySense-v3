@@ -15,7 +15,7 @@ from app.db.base import require_user_id
 from app.db.client import Database
 
 TABLE = "user_locks"
-NAMES = frozenset({"plan_create"})
+NAMES = frozenset({"plan_create", "assistant_chat"})
 STALE_AFTER_SECONDS = 120
 UNIQUE_VIOLATION = "23505"
 
@@ -25,14 +25,15 @@ def _check(name: str) -> None:
         raise ValueError(f"unknown lock {name!r}")
 
 
-def acquire(db: Database, user_id: str, name: str, *, now: dt.datetime | None = None) -> bool:
-    """True if this caller now holds the lock; False if someone else holds a fresh one."""
+def acquire(db: Database, user_id: str, name: str, *, now: dt.datetime | None = None) -> str | None:
+    """The holder's stamp if this caller now holds the lock (pass it to `release`); None if
+    someone else holds a fresh one."""
     uid = require_user_id(user_id)
     _check(name)
     stamp = (now or dt.datetime.now(dt.UTC)).isoformat()
     try:
         db.table(TABLE).insert({"user_id": uid, "name": name, "acquired_at": stamp}).execute()
-        return True
+        return stamp
     except APIError as err:
         if err.code != UNIQUE_VIOLATION:
             raise
@@ -44,28 +45,33 @@ def acquire(db: Database, user_id: str, name: str, *, now: dt.datetime | None = 
         .data
     )
     if not stale:
-        return False
+        return None
     try:
         db.table(TABLE).insert({"user_id": uid, "name": name, "acquired_at": stamp}).execute()
-        return True
+        return stamp
     except APIError as err:
         if err.code != UNIQUE_VIOLATION:
             raise
-        return False
+        return None
 
 
-def release(db: Database, user_id: str, name: str) -> None:
+def release(db: Database, user_id: str, name: str, stamp: str | None = None) -> None:
+    """Free the lock. With the holder's stamp, only that holder's lock: a slow request whose lock
+    was taken over as stale must not free the new holder's."""
     uid = require_user_id(user_id)
     _check(name)
-    db.table(TABLE).delete().eq("user_id", uid).eq("name", name).execute()
+    query = db.table(TABLE).delete().eq("user_id", uid).eq("name", name)
+    if stamp is not None:
+        query = query.eq("acquired_at", stamp)
+    query.execute()
 
 
 @contextmanager
 def held(db: Database, user_id: str, name: str) -> Iterator[bool]:
     """Yield whether the lock was taken; release it afterwards only if it was."""
-    taken = acquire(db, user_id, name)
+    stamp = acquire(db, user_id, name)
     try:
-        yield taken
+        yield stamp is not None
     finally:
-        if taken:
-            release(db, user_id, name)
+        if stamp is not None:
+            release(db, user_id, name, stamp)

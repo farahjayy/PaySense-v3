@@ -55,6 +55,27 @@ class LoginRateLimiter:
         with self._lock:
             return len(self._recent(key)) >= self._max
 
+    def attempt(self, key: str) -> bool:
+        """Check and count one attempt at once: False (nothing counted) if the key is blocked.
+        Counting before the passphrase is checked stops parallel guesses all passing the check
+        before any of them is recorded; `forgive` takes a successful attempt back."""
+        with self._lock:
+            stamps = self._recent(key)
+            if len(stamps) >= self._max:
+                return False
+            stamps.append(self._clock())
+            self._failures[key] = stamps
+            self._enforce_key_cap()
+            return True
+
+    def forgive(self, key: str) -> None:
+        with self._lock:
+            stamps = self._failures.get(key)
+            if stamps:
+                stamps.pop()
+                if not stamps:
+                    del self._failures[key]
+
     def record_failure(self, key: str) -> None:
         with self._lock:
             stamps = self._recent(key)

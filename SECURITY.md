@@ -22,7 +22,7 @@ How a write is made safe: the payload is validated with the API's own models and
 |---|---|---|
 | Signed bearer token (HS256, 12 h TTL, `alg`/`iss`/`exp`/`sub`/`ver` required) | `core/security.py` | `tests/test_security.py` |
 | Passphrase second factor: scrypt (n=2^14, r=8, p=1), per-user salt, constant-time compare, one generic error, an unknown user still costs one scrypt (D-49) | `core/passphrase.py`, `api/auth.py` | `tests/test_passphrase.py`, `tests/test_auth.py` |
-| Login rate limits per IP (10 / 5 min) and per username (20 / 15 min) | `api/rate_limit.py`, `api/auth.py` | `tests/test_auth.py` |
+| Login rate limits per IP (10 / 5 min) and per username from one address (20 / 15 min); an attempt is counted before the passphrase is checked, so parallel guesses cannot race the limit (ASSUMED 31) | `api/rate_limit.py`, `api/auth.py` | `tests/test_auth.py` (`test_a_stranger_cannot_lock_the_owner_out_from_another_address`, `test_an_attempt_is_counted_before_the_passphrase_is_checked`) |
 | Token revocation: logout increments `users.token_version`; older tokens refused | `api/deps.py`, `api/auth.py` | `test_logout_revokes_every_session_of_that_user` |
 | Every query user-scoped: repositories take `user_id` first through `ScopedTable` | `db/base.py`, every `db/*.py` | `tests/test_user_isolation.py`, two-user tests on every route, `tests/assistant/test_tool_isolation.py` (every tool) |
 | RLS on every table, no policies, anon/authenticated privileges revoked | `migrations/*.sql` | `scripts/check_rls.py` (anon key reads nothing) |
@@ -33,21 +33,21 @@ How a write is made safe: the payload is validated with the API's own models and
 | Daily write quota on **every** write route (300 a day) | `api/deps.WRITE_QUOTA` | `test_every_write_route_counts_against_the_daily_quota` sends every write operation in the OpenAPI document |
 | Ledger cap (5,000 rows) checked in the repository, so no path bypasses it | `db/transactions.py` | `tests/api/test_abuse_limits.py` |
 | Keyset pagination on transactions; a cursor cannot widen the user filter | `db/base.page_before`, `api/transactions.py` | `test_pagination_stays_inside_the_users_own_rows` |
-| Plan-create race closed by a database row lock (`user_locks`) | `db/locks.py`, `api/plans.py`, `api/risk.py` | `test_a_held_lock_refuses_a_second_plan_create` |
+| Plan-create race closed by a database row lock (`user_locks`); a release frees only its own holder's lock | `db/locks.py`, `api/plans.py`, `api/risk.py` | `test_a_held_lock_refuses_a_second_plan_create`, `test_a_released_lock_only_removes_its_own_holder` |
 | Admission cap on risk checks (2 at once, server-wide) | `api/risk.admitted` | `tests/api/test_risk_api.py` |
 | Import hardening: size, shape and zip-bomb checks before parsing; formula text never evaluated | `domain/upload.py`, `domain/csv_import.py` | `tests/domain/test_upload.py`, `test_import_edge_cases.py` |
 | Model start-up refusal on an artefact mismatch (feature hash, order, constants, forecast checksums) | `engines/risk/artefact.py` | `tests/engines/test_artefact.py` |
 | Money as integer sen everywhere; the API refuses floats and strings as money | `api/types.Sen` | `test_every_money_field_in_the_api_is_an_integer_number_of_sen` |
 | Fail-fast configuration; keys are `SecretStr` | `core/settings.py` | `tests/test_settings.py` |
 | The model has no write tool; a Tier 2 tool registered by mistake still cannot run | `assistant/tools.py`, `assistant/writes.py`, `assistant/policy.py` | `tests/assistant/test_policy.py` |
-| Number check: every figure in the narration must come from this turn's tool results, the server's step summaries or the user's message; else a template | `assistant/numbers.py`, `assistant/agent.py` | `tests/assistant/test_number_check.py`, `test_an_invented_figure_is_replaced_by_the_template` |
+| Number check: every figure in the narration must come from this turn's tool results, the server's step summaries or the user's message; a figure the model wrote into its own tool arguments does not count unless the person wrote it; `.75` and `5k` / `3 million` are read at their value; else a template (ASSUMED 33) | `assistant/numbers.py`, `assistant/agent.py` | `tests/assistant/test_number_check.py`, `tests/assistant/test_review_fixes.py` |
 | Untrusted data: descriptions and pastes are labelled data in delimited blocks; the system prompt forbids following instructions there | `assistant/prompt.py`, `assistant/agent.py` | `tests/assistant/test_security_suite.py` (injection against a model that obeys everything) |
-| Paste grounding: every amount and date the model read must be written in the server's own copy of the paste | `assistant/paste.py` | `tests/assistant/test_paste.py` |
+| Paste grounding: every row the model read must match one line of the server's own copy of the paste (its amount and date on that line, a number inside a date never money, each line used once) | `assistant/paste.py` | `tests/assistant/test_paste.py`, `tests/assistant/test_review_fixes.py` |
 | History is plain `{role, text}` only and never a source of figures; tool results are always recomputed | `api/assistant.ChatTurnIn`, `assistant/agent.py` | `test_forged_history_with_fake_tool_results_is_rejected_or_ignored` |
 | Caps per turn: 6 tool calls, 1,024 output tokens, a 45 s deadline, 8 history turns, 2,000-character messages, 8,000-character pastes | `core/settings.py`, `api/assistant.py` | `tests/assistant/test_agent.py`, `test_security_suite.py` |
-| Daily token budgets: 200,000 per user, 3,000,000 for everyone | `assistant/agent.check_budget` | `test_the_daily_token_budget`, `test_the_global_daily_cap_stops_everyone` |
+| Daily token budgets: 200,000 per user, 3,000,000 for everyone, checked before every model call; one chat turn at a time per user; 300 assistant requests per user a day (ASSUMED 32) | `assistant/agent.py`, `api/deps.ASSISTANT_QUOTA` | `test_the_daily_token_budget`, `test_the_global_daily_cap_stops_everyone`, `test_the_budget_is_checked_before_every_model_call`, `test_a_second_turn_while_one_runs_is_refused`, `test_assistant_requests_have_a_daily_quota` |
 | Provider failure → guided mode (no model) with the cards already made | `assistant/agent._fallback` | `test_a_provider_failure_falls_back_to_guided_mode_keeping_the_cards` |
-| Keys never logged, returned or stored; provider error text has any sent credential redacted | `assistant/llm.py` | `test_the_provider_credential_never_appears_in_responses_logs_or_the_audit_log`; tests strip real keys from the environment (`tests/conftest.py`) |
+| Keys never logged, returned or stored; provider error text has any sent credential redacted (before it is shortened) | `assistant/llm.py` | `test_the_provider_credential_never_appears_in_responses_logs_or_the_audit_log`; tests strip real keys from the environment (`tests/conftest.py`) |
 | Audit log of every message, tool call, proposal, confirm, decline, refusal and fallback (tier, tool, status, provider, model, tokens) | `db/assistant_events.py` | `tests/assistant/test_actions.py`, `test_agent.py` |
 | Consent before the assistant sends anything to the provider; export and delete my data (PDPA) | `api/account.py`, `assistant/agent.py` | `tests/api/test_account_api.py` |
 
@@ -66,7 +66,7 @@ How a write is made safe: the payload is validated with the API's own models and
 | Forged chat history with fake tool results | History is `{role, text}` only (extra fields 422); figures from history are never accepted |
 | The model invents a number | The number check replaces the narration with a template built from tool output |
 | Smuggled `user_id` in tool arguments | Refused at any depth before validation |
-| Credential stuffing, guessing | Passphrase factor; per-IP and per-username limits; generic error; scrypt cost |
+| Credential stuffing, guessing | Passphrase factor; per-IP and per-(username, address) limits counted before the check; generic error; scrypt cost |
 | Stolen token | 12 h TTL; logout revokes every session; changing the passphrase revokes too |
 | Cost or denial of service through the assistant | Rate limits, per-user and global token budgets, output and tool-call caps, deadline, admission cap on risk checks |
 | Write flooding, ledger bloat | Daily write quota on every write route; 5,000-row ledger cap |
@@ -76,7 +76,7 @@ How a write is made safe: the payload is validated with the API's own models and
 ## 5. Known risks (kept honest)
 
 1. **No email or device factor.** Login is username + passphrase; there is no sign-up, reset or 2FA app. Seeded passphrases must be delivered privately.
-2. **The per-username login limit can be used to lock a known username out for 15 minutes** by failing on purpose (ASSUMED 22).
+2. **Spread-out guessing against one username** from many addresses is limited only per address (ASSUMED 31), chosen so that a stranger cannot lock the owner out; seeded passphrases are 144 random bits.
 3. **In-memory rate limiters and the daily write quota reset on restart** and are per process (run one worker). The token budgets are in the database and survive restarts.
 4. **`style-src 'unsafe-inline'`** remains for inline style attributes (progress bars, charts); scripts are nonce-only.
 5. **Dev-only npm audit findings:** 5 high in the ESLint toolchain (`eslint-config-next` → `fast-glob` → `micromatch`/`braces`); none in production dependencies (`evidence/scans/SUMMARY.md`).
@@ -87,6 +87,11 @@ How a write is made safe: the payload is validated with the API's own models and
 10. **The Anthropic adapter has been tested only against a mocked transport** (no credit yet).
 11. **Migrations 0003–0006 are written but not yet applied** to the real project at the time of writing (`refdocs/fintechathon-2026/questions.md`).
 12. **"Delete my data" keeps the (seeded) account**, empty; the account itself is removed by the operator.
+13. **The number check reads figures, not meaning.** A sign flip ("you gain RM50" for −50) or a correct figure attached to the wrong thing passes; the cards beside the narration carry the computed values.
+14. **Import by chat does not check the row type.** The model chooses income or expense; the person sees it in the preview before confirming.
+15. **The ledger cap is a count followed by an insert**, not one transaction: parallel imports can pass 5,000 by about one batch each (imports are limited to 10 a minute per user). It is a storage guard, not a security boundary.
+
+An independent read-only security review of the competition code (backend `app/`, `frontend/lib`, `frontend/components`) found no critical or high issues; its four medium and four low findings were fixed with tests (ASSUMED 31–33) or are listed above (13–15).
 
 ## 6. Scans
 

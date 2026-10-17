@@ -5,12 +5,17 @@ narration is replaced by a template. Earlier turns are not a source: they come f
 
 import re
 from collections.abc import Iterable
+from decimal import Decimal
 from typing import Any
 
 # Any run of digits not continuing another number: "RM450" and "x2" are read as 450 and 2, so a
-# figure glued to a currency or a word cannot slip past the check.
-NUMBER = re.compile(r"(?<![\d.,])\d[\d,]*(?:\.\d+)?")
-DATE = re.compile(r"^(\d{4})-(\d{2})(?:-(\d{2}))?")
+# figure glued to a currency or a word cannot slip past the check. ".75" is read as 0.75.
+NUMBER = re.compile(r"(?<![\d.,])(?:\d[\d,]*(?:\.\d+)?|(?<![A-Za-z])\.\d+)")
+# A figure with a scale word is checked at its full value: "5k" is 5000, never a free small count.
+SCALE = re.compile(r"\s*(k|thousand|ribu|mil|million|juta|bn|billion)\b", re.IGNORECASE)
+MULTIPLIER = {"k": 10**3, "thousand": 10**3, "ribu": 10**3, "mil": 10**6, "million": 10**6,
+              "juta": 10**6, "bn": 10**9, "billion": 10**9}  # fmt: skip
+DATE = re.compile(r"(\d{4})-(\d{2})(?:-(\d{2}))?")
 # ASSUMED 28 (WP4c): whole numbers up to 12 need no source — counts such as "3 instalments" or
 # "2 plans", which the model may say in words or digits.
 FREE_UP_TO = 12
@@ -63,22 +68,63 @@ def figures_of(value: Any, key: str = "") -> set[str]:
     return found
 
 
-def allowed_figures(results: Iterable[Any], texts: Iterable[str]) -> set[str]:
+def written_figures(text: str) -> list[tuple[str, str, bool]]:
+    """(as written, normalised value, scaled?) for every figure in a sentence."""
+    found = []
+    for match in NUMBER.finditer(text or ""):
+        figure = normalise(match.group())
+        scale = SCALE.match(text, match.end())
+        if scale:
+            value = Decimal(figure) * MULTIPLIER[scale.group(1).lower()]
+            found.append((match.group() + scale.group(), normalise(f"{value:f}"), True))
+        else:
+            found.append((match.group(), figure, False))
+    return found
+
+
+def argument_figures(value: Any, key: str = "") -> set[str]:
+    """Figures the model itself wrote into its tool arguments. Dates are left out: a date passed
+    to a tool is validated by it and the results' dates are computed from it."""
+    if isinstance(value, str) and DATE.fullmatch(value):
+        return set()
+    found: set[str] = set()
+    if isinstance(value, dict):
+        for k, v in value.items():
+            found |= argument_figures(v, str(k))
+    elif isinstance(value, list | tuple):
+        for v in value:
+            found |= argument_figures(v, key)
+    else:
+        found = figures_of(value, key)
+    return found
+
+
+def allowed_figures(
+    results: Iterable[Any],
+    texts: Iterable[str],
+    *,
+    echoed: set[str] | None = None,
+    trusted: Iterable[str] = (),
+) -> set[str]:
+    """Figures in the results and texts, minus those that only echo the model's own arguments
+    (`echoed`) unless the person wrote them (`trusted`: their message and paste)."""
     allowed: set[str] = set()
     for result in results:
         allowed |= figures_of(result)
     for text in texts:
-        allowed |= {normalise(t) for t in NUMBER.findall(text or "")}
+        allowed |= {figure for _, figure, _ in written_figures(text)}
+    allowed -= echoed or set()
+    for text in trusted:
+        allowed |= {figure for _, figure, _ in written_figures(text)}
     return allowed
 
 
 def unsupported(narration: str, allowed: set[str]) -> list[str]:
     """Figures in the narration that no source supports."""
     bad = []
-    for token in NUMBER.findall(narration):
-        figure = normalise(token)
-        if figure.isdigit() and int(figure) <= FREE_UP_TO:
+    for written, figure, scaled in written_figures(narration):
+        if not scaled and figure.isdigit() and int(figure) <= FREE_UP_TO:
             continue
         if figure not in allowed:
-            bad.append(token)
+            bad.append(written)
     return bad

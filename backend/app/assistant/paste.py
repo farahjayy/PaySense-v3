@@ -1,8 +1,9 @@
 """Import by chat (WP4d): rows the model read from pasted text, checked against that text.
 
 The model is good at reading messy lines and bad at being trusted with numbers, so every row it
-submits is grounded: its amount and its date must be written in the pasted text (the server's own
-copy of this turn's message, never the model's arguments). A row that is not grounded is rejected
+submits is grounded: its amount and its date must be written on one line of the pasted text (the
+server's own copy of this turn's message, never the model's arguments), each line grounding at
+most one row. A row that is not grounded is rejected
 with a reason; a description is kept only if it appears in the paste. Then the rows go through
 the same validation, categoriser and duplicate flags as a file import, and a pending
 `confirm_import` action is stored for the person to confirm (ADR D-48).
@@ -86,33 +87,68 @@ def _year(raw: str | None) -> int | None:
     return value + 2000 if value < 100 else value
 
 
-def dates_in(text: str) -> set[tuple[int, int, int | None]]:
+Day = tuple[int, int, int | None]
+
+
+@dataclass(frozen=True)
+class Line:
+    """One line of the paste: the dates and the amounts written on it. A number that is part of
+    a date is never an amount, so a year, day or month cannot be read as money."""
+
+    text: str
+    dates: frozenset[Day]
+    amounts: frozenset[str]
+
+
+def _date_spans(text: str) -> list[tuple[Day, tuple[int, int]]]:
+    found: list[tuple[Day, tuple[int, int]]] = []
+    for m in _ISO_DATE.finditer(text):
+        y, mo, d = m.groups()
+        found.append(((int(d), int(mo), int(y)), m.span()))
+    for m in _NUMERIC_DATE.finditer(text):
+        d, mo, y = m.groups()
+        if y is None and "." in m.group():
+            continue  # "12.10" without a year is money, not 12 October
+        found.append(((int(d), int(mo), _year(y)), m.span()))
+    for m in _DAY_MONTH.finditer(text):
+        d, name, y = m.groups()
+        if name.lower() in MONTHS:
+            found.append(((int(d), MONTHS[name.lower()], _year(y)), m.span()))
+    for m in _MONTH_DAY.finditer(text):
+        name, d, y = m.groups()
+        if name.lower() in MONTHS:
+            found.append(((int(d), MONTHS[name.lower()], _year(y)), m.span()))
+    return [(day, span) for day, span in found if 1 <= day[0] <= 31 and 1 <= day[1] <= 12]
+
+
+def read_line(text: str) -> Line:
+    spans = _date_spans(text)
+    dates = {day for day, _ in spans}
+    if any(y is not None for _, _, y in dates):
+        dates = {day for day in dates if day[2] is not None}  # a written year is never a wildcard
+    amounts = {
+        normalise(m.group())
+        for m in NUMBER.finditer(text)
+        if not any(m.start() < end and start < m.end() for _, (start, end) in spans)
+    }
+    return Line(text, frozenset(dates), frozenset(amounts))
+
+
+def dates_in(text: str) -> set[Day]:
     """(day, month, year or None) for every date written in the text (day before month, the
     Malaysian convention; ASSUMED 30)."""
-    found: set[tuple[int, int, int | None]] = set()
-    for y, m, d in _ISO_DATE.findall(text):
-        found.add((int(d), int(m), int(y)))
-    for d, m, y in _NUMERIC_DATE.findall(text):
-        found.add((int(d), int(m), _year(y or None)))
-    for d, name, y in _DAY_MONTH.findall(text):
-        if name.lower() in MONTHS:
-            found.add((int(d), MONTHS[name.lower()], _year(y or None)))
-    for name, d, y in _MONTH_DAY.findall(text):
-        if name.lower() in MONTHS:
-            found.add((int(d), MONTHS[name.lower()], _year(y or None)))
-    return {(d, m, y) for d, m, y in found if 1 <= d <= 31 and 1 <= m <= 12}
+    return set().union(*(read_line(line).dates for line in text.splitlines() or [""]))
 
 
 def amounts_in(text: str) -> set[str]:
-    return {normalise(token) for token in NUMBER.findall(text)}
+    return set().union(*(read_line(line).amounts for line in text.splitlines() or [""]))
 
 
-def _amount_grounded(amount_sen: int, amounts: set[str]) -> bool:
-    ringgit = f"{amount_sen // 100}.{amount_sen % 100:02d}"
-    return normalise(ringgit) in amounts
+def _ringgit(amount_sen: int) -> str:
+    return f"{amount_sen // 100}.{amount_sen % 100:02d}"
 
 
-def _date_grounded(day: date, dates: set[tuple[int, int, int | None]]) -> bool:
+def _date_grounded(day: date, dates: frozenset[Day] | set[Day]) -> bool:
     return any(
         d == day.day and m == day.month and (y is None or y == day.year) for d, m, y in dates
     )
@@ -122,24 +158,42 @@ def _squash(text: str) -> str:
     return " ".join(text.casefold().split())
 
 
+def _matches(row: PastedRowIn, line: Line) -> bool:
+    return normalise(_ringgit(row.amount_sen)) in line.amounts and _date_grounded(
+        row.date, line.dates
+    )
+
+
+def _why_not(row: PastedRowIn, lines: list[Line], used: set[int]) -> str:
+    ringgit = _ringgit(row.amount_sen)
+    if not any(normalise(ringgit) in line.amounts for line in lines):
+        return f"RM {ringgit} is not written in the pasted text."
+    if not any(_date_grounded(row.date, line.dates) for line in lines):
+        return f"{row.date.isoformat()} is not in the pasted text."
+    if any(_matches(row, line) for i, line in enumerate(lines) if i in used):
+        return f"The line with RM {ringgit} on {row.date.isoformat()} is already used by a row."
+    return f"RM {ringgit} and {row.date.isoformat()} are not on the same line of the pasted text."
+
+
 def ground_rows(
     rows: list[PastedRowIn], pasted: str
 ) -> tuple[list[dict[str, Any]], list[Rejected]]:
-    """Keep the rows whose amount and date are written in the paste; say why the others went."""
-    amounts, dates, haystack = amounts_in(pasted), dates_in(pasted), _squash(pasted)
+    """Keep each row that matches its own line of the paste (its amount and its date written on
+    that line, each line used once); say why the others went."""
+    lines = [read_line(text) for text in pasted.splitlines()]
+    used: set[int] = set()
     kept: list[dict[str, Any]] = []
     rejected: list[Rejected] = []
     for index, row in enumerate(rows):
-        if not _amount_grounded(row.amount_sen, amounts):
-            ringgit = f"{row.amount_sen // 100}.{row.amount_sen % 100:02d}"
-            rejected.append(Rejected(index, f"RM {ringgit} is not written in the pasted text."))
-            continue
-        if not _date_grounded(row.date, dates):
-            rejected.append(Rejected(index, f"{row.date.isoformat()} is not in the pasted text."))
+        at = next(
+            (i for i, line in enumerate(lines) if i not in used and _matches(row, line)), None
+        )
+        if at is None:
+            rejected.append(Rejected(index, _why_not(row, lines, used)))
             continue
         description = row.description
-        if description and _squash(description) not in haystack:
-            description = None  # the model's own words are not the person's data
+        if description and _squash(description) not in _squash(lines[at].text):
+            description = None  # the model's own words, or another line's, are not this row's
         category = row.category or guess_category(description)
         try:
             clean = ConfirmRow.model_validate(
@@ -149,6 +203,7 @@ def ground_rows(
         except ValidationError as err:
             rejected.append(Rejected(index, f"Not a valid row ({err.errors()[0]['msg']})."))
             continue
+        used.add(at)
         kept.append(clean.model_dump(mode="json"))
     return kept, rejected
 

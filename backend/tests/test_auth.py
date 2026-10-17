@@ -107,20 +107,39 @@ def test_a_token_without_a_version_is_refused(client, db, settings):
     assert res.status_code == 401
 
 
-def test_repeated_failures_on_one_username_block_it_from_any_address(settings, db):
+def test_repeated_failures_on_one_username_block_that_username_from_that_address(settings, db):
     per_user = LoginRateLimiter(max_failures=3, window_seconds=60)
     client = TestClient(create_app(settings, db=db, username_limiter=per_user))
 
     for n in range(3):
         _login(client, "amir", f"wrong passphrase {n}")
-    res = client.post(
-        "/api/auth/login",
-        json={"username": "AMIR", "passphrase": PASSPHRASE},
-        headers={"X-Forwarded-For": "9.9.9.9"},
-    )
+    res = client.post("/api/auth/login", json={"username": "AMIR", "passphrase": PASSPHRASE})
 
     assert res.status_code == 429
     assert res.json()["detail"]["code"] == "too_many_attempts"
+
+
+def test_a_stranger_cannot_lock_the_owner_out_from_another_address(settings, db):
+    """WP8 review finding 6: the username block is per (username, address)."""
+    per_user = LoginRateLimiter(max_failures=3, window_seconds=60)
+    client = TestClient(create_app(settings, db=db, username_limiter=per_user))
+
+    elsewhere = TestClient(client.app, client=("9.9.9.9", 50000))
+
+    for n in range(3):
+        _login(client, "amir", f"wrong passphrase {n}")
+
+    assert _login(client, "amir").status_code == 429
+    assert _login(elsewhere, "amir").status_code == 200
+
+
+def test_an_attempt_is_counted_before_the_passphrase_is_checked():
+    """WP8 review finding 6: parallel attempts cannot all pass the check before any is recorded."""
+    limiter = LoginRateLimiter(max_failures=2, window_seconds=60)
+    assert limiter.attempt("k") and limiter.attempt("k")
+    assert not limiter.attempt("k")
+    limiter.forgive("k")
+    assert limiter.attempt("k")
 
 
 @pytest.mark.parametrize("hostile", ["%", "a%", "x' or '1'='1", "   "])

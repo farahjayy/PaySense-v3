@@ -216,3 +216,16 @@ def test_the_lock_is_released_even_when_the_create_fails(api, amir, fake_db):
     }
     api.post("/api/plans", json=body, headers=amir)
     assert fake_db.rows("user_locks") == []
+
+
+def test_a_released_lock_only_removes_its_own_holder(fake_db):
+    """WP8 review finding 7: a slow holder whose lock was taken over must not free the new one."""
+    amir = next(u for u in fake_db.rows("users") if u["username"] == "amir")["id"]
+    old = dt.datetime.now(dt.UTC) - dt.timedelta(seconds=locks.STALE_AFTER_SECONDS + 5)
+    slow = locks.acquire(fake_db, amir, "plan_create", now=old)
+    fresh = locks.acquire(fake_db, amir, "plan_create")
+    assert slow and fresh
+    locks.release(fake_db, amir, "plan_create", slow)
+    assert not locks.acquire(fake_db, amir, "plan_create")
+    locks.release(fake_db, amir, "plan_create", fresh)
+    assert locks.acquire(fake_db, amir, "plan_create")

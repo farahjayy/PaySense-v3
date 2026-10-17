@@ -137,3 +137,24 @@ def check_write_quota(
 
 
 WRITE_QUOTA = Depends(check_write_quota)
+
+
+def check_assistant_quota(
+    user: CurrentUser,
+    settings: SettingsDep,
+    quota: Annotated[DailyQuota, Depends(get_write_quota)],
+) -> None:
+    """Each assistant chat or guided call writes audit rows (and may store a proposal), so the
+    assistant has its own daily cap, counted apart from the user's data writes."""
+    day = malaysia_today().isoformat()
+    if not quota.use(f"assistant:{user.id}", day, settings.assistant_daily_requests):
+        raise api_error(
+            429,
+            "assistant_daily_quota",
+            "You have asked the assistant as much as one day allows. Try again tomorrow; the "
+            "screens still work.",
+            headers={"Retry-After": str(seconds_to_malaysian_midnight())},
+        )
+
+
+ASSISTANT_QUOTA = Depends(check_assistant_quota)

@@ -47,6 +47,7 @@ Last updated: 2026-10-08
 | `ASSISTANT_HISTORY_TURNS` | `8` | Earlier plain-text turns sent with a message |
 | `ASSISTANT_USER_DAILY_TOKENS` | `200000` | Per-user daily token budget (Malaysian day) |
 | `ASSISTANT_GLOBAL_DAILY_TOKENS` | `3000000` | Global daily cap across all users; switch a public URL on only with this set |
+| `ASSISTANT_DAILY_REQUESTS` | `300` | Assistant chat and guided calls per user per Malaysian day (each writes audit rows); counted apart from `DAILY_WRITE_QUOTA` |
 | `ASSISTANT_ACTION_TTL_MINUTES` | `10` | How long a proposal can be confirmed |
 
 ---

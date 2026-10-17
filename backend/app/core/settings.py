@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     # ASSUMED 29: a turn costs about 6-12k tokens (measured on Gemini), so ~20 turns per user a day
     assistant_user_daily_tokens: int = Field(default=200_000, ge=0)
     assistant_global_daily_tokens: int = Field(default=3_000_000, ge=0)
+    # every assistant chat or guided call writes audit rows: a daily cap bounds them (WP8 review)
+    assistant_daily_requests: int = Field(default=300, ge=0)
     assistant_action_ttl_minutes: int = Field(default=10, ge=1, le=60)  # ASSUMED 17 (D-48)
 
     @field_validator("cors_origins")

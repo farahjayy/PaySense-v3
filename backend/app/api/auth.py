@@ -61,18 +61,20 @@ def login(
     username_limiter: UsernameLimiterDep,
 ) -> LoginResponse:
     key = client_key(request)
-    name_key = f"user:{body.username.strip().lower()}"
-    if limiter.is_blocked(key):
+    # per (username, address): a stranger elsewhere cannot lock the owner out (ASSUMED 31)
+    name_key = f"user:{body.username.strip().lower()}@{key}"
+    if not limiter.attempt(key):
         raise _too_many(limiter)
-    if username_limiter.is_blocked(name_key):
+    if not username_limiter.attempt(name_key):
+        limiter.forgive(key)
         raise _too_many(username_limiter)
     row = users.get_by_username(db, body.username)
     # verify even when there is no such user: the time taken must not say whether it exists
     matched = verify_passphrase(row.get("passphrase_hash") if row else None, body.passphrase)
     if row is None or not matched:
-        limiter.record_failure(key)
-        username_limiter.record_failure(name_key)
-        raise unauthorized(*_INVALID)
+        raise unauthorized(*_INVALID)  # the attempt is already counted
+    limiter.forgive(key)
+    username_limiter.forgive(name_key)
     token, _ = create_access_token(row["id"], settings, version=int(row.get("token_version") or 0))
     return LoginResponse(
         access_token=token,

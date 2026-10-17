@@ -106,8 +106,8 @@ def create_app(
     app.state.settings = settings
     app.state.db = db  # built lazily on first use when None (see api/deps.py)
     app.state.login_limiter = login_limiter or LoginRateLimiter()
-    # failures against one username from any address (D-49): wider than per-IP, so a stranger
-    # needs many tries to lock someone out, and a spread-out guessing attack still stops
+    # failures against one username from one address (D-49, ASSUMED 31): a stranger elsewhere
+    # cannot lock the owner out; spread-out guessing meets the passphrase's own strength
     app.state.username_limiter = username_limiter or LoginRateLimiter(
         max_failures=20, window_seconds=900
     )

@@ -13,7 +13,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.bills import BillsOut
 from app.api.budgets import BudgetIn, BudgetListOut, BudgetOut, BudgetStatusOut, BudgetSuggestionOut
-from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, SettingsDep, TodayDep, rate_limited
+from app.api.deps import (
+    ASSISTANT_QUOTA,
+    WRITE_QUOTA,
+    CurrentUser,
+    DbDep,
+    SettingsDep,
+    TodayDep,
+    rate_limited,
+)
 from app.api.forecast import ForecastOut
 from app.api.imports import ConfirmIn, ConfirmOut
 from app.api.insights import BillAnalysisOut, SpendingInsightsOut
@@ -395,7 +403,10 @@ def opening(ctx: ContextDep) -> ChatOut:
 
 
 @router.post(
-    "/chat", response_model=ChatOut, responses=ASSISTANT_RESPONSES, dependencies=[CHAT_LIMIT]
+    "/chat",
+    response_model=ChatOut,
+    responses=ASSISTANT_RESPONSES,
+    dependencies=[CHAT_LIMIT, ASSISTANT_QUOTA],
 )
 def chat(body: ChatIn, ctx: ContextDep, llm: LlmDep) -> ChatOut:
     """One message: the model may call read and compute tools and propose changes; it never
@@ -406,7 +417,10 @@ def chat(body: ChatIn, ctx: ContextDep, llm: LlmDep) -> ChatOut:
 
 
 @router.post(
-    "/run", response_model=ChatOut, responses=ASSISTANT_RESPONSES, dependencies=[ASSISTANT_LIMIT]
+    "/run",
+    response_model=ChatOut,
+    responses=ASSISTANT_RESPONSES,
+    dependencies=[ASSISTANT_LIMIT, ASSISTANT_QUOTA],
 )
 def run_tool(body: RunToolIn, ctx: ContextDep) -> ChatOut:
     """Guided mode: one Tier 0 or Tier 1 tool from a button or a small form. No model is called;

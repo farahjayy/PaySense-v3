@@ -162,7 +162,7 @@ def _post(client: httpx.Client, url: str, *, headers: dict[str, str], body: dict
     if response.status_code >= 400:
         raise LLMError(
             f"the model's provider answered HTTP {response.status_code}: "
-            + _redact(response.text[:300], headers)
+            + _redact(response.text, headers)[:300]
         )
     try:
         return response.json()

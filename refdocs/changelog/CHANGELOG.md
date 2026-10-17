@@ -28,6 +28,20 @@ Rules that make this file worth keeping:
 
 ## [Unreleased]
 
+### 2026-10-18 — WP8: fixes from the independent security review
+- **Changed:** an independent read-only review of the competition diff (backend `app/`, `frontend/lib`, `frontend/components`) found no critical or high issues and 4 medium + 4 low; fixed with tests in `tests/assistant/test_review_fixes.py` (18), `tests/test_auth.py` (+2), `tests/api/test_abuse_limits.py` (+1):
+  1. *Number check fed by the model's own arguments* — a figure the model wrote into a tool call (e.g. `total_price_sen: 6400`, or "score 87" in a proposed description) no longer counts as a source unless the person wrote it; `.75` is read; `5k` / `3 million` are checked at full value (`numbers.argument_figures`, `written_figures`).
+  2. *Paste grounded per paste, not per line* — each row must match one line holding its amount and date; numbers inside a date are never money; each line grounds one row; the description must come from that line; `12.10` without a year is money (`paste.read_line`).
+  3. *Assistant calls outside any daily cap* — `ASSISTANT_QUOTA` (300 chat/guided calls per user per day, `ASSISTANT_DAILY_REQUESTS`) on `/assistant/chat` and `/assistant/run`.
+  4. *Token budget checked only before a turn* — one turn at a time per user (`user_locks` `assistant_chat`, 409 `assistant_busy`; migration 0003's lock-name check widened — not yet applied) and the remaining allowance checked before every model call.
+  5. *Key could survive redaction across the 300-character cut* — redact first, then cut.
+  6. *Username lockout and a check-then-record race at login* — the username limit is per (username, address); `LoginRateLimiter.attempt` counts before the passphrase check, `forgive` takes a success back.
+  7. *A stale lock's holder could free the new holder's lock* — `locks.acquire` returns the holder's stamp; `release` with it deletes only that row.
+  8. *Ledger cap overshoot under parallel imports* — not fixed (a storage guard, bounded by the import rate limit); listed as a known risk with two others (sign flips pass the number check; the chat import does not check the row type).
+- **Changed (docs):** `SECURITY.md` controls, abuse cases and known risks 2, 13–15; DECISIONS ASSUMED 31–33 (22 superseded); `env_setup.md` `ASSISTANT_DAILY_REQUESTS`.
+- **Verified:** `cd backend && uv run pytest tests -q --ignore=tests/ml` → **2008 passed**, 25 deselected; `uv run ruff check . && uv run ruff format --check .` clean; `cd frontend && npm run gen:api` → no schema change.
+- **Known issues / next steps:** live re-run of the assistant evaluation after WP16, to show the stricter number check does not raise false fallbacks.
+
 ### 2026-10-18 — WP8: security self-assessment and scans
 - **Changed:** `SECURITY.md` (architecture; the three tiers; a controls table where each row names its code and its test — token with TTL and revocation, passphrase, user scoping, RLS with no anon policies, nonce CSP, body limits, per-user rate limits and the daily write quota, the risk-check admission cap, import hardening, artefact hash refusal, money in sen, fail-fast secrets, assistant tiers, confirm, number check, untrusted data blocks, audit log, consent; threat model with assets, actors and abuse cases including prompt injection and confirm replay; 12 known risks; responsible use); `backend/scripts/run_security_scans.py` → `evidence/scans/` (raw JSON + generated `SUMMARY.md`).
 - **Verified:** `cd backend && GITLEAKS=<binary> uv run python scripts/run_security_scans.py` → pip-audit runtime **52 packages, 0 known vulnerabilities**; runtime + dev + ml **119 packages, 0**; npm audit production **0**; npm audit all **5 high, all in the eslint toolchain** (`@next/eslint-plugin-next`, `braces`, `eslint-config-next`, `fast-glob`, `micromatch`; dev-only, listed as a known risk); gitleaks over the whole history **0 findings**. `ruff check` / `ruff format --check` clean.
