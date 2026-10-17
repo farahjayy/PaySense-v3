@@ -58,3 +58,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-18-wp16-engine-update.md](2026-10-18-wp16-engine-update.md) | [../plans/2026-10-18-wp16-engine-update.md](../plans/2026-10-18-wp16-engine-update.md) | Done; migration 0005 not applied; real ml-auditor run pending |
 | [2026-10-18-wp17-engine-follow-ups.md](2026-10-18-wp17-engine-follow-ups.md) | [../plans/2026-10-18-wp17-engine-follow-ups.md](../plans/2026-10-18-wp17-engine-follow-ups.md) | ✅ Done |
 | [2026-10-18-wp7-ui-flow-polish.md](2026-10-18-wp7-ui-flow-polish.md) | [../plans/2026-10-18-wp7-ui-flow-polish.md](../plans/2026-10-18-wp7-ui-flow-polish.md) | ✅ Done |
+| [2026-10-18-wp9-execution-evidence.md](2026-10-18-wp9-execution-evidence.md) | [../plans/2026-10-18-wp9-execution-evidence.md](../plans/2026-10-18-wp9-execution-evidence.md) | ✅ Done |

@@ -51,6 +51,7 @@
 | WP17-C1 Honest limits | Paragraph of honest limits for the judges | ✅ Paragraph in `refdocs/fintechathon-2026/honest-limits.md`, every figure traced to a generated report |
 | C6 Engine follow-ups (WP17) | Honest limits (C1), model page (C7), checkout question (C4) | ✅ Done — model page states inputs never used, assistant limits and honest limits; C4 waits on a real checkout (questions.md 30) |
 | C5 UI and flow polish (WP7) | First screen, Try this, budget strip, login wording, local terms, phone widths | ✅ Done — Vitest 400, Playwright 26 (+ no sideways scroll at 360 and 375 px on every screen), build green; two visual glitches found in screenshots and fixed |
+| C7 Execution evidence (WP9) | Demo run through the API, test-evidence collector, video script | ✅ Done — live demo run: 20 requests, 0 failed, plan / budget / paste confirmed, injection ignored (`evidence/demo-run/`); `evidence/tests/` is written at the final full run |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:

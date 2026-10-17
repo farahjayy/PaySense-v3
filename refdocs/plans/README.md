@@ -57,3 +57,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp16-engine-update.md](2026-10-18-wp16-engine-update.md) | WP16 Engine update: savings buffer in both engines (D-50), band widening by history length (D-54), bias-term sensitivity (D-56) | Done; migration 0005 not applied; real ml-auditor run pending |
 | [2026-10-18-wp17-engine-follow-ups.md](2026-10-18-wp17-engine-follow-ups.md) | WP17 honest limits, model page (fairness, assistant, limits), checkout question | ✅ Done |
 | [2026-10-18-wp7-ui-flow-polish.md](2026-10-18-wp7-ui-flow-polish.md) | WP7 first screen, Try this, budget strip, login wording, local terms, phone widths | ✅ Done |
+| [2026-10-18-wp9-execution-evidence.md](2026-10-18-wp9-execution-evidence.md) | WP9 demo run through the API, test evidence collector, video script | ✅ Done |
