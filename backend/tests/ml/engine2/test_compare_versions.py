@@ -2,10 +2,13 @@
 
 import json
 
+import pytest
+
 from ml.engine2_train.compare_versions import (
     bias_sensitivity,
     buffer_effect,
     label_facts,
+    model_facts,
     read_labels,
     render,
 )
@@ -72,3 +75,11 @@ def test_the_page_says_it_is_generated_and_discloses_the_second_lockbox_scoring(
     )
     assert "do not edit by hand" in page
     assert "scored once for v1" in page
+
+
+def test_the_lockbox_skill_score_is_comparable_across_label_versions(tmp_path):
+    """ml-audit M3: raw Brier scores on different labels do not compare; 1 - B / B_const does."""
+    meta = {"metrics": {"lockbox_calibrated": {"brier": 0.02}, "lockbox_constant_brier": 0.2}}
+    path = tmp_path / "metadata.json"
+    path.write_text(json.dumps(meta), encoding="utf-8")
+    assert model_facts(path)["lockbox_brier_skill"] == pytest.approx(0.9)

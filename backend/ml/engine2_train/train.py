@@ -128,7 +128,8 @@ def _group_bases(dev: Dataset) -> dict[str, float]:
 
 def _serving_facts(manifest: dict[str, Any]) -> dict[str, Any]:
     """What a serving artefact's metadata needs from the labels and the code (P6)."""
-    keys = ("label_version", "horizon_max_weeks", "served_model_files", "paths", "seed")
+    keys = ("label_version", "horizon_max_weeks", "served_model_files", "paths", "seed",
+            "band_rule_sha256", "recentre_errors")  # fmt: skip
     return {
         "labels_manifest": {key: manifest.get(key) for key in keys},
         "serving_constants": live_constants(),
@@ -177,10 +178,23 @@ def _log_scoring(out_dir: Path, record: dict[str, Any], scores: dict[str, Any]) 
     )
 
 
+def check_labels_match_serving(manifest: dict[str, Any]) -> None:
+    """A served model learns only from labels made the way serving works (D-56, ml-audit M1):
+    never the re-centred analysis labels, never labels made with another band table."""
+    if manifest.get("recentre_errors"):
+        raise ValueError("these labels re-centre the error record (D-56 analysis only); train on "
+                         "the served labels")  # fmt: skip
+    made_with = manifest.get("band_rule_sha256")
+    if made_with is not None and made_with != live_constants()["BAND_RULE_SHA256"]:
+        raise ValueError("these labels were made with another band table than the code's; "
+                         "make the labels again")  # fmt: skip
+
+
 def run(config: TrainConfig, labels_path: Path, out_dir: Path) -> dict[str, Any]:
+    manifest = _manifest(labels_path)
+    check_labels_match_serving(manifest)
     data = load_labels(labels_path)
     dev, lockbox = split_lockbox(data)
-    manifest = _manifest(labels_path)
     paths = manifest.get("paths")
     results = {
         name: cross_validate(name, dev, config.repeats, config.folds, config.trials, config.seed)

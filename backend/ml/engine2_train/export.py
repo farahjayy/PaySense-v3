@@ -70,8 +70,8 @@ def float32_split_flips(
         stored = float(np.float32(value)) <= float(np.float32(threshold))
         if exact != stored:
             flips.append((names[feature], value, threshold))
-        walk(node["left_child"])
-        walk(node["right_child"])
+        # only the row's own path matters: a flip on a branch it never reaches changes nothing
+        walk(node["left_child"] if exact else node["right_child"])
 
     for tree in dump.get("tree_info", []):
         walk(tree["tree_structure"])

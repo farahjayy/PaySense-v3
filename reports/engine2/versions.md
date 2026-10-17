@@ -23,6 +23,7 @@
 | lockbox_brier_calibrated | 0.0198 | 0.0142 |
 | lockbox_brier_logistic | 0.0263 | 0.0200 |
 | lockbox_brier_constant | 0.1788 | 0.1674 |
+| lockbox_brier_skill | 0.8891 | 0.9153 |
 | lockbox_band_agreement | 0.9150 | 0.9180 |
 | lockbox_auc_at_030 | 0.9887 | 0.9906 |
 | serving_band_agreement | 0.9500 | 0.9200 |

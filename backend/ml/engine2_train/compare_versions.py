@@ -69,13 +69,19 @@ def model_facts(meta_path: Path) -> dict[str, Any]:
         return {}
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     m = meta.get("metrics", {})
+    calibrated = (m.get("lockbox_calibrated") or {}).get("brier")
+    constant = m.get("lockbox_constant_brier")
     return {
         "family": meta.get("family"),
         "features": len(meta.get("feature_names", [])),
         "cv_brier": m.get("cv_brier"),
         "lockbox_brier_calibrated": (m.get("lockbox_calibrated") or {}).get("brier"),
         "lockbox_brier_logistic": m.get("lockbox_logistic_brier"),
-        "lockbox_brier_constant": m.get("lockbox_constant_brier"),
+        "lockbox_brier_constant": constant,
+        # the labels differ between versions, so raw Brier scores do not compare; this does
+        "lockbox_brier_skill": (
+            1 - calibrated / constant if calibrated is not None and constant else None
+        ),
         "lockbox_band_agreement": m.get("lockbox_band_agreement"),
         "lockbox_auc_at_030": (m.get("lockbox_calibrated") or {}).get("auc_at_030"),
     }

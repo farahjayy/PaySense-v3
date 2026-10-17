@@ -1,0 +1,1 @@
+{"git_commit": "d0a342498b498812eafbdc7df6fc390d1c577f42+dirty", "labels_sha256": "e1bd36b1fc20d435745279ed846b307d6eeea3767984d3b2106fc9217601442c", "lockbox_brier_calibrated": 0.014180202448308175, "lockbox_brier_raw": 0.014346427962207683, "run_id": "full-e1bd36b1fc20-d0a342498b49", "scoring": 1, "winner": "lightgbm"}

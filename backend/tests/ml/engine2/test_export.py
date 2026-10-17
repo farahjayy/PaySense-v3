@@ -115,3 +115,30 @@ def test_parity_accepts_only_differences_a_float32_flip_explains():
     assert not accept_parity(diff, explained=np.array([False, False, False]))
     assert not accept_parity(np.array([np.nan]), explained=np.array([True]))
     assert not accept_parity(np.array([0.2]), explained=np.array([True]))  # too large to be one
+
+
+def test_a_flip_on_a_branch_the_row_never_takes_does_not_count():
+    """WP8 ml-audit L1: only the splits on the row's own path can change its prediction."""
+    off_path = {
+        "tree_info": [
+            {
+                "tree_structure": {
+                    "split_feature": 0,
+                    "threshold": 0.5,
+                    "left_child": {"leaf_value": 0.1},
+                    "right_child": {
+                        "split_feature": 1,
+                        "threshold": 0.9999924143851443,
+                        "left_child": {"leaf_value": 0.2},
+                        "right_child": {"leaf_value": 0.3},
+                    },
+                }
+            }
+        ]
+    }
+    row = np.array([0.1, 0.9999924187287724])  # goes left at the root; the flip is on the right
+    assert float32_split_flips(off_path, row, ("a", "b")) == []
+    row_on_path = np.array([0.9, 0.9999924187287724])
+    assert float32_split_flips(off_path, row_on_path, ("a", "b")) == [
+        ("b", 0.9999924187287724, 0.9999924143851443)
+    ]

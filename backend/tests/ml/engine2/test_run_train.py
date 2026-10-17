@@ -297,3 +297,22 @@ def test_the_report_reads_the_manifest_that_sits_beside_its_labels(tiny, tmp_pat
 
     with pytest.raises(ValueError, match="does not describe the labels"):
         report.build_report(root / "run", tmp_path / "out", labels)
+
+
+@pytest.mark.parametrize(
+    "manifest",
+    [{"recentre_errors": True}, {"band_rule_sha256": "0" * 64, "recentre_errors": False}],
+)
+def test_training_refuses_analysis_labels_or_labels_made_with_another_band_table(
+    tmp_path, manifest
+):
+    """WP8 ml-audit M1: a served model may only learn from labels made the way serving works."""
+    write_labels(tmp_path / "labels.jsonl")
+    (tmp_path / "MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="labels"):
+        run(TINY, tmp_path / "labels.jsonl", tmp_path / "run")
+
+
+def test_the_artefact_records_the_labels_band_table_and_bias_choice(tiny):
+    _, record = tiny
+    assert {"band_rule_sha256", "recentre_errors"} <= set(record["labels_manifest"])
