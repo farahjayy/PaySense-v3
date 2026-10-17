@@ -33,7 +33,21 @@ Last updated: 2026-10-08
 | `SUPABASE_ANON_KEY` | unset → `scripts/check_rls.py` refuses to run | The **anon/publishable** key (same API page as the URL). Used only by `scripts/check_rls.py` to prove it reads nothing; the app never needs it. Not read by `settings.py`. |
 | `MODEL_DIR` | `backend/models` | Where served artefacts are loaded from |
 | `MC_PATHS` | `1000` | Monte Carlo paths per simulation (lower only for local debugging) |
-| `ANTHROPIC_API_KEY` | unset → template explanations only | Enables P10 LLM-phrased explanations. Get it at https://console.anthropic.com/settings/keys. Derived features only are ever sent (PDPA). |
+| `DAILY_WRITE_QUOTA` | `300` | Writes one user may make per Malaysian day across every write route (D-49, WP18) |
+| `SMOKE_PASSPHRASE` | unset | Read only by `scripts/smoke_live.py`: the passphrase of the seeded tester it logs in as |
+| `ASSISTANT_ENABLED` | `true` | `false` puts the assistant in guided mode (tools from buttons, no model) |
+| `LLM_PROVIDER` | `gemini` | `gemini`, `anthropic` or `none` (D-53). No key for the chosen provider = guided mode |
+| `GEMINI_API_KEY` | unset → guided mode | Google AI Studio → Get API key. Server-side only (`SecretStr`), never logged or returned. Free-tier prompts may be used by Google to improve its products: synthetic personas only |
+| `ANTHROPIC_API_KEY` | unset → guided mode | https://console.anthropic.com/settings/keys. Server-side only. Used when `LLM_PROVIDER=anthropic` |
+| `ASSISTANT_MODEL` | `gemini-3.8-flash` / `claude-sonnet-5-5` | Model name for the chosen provider; check it in the provider's console |
+| `ASSISTANT_REDACT_DESCRIPTIONS` | `false` | `true` hides transaction descriptions from the model |
+| `ASSISTANT_MAX_TOOL_CALLS` | `6` | Tool calls per turn before the turn stops |
+| `ASSISTANT_MAX_OUTPUT_TOKENS` | `1024` | Output-token cap per model call |
+| `ASSISTANT_TIMEOUT_SECONDS` | `30` | Deadline for one whole turn |
+| `ASSISTANT_HISTORY_TURNS` | `8` | Earlier plain-text turns sent with a message |
+| `ASSISTANT_USER_DAILY_TOKENS` | `200000` | Per-user daily token budget (Malaysian day) |
+| `ASSISTANT_GLOBAL_DAILY_TOKENS` | `3000000` | Global daily cap across all users; switch a public URL on only with this set |
+| `ASSISTANT_ACTION_TTL_MINUTES` | `10` | How long a proposal can be confirmed |
 
 ---
 

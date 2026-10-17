@@ -26,7 +26,6 @@ from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel, E
 from app.api.summary import CategorySummaryOut, MonthSummaryOut
 from app.api.transactions import TransactionIn, TransactionOut
 from app.api.types import text
-from app.core.errors import api_error
 
 router = APIRouter(prefix="/assistant", tags=["assistant"], responses=PROTECTED_RESPONSES)
 
@@ -58,8 +57,12 @@ class ChatTurnIn(BaseModel):
 class ChatIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    message: text(MAX_MESSAGE_CHARS)
+    message: text(2000)
     history: Annotated[list[ChatTurnIn], Field(max_length=MAX_HISTORY_TURNS)] = []
+    pasted_text: text(MAX_MESSAGE_CHARS, required=False) | None = Field(
+        default=None,
+        description="A pasted statement (import by chat); sent to the model as labelled data",
+    )
 
 
 class RunToolIn(BaseModel):
@@ -324,27 +327,7 @@ class ActionResultOut(ApiModel):
     message: str
 
 
-def _not_built():
-    return api_error(501, "not_implemented", "This is not available yet.")
-
-
 # ------------------------------------------------------------------ routes
-@router.get("/status", response_model=AssistantStatusOut)
-def status(user: CurrentUser, db: DbDep) -> AssistantStatusOut:
-    raise _not_built()
-
-
-@router.get("/opening", response_model=ChatOut, responses=ASSISTANT_RESPONSES)
-def opening(user: CurrentUser, db: DbDep) -> ChatOut:
-    """The first turn: what needs attention now (the alerts), with no model call."""
-    raise _not_built()
-
-
-@router.post("/chat", response_model=ChatOut, responses=ASSISTANT_RESPONSES)
-def chat(body: ChatIn, user: CurrentUser, db: DbDep) -> ChatOut:
-    raise _not_built()
-
-
 def tool_context(
     request: Request, user: CurrentUser, db: DbDep, today: TodayDep, settings: SettingsDep
 ) -> Any:
@@ -362,6 +345,62 @@ def tool_context(
 
 ContextDep = Annotated[Any, Depends(tool_context)]
 ASSISTANT_LIMIT = rate_limited("assistant", 30, 60)
+CHAT_LIMIT = rate_limited("assistant-chat", 10, 60)
+
+
+def get_llm(request: Request) -> Any:
+    """The configured model (built once), or None for guided mode. Tests inject a fake."""
+    from app.assistant.llm import build_llm
+
+    state = request.app.state
+    if not hasattr(state, "llm"):
+        state.llm = build_llm(state.settings)
+    return state.llm
+
+
+LlmDep = Annotated[Any, Depends(get_llm)]
+
+
+@router.get("/status", response_model=AssistantStatusOut)
+def status(ctx: ContextDep, llm: LlmDep) -> AssistantStatusOut:
+    """`llm` when a model is configured, else `guided` with the reason."""
+    from app.assistant.agent import _day_start_utc
+    from app.assistant.llm import guided_reason
+    from app.db import assistant_events
+
+    used = assistant_events.tokens_since(ctx.db, ctx.user_id, _day_start_utc(ctx.today))
+    return AssistantStatusOut(
+        mode="llm" if llm is not None else "guided",
+        provider=getattr(llm, "provider", None),
+        model=getattr(llm, "model", None),
+        reason=None if llm is not None else guided_reason(ctx.settings),
+        tokens_used_today=used,
+        daily_token_budget=ctx.settings.assistant_user_daily_tokens,
+    )
+
+
+@router.get(
+    "/opening",
+    response_model=ChatOut,
+    responses=ASSISTANT_RESPONSES,
+    dependencies=[ASSISTANT_LIMIT],
+)
+def opening(ctx: ContextDep) -> ChatOut:
+    """The first turn: what needs attention now (the alerts), with no model call."""
+    from app.assistant.agent import opening as open_with_alerts
+
+    return open_with_alerts(ctx)
+
+
+@router.post(
+    "/chat", response_model=ChatOut, responses=ASSISTANT_RESPONSES, dependencies=[CHAT_LIMIT]
+)
+def chat(body: ChatIn, ctx: ContextDep, llm: LlmDep) -> ChatOut:
+    """One message: the model may call read and compute tools and propose changes; it never
+    writes. Every figure it says is checked against the tool results (D-47)."""
+    from app.assistant.agent import run_chat
+
+    return run_chat(ctx, llm, body)  # no model (switched off, no key): guided mode
 
 
 @router.post(

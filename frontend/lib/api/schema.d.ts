@@ -678,7 +678,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Status */
+        /**
+         * Status
+         * @description `llm` when a model is configured, else `guided` with the reason.
+         */
         get: operations["status"];
         put?: never;
         post?: never;
@@ -717,7 +720,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Chat */
+        /**
+         * Chat
+         * @description One message: the model may call read and compute tools and propose changes; it never
+         *     writes. Every figure it says is checked against the tool results (D-47).
+         */
         post: operations["chat"];
         delete?: never;
         options?: never;
@@ -1300,6 +1307,11 @@ export interface components {
              * @default []
              */
             history: components["schemas"]["ChatTurnIn"][];
+            /**
+             * Pasted Text
+             * @description A pasted statement (import by chat); sent to the model as labelled data
+             */
+            pasted_text?: string | null;
         };
         /** ChatOut */
         ChatOut: {

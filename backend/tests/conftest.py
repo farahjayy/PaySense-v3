@@ -5,6 +5,15 @@ from app.core.settings import Settings
 from app.main import create_app
 
 TEST_SECRET = "test-secret-" + "x" * 40
+# Settings read the environment as well as their arguments. Tests must never reach a real model
+# provider, whatever keys the machine running them holds (ADR D-53: tests use the fake LLM).
+LLM_ENVIRONMENT = ("GEMINI_API_KEY", "ANTHROPIC_API_KEY", "LLM_PROVIDER", "ASSISTANT_MODEL")
+
+
+@pytest.fixture(autouse=True)
+def _no_real_llm_keys(monkeypatch):
+    for name in LLM_ENVIRONMENT:
+        monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture

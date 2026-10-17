@@ -38,8 +38,9 @@ class Settings(BaseSettings):
     assistant_max_output_tokens: int = Field(default=1024, ge=64, le=8192)
     assistant_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
     assistant_history_turns: int = Field(default=8, ge=0, le=12)
-    assistant_user_daily_tokens: int = Field(default=60_000, ge=0)
-    assistant_global_daily_tokens: int = Field(default=1_500_000, ge=0)
+    # ASSUMED 29: a turn costs about 6-12k tokens (measured on Gemini), so ~20 turns per user a day
+    assistant_user_daily_tokens: int = Field(default=200_000, ge=0)
+    assistant_global_daily_tokens: int = Field(default=3_000_000, ge=0)
     assistant_action_ttl_minutes: int = Field(default=10, ge=1, le=60)  # ASSUMED 17 (D-48)
 
     @field_validator("cors_origins")
