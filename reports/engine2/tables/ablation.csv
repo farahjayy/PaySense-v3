@@ -1,3 +1,3 @@
 subset,brier_with_engine1,brier_without_engine1,delta_brier,delta_ci_low,delta_ci_high,t,p
-all development profiles,0.016,0.1155,0.0996,0.0957,0.1035,52.8455,0.0
-low_baseline (P(shortfall) without the purchase < 0.10),0.0113,0.1016,0.0903,0.085,0.0956,35.3704,0.0
+all development profiles,0.0128,0.0963,0.0835,0.081,0.086,68.2652,0.0
+low_baseline (P(shortfall) without the purchase < 0.10),0.0093,0.0723,0.063,0.0591,0.0668,33.766,0.0

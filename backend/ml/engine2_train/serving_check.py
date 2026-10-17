@@ -243,7 +243,7 @@ The ledgers here come from the generator through the same detection the labels u
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Serving check for the Engine 2 artefact.")
     parser.add_argument("--profiles", type=int, default=DEFAULT_PROFILES)
-    parser.add_argument("--model", type=Path, default=MODEL_ROOT / "v1")
+    parser.add_argument("--model", type=Path, default=MODEL_ROOT / "v2")
     parser.add_argument("--out", type=Path, default=REPORT_DIR)
     args = parser.parse_args(argv)
     predictor = load_engine2(args.model)

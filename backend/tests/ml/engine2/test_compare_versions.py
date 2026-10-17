@@ -57,9 +57,7 @@ def test_bias_sensitivity_pairs_students_and_counts_band_moves(tmp_path):
 
 def test_buffer_effect_splits_students_by_whether_v2_gave_a_buffer(tmp_path):
     v1 = read_labels(write(tmp_path / "1.jsonl", [row(0, 0.6, 0.5), row(1, 0.6, 0.5)]))
-    v2 = read_labels(
-        write(tmp_path / "2.jsonl", [row(0, 0.1, 0.05, buffer=2.0), row(1, 0.7, 0.6)])
-    )
+    v2 = read_labels(write(tmp_path / "2.jsonl", [row(0, 0.1, 0.05, buffer=2.0), row(1, 0.7, 0.6)]))
     out = buffer_effect(v1, v2)
     assert out["with a buffer"]["mean_label_v2"] == 0.1
     assert out["no buffer"]["mean_label_v2"] == 0.7

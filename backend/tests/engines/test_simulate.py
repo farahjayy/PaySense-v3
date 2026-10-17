@@ -391,9 +391,7 @@ def test_a_savings_buffer_starts_the_running_margin_above_zero():
         starting_buffer_sen=50000,
     )  # fmt: skip
     assert buffered.monthly_margin_p50_sen == without.monthly_margin_p50_sen
-    pairs = zip(
-        buffered.cumulative_margin_p50_sen, without.cumulative_margin_p50_sen, strict=True
-    )
+    pairs = zip(buffered.cumulative_margin_p50_sen, without.cumulative_margin_p50_sen, strict=True)
     assert [b - w for b, w in pairs] == [50000] * 4
 
 

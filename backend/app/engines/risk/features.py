@@ -56,6 +56,9 @@ MONOTONE_DIRECTIONS: dict[str, int] = {
     "savings_buffer_to_income": -1,
 }
 FEATURE_NAMES: tuple[str, ...] = tuple(MONOTONE_DIRECTIONS)
+# The savings-buffer feature's name, for analysis code that reads stored feature values (D-09:
+# names live here only).
+BUFFER_FEATURE = "savings_buffer_to_income"
 # The features that come from Engine 1's forecast; the ablation retrains without them to show how
 # much of the model's skill the forecast contributes.
 ENGINE1_FEATURES: tuple[str, ...] = FEATURE_NAMES[:6]
