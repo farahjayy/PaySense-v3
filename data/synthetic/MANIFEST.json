@@ -9,7 +9,7 @@
       "sha256": "1142a4c27d97f40d2a3087c507320abfee615cf03152b1882e11eba2e9cb747f"
     }
   },
-  "params_hash": "0a9eaed564687d77",
+  "params_hash": "fca0bd95ff4bf25a",
   "persona_counts": {
     "budget_conscious": 3958,
     "frequent_bnpl": 3482,
@@ -19,6 +19,6 @@
   "seed": 20251228,
   "versions": {
     "numpy": "2.5.3",
-    "python": "3.12.15"
+    "python": "3.12.3"
   }
 }

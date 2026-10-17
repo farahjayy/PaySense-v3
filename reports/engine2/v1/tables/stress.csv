@@ -1,0 +1,7 @@
+variant,brier,mean_label,mean_prediction,profiles,band_agreement,changed_inputs,locked,mean_abs_label_shift_vs_identity
+stored labels (lockbox),0.0198,0.4422,0.4445,1000,,,,
+identity,0.0198,0.4422,0.4445,1000,0.915,0.0,0.0,
+income_down_20,0.0191,0.6163,0.6143,1000,0.934,1000.0,0.0,0.1741
+missing_month,0.0289,0.4437,0.4274,1000,0.881,1000.0,0.0,0.0747
+ptptn_delayed,0.016,0.466,0.4604,1000,0.928,427.0,0.0,0.0237
+stale_3_weeks,0.0236,0.4307,0.4589,1000,0.912,1000.0,0.0,0.1399

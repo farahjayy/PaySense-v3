@@ -41,9 +41,9 @@ PRICE_RATIO_EDGES = (0.0, 0.25, 0.5, 1.0, 2.0, np.inf)
 NOT_DONE = """\
 ## Not done
 
-- **Bias-term sensitivity.** The plan asked how the labels change if the served forecaster's level
-  bias is removed from the simulation. That needs a second label run with the error record
-  re-centred, which was not built; no claim about it is made.
+- **Real-data band check for this version.** MoneyData and Berka could not be downloaded where
+  this version was built (network policy), so the band widening (WP16, C2) was fitted and checked
+  on synthetic students only (`reports/engine1/band_calibration.md`).
 - **Stale and incomplete ledgers in the training set.** The plan proposed adding them to training;
   the execution plan kept them apart, and they are kept apart (they are only used in the stress
   test, where training on them would contaminate it).
@@ -311,7 +311,9 @@ def _scoring_sentence(record: dict[str, Any]) -> str:
     return (
         "According to the append-only log beside the run directories, the lockbox has been "
         f"scored {n} {times} (counted from the log's first line; a scoring made before the log "
-        "existed would not be in it)."
+        "existed would not be in it). The same lockbox students were also scored for the earlier "
+        "version (`reports/engine2/v1/README.md`), whose log stayed on the machine that trained "
+        "it; that scoring is not counted here."
     )
 
 
@@ -429,7 +431,13 @@ def _limitations(
   (D-36) and each profile has its own as-of day. These were design corrections made on the
   label distribution, not on any model score, but they are choices made after looking.
 - **Probabilities are more extreme than a calibrated forecast.** Engine 1's bands are narrower than
-  nominal on short histories (`reports/engine1/serving_check.md`), and the labels inherit that.
+  nominal on short histories. This version widens each user's error record by history length
+  (WP16, `reports/engine1/band_calibration.md`), which brings spending to about the nominal 80%
+  from 26 weeks of history but leaves the shortest histories and income below it; the labels
+  inherit what remains.
+- **The savings buffer is assumed.** Each generated student's buffer (none, or a log-normal number
+  of months of income) has no cited Malaysian source (`savings.*` in `params.yaml`, ASSUMED 19).
+  The bias-term sensitivity and what changed from the earlier version are in `versions.md`.
 - **Monte Carlo noise.** Each label is estimated from {paths} paths, so even a perfect model has
   a Brier floor of about {floor} (mean of label x (1 - label) divided by the paths).
 - **Soft labels, grouped splits.** Each profile is one row; the folds are stratified on

@@ -6,7 +6,8 @@
 2. How well calibrated the served forecast is: for each origin, the user's own error record is
    built from history only (exactly as in production), simulated 13-week totals are drawn, and the
    realised total is compared with them. Reported per dataset and kind: bias of the median and
-   the share of outcomes inside the 80% band, with and without the production widening factor.
+   the share of outcomes inside the 80% band, with and without engine v2's single widening factor
+   (v3 widens by history length: `ml.engine1_eval.band_calibration`).
 Writes `reports/engine1/serving_check.md`. Latency and memory are printed, not written (they vary
 from run to run), and recorded in STATUS.
 """
@@ -196,7 +197,7 @@ def build(config_name: str) -> str:
         "as a share of the recent level: above 0 means the forecast was too high. *Inside P10-P90* "
         "should be 0.80 if the band were calibrated.\n\n"
         f"### Recorded errors as they are (no widening)\n\n{_table(plain)}\n\n"
-        f"### With the production widening factor ({ERROR_INFLATION})\n\n{_table(widened)}\n\n"
+        f"### With the v2 widening factor ({ERROR_INFLATION})\n\n{_table(widened)}\n\n"
         "The bands are narrower than nominal, as the P4 audit predicted; the widening factor is an "
         "assumption that narrows the gap, not a calibration. Probabilities derived from the bands "
         "(P(shortfall)) are therefore more extreme than a calibrated forecast would give, which "

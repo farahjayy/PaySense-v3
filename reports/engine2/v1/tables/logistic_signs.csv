@@ -1,0 +1,17 @@
+feature,coefficient_standardised,monotone_direction,agrees
+disc_weekly_p50,0.0908,1,yes
+disc_weekly_p90,-0.1584,1,NO
+disc_volatility,0.0049,1,yes
+margin_monthly_p50_without,-1.3191,-1,yes
+margin_cum_p10_without,-4.5058,-1,yes
+income_p10_monthly,0.002,-1,NO
+instalment_amount,1.3844,1,yes
+num_instalments,-0.0347,0,
+monthly_fee_rate,0.0659,1,yes
+instalment_to_income,-0.4052,1,NO
+dsr_with_purchase,0.0183,1,yes
+active_plans_with_purchase,-0.009,1,NO
+bnpl_outstanding_to_income,0.2649,1,yes
+upfront_to_income,1.9425,1,yes
+limit_utilisation_with_purchase,0.0416,1,yes
+limit_known,-0.0308,0,
