@@ -3,6 +3,12 @@ import path from "node:path";
 
 import { defineConfig, devices } from "@playwright/test";
 
+// A machine whose Playwright browsers do not match this version (e.g. a pre-provisioned cloud
+// container) points PW_CHROMIUM_PATH at its own Chromium instead of downloading one.
+const launchOptions = process.env.PW_CHROMIUM_PATH
+  ? { executablePath: process.env.PW_CHROMIUM_PATH }
+  : {};
+
 // Ports are fixed and unusual so a running dev server on 3000/8000 is never reused by mistake.
 const FRONTEND_URL = "http://localhost:3100";
 const API_URL = "http://localhost:8100";
@@ -15,7 +21,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
-  use: { baseURL: FRONTEND_URL, trace: "retain-on-failure" },
+  use: { baseURL: FRONTEND_URL, trace: "retain-on-failure", launchOptions },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "phone", use: { ...devices["Pixel 7"] } },

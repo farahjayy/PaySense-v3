@@ -45,3 +45,4 @@ next-env.d.ts
 
 # separate build directory for the Playwright run (never collides with `next dev`)
 .next-e2e/
+.next-real/

@@ -40,3 +40,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-09-p9-uat-kit.md](2026-10-09-p9-uat-kit.md) | [../plans/2026-10-09-p9-uat-kit.md](../plans/2026-10-09-p9-uat-kit.md) | In progress |
 | [2026-10-15-p7b-ledger-polish.md](2026-10-15-p7b-ledger-polish.md) | [../plans/2026-10-15-p7b-ledger-polish.md](../plans/2026-10-15-p7b-ledger-polish.md) | Done (migration 0002 applied; Categories page verified on the real database) |
 | [2026-10-13-import-spreadsheets.md](2026-10-13-import-spreadsheets.md) | [../plans/2026-10-13-import-spreadsheets.md](../plans/2026-10-13-import-spreadsheets.md) | Done (not yet tried with a real .xlsx in a browser) |
+| [2026-10-18-wp1-real-run.md](2026-10-18-wp1-real-run.md) | [../plans/2026-10-18-wp1-real-run.md](../plans/2026-10-18-wp1-real-run.md) | Done (anon RLS check needs the anon key) |
