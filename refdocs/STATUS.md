@@ -35,6 +35,7 @@
 | C1b Contract (WP-API) | Stub routes and typed shapes for budgets, insights, recommendations, alerts, assistant | ✅ Done — in `/openapi.json`, 401 without a session, types generated; routes answer 501 until built |
 | C6a Login hardening (WP18) | Passphrase, token revocation, write quota, ledger cap, pagination, plan-create lock (D-49) | 🔶 Built and green on the in-memory database (backend 2184, Vitest 298, Playwright 16); **migration 0003 not applied** to the real project, so real login waits on it |
 | C2a Budgets (WP2) | Per-category limits, status with pace, suggest a budget | 🔶 Built and green on the in-memory database; migration 0004 not applied |
+| C2b Bill analysis (WP13) | Recurring bills, increases, collisions, next 30 days | ✅ Done (no new table; in-memory and API tests) |
 | C2–C7 (WP2–WP19) | Topic A features, assistant, engine retrain, hardening, frontend, evidence, delivery | ⬜ Not started — see work-packages.md |
 
 Status vocabulary — use these exactly, and never round up:

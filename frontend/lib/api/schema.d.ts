@@ -597,7 +597,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Bill Analysis */
+        /**
+         * Bill Analysis
+         * @description Recurring bills, bills that went up, the next 30 days and where payments collide.
+         */
         get: operations["bill_analysis"];
         put?: never;
         post?: never;
@@ -1477,6 +1480,11 @@ export interface components {
             due_date: string;
             /** Amount Sen */
             amount_sen: number;
+            /**
+             * Overdue
+             * @description An unpaid instalment whose date has passed: due now
+             */
+            overdue: boolean;
             /** Provider Label */
             provider_label: string | null;
             /** Plan Id */

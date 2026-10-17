@@ -2,15 +2,19 @@
 ledger, recurring items and plan schedules. No model: plain arithmetic the user can check."""
 
 import datetime as dt
-from typing import Literal
+from dataclasses import asdict
+from typing import Any, Literal
 
 from fastapi import APIRouter
 from pydantic import Field
 
-from app.api.deps import CurrentUser, DbDep
+from app.api.deps import CurrentUser, DbDep, TodayDep
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
 from app.api.summary import MonthParam
 from app.core.errors import api_error
+from app.db import plans as plans_repo
+from app.db import recurring_items, transactions
+from app.domain.bill_analysis import analyse_bills
 
 router = APIRouter(prefix="/insights", tags=["insights"], responses=PROTECTED_RESPONSES)
 
@@ -49,6 +53,7 @@ class DueItemOut(ApiModel):
     name: str
     due_date: dt.date
     amount_sen: int
+    overdue: bool = Field(description="An unpaid instalment whose date has passed: due now")
     provider_label: str | None = None
     plan_id: str | None = None
     seq: int | None = None
@@ -116,9 +121,21 @@ def _not_built():
     return api_error(501, "not_implemented", "This is not available yet.")
 
 
+def bills_for(db: Any, user_id: str, today: dt.date) -> BillAnalysisOut:
+    """Shared by the route and the assistant's `get_bill_analysis` tool."""
+    result = analyse_bills(
+        recurring_items.list_items(db, user_id, active_only=True),
+        plans_repo.list_with_instalments(db, user_id),
+        transactions.list_for_forecast(db, user_id, today),
+        today,
+    )
+    return BillAnalysisOut.model_validate(asdict(result))
+
+
 @router.get("/bills", response_model=BillAnalysisOut)
-def bill_analysis(user: CurrentUser, db: DbDep) -> BillAnalysisOut:
-    raise _not_built()
+def bill_analysis(user: CurrentUser, db: DbDep, today: TodayDep) -> BillAnalysisOut:
+    """Recurring bills, bills that went up, the next 30 days and where payments collide."""
+    return bills_for(db, user.id, today)
 
 
 @router.get("/spending", response_model=SpendingInsightsOut)
