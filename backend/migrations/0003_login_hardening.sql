@@ -19,7 +19,7 @@ alter table users add column token_version int not null default 0 check (token_v
 
 create table user_locks (
     user_id uuid not null references users(id) on delete cascade,
-    name text not null check (name in ('plan_create', 'assistant_chat')),
+    name text not null check (name in ('plan_create', 'assistant_chat', 'ledger_import')),
     acquired_at timestamptz not null default now(),
     primary key (user_id, name)
 );

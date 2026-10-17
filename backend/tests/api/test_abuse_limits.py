@@ -118,6 +118,27 @@ def test_one_users_full_ledger_does_not_block_another(api, amir, siti, monkeypat
     assert api.post("/api/transactions", json=body, headers=siti).status_code == 201
 
 
+def test_a_second_import_while_one_is_being_written_is_refused(api, amir, fake_db):
+    """Known risk 15: count and insert run under the per-user import lock, so parallel imports
+    cannot each pass the cap check before the other writes."""
+    user_id = api.get("/api/auth/me", headers=amir).json()["id"]
+    rows = [{"date": "2026-01-05", "amount_sen": 500, "type": "expense", "category": "Food"}]
+    assert locks.acquire(fake_db, user_id, "ledger_import")
+
+    res = api.post("/api/import/confirm", json={"rows": rows}, headers=amir)
+
+    assert res.status_code == 409
+    assert res.json()["detail"]["code"] == "import_in_progress"
+    assert fake_db.rows("transactions") == []
+
+
+def test_the_import_lock_is_released_after_each_import(api, amir, fake_db):
+    rows = [{"date": "2026-01-05", "amount_sen": 500, "type": "expense", "category": "Food"}]
+    assert api.post("/api/import/confirm", json={"rows": rows}, headers=amir).status_code == 200
+    assert api.post("/api/import/confirm", json={"rows": rows}, headers=amir).status_code == 200
+    assert fake_db.rows("user_locks") == []
+
+
 # ------------------------------------------------------------------ pagination
 def _seed_days(api, auth, days):
     for d in days:

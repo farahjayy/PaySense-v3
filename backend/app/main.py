@@ -43,7 +43,7 @@ from app.api.rate_limit import DailyQuota, LoginRateLimiter, RequestRateLimiter
 from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
-from app.db.transactions import LedgerFullError
+from app.db.transactions import ImportInProgressError, LedgerFullError
 from app.engines.risk.artefact import ArtefactError, load_if_present
 from app.engines.risk.check import Predictor
 
@@ -158,6 +158,14 @@ def create_app(
             413,
             "ledger_full",
             "Your ledger is full. Delete old transactions before adding more.",
+        )
+
+    @app.exception_handler(ImportInProgressError)
+    async def _import_busy_handler(_: Request, __: ImportInProgressError) -> JSONResponse:
+        return _envelope(
+            409,
+            "import_in_progress",
+            "Another import is still being added. Try again in a moment.",
         )
 
     @app.exception_handler(httpx.HTTPError)

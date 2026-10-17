@@ -9,6 +9,7 @@ import datetime as dt
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from app.db import locks
 from app.db.base import ScopedTable, is_uuid
 from app.db.client import Database
 from app.domain.categories import APP_ASSIGNED, locked_name
@@ -23,6 +24,10 @@ MAX_LEDGER_ROWS = 5000
 
 class LedgerFullError(Exception):
     """Writing these rows would take the user past MAX_LEDGER_ROWS."""
+
+
+class ImportInProgressError(Exception):
+    """Another import for this user is being written right now (the per-user import lock)."""
 
 
 TYPES = frozenset({"income", "expense", "savings"})
@@ -139,17 +144,22 @@ def bulk_create(
     """Insert many rows (e.g. an import) in chunks. All rows are validated first; if a later chunk
     fails, the chunks already written are removed so a failed import leaves nothing behind."""
     cleaned = [_clean_row(row, source=source) for row in rows]
-    _check_room(db, user_id, len(cleaned))
-    table = _table(db)
-    written: list[str] = []
-    try:
-        for start in range(0, len(cleaned), CHUNK_SIZE):
-            created = table.insert_many(user_id, cleaned[start : start + CHUNK_SIZE])
-            written.extend(row["id"] for row in created)
-    except Exception:
-        table.delete_many(user_id, written)
-        raise
-    return len(written)
+    # count and insert under one per-user lock: two parallel imports cannot each pass the cap check
+    # before the other has written (single-row writes can overshoot by at most a row each)
+    with locks.held(db, user_id, "ledger_import") as taken:
+        if not taken:
+            raise ImportInProgressError("another import is being added")
+        _check_room(db, user_id, len(cleaned))
+        table = _table(db)
+        written: list[str] = []
+        try:
+            for start in range(0, len(cleaned), CHUNK_SIZE):
+                created = table.insert_many(user_id, cleaned[start : start + CHUNK_SIZE])
+                written.extend(row["id"] for row in created)
+        except Exception:
+            table.delete_many(user_id, written)
+            raise
+        return len(written)
 
 
 def get(db: Database, user_id: str, transaction_id: str) -> dict[str, Any] | None:

@@ -13,7 +13,7 @@ from fastapi import APIRouter, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, rate_limited
-from app.api.schemas import PROTECTED_RESPONSES, ApiModel
+from app.api.schemas import PROTECTED_RESPONSES, ApiModel, ErrorEnvelope
 from app.api.types import AppDate, Sen, text
 from app.core.errors import unprocessable
 from app.db import transactions, user_settings
@@ -110,6 +110,10 @@ def preview_csv(file: UploadFile, user: CurrentUser, db: DbDep) -> ImportPreview
 @router.post(
     "/confirm",
     response_model=ConfirmOut,
+    responses={
+        409: {"model": ErrorEnvelope, "description": "Another import is still being added"},
+        413: {"model": ErrorEnvelope, "description": "The ledger would pass its row cap"},
+    },
     dependencies=[WRITE_QUOTA, rate_limited("import-confirm", 10, 60)],
 )
 def confirm_import(body: ConfirmIn, user: CurrentUser, db: DbDep) -> ConfirmOut:

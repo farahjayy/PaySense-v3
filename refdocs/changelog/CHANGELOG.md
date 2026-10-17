@@ -28,6 +28,10 @@ Rules that make this file worth keeping:
 
 ## [Unreleased]
 
+### 2026-10-18 — The ledger-cap race closed for imports (security review finding 8)
+- **Changed:** `db/transactions.bulk_create` counts and inserts under the per-user `ledger_import` row lock; a second import while one is being written gets **409 `import_in_progress`** (`ImportInProgressError`, mapped in `main.py`; documented on `POST /api/import/confirm` with the 413; `schema.d.ts` regenerated). Migration 0003's lock-name check now also allows `ledger_import` (not yet applied; question 18). SECURITY.md: the control row and known risk 15 (only single-row writes can still overshoot, by a row each).
+- **Verified:** `uv run pytest -q tests/api/test_abuse_limits.py` → +2 (a held lock refuses a second import and writes nothing; the lock is gone after each import); `uv run pytest -q --ignore=tests/ml` → **2072 passed**, 25 deselected; `ruff` clean; `npm run gen:api` + `npx tsc --noEmit` clean.
+
 ### 2026-10-18 — Assistant panel: modal on phones, the button's words in the chat; CI on Node 24
 - **Changed:** `lib/media.ts` (`usePhoneLayout`, `matchMedia` through `useSyncExternalStore`); `AssistantPanel` is `aria-modal="true"` with Tab / Shift+Tab kept inside it on a phone-width screen, non-modal beside the page on a desktop (ASSUMED 42, question 20); a quick action or form now shows the person's own words in the chat ("My budgets", "Set a budget") instead of the tool's name (the WP5 known gap; `RunTool` takes a `label`). CI: the first GitHub run had 4 of 5 jobs green; the frontend job failed because jsdom's undici needs Node ≥ 22.22 / 22.19 and the job used Node 20 (`webidl.util.markAsUncloneable is not a function`, no test file started) — CI now reads `frontend/.nvmrc` (24), and the README's "Node.js 20 or later" is corrected.
 - **Verified:** `npx vitest run` → **403 passed** (+3: phone modal and focus trap, desktop side panel, the button's words); `npx tsc --noEmit`, `npm run lint` clean; `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npx playwright test tests/e2e/assistant.spec.ts tests/e2e/layout.spec.ts` → 6 passed, 2 skipped (phone-only spec on desktop).

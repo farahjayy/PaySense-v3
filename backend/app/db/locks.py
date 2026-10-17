@@ -15,7 +15,7 @@ from app.db.base import require_user_id
 from app.db.client import Database
 
 TABLE = "user_locks"
-NAMES = frozenset({"plan_create", "assistant_chat"})
+NAMES = frozenset({"plan_create", "assistant_chat", "ledger_import"})
 STALE_AFTER_SECONDS = 120
 UNIQUE_VIOLATION = "23505"
 

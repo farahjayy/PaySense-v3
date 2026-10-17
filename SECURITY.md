@@ -31,7 +31,7 @@ How a write is made safe: the payload is validated with the API's own models and
 | Request body limits (2 MiB; 6 MiB for the statement upload) | `core/body_limit.py` | `tests/test_body_limit.py` |
 | Per-user rate limits on expensive routes (forecast, risk check, import, assistant chat 10/min, confirm 10/min, export 5/h, delete 3/h) | `api/deps.rate_limited` | `tests/api/test_request_limits.py`, `tests/assistant/test_security_suite.py` |
 | Daily write quota on **every** write route (300 a day) | `api/deps.WRITE_QUOTA` | `test_every_write_route_counts_against_the_daily_quota` sends every write operation in the OpenAPI document |
-| Ledger cap (5,000 rows) checked in the repository, so no path bypasses it | `db/transactions.py` | `tests/api/test_abuse_limits.py` |
+| Ledger cap (5,000 rows) checked in the repository, so no path bypasses it; an import counts and inserts under the per-user import lock (a parallel import gets 409) | `db/transactions.py` | `tests/api/test_abuse_limits.py` (`test_a_second_import_while_one_is_being_written_is_refused`) |
 | Keyset pagination on transactions; a cursor cannot widen the user filter | `db/base.page_before`, `api/transactions.py` | `test_pagination_stays_inside_the_users_own_rows` |
 | Plan-create race closed by a database row lock (`user_locks`); a release frees only its own holder's lock | `db/locks.py`, `api/plans.py`, `api/risk.py` | `test_a_held_lock_refuses_a_second_plan_create`, `test_a_released_lock_only_removes_its_own_holder` |
 | Admission cap on risk checks (2 at once, server-wide) | `api/risk.admitted` | `tests/api/test_risk_api.py` |
@@ -89,9 +89,9 @@ How a write is made safe: the payload is validated with the API's own models and
 12. **"Delete my data" keeps the (seeded) account**, empty; the account itself is removed by the operator.
 13. **The number check reads figures, not meaning.** A sign flip ("you gain RM50" for −50) or a correct figure attached to the wrong thing passes; the cards beside the narration carry the computed values.
 14. **Import by chat does not check the row type.** The model chooses income or expense; the person sees it in the preview before confirming.
-15. **The ledger cap is a count followed by an insert**, not one transaction: parallel imports can pass 5,000 by about one batch each (imports are limited to 10 a minute per user). It is a storage guard, not a security boundary.
+15. **Single-row writes can pass the ledger cap by a row each** when sent in parallel (a count, then an insert). Imports, the only path that adds many rows at once, now take the per-user import lock, so they cannot overshoot. It is a storage guard, not a security boundary.
 
-An independent read-only security review of the competition code (backend `app/`, `frontend/lib`, `frontend/components`) found no critical or high issues; its four medium and four low findings were fixed with tests (ASSUMED 31–33) or are listed above (13–15).
+An independent read-only security review of the competition code (backend `app/`, `frontend/lib`, `frontend/components`) found no critical or high issues; its four medium and four low findings were fixed with tests (ASSUMED 31–33, and the import lock for finding 8) or are listed above (13–15).
 
 ## 6. Scans
 
