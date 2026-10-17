@@ -15,3 +15,15 @@
 Additional observations
 - **Shapley cost.** 17 features doubles the exact-Shapley batch to 131,072 rows; the serving check reports the new latency.
 - **Reproduction first.** Before any change, the v1 synthetic population and the v1 labels were regenerated on Linux and both SHA-256 digests equal the committed manifests, so v1-vs-v2 differences are the WP16 changes, not the platform.
+
+## Second pass, before the reports were regenerated
+
+| Check | Result | Evidence |
+|---|---|---|
+| Lockbox touched once for v2 | Pass | `train --config full` ran once; its log shows one scoring; the timing slice before it held development rows only and stopped at the (empty) lockbox step. |
+| Export parity | Pass, with one explained row | The export refused at first: one of 3,000 rows differed by 0.00144 (tolerance 0.001). Proven cause: `limit_utilisation_with_purchase` = 0.9999924187 lies between LightGBM's double threshold 0.9999924144 and its float32 copy 0.9999924302 in ONNX. The gate now accepts a row beyond tolerance only with such a proven flip (and never beyond 0.01); the flip is recorded in `models/engine2/v2/metadata.json`. |
+| Reports from scripts only | Pass | `report`, `compare_versions` and `band_calibration` were each re-run into a scratch folder: README, `versions.md`, every table and figure, `band_inflation.json` and `band_calibration.md` are byte-identical to the committed ones. |
+| Old and new side by side | Pass | `reports/engine2/versions.md` (v1 numbers read from the committed v1 metadata and v1 serving check; v1 report kept unchanged in `reports/engine2/v1/`); `reports/engine1/band_calibration.md` (v2 factor 1.5 beside v3). |
+| Unflattering results reported | Pass | Serving band agreement fell (95.0% → 92.0%); band coverage stays below 80% for short histories and income; widening made the first income fit worse and the report says why. |
+| D-09 names | Pass after a fix | `compare_versions.py` first named the buffer feature; it now reads `features.BUFFER_FEATURE`, and the one-module test passes. |
+| Train commit recorded | Disclosed | `results.json` records commit `d0a3424…+dirty` (test-path edits were uncommitted while training ran; no code under `app/` or `ml/` differed). Labels were started at `b1d8676`; their manifest records the commit at the end of the run (`d0a3424`), which added only report and comparison scripts. |
