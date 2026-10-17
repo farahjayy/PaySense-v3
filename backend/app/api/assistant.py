@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.bills import BillsOut
 from app.api.budgets import BudgetIn, BudgetListOut, BudgetOut, BudgetStatusOut, BudgetSuggestionOut
-from app.api.deps import CurrentUser, DbDep
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep
 from app.api.forecast import ForecastOut
 from app.api.imports import ConfirmIn, ConfirmOut
 from app.api.insights import BillAnalysisOut, SpendingInsightsOut
@@ -339,6 +339,7 @@ def get_action(action_id: str, user: CurrentUser, db: DbDep) -> Any:
     "/actions/{action_id}/confirm",
     response_model=ActionResultOut,
     responses={**NOT_FOUND_RESPONSE, **ASSISTANT_RESPONSES},
+    dependencies=[WRITE_QUOTA],
 )
 def confirm_action(action_id: str, user: CurrentUser, db: DbDep) -> ActionResultOut:
     raise _not_built()

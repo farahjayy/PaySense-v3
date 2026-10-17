@@ -1,12 +1,14 @@
 """Transactions CRUD. Payments a BNPL plan logged belong to the plan and are read-only here."""
 
+import base64
 import datetime as dt
+import json
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Query, Response
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.api.deps import CurrentUser, DbDep, TodayDep
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, TodayDep
 from app.api.schemas import (
     CONFLICT_RESPONSE,
     NOT_FOUND_RESPONSE,
@@ -16,9 +18,11 @@ from app.api.schemas import (
 from app.api.types import MAX_DATE, MIN_DATE, AppDate, Sen, reject_explicit_nulls, text
 from app.core.errors import api_error, not_found, unprocessable
 from app.db import recurring_items, transactions
+from app.db.base import is_uuid
 
 TxnType = Literal["income", "expense", "savings"]
 DEFAULT_WINDOW_DAYS = 90
+MAX_PAGE = 500
 
 router = APIRouter(prefix="/transactions", tags=["transactions"], responses=PROTECTED_RESPONSES)
 
@@ -66,6 +70,30 @@ class TransactionOut(ApiModel):
     recurring_item_id: str | None
 
 
+class TransactionPageOut(ApiModel):
+    transactions: list[TransactionOut]
+    next_cursor: str | None = Field(description="Pass back as `cursor` for the next page")
+
+
+def encode_cursor(row: dict[str, Any]) -> str:
+    raw = json.dumps({"d": str(row["date"])[:10], "i": row["id"]}, separators=(",", ":"))
+    return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
+
+
+def decode_cursor(cursor: str) -> tuple[str, str]:
+    """(date, id) from a cursor; 422 for anything that is not one this API issued."""
+    try:
+        padded = cursor + "=" * (-len(cursor) % 4)
+        data = json.loads(base64.urlsafe_b64decode(padded.encode()).decode())
+        day = dt.date.fromisoformat(data["d"]).isoformat()
+        row_id = data["i"]
+        if not isinstance(row_id, str) or not is_uuid(row_id):
+            raise ValueError
+    except (ValueError, KeyError, TypeError, UnicodeDecodeError, json.JSONDecodeError) as err:
+        raise unprocessable("invalid_cursor", "That page cursor is not valid.") from err
+    return day, row_id
+
+
 def _missing():
     return not_found("transaction_not_found", "No such transaction.")
 
@@ -83,7 +111,7 @@ def _require_own_recurring_item(db: Any, user_id: str, item_id: str | None) -> N
         raise unprocessable("recurring_item_not_found", "No such recurring item.")
 
 
-@router.get("", response_model=list[TransactionOut])
+@router.get("", response_model=TransactionPageOut)
 def list_transactions(
     user: CurrentUser,
     db: DbDep,
@@ -92,17 +120,27 @@ def list_transactions(
     end: Annotated[dt.date | None, Query(ge=MIN_DATE, le=MAX_DATE)] = None,
     kind: Annotated[TxnType | None, Query(alias="type")] = None,
     category: Annotated[str | None, Query(max_length=60)] = None,
-) -> list[TransactionOut]:
-    """Newest first. Without `start`/`end`, the last 90 days up to today."""
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE)] = MAX_PAGE,
+    cursor: Annotated[str | None, Query(max_length=200)] = None,
+) -> TransactionPageOut:
+    """Newest first, one page at a time (ADR D-49). Without `start`/`end`, the last 90 days up to
+    today. Follow `next_cursor` until it is null."""
     last = end or today
     first = start or max(last - dt.timedelta(days=DEFAULT_WINDOW_DAYS), MIN_DATE)
     if first > last:
         raise unprocessable("invalid_range", "start must be on or before end.")
-    rows = transactions.list_between(db, user.id, first, last, type=kind, category=category)
-    return [TransactionOut.model_validate(row) for row in rows]
+    after = decode_cursor(cursor) if cursor else None
+    rows = transactions.list_page(
+        db, user.id, first, last, after=after, limit=limit + 1, type=kind, category=category
+    )
+    page, more = rows[:limit], len(rows) > limit
+    return TransactionPageOut(
+        transactions=[TransactionOut.model_validate(row) for row in page],
+        next_cursor=encode_cursor(page[-1]) if more else None,
+    )
 
 
-@router.post("", response_model=TransactionOut, status_code=201)
+@router.post("", response_model=TransactionOut, status_code=201, dependencies=[WRITE_QUOTA])
 def create_transaction(body: TransactionIn, user: CurrentUser, db: DbDep) -> TransactionOut:
     _require_own_recurring_item(db, user.id, body.recurring_item_id)
     row = transactions.create(db, user.id, **body.model_dump())
@@ -113,6 +151,7 @@ def create_transaction(body: TransactionIn, user: CurrentUser, db: DbDep) -> Tra
     "/{transaction_id}",
     response_model=TransactionOut,
     responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
+    dependencies=[WRITE_QUOTA],
 )
 def update_transaction(
     transaction_id: str, body: TransactionPatch, user: CurrentUser, db: DbDep
@@ -131,7 +170,10 @@ def update_transaction(
 
 
 @router.delete(
-    "/{transaction_id}", status_code=204, responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE}
+    "/{transaction_id}",
+    status_code=204,
+    responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
+    dependencies=[WRITE_QUOTA],
 )
 def delete_transaction(transaction_id: str, user: CurrentUser, db: DbDep) -> Response:
     current = transactions.get(db, user.id, transaction_id)

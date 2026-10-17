@@ -88,7 +88,9 @@ def test_patching_a_required_transaction_field_to_null_is_rejected(api, amir, fi
     res = api.patch(f"/api/transactions/{created['id']}", json={field: None}, headers=amir)
 
     assert is_clean_422(res)
-    assert api.get("/api/transactions", headers=amir).json()[0]["amount_sen"] == 1250
+    assert (
+        api.get("/api/transactions", headers=amir).json()["transactions"][0]["amount_sen"] == 1250
+    )
 
 
 @pytest.mark.parametrize("field", ["name", "amount_sen", "cadence", "anchor_date", "active"])

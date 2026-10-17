@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     session_secret: SecretStr = Field(min_length=MIN_SECRET_LENGTH)
     cors_origins: str = Field(min_length=1)
     session_ttl_hours: int = Field(default=12, gt=0)
+    # ASSUMED (D-49): writes one person may make per Malaysian day, across every write route.
+    # A busy real user makes tens; an import is one write however many rows it holds.
+    daily_write_quota: int = Field(default=300, ge=0)
 
     @field_validator("cors_origins")
     @classmethod

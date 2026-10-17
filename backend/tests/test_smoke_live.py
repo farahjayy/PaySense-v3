@@ -7,7 +7,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.e2e_server import E2E_ORIGIN, E2E_USERNAME, build_e2e_app
+from tests.e2e_server import E2E_ORIGIN, E2E_PASSPHRASE, E2E_USERNAME, build_e2e_app
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "smoke_live.py"
 spec = importlib.util.spec_from_file_location("smoke_live", SCRIPT)
@@ -21,13 +21,17 @@ def client():
 
 
 def test_a_healthy_deployment_passes_every_check(client):
-    results = smoke.run_smoke(client, username=E2E_USERNAME, origin=E2E_ORIGIN)
+    results = smoke.run_smoke(
+        client, username=E2E_USERNAME, origin=E2E_ORIGIN, passphrase=E2E_PASSPHRASE
+    )
     assert [r.name for r in results if not r.ok] == []
     assert len(results) == 7
 
 
 def test_a_wrong_cors_origin_is_reported_with_the_fix(client):
-    results = smoke.run_smoke(client, username=E2E_USERNAME, origin="https://other.example")
+    results = smoke.run_smoke(
+        client, username=E2E_USERNAME, origin="https://other.example", passphrase=E2E_PASSPHRASE
+    )
     failed = {r.name: r.detail for r in results if not r.ok}
     assert list(failed) == ["CORS allows the app's origin"]
     assert "CORS_ORIGINS" in failed["CORS allows the app's origin"]
@@ -60,7 +64,9 @@ def test_a_page_that_is_not_json_is_a_failed_check_not_a_crash():
 
 
 def test_a_trailing_slash_on_the_origin_is_not_a_false_failure(client):
-    results = smoke.run_smoke(client, username=E2E_USERNAME, origin=E2E_ORIGIN + "/")
+    results = smoke.run_smoke(
+        client, username=E2E_USERNAME, origin=E2E_ORIGIN + "/", passphrase=E2E_PASSPHRASE
+    )
     assert [r.name for r in results if not r.ok] == []
 
 

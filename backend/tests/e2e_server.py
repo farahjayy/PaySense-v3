@@ -14,11 +14,12 @@ from app.core.settings import Settings
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from app.main import create_app
 from app.seed import seed_user
-from tests.fakes import FakeSupabase
+from tests.fakes import TEST_PASSPHRASE, FakeSupabase, give_test_passphrase
 
 E2E_ORIGIN = "http://localhost:3100"
 E2E_USERNAME = "e2e"
 E2E_DISPLAY_NAME = "E2E Tester"
+E2E_PASSPHRASE = TEST_PASSPHRASE  # every browser-test account shares it (test tooling only)
 # The persona CSVs end on 28 December 2025; the browser tests run "the next day" so the imported
 # ledger is fresh and the forecast is not flagged as out of date.
 E2E_TODAY = date(2025, 12, 29)
@@ -56,10 +57,11 @@ def build_e2e_app():
     usernames = [E2E_USERNAME] + [
         f"{E2E_USERNAME}-{project}-{journey}"
         for project in ("desktop", "phone")
-        for journey in ("import", "screens", "risk", "spending")
+        for journey in ("import", "screens", "risk", "spending", "logout")
     ]
     for username in usernames:
         seed_user(db, username=username, display_name=E2E_DISPLAY_NAME, persona="frequent_bnpl")
+        give_test_passphrase(db, username)
     app = create_app(settings, db=db, predictor=StubModel())
     app.dependency_overrides[get_today] = lambda: E2E_TODAY
     return app

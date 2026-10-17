@@ -138,7 +138,7 @@ function route(path: string) {
     case "/api/summary/months":
       return ok(MONTHS);
     case "/api/transactions":
-      return ok(transactions);
+      return ok({ transactions, next_cursor: null });
     case "/api/summary/categories":
       return ok(SPENDING);
     case "/api/plans":

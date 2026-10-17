@@ -23,6 +23,7 @@ TABLES = (
     "transactions",
     "provider_limits",
     "user_categories",
+    "user_locks",
 )
 
 

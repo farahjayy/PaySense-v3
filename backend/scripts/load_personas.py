@@ -2,12 +2,12 @@
 
     cd backend && uv run python scripts/load_personas.py --api http://localhost:8000
 
-For each persona: seed an account with an unguessable username (kept only in
-`data/private/persona_accounts.json`, never in the repo), shift the persona CSV so it ends just
-before today, import it through the real API (preview, then confirm the rows that are not
-duplicates), confirm the recurring items the app detects (what a tester does on the Recurring
-screen), then ask for the forecast. Idempotent: a second run reuses the stored usernames and
-imports nothing twice (the preview flags every row as a duplicate).
+For each persona: seed an account with an unguessable username and a generated passphrase
+(kept only in `data/private/persona_accounts.json`, never in the repo), shift the persona CSV so
+it ends just before today, import it through the real API (preview, then confirm the rows that
+are not duplicates), confirm the recurring items the app detects (what a tester does on the
+Recurring screen), then ask for the forecast. Idempotent: a second run reuses the stored
+usernames and imports nothing twice (the preview flags every row as a duplicate).
 """
 
 import argparse
@@ -23,6 +23,7 @@ from typing import Any
 
 import httpx
 
+from app.core.passphrase import generate_passphrase
 from app.db.client import Database
 from app.seed import seed_user
 from ml.uat.shift_persona import COLUMNS, PERSONA_DIR, read_rows, shift_rows
@@ -146,7 +147,14 @@ def run(
     results: dict[str, dict[str, Any]] = {}
     for persona in personas:
         account = accounts.get(persona) or {"username": new_username(persona)}
-        seed_user(db, username=account["username"], display_name=PERSONAS[persona], persona=persona)
+        account.setdefault("passphrase", generate_passphrase())  # D-49; kept only in the file
+        seed_user(
+            db,
+            username=account["username"],
+            display_name=PERSONAS[persona],
+            persona=persona,
+            passphrase=account["passphrase"],
+        )
         accounts[persona] = account
         write_accounts(accounts_file, accounts)  # saved before any import, so a rerun reuses it
         auth = login(client, account["username"], account.get("passphrase"))

@@ -100,3 +100,28 @@ class RequestRateLimiter:
     def tracked_keys(self) -> int:
         with self._lock:
             return len(self._hits)
+
+
+class DailyQuota:
+    """Counts one user's writes per calendar day (ADR D-49). Same in-memory, single-process
+    trade-off as the limiters above: a restart resets the counts (on the known-risk list)."""
+
+    def __init__(self, max_keys: int = 10_000) -> None:
+        self._max_keys = max_keys
+        self._counts: dict[str, tuple[str, int]] = {}  # key -> (day, count)
+        self._lock = Lock()
+
+    def use(self, key: str, day: str, limit: int) -> bool:
+        """Record one write for `key` on `day` if under `limit`; False (nothing recorded) if not."""
+        with self._lock:
+            current_day, count = self._counts.get(key, (day, 0))
+            if current_day != day:
+                count = 0
+            if count >= limit:
+                return False
+            self._counts[key] = (day, count + 1)
+            if len(self._counts) > self._max_keys:
+                stale = [k for k, (d, _) in self._counts.items() if d != day]
+                for k in stale or list(self._counts)[: len(self._counts) - self._max_keys]:
+                    del self._counts[k]
+            return True

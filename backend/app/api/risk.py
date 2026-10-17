@@ -18,12 +18,13 @@ from typing import Annotated, Any, Literal
 from fastapi import APIRouter, Depends, Request
 from pydantic import Field
 
-from app.api.deps import CurrentUser, DbDep, TodayDep, rate_limited
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, TodayDep, rate_limited
 from app.api.forecast import ForecasterDep, SuspectMonthOut, daily_seed
 from app.api.plans import (
     PlanIn,
     PlanOut,
     PlanPreviewOut,
+    plan_create_lock,
     plan_out,
     preview_out,
     store_plan,
@@ -436,7 +437,7 @@ def check_risk(
     "/confirm",
     response_model=RiskConfirmOut,
     status_code=201,
-    dependencies=[rate_limited("risk-check", CHECKS_PER_MINUTE, 60)],
+    dependencies=[WRITE_QUOTA, rate_limited("risk-check", CHECKS_PER_MINUTE, 60)],
     responses={**CHECK_RESPONSES, 409: CONFLICT_ENVELOPE},
 )
 def confirm_risk(
@@ -455,8 +456,9 @@ def confirm_risk(
             409, "confirm_in_progress", "This purchase is already being added. Wait a moment."
         )
     try:
-        with admitted():
-            # one confirm at a time per user, and the duplicate test reads the plans after the lock
+        # one confirm at a time per user: the thread lock within this process, the database lock
+        # across processes; the duplicate test reads the plans after both are held
+        with admitted(), plan_create_lock(db, user.id):
             if _is_duplicate(plans_repo.list_with_instalments(db, user.id), body, _now()):
                 raise api_error(
                     409,

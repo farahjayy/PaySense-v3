@@ -125,10 +125,28 @@ export type TransactionFilters = {
   category?: string;
 };
 
+/** Upper bound on pages followed for one list: the ledger cap (D-49) is 5,000 rows, 500 a page. */
+const MAX_TRANSACTION_PAGES = 10;
+
+/** Every transaction matching `filters`, following the server's cursor page by page. */
+export async function fetchAllTransactions(filters: TransactionFilters) {
+  const rows = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < MAX_TRANSACTION_PAGES; page += 1) {
+    const data = await unwrap(
+      api.GET("/api/transactions", { params: { query: { ...filters, cursor } } }),
+    );
+    rows.push(...data.transactions);
+    if (!data.next_cursor) break;
+    cursor = data.next_cursor;
+  }
+  return rows;
+}
+
 export function useTransactions(filters: TransactionFilters = {}) {
   return useQuery({
     queryKey: queryKeys.transactions(filters),
-    queryFn: async () => unwrap(api.GET("/api/transactions", { params: { query: filters } })),
+    queryFn: () => fetchAllTransactions(filters),
     // keep showing the last list while the next month or filter loads, instead of a flash
     placeholderData: keepPreviousData,
   });

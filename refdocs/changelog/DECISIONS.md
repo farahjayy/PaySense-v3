@@ -367,6 +367,8 @@ Not decisions — guesses made to keep moving. Each one must be confirmed or kil
 15. `ASSUMED:` (D-45) Money logged as type Savings is shown beside Spent and is not subtracted from spending or from "left over". The author asked for it to be subtracted; that would change the month summary and Engine 1's series (D-27), so it needs her confirmation before it is built.
 16. `ASSUMED:` (D-47) Six tool calls per assistant turn suffice for the hero workflow (bills, forecast, risk check, suggestion, proposal).
 17. `ASSUMED:` (D-48) A pending action expires after 10 minutes.
-18. `ASSUMED:` (D-49) scrypt parameters n=2^14, r=8, p=1; write-quota and ledger-cap sizes are fixed in the WP18 plan.
+18. `ASSUMED:` (D-49) scrypt parameters n=2^14, r=8, p=1 (~40 ms and 16 MB per check measured here); the write quota is **300 writes per user per Malaysian day** (`DAILY_WRITE_QUOTA`), the ledger cap **5,000 transactions** (`MAX_LEDGER_ROWS`), the per-username login limit **20 failures per 15 minutes**, and a plan-create lock older than **120 s** is abandoned. The quota and the limiters are in memory (one process; reset on restart).
+21. `ASSUMED:` (D-49, WP18 "to confirm") the month summary and used limit stay computed in Python from four-column reads rather than SQL aggregates: the ledger cap bounds the rows, and a Postgres function could not be exercised by the in-memory fake. Revisit if a real ledger near the cap is slow.
+22. `ASSUMED:` (WP18) the per-username login limit can be used by a stranger to lock a known username out for 15 minutes by failing on purpose; accepted (and listed in the known risks) because it also stops spread-out guessing.
 19. `ASSUMED:` (D-50) The generator's savings-buffer distribution has no cited Malaysian source yet.
 20. `ASSUMED:` (WP2) Budget states: near at 80% of the limit, over at 100%; the suggestion keeps a buffer before splitting the discretionary pool.

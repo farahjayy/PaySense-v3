@@ -7,6 +7,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { isActive } from "@/lib/nav";
+import { api } from "@/lib/api/client";
 import { clearSession, type Session } from "@/lib/session";
 
 type NavItem = { href: string; label: string; icon: string; mobile: boolean };
@@ -110,6 +111,9 @@ export function AppShell({ user, children }: Props) {
   }, [pathname]);
 
   function handleLogout() {
+    // Revoke on the server (every session of this user ends, D-49); the page does not wait for
+    // it, and a failure still logs out locally.
+    api.POST("/api/auth/logout").catch(() => undefined);
     clearSession();
     queryClient.clear();
     router.replace("/login");

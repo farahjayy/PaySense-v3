@@ -3,12 +3,16 @@
     cd backend && uv run python scripts/smoke_live.py --api https://<service>.onrender.com \
         --origin https://<app>.vercel.app --username <a seeded tester>
 
+The tester's passphrase is read from the SMOKE_PASSPHRASE environment variable (never a command
+argument, so it stays out of shell history and process lists).
+
 Checks, in order: the service answers, the browser's origin is allowed by CORS, an unauthenticated
 call is refused, login works, the session is accepted, the provider rules load, and the forecast
 route answers (locked is a valid answer for a tester with no history). Exits 1 if anything fails.
 """
 
 import argparse
+import os
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -23,7 +27,9 @@ class Check:
     detail: str
 
 
-def run_smoke(client: httpx.Client, *, username: str, origin: str) -> list[Check]:
+def run_smoke(
+    client: httpx.Client, *, username: str, origin: str, passphrase: str = ""
+) -> list[Check]:
     results: list[Check] = []
     origin = origin.rstrip("/")
 
@@ -66,9 +72,9 @@ def run_smoke(client: httpx.Client, *, username: str, origin: str) -> list[Check
     token: dict[str, str] = {}
 
     def login() -> str | None:
-        r = client.post("/api/auth/login", json={"username": username})
+        r = client.post("/api/auth/login", json={"username": username, "passphrase": passphrase})
         if r.status_code != 200:
-            return f"{r.status_code}: is {username!r} seeded?"
+            return f"{r.status_code}: is {username!r} seeded, and is SMOKE_PASSPHRASE right?"
         token["value"] = r.json()["access_token"]
         return None
 
@@ -106,7 +112,12 @@ def main() -> int:
     parser.add_argument("--username", required=True)
     args = parser.parse_args()
     with httpx.Client(base_url=args.api.rstrip("/"), timeout=60) as client:
-        results = run_smoke(client, username=args.username, origin=args.origin)
+        results = run_smoke(
+            client,
+            username=args.username,
+            origin=args.origin,
+            passphrase=os.environ.get("SMOKE_PASSPHRASE", ""),
+        )
     for r in results:
         print(f"{'PASS' if r.ok else 'FAIL'}  {r.name}" + ("" if r.ok else f"  -  {r.detail}"))
     return 0 if all(r.ok for r in results) else 1

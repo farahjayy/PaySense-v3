@@ -5,7 +5,8 @@ from typing import Any
 
 from postgrest import APIError
 
-from app.db.base import is_uuid
+from app.core.passphrase import hash_passphrase
+from app.db.base import is_uuid, require_user_id
 from app.db.client import Database
 
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
@@ -67,3 +68,28 @@ def create(
             raise UsernameTakenError(name) from err
         raise
     return created[0]
+
+
+def set_passphrase(db: Database, user_id: str, passphrase: str) -> None:
+    """Store the scrypt hash of a new passphrase (ADR D-49). Ends every existing session, since
+    whoever held the old passphrase may hold a token too."""
+    uid = require_user_id(user_id)
+    stored = hash_passphrase(passphrase)
+    user = get_by_id(db, uid)
+    if user is None:
+        raise ValueError("no such user")
+    version = int(user.get("token_version") or 0) + 1
+    db.table("users").update({"passphrase_hash": stored, "token_version": version}).eq(
+        "id", uid
+    ).execute()
+
+
+def bump_token_version(db: Database, user_id: str) -> int:
+    """Log the user out everywhere: every token carrying an older version is refused."""
+    uid = require_user_id(user_id)
+    user = get_by_id(db, uid)
+    if user is None:
+        raise ValueError("no such user")
+    version = int(user.get("token_version") or 0) + 1
+    db.table("users").update({"token_version": version}).eq("id", uid).execute()
+    return version

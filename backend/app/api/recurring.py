@@ -7,7 +7,7 @@ from typing import Annotated, Literal, Self
 from fastapi import APIRouter, Response
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
-from app.api.deps import CurrentUser, DbDep, TodayDep
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, TodayDep
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
 from app.api.types import AppDate, Sen, reject_explicit_nulls, text
 from app.core.errors import not_found, unprocessable
@@ -117,13 +117,18 @@ def suggestions(user: CurrentUser, db: DbDep, today: TodayDep) -> list[Suggestio
     return [SuggestionOut.model_validate(vars(s)) for s in found]
 
 
-@router.post("", response_model=RecurringOut, status_code=201)
+@router.post("", response_model=RecurringOut, status_code=201, dependencies=[WRITE_QUOTA])
 def create_item(body: RecurringIn, user: CurrentUser, db: DbDep) -> RecurringOut:
     row = repo.create(db, user.id, **body.model_dump())
     return RecurringOut.model_validate(row)
 
 
-@router.patch("/{item_id}", response_model=RecurringOut, responses=NOT_FOUND_RESPONSE)
+@router.patch(
+    "/{item_id}",
+    response_model=RecurringOut,
+    responses=NOT_FOUND_RESPONSE,
+    dependencies=[WRITE_QUOTA],
+)
 def update_item(item_id: str, body: RecurringPatch, user: CurrentUser, db: DbDep) -> RecurringOut:
     patch = body.model_dump(exclude_unset=True)
     try:
@@ -135,7 +140,9 @@ def update_item(item_id: str, body: RecurringPatch, user: CurrentUser, db: DbDep
     return RecurringOut.model_validate(row)
 
 
-@router.delete("/{item_id}", status_code=204, responses=NOT_FOUND_RESPONSE)
+@router.delete(
+    "/{item_id}", status_code=204, responses=NOT_FOUND_RESPONSE, dependencies=[WRITE_QUOTA]
+)
 def delete_item(item_id: str, user: CurrentUser, db: DbDep) -> Response:
     if not repo.delete(db, user.id, item_id):
         raise _missing()

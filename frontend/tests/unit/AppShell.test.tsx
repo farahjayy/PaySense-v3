@@ -15,7 +15,13 @@ vi.mock("next/navigation", () => ({
 }));
 
 const get = vi.fn();
-vi.mock("@/lib/api/client", () => ({ api: { GET: (...args: unknown[]) => get(...args) } }));
+const post = vi.fn(async () => ({ data: undefined, error: undefined }));
+vi.mock("@/lib/api/client", () => ({
+  api: {
+    GET: (...args: unknown[]) => get(...args),
+    POST: (...args: unknown[]) => post(...(args as [])),
+  },
+}));
 
 const USER = { id: "u1", username: "amir", display_name: "Amir", persona: null } as const;
 
@@ -159,5 +165,6 @@ describe("AppShell", () => {
 
     expect(getSession()).toBeNull();
     expect(replace).toHaveBeenCalledWith("/login");
+    expect(post).toHaveBeenCalledWith("/api/auth/logout"); // the server ends every session too
   });
 });

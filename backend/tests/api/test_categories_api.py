@@ -45,7 +45,7 @@ def count_of(api, headers, category):
         "/api/transactions",
         params={"category": category, "start": "2026-06-01", "end": "2026-06-30"},
         headers=headers,
-    ).json()
+    ).json()["transactions"]
 
 
 # ------------------------------------------------------------------ list

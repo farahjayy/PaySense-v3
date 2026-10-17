@@ -109,6 +109,76 @@ class ScopedTable:
                 break
         return rows
 
+    def count(self, user_id: str, /, **equals: Any) -> int:
+        """How many of the user's rows match `equals`, counted by the database (no rows sent)."""
+        uid = require_user_id(user_id)
+        if OWNER_COLUMN in equals:
+            raise ValueError(
+                "user_id cannot be passed as a filter; it is always the first argument"
+            )
+        query = self._db.table(self._table).select(ID_COLUMN, count="exact", head=True)
+        query = query.eq(OWNER_COLUMN, uid)
+        for column, value in equals.items():
+            query = query.eq(column, value)
+        return int(query.execute().count or 0)
+
+    def page_before(
+        self,
+        user_id: str,
+        /,
+        *,
+        between: Mapping[str, tuple[Any, Any]],
+        order_by: str,
+        after: tuple[Any, str] | None,
+        limit: int,
+        **equals: Any,
+    ) -> list[dict[str, Any]]:
+        """One page of the user's rows, newest first by (`order_by`, id), strictly after the keyset
+        position `after` = (value, id) of the last row of the previous page. Two plain queries
+        (same value with a smaller id, then smaller values) avoid an OR filter, so a cursor can
+        never widen the user filter."""
+        uid = require_user_id(user_id)
+        if OWNER_COLUMN in equals:
+            raise ValueError(
+                "user_id cannot be passed as a filter; it is always the first argument"
+            )
+        rows: list[dict[str, Any]] = []
+
+        def base() -> Any:
+            query = self._db.table(self._table).select("*").eq(OWNER_COLUMN, uid)
+            for column, value in equals.items():
+                query = query.eq(column, value)
+            for column, (low, high) in between.items():
+                if low is not None:
+                    query = query.gte(column, _wire(low))
+                if high is not None:
+                    query = query.lte(column, _wire(high))
+            return query
+
+        if after is not None:
+            value, last_id = after
+            rows = (
+                base()
+                .eq(order_by, _wire(value))
+                .lt(ID_COLUMN, last_id)
+                .order(ID_COLUMN, desc=True)
+                .limit(limit)
+                .execute()
+                .data
+            )
+        if len(rows) < limit:
+            query = base()
+            if after is not None:
+                query = query.lt(order_by, _wire(after[0]))
+            rows += (
+                query.order(order_by, desc=True)
+                .order(ID_COLUMN, desc=True)
+                .limit(limit - len(rows))
+                .execute()
+                .data
+            )
+        return rows
+
     def get(self, user_id: str, row_id: str) -> dict[str, Any] | None:
         uid = require_user_id(user_id)
         if not is_uuid(row_id):

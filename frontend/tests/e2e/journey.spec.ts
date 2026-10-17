@@ -20,6 +20,7 @@ async function signIn(page: Page, journey: string) {
   await page.goto("/");
   await expect(page).toHaveURL(/\/login/);
   await page.getByLabel("Username").fill(`e2e-${test.info().project.name}-${journey}`);
+  await page.getByLabel("Passphrase", { exact: true }).fill("correct horse battery staple");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /hi, e2e tester/i })).toBeVisible();
 }

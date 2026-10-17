@@ -5,7 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, Response
 from pydantic import BaseModel, ConfigDict
 
-from app.api.deps import CurrentUser, DbDep
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
 from app.api.types import Sen
 from app.core.errors import not_found
@@ -51,13 +51,15 @@ def list_limits(user: CurrentUser, db: DbDep) -> list[LimitOut]:
     return [_out(p, stored.get(p), used.get(p, 0)) for p in NAMED_PROVIDERS]
 
 
-@router.put("/{provider}", response_model=LimitOut)
+@router.put("/{provider}", response_model=LimitOut, dependencies=[WRITE_QUOTA])
 def put_limit(provider: NamedProvider, body: LimitIn, user: CurrentUser, db: DbDep) -> LimitOut:
     row = limits_repo.upsert_limit(db, user.id, provider, body.limit_sen)
     return _out(provider, row["limit_sen"], plans_repo.used_limits(db, user.id).get(provider, 0))
 
 
-@router.delete("/{provider}", status_code=204, responses=NOT_FOUND_RESPONSE)
+@router.delete(
+    "/{provider}", status_code=204, responses=NOT_FOUND_RESPONSE, dependencies=[WRITE_QUOTA]
+)
 def delete_limit(provider: NamedProvider, user: CurrentUser, db: DbDep) -> Response:
     if not limits_repo.delete_limit(db, user.id, provider):
         raise not_found("limit_not_found", "No limit is recorded for that provider.")

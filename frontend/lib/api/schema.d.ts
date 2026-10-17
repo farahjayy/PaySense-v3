@@ -38,6 +38,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout
+         * @description End every session of this user: their token version moves on, so older tokens fail.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/me": {
         parameters: {
             query?: never;
@@ -116,7 +136,8 @@ export interface paths {
         };
         /**
          * List Transactions
-         * @description Newest first. Without `start`/`end`, the last 90 days up to today.
+         * @description Newest first, one page at a time (ADR D-49). Without `start`/`end`, the last 90 days up to
+         *     today. Follow `next_cursor` until it is null.
          */
         get: operations["list_transactions"];
         put?: never;
@@ -1632,6 +1653,8 @@ export interface components {
         LoginRequest: {
             /** Username */
             username: string;
+            /** Passphrase */
+            passphrase: string;
         };
         /** LoginResponse */
         LoginResponse: {
@@ -2550,6 +2573,16 @@ export interface components {
             /** Recurring Item Id */
             recurring_item_id: string | null;
         };
+        /** TransactionPageOut */
+        TransactionPageOut: {
+            /** Transactions */
+            transactions: components["schemas"]["TransactionOut"][];
+            /**
+             * Next Cursor
+             * @description Pass back as `cursor` for the next page
+             */
+            next_cursor: string | null;
+        };
         /** TransactionPatch */
         TransactionPatch: {
             /** Date */
@@ -2693,6 +2726,51 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LoginResponse"];
                 };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many failed attempts */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not logged in, or the session is invalid */
             401: {
@@ -2944,6 +3022,8 @@ export interface operations {
                 end?: string | null;
                 type?: ("income" | "expense" | "savings") | null;
                 category?: string | null;
+                limit?: number;
+                cursor?: string | null;
             };
             header?: never;
             path?: never;
@@ -2957,7 +3037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TransactionOut"][];
+                    "application/json": components["schemas"]["TransactionPageOut"];
                 };
             };
             /** @description Not logged in, or the session is invalid */

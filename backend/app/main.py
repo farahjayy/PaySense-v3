@@ -37,10 +37,11 @@ from app.api import (
     summary,
     transactions,
 )
-from app.api.rate_limit import LoginRateLimiter, RequestRateLimiter
+from app.api.rate_limit import DailyQuota, LoginRateLimiter, RequestRateLimiter
 from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
+from app.db.transactions import LedgerFullError
 from app.engines.risk.artefact import ArtefactError, load_if_present
 from app.engines.risk.check import Predictor
 
@@ -98,12 +99,19 @@ def create_app(
     db: Database | None = None,
     login_limiter: LoginRateLimiter | None = None,
     predictor: Predictor | None = None,
+    username_limiter: LoginRateLimiter | None = None,
 ) -> FastAPI:
     app = FastAPI(title="PaySense API", version="0.1.0", generate_unique_id_function=_operation_id)
     app.state.settings = settings
     app.state.db = db  # built lazily on first use when None (see api/deps.py)
     app.state.login_limiter = login_limiter or LoginRateLimiter()
+    # failures against one username from any address (D-49): wider than per-IP, so a stranger
+    # needs many tries to lock someone out, and a spread-out guessing attack still stops
+    app.state.username_limiter = username_limiter or LoginRateLimiter(
+        max_failures=20, window_seconds=900
+    )
     app.state.request_limiter = RequestRateLimiter()
+    app.state.write_quota = DailyQuota()
     app.state.predictor = predictor  # the trained risk model; None until an artefact is loaded
 
     # Added first, so it sits *inside* CORS: its 413 responses still carry CORS headers.
@@ -141,6 +149,14 @@ def create_app(
             return _envelope(422, "invalid_value", "One of the values could not be stored.")
         logger.error("Unexpected database error %s: %s", err.code, err.message)
         return _envelope(500, "internal_error", "Something went wrong on our side.")
+
+    @app.exception_handler(LedgerFullError)
+    async def _ledger_full_handler(_: Request, __: LedgerFullError) -> JSONResponse:
+        return _envelope(
+            413,
+            "ledger_full",
+            "Your ledger is full. Delete old transactions before adding more.",
+        )
 
     @app.exception_handler(httpx.HTTPError)
     async def _upstream_handler(_: Request, __: httpx.HTTPError) -> JSONResponse:

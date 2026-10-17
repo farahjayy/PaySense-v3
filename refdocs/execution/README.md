@@ -42,3 +42,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-13-import-spreadsheets.md](2026-10-13-import-spreadsheets.md) | [../plans/2026-10-13-import-spreadsheets.md](../plans/2026-10-13-import-spreadsheets.md) | Done (not yet tried with a real .xlsx in a browser) |
 | [2026-10-18-wp1-real-run.md](2026-10-18-wp1-real-run.md) | [../plans/2026-10-18-wp1-real-run.md](../plans/2026-10-18-wp1-real-run.md) | Done (anon RLS check needs the anon key) |
 | [2026-10-18-wp-api-contract.md](2026-10-18-wp-api-contract.md) | [../plans/2026-10-18-wp-api-contract.md](../plans/2026-10-18-wp-api-contract.md) | Done |
+| [2026-10-18-wp18-login-hardening.md](2026-10-18-wp18-login-hardening.md) | [../plans/2026-10-18-wp18-login-hardening.md](../plans/2026-10-18-wp18-login-hardening.md) | Done on the in-memory database (migration 0003 not applied) |

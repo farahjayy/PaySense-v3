@@ -7,7 +7,7 @@ from app.db import user_settings
 from app.db.base import ScopedTable
 from app.main import create_app
 from app.seed import seed_user
-from tests.fakes import FakeSupabase
+from tests.fakes import TEST_PASSPHRASE, FakeSupabase, give_test_passphrase
 
 
 @pytest.fixture
@@ -19,11 +19,14 @@ def db() -> FakeSupabase:
 def client(settings, db) -> TestClient:
     seed_user(db, username="amir", display_name="Amir", persona="frequent_bnpl")
     seed_user(db, username="siti", display_name="Siti", persona="budget_conscious")
+    give_test_passphrase(db, "amir")
+    give_test_passphrase(db, "siti")
     return TestClient(create_app(settings, db=db))
 
 
 def _login(client: TestClient, username: str) -> str:
-    return client.post("/api/auth/login", json={"username": username}).json()["access_token"]
+    body = {"username": username, "passphrase": TEST_PASSPHRASE}
+    return client.post("/api/auth/login", json=body).json()["access_token"]
 
 
 def _me(client: TestClient, credential: str) -> dict:

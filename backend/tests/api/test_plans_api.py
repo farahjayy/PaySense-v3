@@ -53,7 +53,7 @@ def limits(api, headers):
 
 def txns(api, headers):
     res = api.get("/api/transactions?start=2026-01-01&end=2026-12-31", headers=headers)
-    return res.json()
+    return res.json()["transactions"]
 
 
 # ------------------------------------------------------------------ preview

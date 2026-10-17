@@ -18,8 +18,11 @@ export function LoginForm() {
   const inputId = useId();
   const hintId = `${inputId}-hint`;
   const errorId = `${inputId}-error`;
+  const passphraseId = `${inputId}-passphrase`;
   const [username, setUsername] = useState("");
+  const [passphrase, setPassphrase] = useState("");
   const [isHidden, setIsHidden] = useState(false);
+  const [showPassphrase, setShowPassphrase] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,15 +31,17 @@ export function LoginForm() {
   }, [auth.status, router]);
 
   const trimmed = username.trim();
+  const ready = trimmed !== "" && passphrase !== "";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!trimmed || isPending) return;
+    if (!ready || isPending) return;
     setIsPending(true);
     setError(null);
     try {
       const { data, error: apiError } = await api.POST("/api/auth/login", {
-        body: { username: trimmed },
+        // the passphrase is sent exactly as typed: spaces can be part of it
+        body: { username: trimmed, passphrase },
       });
       if (!data) {
         setError(errorMessage(apiError));
@@ -84,7 +89,7 @@ export function LoginForm() {
           // read-only, not disabled: a disabled input drops keyboard focus to <body>.
           readOnly={isPending}
         />
-        {/* The username is the only credential, so a tester can hide it before a screenshot. */}
+        {/* A tester can hide the username before a screenshot. */}
         <button
           type="button"
           className="lg-eye"
@@ -95,15 +100,49 @@ export function LoginForm() {
           {isHidden ? <EyeOffIcon /> : <EyeIcon />}
         </button>
       </div>
+      <label htmlFor={passphraseId} className="lg-label">
+        Passphrase
+      </label>
+      <div className={error ? "lg-field lg-field-error" : "lg-field"}>
+        <input
+          id={passphraseId}
+          className="lg-input"
+          name="passphrase"
+          type={showPassphrase ? "text" : "password"}
+          autoComplete="current-password"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          maxLength={128}
+          value={passphrase}
+          onChange={(event) => {
+            setPassphrase(event.target.value);
+            if (error) setError(null);
+          }}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${hintId} ${errorId}` : hintId}
+          readOnly={isPending}
+        />
+        <button
+          type="button"
+          className="lg-eye"
+          aria-label="Show passphrase"
+          aria-pressed={showPassphrase}
+          onClick={() => setShowPassphrase((shown) => !shown)}
+        >
+          {showPassphrase ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
       <p id={hintId} className="lg-hint">
-        Use the username from your invite. Lost it? Message <strong>{SUPPORT_CONTACT}</strong>.
+        Use the username and passphrase from your invite. Lost them? Message{" "}
+        <strong>{SUPPORT_CONTACT}</strong>.
       </p>
       {error && (
         <p id={errorId} role="alert" className="lg-error">
           {error}
         </p>
       )}
-      <button type="submit" className="lg-go" disabled={!trimmed || isPending}>
+      <button type="submit" className="lg-go" disabled={!ready || isPending}>
         <span>{isPending ? "Signing in…" : "Continue"}</span>
         <ArrowIcon />
       </button>

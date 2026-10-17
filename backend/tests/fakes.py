@@ -33,10 +33,11 @@ UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
     "provider_limits": [("user_id", "provider")],
     "user_categories": [("user_id", "name")],
     "transactions": [("bnpl_installment_id",)],  # partial unique index: NULLs never collide
+    "user_locks": [("user_id", "name")],
 }
 # table -> defaults applied on insert (callables are invoked per row)
 DEFAULTS: dict[str, dict[str, Any]] = {
-    "users": {"persona": None},
+    "users": {"persona": None, "passphrase_hash": None, "token_version": 0},
     "user_settings": {"onboarding_state": "new"},
     "transactions": {
         "is_bnpl": False,
@@ -60,7 +61,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     "bnpl_installments": {"is_paid": False, "paid_date": None},
     "provider_limits": {"updated_at": lambda: _now()},
 }
-NO_ID_TABLES = {"user_settings", "provider_limits"}  # keyed by user_id; no `id`
+NO_ID_TABLES = {"user_settings", "provider_limits", "user_locks"}  # keyed by user_id; no `id`
 HAS_CREATED_AT = {
     "users",
     "recurring_items",
@@ -92,6 +93,22 @@ ON_DELETE_CASCADE: dict[str, list[tuple[str, str]]] = {
 }
 
 
+# Every test account's passphrase. Hashed once per run: scrypt is deliberately slow.
+TEST_PASSPHRASE = "correct horse battery staple"
+_TEST_HASH: list[str] = []
+
+
+def give_test_passphrase(db: "FakeSupabase", username: str) -> None:
+    """Set TEST_PASSPHRASE on a seeded fake user without paying for scrypt every time."""
+    from app.core.passphrase import hash_passphrase
+
+    if not _TEST_HASH:
+        _TEST_HASH.append(hash_passphrase(TEST_PASSPHRASE))
+    for row in db.rows("users"):
+        if row["username"].lower() == username.lower():
+            row["passphrase_hash"] = _TEST_HASH[0]
+
+
 def _now() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -99,6 +116,7 @@ def _now() -> str:
 @dataclass
 class FakeResponse:
     data: list[dict[str, Any]]
+    count: int | None = None
 
 
 def _like_to_regex(pattern: str) -> re.Pattern[str]:
@@ -181,11 +199,16 @@ class FakeQuery:
         self._range: tuple[int, int] | None = None
         self._conflict: tuple[str, ...] = ()
         self._columns: list[str] | None = None
+        self._count: str | None = None
+        self._head = False
 
     # -- operations
-    def select(self, columns: str = "*") -> "FakeQuery":
+    def select(
+        self, columns: str = "*", count: str | None = None, head: bool = False
+    ) -> "FakeQuery":
         self._op = "select"
         self._columns = None if columns.strip() == "*" else [c.strip() for c in columns.split(",")]
+        self._count, self._head = count, head
         return self
 
     def insert(self, payload: dict[str, Any] | list[dict[str, Any]]) -> "FakeQuery":
@@ -224,6 +247,10 @@ class FakeQuery:
         self._filters.append(lambda r: r.get(column) is not None and r[column] <= value)
         return self
 
+    def lt(self, column: str, value: Any) -> "FakeQuery":
+        self._filters.append(lambda r: r.get(column) is not None and r[column] < value)
+        return self
+
     def in_(self, column: str, values: list[Any]) -> "FakeQuery":
         if len(values) > MAX_IN_VALUES:  # PostgREST puts these in the URL; gateways cap its length
             raise RuntimeError(f"request URI too long: {len(values)} values in one in() filter")
@@ -256,6 +283,10 @@ class FakeQuery:
         }[self._op]
         if self._op in ("insert", "update", "upsert"):
             json.dumps(self._payload)  # httpx would fail on a date/Decimal the fake would accept
+        if self._op == "select" and self._count:
+            total = len(self._matching())  # PostgREST counts every match, ignoring the row cap
+            result = [] if self._head else copy.deepcopy(run())
+            return FakeResponse(result, count=total)
         result = copy.deepcopy(run())
         self._db.raise_if_injected(self._table, self._op)
         return FakeResponse(result)

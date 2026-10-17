@@ -56,11 +56,11 @@ describe("api client", () => {
   it("keeps the session when a login attempt itself is rejected", async () => {
     saveSession({ token: "t-123", expiresAt: Date.now() + 60_000, user: USER });
     fetchMock.mockResolvedValue(
-      jsonResponse(401, { detail: { code: "unknown_username", message: "nope" } }),
+      jsonResponse(401, { detail: { code: "invalid_credentials", message: "nope" } }),
     );
     const api = createApiClient("http://api.test", fetchMock);
 
-    await api.POST("/api/auth/login", { body: { username: "ghost" } });
+    await api.POST("/api/auth/login", { body: { username: "ghost", passphrase: "wrong one" } });
 
     expect(getSession()).not.toBeNull();
   });

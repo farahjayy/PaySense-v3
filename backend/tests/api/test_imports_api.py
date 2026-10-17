@@ -118,7 +118,9 @@ def test_confirm_stores_the_rows_and_marks_history_imported(api, amir, fake_db):
     assert res.json() == {"created": 3}
     months = api.get("/api/summary/months", headers=amir).json()["months"]
     assert months[0]["income_sen"] == 100000 and months[0]["spend_sen"] == 3590
-    stored = api.get("/api/transactions?start=2026-03-01&end=2026-03-31", headers=amir).json()
+    stored = api.get("/api/transactions?start=2026-03-01&end=2026-03-31", headers=amir).json()[
+        "transactions"
+    ]
     assert {t["source"] for t in stored} == {"csv"}
     user_id = api.get("/api/auth/me", headers=amir).json()["id"]
     assert user_settings.get(fake_db, user_id)["onboarding_state"] == "history_imported"
@@ -284,7 +286,9 @@ def test_a_category_of_the_persons_own_is_stored_as_written_after_confirm(api, a
 
     api.post("/api/import/confirm", json=confirm_body(preview), headers=amir)
 
-    stored = api.get("/api/transactions?start=2025-08-01&end=2025-08-31", headers=amir).json()
+    stored = api.get("/api/transactions?start=2025-08-01&end=2025-08-31", headers=amir).json()[
+        "transactions"
+    ]
     assert sorted(t["category"] for t in stored) == ["Allowance", "Drink / Dessert", "Food"]
 
 

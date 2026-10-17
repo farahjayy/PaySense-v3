@@ -5,12 +5,14 @@ is exactly what gets saved. The frontend holds no provider rule or limit arithme
 """
 
 import datetime as dt
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.deps import CurrentUser, DbDep, TodayDep
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, TodayDep
 from app.api.providers import ProviderKey
 from app.api.schemas import (
     CONFLICT_RESPONSE,
@@ -20,6 +22,7 @@ from app.api.schemas import (
 )
 from app.api.types import AppDate, Sen, text
 from app.core.errors import api_error, not_found, unprocessable
+from app.db import locks
 from app.db import plans as plans_repo
 from app.db import provider_limits as limits_repo
 from app.domain.plan_builder import PlanProposal, ProposalError, propose_plan
@@ -211,6 +214,18 @@ def preview_plan(body: PlanIn, user: CurrentUser, db: DbDep) -> PlanPreviewOut:
     return preview_out(propose_for(body, db, user.id))
 
 
+@contextmanager
+def plan_create_lock(db: Any, user_id: str) -> Iterator[None]:
+    """One plan create at a time per user, across server processes (ADR D-49): two requests that
+    both passed the duplicate check (or both read the same remaining limit) cannot both write."""
+    with locks.held(db, user_id, "plan_create") as taken:
+        if not taken:
+            raise api_error(
+                409, "confirm_in_progress", "This purchase is already being added. Wait a moment."
+            )
+        yield
+
+
 def store_plan(
     db: Any,
     user_id: str,
@@ -245,10 +260,11 @@ def plan_out(row: dict[str, Any], today: dt.date) -> PlanOut:
     return _plan_out(row, today)
 
 
-@router.post("", response_model=PlanOut, status_code=201)
+@router.post("", response_model=PlanOut, status_code=201, dependencies=[WRITE_QUOTA])
 def create_plan(body: PlanIn, user: CurrentUser, db: DbDep, today: TodayDep) -> PlanOut:
-    p = propose_for(body, db, user.id)
-    return _plan_out(store_plan(db, user.id, body.item_name, p), today)
+    with plan_create_lock(db, user.id):
+        p = propose_for(body, db, user.id)  # the limit is read inside the lock, too
+        return _plan_out(store_plan(db, user.id, body.item_name, p), today)
 
 
 @router.get("", response_model=list[PlanOut])
@@ -264,7 +280,9 @@ def get_plan(plan_id: str, user: CurrentUser, db: DbDep, today: TodayDep) -> Pla
     return _plan_out(row, today)
 
 
-@router.patch("/{plan_id}", response_model=PlanOut, responses=NOT_FOUND_RESPONSE)
+@router.patch(
+    "/{plan_id}", response_model=PlanOut, responses=NOT_FOUND_RESPONSE, dependencies=[WRITE_QUOTA]
+)
 def rename_plan(
     plan_id: str, body: PlanPatch, user: CurrentUser, db: DbDep, today: TodayDep
 ) -> PlanOut:
@@ -274,7 +292,9 @@ def rename_plan(
     return _plan_out(row, today)
 
 
-@router.delete("/{plan_id}", status_code=204, responses=NOT_FOUND_RESPONSE)
+@router.delete(
+    "/{plan_id}", status_code=204, responses=NOT_FOUND_RESPONSE, dependencies=[WRITE_QUOTA]
+)
 def delete_plan(plan_id: str, user: CurrentUser, db: DbDep, keep_payments: bool = True) -> Response:
     """Delete a plan. Payments it logged are kept by default (unlinked); pass
     `keep_payments=false` to delete them too."""
@@ -287,6 +307,7 @@ def delete_plan(plan_id: str, user: CurrentUser, db: DbDep, keep_payments: bool 
     "/{plan_id}/installments/{seq}/pay",
     response_model=InstalmentOut,
     responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
+    dependencies=[WRITE_QUOTA],
 )
 def pay_installment(
     plan_id: str,
@@ -316,6 +337,7 @@ def pay_installment(
     "/{plan_id}/pay",
     response_model=list[InstalmentOut],
     responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
+    dependencies=[WRITE_QUOTA],
 )
 def pay_installments(
     plan_id: str, body: BulkPayIn, user: CurrentUser, db: DbDep, today: TodayDep

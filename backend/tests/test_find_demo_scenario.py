@@ -40,7 +40,8 @@ def test_probes_run_through_the_api_and_are_summarised(tmp_path):
             personas=["frequent_bnpl"],
         )
         accounts = loader.read_accounts(tmp_path / "a.json")
-        auth = loader.login(client, accounts["frequent_bnpl"]["username"], None)
+        account = accounts["frequent_bnpl"]
+        auth = loader.login(client, account["username"], account["passphrase"])
         probes = [p for p in finder.default_grid(E2E_TODAY) if p.persona == "frequent_bnpl"][:2]
         results = finder.run_probes(client, {"frequent_bnpl": auth}, probes, sleep=lambda _: None)
     assert [r["http_status"] for r in results] == [200, 200]

@@ -12,7 +12,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.deps import CurrentUser, DbDep
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
 from app.api.summary import MonthParam
 from app.api.types import Sen, text
@@ -113,12 +113,12 @@ def list_budgets(user: CurrentUser, db: DbDep) -> BudgetListOut:
     raise _not_built()
 
 
-@router.put("", response_model=BudgetOut)
+@router.put("", response_model=BudgetOut, dependencies=[WRITE_QUOTA])
 def set_budget(body: BudgetIn, user: CurrentUser, db: DbDep) -> BudgetOut:
     raise _not_built()
 
 
-@router.delete("", status_code=204, responses=NOT_FOUND_RESPONSE)
+@router.delete("", status_code=204, responses=NOT_FOUND_RESPONSE, dependencies=[WRITE_QUOTA])
 def delete_budget(category: CategoryQuery, user: CurrentUser, db: DbDep) -> None:
     raise _not_built()
 

@@ -9,11 +9,14 @@ from app.db import user_settings, users
 from app.main import create_app
 from tests.fakes import FakeSupabase
 
+PASSPHRASE = "correct horse battery staple"
+
 
 @pytest.fixture
 def db() -> FakeSupabase:
     fake = FakeSupabase()
     amir = users.create(fake, username="amir", display_name="Amir", persona="frequent_bnpl")
+    users.set_passphrase(fake, amir["id"], PASSPHRASE)
     user_settings.create_default(fake, amir["id"])
     return fake
 
@@ -23,8 +26,8 @@ def client(settings, db) -> TestClient:
     return TestClient(create_app(settings, db=db))
 
 
-def _login(client: TestClient, username: str):
-    return client.post("/api/auth/login", json={"username": username})
+def _login(client: TestClient, username: str, passphrase: str = PASSPHRASE):
+    return client.post("/api/auth/login", json={"username": username, "passphrase": passphrase})
 
 
 def test_login_returns_a_token_and_the_user(client):
@@ -48,7 +51,76 @@ def test_unknown_username_is_401_with_the_envelope(client):
     res = _login(client, "nobody")
 
     assert res.status_code == 401
-    assert res.json()["detail"]["code"] == "unknown_username"
+    assert res.json()["detail"]["code"] == "invalid_credentials"
+
+
+def test_a_wrong_passphrase_gets_the_same_answer_as_an_unknown_user(client):
+    wrong = _login(client, "amir", "correct horse battery stapler")
+    unknown = _login(client, "nobody")
+
+    assert wrong.status_code == unknown.status_code == 401
+    assert wrong.json() == unknown.json()
+
+
+def test_a_user_with_no_passphrase_cannot_log_in(client, db):
+    bare = users.create(db, username="bare", display_name="Bare")
+    user_settings.create_default(db, bare["id"])
+
+    assert _login(client, "bare", "anything long enough").status_code == 401
+
+
+def test_the_passphrase_is_required(client):
+    res = client.post("/api/auth/login", json={"username": "amir"})
+
+    assert res.status_code == 422
+
+
+def test_logout_revokes_every_session_of_that_user(client):
+    first = _login(client, "amir").json()["access_token"]
+    second = _login(client, "amir").json()["access_token"]
+    auth = {"Authorization": f"Bearer {first}"}
+
+    assert client.post("/api/auth/logout", headers=auth).status_code == 204
+    for token in (first, second):
+        res = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert res.status_code == 401
+    fresh = _login(client, "amir").json()["access_token"]
+    assert (
+        client.get("/api/auth/me", headers={"Authorization": f"Bearer {fresh}"}).status_code == 200
+    )
+
+
+def test_logout_needs_a_session(client):
+    assert client.post("/api/auth/logout").status_code == 401
+
+
+def test_a_token_without_a_version_is_refused(client, db, settings):
+    amir = users.get_by_username(db, "amir")
+    old_style = jwt.encode(
+        {"sub": amir["id"], "iss": "paysense-api", "exp": datetime.now(UTC) + timedelta(hours=1)},
+        settings.session_secret.get_secret_value(),
+        algorithm="HS256",
+    )
+
+    res = client.get("/api/auth/me", headers={"Authorization": f"Bearer {old_style}"})
+
+    assert res.status_code == 401
+
+
+def test_repeated_failures_on_one_username_block_it_from_any_address(settings, db):
+    per_user = LoginRateLimiter(max_failures=3, window_seconds=60)
+    client = TestClient(create_app(settings, db=db, username_limiter=per_user))
+
+    for n in range(3):
+        _login(client, "amir", f"wrong passphrase {n}")
+    res = client.post(
+        "/api/auth/login",
+        json={"username": "AMIR", "passphrase": PASSPHRASE},
+        headers={"X-Forwarded-For": "9.9.9.9"},
+    )
+
+    assert res.status_code == 429
+    assert res.json()["detail"]["code"] == "too_many_attempts"
 
 
 @pytest.mark.parametrize("hostile", ["%", "a%", "x' or '1'='1", "   "])
@@ -151,13 +223,10 @@ def test_spoofed_forwarded_for_does_not_change_the_rate_limit_bucket(settings, d
     limiter = LoginRateLimiter(max_failures=2, window_seconds=60)
     client = TestClient(create_app(settings, db=db, login_limiter=limiter))
 
-    first = client.post("/api/auth/login", json={"username": "nobody"})
-    spoofed = client.post(
-        "/api/auth/login", json={"username": "nobody"}, headers={"X-Forwarded-For": "9.9.9.9"}
-    )
-    blocked = client.post(
-        "/api/auth/login", json={"username": "nobody"}, headers={"X-Forwarded-For": "8.8.8.8"}
-    )
+    body = {"username": "nobody", "passphrase": PASSPHRASE}
+    first = client.post("/api/auth/login", json=body)
+    spoofed = client.post("/api/auth/login", json=body, headers={"X-Forwarded-For": "9.9.9.9"})
+    blocked = client.post("/api/auth/login", json=body, headers={"X-Forwarded-For": "8.8.8.8"})
 
     assert (first.status_code, spoofed.status_code, blocked.status_code) == (401, 401, 429)
 
@@ -165,9 +234,9 @@ def test_spoofed_forwarded_for_does_not_change_the_rate_limit_bucket(settings, d
 def test_rate_limited_response_says_when_to_retry(settings, db):
     limiter = LoginRateLimiter(max_failures=1, window_seconds=90)
     client = TestClient(create_app(settings, db=db, login_limiter=limiter))
-    client.post("/api/auth/login", json={"username": "nobody"})
+    _login(client, "nobody")
 
-    res = client.post("/api/auth/login", json={"username": "nobody"})
+    res = _login(client, "nobody")
 
     assert res.status_code == 429
     assert res.headers["retry-after"] == "90"

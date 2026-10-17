@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 
-from app.api.deps import CurrentUser, DbDep, rate_limited
+from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, rate_limited
 from app.api.schemas import CONFLICT_RESPONSE, NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel
 from app.api.types import text
 from app.core.errors import conflict, not_found, unprocessable
@@ -123,7 +123,7 @@ def list_categories(user: CurrentUser, db: DbDep) -> CategoryListOut:
     response_model=CategoryOut,
     status_code=201,
     responses=CONFLICT_RESPONSE,
-    dependencies=[WRITE_LIMIT],
+    dependencies=[WRITE_QUOTA, WRITE_LIMIT],
 )
 def add_category(body: CategoryIn, user: CurrentUser, db: DbDep) -> CategoryOut:
     name = _usable_name(body.name)
@@ -152,7 +152,7 @@ def _undo_name(db: Database, user_id: str, old: str, new: str, had_row: bool) ->
     "",
     response_model=CategoryChangeOut,
     responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
-    dependencies=[WRITE_LIMIT],
+    dependencies=[WRITE_QUOTA, WRITE_LIMIT],
 )
 def rename_category(body: CategoryRenameIn, user: CurrentUser, db: DbDep) -> CategoryChangeOut:
     """Rename one of the person's own categories; every transaction that used it follows.
@@ -182,7 +182,7 @@ def rename_category(body: CategoryRenameIn, user: CurrentUser, db: DbDep) -> Cat
     "",
     response_model=CategoryDeleteOut,
     responses={**NOT_FOUND_RESPONSE, **CONFLICT_RESPONSE},
-    dependencies=[WRITE_LIMIT],
+    dependencies=[WRITE_QUOTA, WRITE_LIMIT],
 )
 def delete_category(
     name: NameQuery,

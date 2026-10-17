@@ -112,7 +112,7 @@ def test_list_defaults_to_the_last_90_days_newest_first(api, amir):
 
     res = api.get("/api/transactions", headers=amir)
 
-    assert [t["amount_sen"] for t in res.json()] == [200, 100]
+    assert [t["amount_sen"] for t in res.json()["transactions"]] == [200, 100]
 
 
 def test_list_filters_by_range_type_and_category(api, amir):
@@ -120,13 +120,15 @@ def test_list_filters_by_range_type_and_category(api, amir):
     post(api, amir, date="2026-03-15", amount_sen=200, type="income", category="Salary")
     post(api, amir, date="2026-04-01", amount_sen=300)
 
-    in_march = api.get("/api/transactions?start=2026-03-01&end=2026-03-31", headers=amir).json()
+    in_march = api.get("/api/transactions?start=2026-03-01&end=2026-03-31", headers=amir).json()[
+        "transactions"
+    ]
     incomes = api.get(
         "/api/transactions?start=2026-03-01&end=2026-04-30&type=income", headers=amir
-    ).json()
+    ).json()["transactions"]
     salary = api.get(
         "/api/transactions?start=2026-03-01&end=2026-04-30&category=Salary", headers=amir
-    ).json()
+    ).json()["transactions"]
 
     assert [t["amount_sen"] for t in in_march] == [200, 100]
     assert [t["amount_sen"] for t in incomes] == [200]
@@ -148,8 +150,12 @@ def test_list_shows_only_the_callers_transactions(api, amir, siti):
     post(api, amir, amount_sen=111)
     post(api, siti, amount_sen=222)
 
-    assert [t["amount_sen"] for t in api.get("/api/transactions", headers=amir).json()] == [111]
-    assert [t["amount_sen"] for t in api.get("/api/transactions", headers=siti).json()] == [222]
+    assert [
+        t["amount_sen"] for t in api.get("/api/transactions", headers=amir).json()["transactions"]
+    ] == [111]
+    assert [
+        t["amount_sen"] for t in api.get("/api/transactions", headers=siti).json()["transactions"]
+    ] == [222]
 
 
 # ------------------------------------------------------------------ update / delete
@@ -197,7 +203,7 @@ def test_delete_removes_it(api, amir):
     created = post(api, amir)
 
     assert api.delete(f"/api/transactions/{created['id']}", headers=amir).status_code == 204
-    assert api.get("/api/transactions", headers=amir).json() == []
+    assert api.get("/api/transactions", headers=amir).json()["transactions"] == []
     assert api.delete(f"/api/transactions/{created['id']}", headers=amir).status_code == 404
 
 
@@ -209,7 +215,9 @@ def test_another_users_transaction_is_a_404_for_patch_and_delete(api, amir, siti
 
     assert patched.status_code == deleted.status_code == 404
     assert patched.json()["detail"]["code"] == "transaction_not_found"
-    assert api.get("/api/transactions", headers=amir).json()[0]["amount_sen"] == 1250
+    assert (
+        api.get("/api/transactions", headers=amir).json()["transactions"][0]["amount_sen"] == 1250
+    )
 
 
 def test_a_malformed_id_is_a_404_not_a_server_error(api, amir):
@@ -240,7 +248,7 @@ def test_payments_logged_by_a_plan_belong_to_the_plan(api, amir, fake_db):
         },
         instalments,
     )
-    (logged,) = api.get("/api/transactions", headers=amir).json()
+    (logged,) = api.get("/api/transactions", headers=amir).json()["transactions"]
     assert logged["bnpl_plan_id"] == plan["id"]
 
     patched = api.patch(f"/api/transactions/{logged['id']}", json={"amount_sen": 1}, headers=amir)

@@ -133,7 +133,7 @@ const DATA: Record<string, unknown> = {
     ],
     history: null,
   },
-  "/api/transactions": [TXN],
+  "/api/transactions": { transactions: [TXN], next_cursor: null },
   "/api/summary/categories": {
     month: "2026-09",
     income_sen: 1,

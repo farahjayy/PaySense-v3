@@ -55,7 +55,9 @@ def test_a_chunked_body_without_a_content_length_is_cut_off_as_it_streams(client
 
 
 def test_a_normal_body_is_unaffected(client):
-    res = client.post("/api/auth/login", json={"username": "nobody"})
+    res = client.post(
+        "/api/auth/login", json={"username": "nobody", "passphrase": "not the right one"}
+    )
 
     assert res.status_code == 401  # reached the handler: unknown user, not a size problem
 

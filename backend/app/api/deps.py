@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.api.rate_limit import LoginRateLimiter, RequestRateLimiter
+from app.api.rate_limit import DailyQuota, LoginRateLimiter, RequestRateLimiter
 from app.api.schemas import UserOut
 from app.core.errors import api_error, unauthorized
 from app.core.security import InvalidTokenError, decode_access_token
@@ -38,6 +38,10 @@ def get_login_limiter(request: Request) -> LoginRateLimiter:
     return request.app.state.login_limiter
 
 
+def get_username_limiter(request: Request) -> LoginRateLimiter:
+    return request.app.state.username_limiter
+
+
 MALAYSIA = ZoneInfo("Asia/Kuala_Lumpur")
 
 
@@ -65,11 +69,12 @@ def current_user(
     if credentials is None:
         raise unauthorized("not_authenticated", "Log in to continue.")
     try:
-        user_id = decode_access_token(credentials.credentials, settings)
+        user_id, version = decode_access_token(credentials.credentials, settings)
     except InvalidTokenError as err:
         raise unauthorized("invalid_token", "Your session is invalid or has expired.") from err
     row = users.get_by_id(db, user_id)
-    if row is None:
+    # a token issued before the last logout (or passphrase change) carries an older version
+    if row is None or int(row.get("token_version") or 0) != version:
         raise unauthorized("invalid_token", "Your session is invalid or has expired.")
     return UserOut(
         id=row["id"],
@@ -103,3 +108,32 @@ def rate_limited(bucket: str, max_requests: int, window_seconds: float):
             )
 
     return Depends(check)
+
+
+def get_write_quota(request: Request) -> DailyQuota:
+    return request.app.state.write_quota
+
+
+def seconds_to_malaysian_midnight(now: datetime | None = None) -> int:
+    local = (now or datetime.now(UTC)).astimezone(MALAYSIA)
+    midnight = datetime.combine(local.date(), datetime.min.time(), MALAYSIA)
+    return max(1, int(86400 - (local - midnight).total_seconds()))
+
+
+def check_write_quota(
+    user: CurrentUser,
+    settings: SettingsDep,
+    quota: Annotated[DailyQuota, Depends(get_write_quota)],
+) -> None:
+    """Every route that changes a user's data counts one write against their daily quota."""
+    if not quota.use(user.id, malaysia_today().isoformat(), settings.daily_write_quota):
+        wait = seconds_to_malaysian_midnight()
+        raise api_error(
+            429,
+            "daily_write_quota",
+            "You have made as many changes as one day allows. Try again tomorrow.",
+            headers={"Retry-After": str(wait)},
+        )
+
+
+WRITE_QUOTA = Depends(check_write_quota)

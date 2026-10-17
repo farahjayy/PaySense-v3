@@ -19,8 +19,7 @@ test("on the real database and model: login, import, forecast, check, confirm, s
   await page.goto("/");
   await expect(page).toHaveURL(/\/login/);
   await page.getByLabel("Username").fill(account.username);
-  const passphrase = page.getByLabel("Passphrase");
-  if (account.passphrase && (await passphrase.count()) > 0) await passphrase.fill(account.passphrase);
+  await page.getByLabel("Passphrase", { exact: true }).fill(account.passphrase ?? "");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /hi, real journey/i })).toBeVisible();
   await expect(page.getByText(/unlocks with four months/i)).toBeVisible();

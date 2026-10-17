@@ -16,6 +16,15 @@ from app.domain.csv_import import fingerprint
 from app.domain.flows import as_date
 
 TABLE = "transactions"
+# ADR D-49: the most transactions one user may hold. Five years of a busy student's ledger is
+# about 3,000 rows; the cap bounds what one account can make every read cost. ASSUMED size.
+MAX_LEDGER_ROWS = 5000
+
+
+class LedgerFullError(Exception):
+    """Writing these rows would take the user past MAX_LEDGER_ROWS."""
+
+
 TYPES = frozenset({"income", "expense", "savings"})
 SOURCES = frozenset({"manual", "csv", "seed"})
 CHUNK_SIZE = 500
@@ -110,7 +119,18 @@ def create(
         },
         source=source,
     )
+    _check_room(db, user_id, 1)
     return _table(db).insert(user_id, row)
+
+
+def count(db: Database, user_id: str) -> int:
+    return _table(db).count(user_id)
+
+
+def _check_room(db: Database, user_id: str, adding: int) -> None:
+    """Checked in the repository, so every path that writes a transaction is held to the cap."""
+    if count(db, user_id) + adding > MAX_LEDGER_ROWS:
+        raise LedgerFullError(f"the ledger holds at most {MAX_LEDGER_ROWS} transactions")
 
 
 def bulk_create(
@@ -119,6 +139,7 @@ def bulk_create(
     """Insert many rows (e.g. an import) in chunks. All rows are validated first; if a later chunk
     fails, the chunks already written are removed so a failed import leaves nothing behind."""
     cleaned = [_clean_row(row, source=source) for row in rows]
+    _check_room(db, user_id, len(cleaned))
     table = _table(db)
     written: list[str] = []
     try:
@@ -151,6 +172,29 @@ def list_between(
         order_by="date",
         descending=newest_first,
         between={"date": (start, end)},
+        **filters,
+    )
+
+
+def list_page(
+    db: Database,
+    user_id: str,
+    start: dt.date,
+    end: dt.date,
+    *,
+    after: tuple[str, str] | None,
+    limit: int,
+    type: str | None = None,  # noqa: A002
+    category: str | None = None,
+) -> list[dict[str, Any]]:
+    """One page, newest first by (date, id), strictly after the keyset `after` = (date, id)."""
+    filters = {k: v for k, v in (("type", type), ("category", category)) if v is not None}
+    return _table(db).page_before(
+        user_id,
+        between={"date": (start, end)},
+        order_by="date",
+        after=after,
+        limit=limit,
         **filters,
     )
 
