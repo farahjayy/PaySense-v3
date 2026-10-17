@@ -170,6 +170,10 @@ export function AssistantPanel({ onClose }: Props) {
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose();
       }}
+      onClick={(event) => {
+        // A link to another screen closes the panel, which would otherwise cover it on a phone.
+        if ((event.target as HTMLElement).closest("a[href^='/']")) onClose();
+      }}
       className="fixed inset-0 z-50 flex flex-col bg-surface-2 md:inset-y-0 md:left-auto md:right-0 md:w-[460px] md:border-l md:border-line md:shadow-xl"
     >
       <div className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3">
@@ -223,14 +227,20 @@ export function AssistantPanel({ onClose }: Props) {
             Working it out…
           </p>
         )}
-        {guided && (
-          <div className="space-y-2 rounded-card border border-line bg-surface p-3">
-            <p className="text-[12px] font-medium text-ink-secondary">
-              {status.data?.reason ?? "Use the buttons: they run the same checks with no model."}
-            </p>
+        {/* One element in both modes, so a form keeps its state when the status arrives. */}
+        <details open={guided} className="rounded-card border border-line bg-surface p-3">
+          <summary className="cursor-pointer text-[12px] font-medium text-ink-secondary">
+            Quick actions and forms (no model)
+          </summary>
+          <div className="mt-2 space-y-2">
+            {guided && (
+              <p className="text-[12px] text-ink-secondary">
+                {status.data?.reason ?? "Use the buttons: they run the same checks with no model."}
+              </p>
+            )}
             <GuidedActions onRun={runTool} busy={busy} />
           </div>
-        )}
+        </details>
       </div>
 
       <div className="space-y-2 border-t border-line bg-surface px-4 py-3">

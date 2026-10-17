@@ -28,11 +28,12 @@ export default defineConfig({
   ],
   webServer: [
     {
-      // Real FastAPI app on an in-memory database seeded with the "e2e" tester.
+      // Real FastAPI app on an in-memory database seeded with the "e2e" tester. E2E_FAKE_LLM runs
+      // the assistant on a scripted model (never a real provider) for the assistant journey.
       command: "uv run uvicorn tests.e2e_server:app --port 8100",
       cwd: "../backend",
       url: `${API_URL}/api/health`,
-      env: { PATH: pathWithUv },
+      env: { PATH: pathWithUv, E2E_FAKE_LLM: "1" },
       reuseExistingServer: false,
       timeout: 120_000,
     },

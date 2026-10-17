@@ -235,7 +235,23 @@ describe("AssistantPanel", () => {
       );
     }
     const guided = code === "consent_required" || code === "assistant_daily_budget";
-    expect(screen.queryByRole("group", { name: "Quick actions" }) !== null).toBe(guided);
+    const quick = screen.getByRole("group", { name: "Quick actions" });
+    expect(quick.closest("details")!.open).toBe(guided);
+  });
+
+  it("keeps the quick actions one tap away in llm mode, behind a closed disclosure", async () => {
+    routes();
+    post.mockResolvedValueOnce(ok(reply({ reply: "Your forecast." })));
+    render(<AssistantPanel onClose={vi.fn()} />, { wrapper });
+    const summary = await screen.findByText("Quick actions and forms (no model)");
+    const details = summary.closest("details")!;
+    expect(details.open).toBe(false);
+    await userEvent.click(summary);
+    expect(details.open).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: "My forecast" }));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    expect(post.mock.calls[0][0]).toBe("/api/assistant/run");
+    expect(post.mock.calls[0][1].body).toMatchObject({ tool: "get_forecast" });
   });
 
   it("says when the server cannot be reached", async () => {
@@ -253,6 +269,16 @@ describe("AssistantPanel", () => {
     await userEvent.keyboard("{Escape}");
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it("closes when a link takes the user to another screen", async () => {
+    routes();
+    const onClose = vi.fn();
+    render(<AssistantPanel onClose={onClose} />, { wrapper });
+    const link = await screen.findByRole("link", { name: "Review budgets" });
+    link.addEventListener("click", (e) => e.preventDefault()); // jsdom cannot navigate
+    await userEvent.click(link);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("has no detectable accessibility violations, in llm and guided mode", async () => {
