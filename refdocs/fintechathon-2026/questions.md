@@ -12,3 +12,4 @@
 | 6 | WP18 | The work packages name the budgets/assistant migration `0003_budgets_assistant.sql`; WP18 landed first (section 5 says to land it early), so login hardening is **0003** and budgets/assistant will be **0004**. | Numbered in the order written. |
 | 7 | WP2 | **Apply migration 0004 (`backend/migrations/0004_budgets_assistant.sql`)** after 0003. It will also hold the assistant tables (WP4b) — apply the final version from the branch head. Then run `uv run pytest -m integration` (the `test_v3_migrations.py` tests skip until it is applied). | Built and tested on the in-memory database. |
 | 8 | WP2 | Confirm ASSUMED 20: near at 80%, over at 100%, a 10% buffer, three months of history, limits rounded down to RM5. | Used as written. |
+| 9 | WP14 | Confirm ASSUMED 23 (unusual = above median + 3 robust SDs, 5+ earlier rows) and 24 (savings rate = left over ÷ income; money set aside as Savings shown separately). | Used as written. |

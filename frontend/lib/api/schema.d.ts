@@ -617,8 +617,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Spending Insights */
-        get: operations["spending_insights"];
+        /**
+         * Spending
+         * @description Month-on-month changes by category, unusual transactions, the savings rate, a headline.
+         */
+        get: operations["spending"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2408,18 +2411,26 @@ export interface components {
             income_sen: number;
             /** Spend Sen */
             spend_sen: number;
-            /** Savings Sen */
+            /**
+             * Savings Sen
+             * @description Money logged as Savings (set aside, D-45)
+             */
             savings_sen: number;
             /**
-             * Saved Sen
-             * @description Income less spending; the 'left over' of the month
+             * Left Over Sen
+             * @description Income less spending
              */
-            saved_sen: number;
+            left_over_sen: number;
             /**
              * Savings Rate
-             * @description saved / income; None when there is no income
+             * @description left_over / income; None when there is no income
              */
             savings_rate: number | null;
+            /**
+             * Set Aside Rate
+             * @description savings_sen / income
+             */
+            set_aside_rate: number | null;
             /** Headline */
             headline: string;
             /** Headline Rule */
@@ -4774,7 +4785,7 @@ export interface operations {
             };
         };
     };
-    spending_insights: {
+    spending: {
         parameters: {
             query: {
                 month: string;

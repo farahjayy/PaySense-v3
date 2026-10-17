@@ -28,6 +28,12 @@ Rules that make this file worth keeping:
 
 ## [Unreleased]
 
+### 2026-10-18 — WP14: spending insights
+- **Changed:** new `app/domain/insights.py` (per-category change against the previous calendar month with new/gone/up/down/same, the three biggest movers, unusual transactions above `median + 3 × 1.4826 × MAD` of the person's own earlier rows in the category, the savings rate, a headline chosen by a fixed rule order whose figures all come from the response); `api/insights.spending_for` and `GET /api/insights/spending?month=` filled in; `SpendingInsightsOut` now has `savings_sen` (set aside, D-45), `left_over_sen`, `savings_rate` and `set_aside_rate`; the 501 stub helper removed from insights. Tests: `tests/domain/test_insights.py` (9: first month, new and gone categories, totals equal the month summary with refunds/transfers/savings, no income, unusual against own history, too little history, plan payments never unusual, headline rules), `tests/api/test_insights_spending_api.py` (4). Plan/execution `2026-10-18-wp14-spending-insights`.
+- **Decided:** ASSUMED 23 (k = 3 robust SDs, 5+ earlier rows) and 24 (savings rate = left over ÷ income).
+- **Verified:** `uv run pytest tests -q --ignore=tests/ml` → **1782 passed**, 24 deselected; `ruff` clean; `gen:api` + `tsc` clean.
+- **Known issues / next steps:** next WP15 (recommendations and alerts).
+
 ### 2026-10-18 — WP13: bill analysis
 - **Changed:** new `app/domain/bill_analysis.py` (monthly cost from each cadence; bills that went up — the latest two logged occurrences of a confirmed item, matched by its id or by type and merchant text, the rule Engine 1 uses; the next 30 days of bills and unpaid instalments, overdue instalments flagged; collisions — greedy 7-day windows over upcoming items, two or more is a collision, with the total); `api/insights.bills_for` and `GET /api/insights/bills` filled in; `DueItemOut.overdue`. Tests: `tests/domain/test_bill_analysis.py` (10: cadences, share of income, no recurring items, increase/decrease, linked by id, collisions across SPayLater and Atome, a plan paid early, the 30-day window with an overdue instalment, inactive items), `tests/api/test_insights_bills_api.py` (3, two-user and unauthenticated). Plan/execution `2026-10-18-wp13-bill-analysis`.
 - **Verified:** `uv run pytest tests -q --ignore=tests/ml` → **1769 passed**, 24 deselected; `ruff` clean; `npm run gen:api` + `npx tsc --noEmit` clean.

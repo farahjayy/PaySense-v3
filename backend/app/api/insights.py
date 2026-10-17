@@ -11,10 +11,10 @@ from pydantic import Field
 from app.api.deps import CurrentUser, DbDep, TodayDep
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel
 from app.api.summary import MonthParam
-from app.core.errors import api_error
 from app.db import plans as plans_repo
 from app.db import recurring_items, transactions
 from app.domain.bill_analysis import analyse_bills
+from app.domain.insights import HISTORY_MONTHS, spending_insights
 
 router = APIRouter(prefix="/insights", tags=["insights"], responses=PROTECTED_RESPONSES)
 
@@ -105,9 +105,12 @@ class SpendingInsightsOut(ApiModel):
     previous_month: str | None
     income_sen: int
     spend_sen: int
-    savings_sen: int
-    saved_sen: int = Field(description="Income less spending; the 'left over' of the month")
-    savings_rate: float | None = Field(description="saved / income; None when there is no income")
+    savings_sen: int = Field(description="Money logged as Savings (set aside, D-45)")
+    left_over_sen: int = Field(description="Income less spending")
+    savings_rate: float | None = Field(
+        description="left_over / income; None when there is no income"
+    )
+    set_aside_rate: float | None = Field(description="savings_sen / income")
     headline: str
     headline_rule: str
     categories: list[CategoryChangeOut]
@@ -115,10 +118,6 @@ class SpendingInsightsOut(ApiModel):
     unusual: list[UnusualTransactionOut]
     unusual_note: str | None
     mad_k: float
-
-
-def _not_built():
-    return api_error(501, "not_implemented", "This is not available yet.")
 
 
 def bills_for(db: Any, user_id: str, today: dt.date) -> BillAnalysisOut:
@@ -138,6 +137,17 @@ def bill_analysis(user: CurrentUser, db: DbDep, today: TodayDep) -> BillAnalysis
     return bills_for(db, user.id, today)
 
 
+def spending_for(db: Any, user_id: str, month: str) -> SpendingInsightsOut:
+    """Shared by the route and the assistant's `get_spending_insights` tool."""
+    year, number = int(month[:4]), int(month[5:7])
+    index = year * 12 + number - 1
+    first = dt.date((index - HISTORY_MONTHS) // 12, (index - HISTORY_MONTHS) % 12 + 1, 1)
+    last = dt.date(year + number // 12, number % 12 + 1, 1) - dt.timedelta(days=1)
+    rows = transactions.list_between(db, user_id, first, last, newest_first=False)
+    return SpendingInsightsOut.model_validate(asdict(spending_insights(rows, month)))
+
+
 @router.get("/spending", response_model=SpendingInsightsOut)
-def spending_insights(month: MonthParam, user: CurrentUser, db: DbDep) -> SpendingInsightsOut:
-    raise _not_built()
+def spending(month: MonthParam, user: CurrentUser, db: DbDep) -> SpendingInsightsOut:
+    """Month-on-month changes by category, unusual transactions, the savings rate, a headline."""
+    return spending_for(db, user.id, month)
