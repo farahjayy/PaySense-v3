@@ -57,6 +57,16 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def text_sha256s(path: Path) -> set[str]:
+    """Digests of a text file as checked out with LF and with CRLF line endings.
+
+    Git converts line endings on checkout, so a model trained on Windows records the CRLF digest
+    and a Linux image holds the LF file. The settings are the same either way.
+    """
+    lf = path.read_bytes().replace(b"\r\n", b"\n")
+    return {hashlib.sha256(lf).hexdigest(), hashlib.sha256(lf.replace(b"\n", b"\r\n")).hexdigest()}
+
+
 def _read_metadata(folder: Path) -> dict[str, Any]:
     path = folder / METADATA_FILE
     try:
@@ -101,7 +111,9 @@ def _check_matches_running_code(meta: Mapping[str, Any], folder: Path) -> None:
             f"but {SERVED_MODEL!r} is serving now"
         )
     settings_path = ENGINE1_DIR / ENGINE1_VERSION / "metadata.json"
-    if not settings_path.exists() or _sha256(settings_path) != label.get("engine1_metadata_sha256"):
+    if not settings_path.exists() or label.get("engine1_metadata_sha256") not in text_sha256s(
+        settings_path
+    ):
         raise ArtefactError(
             "the forecast settings (window, horizon, scaling) differ from those the labels "
             "were made with"

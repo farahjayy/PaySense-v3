@@ -146,8 +146,11 @@ def export(
             "seed": results["labels_manifest"]["seed"],
             "served_model_files": results["labels_manifest"]["served_model_files"],
             "served_model": SERVED_MODEL,
+            # LF form, so the digest does not depend on the checkout's line endings
             "engine1_metadata_sha256": hashlib.sha256(
-                (ENGINE1_DIR / ENGINE1_VERSION / "metadata.json").read_bytes()
+                (ENGINE1_DIR / ENGINE1_VERSION / "metadata.json")
+                .read_bytes()
+                .replace(b"\r\n", b"\n")
             ).hexdigest(),
         },
         "serving_constants": results["serving_constants"],

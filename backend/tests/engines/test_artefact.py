@@ -211,6 +211,18 @@ def test_a_changed_forecast_settings_file_is_refused(tmp_path):
         load_engine2(write(tmp_path / "v1", label=label))
 
 
+@pytest.mark.parametrize("ending", [b"\n", b"\r\n"])
+def test_the_forecast_settings_check_ignores_line_endings(tmp_path, ending):
+    # Trained on a Windows checkout (CRLF), served from a Linux image (LF), or the reverse:
+    # the settings are the same, so the artefact must load either way.
+    settings = (ENGINE1_DIR / ARTEFACT_VERSION / "metadata.json").read_bytes()
+    as_checked_out = settings.replace(b"\r\n", b"\n").replace(b"\n", ending)
+    label = metadata(b"")["label"] | {
+        "engine1_metadata_sha256": hashlib.sha256(as_checked_out).hexdigest()
+    }
+    assert load_engine2(write(tmp_path / "v1", label=label)).version == "v1"
+
+
 def test_a_version_folder_without_metadata_is_an_error_not_a_silent_fallback_to_an_older_one(
     tmp_path,
 ):
