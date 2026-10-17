@@ -425,9 +425,17 @@ def check_risk(
     predictor: PredictorDep,
 ) -> RiskCheckOut:
     """Stateless: nothing is stored. A ledger that is too short returns `status: locked`."""
+    return check_for(body, user.id, db, today, forecaster, predictor)
+
+
+def check_for(
+    body: PlanIn, user_id: str, db: Any, today: dt.date, forecaster: Any, predictor: Predictor
+) -> RiskCheckOut:
+    """The whole stateless check: shared by the route and the assistant's `check_purchase_risk`
+    tool, so both run exactly the same pipeline under the same admission cap."""
     _check_purchase_date(body, today)
     with admitted():
-        out, result = _evaluate(body, user.id, db, today, forecaster, predictor)
+        out, result = _evaluate(body, user_id, db, today, forecaster, predictor)
     if result.gap is not None:  # drift watch: no user data, only the size of the disagreement
         logger.info("risk_check gap=%.3f model=%s band=%s", result.gap, predictor.version, out.band)
     return out
@@ -449,8 +457,17 @@ def confirm_risk(
     predictor: PredictorDep,
 ) -> RiskConfirmOut:
     """Go ahead with the purchase: freeze this check and create the plan linked to it."""
+    return confirm_for(body, user.id, db, today, forecaster, predictor)
+
+
+def confirm_for(
+    body: PlanIn, user_id: str, db: Any, today: dt.date, forecaster: Any, predictor: Predictor
+) -> RiskConfirmOut:
+    """Re-evaluate on the server, freeze the report and create the plan. The one write path for a
+    plan made from a risk check: the route and the assistant's confirmed `create_plan` both use
+    it, with the same locks, duplicate window and admission cap."""
     _check_purchase_date(body, today)
-    lock = _confirm_lock(user.id)
+    lock = _confirm_lock(user_id)
     if not lock.acquire(blocking=False):  # never park a server thread behind a slow confirm
         raise api_error(
             409, "confirm_in_progress", "This purchase is already being added. Wait a moment."
@@ -458,19 +475,19 @@ def confirm_risk(
     try:
         # one confirm at a time per user: the thread lock within this process, the database lock
         # across processes; the duplicate test reads the plans after both are held
-        with admitted(), plan_create_lock(db, user.id):
-            if _is_duplicate(plans_repo.list_with_instalments(db, user.id), body, _now()):
+        with admitted(), plan_create_lock(db, user_id):
+            if _is_duplicate(plans_repo.list_with_instalments(db, user_id), body, _now()):
                 raise api_error(
                     409,
                     "duplicate_confirm",
                     "This purchase was just added. Check your plans before adding it again.",
                 )
-            out, result = _evaluate(body, user.id, db, today, forecaster, predictor)
+            out, result = _evaluate(body, user_id, db, today, forecaster, predictor)
             if out.status != "ok" or result.features is None:
                 raise unprocessable(
                     "forecast_locked", "There is not enough history yet to check this purchase."
                 )
-            return _freeze_and_create(out, result, body, user.id, db, today)
+            return _freeze_and_create(out, result, body, user_id, db, today)
     finally:
         lock.release()
 
