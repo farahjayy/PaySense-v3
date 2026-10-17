@@ -13,7 +13,7 @@ from app.engines.risk.check import RiskRequest, run_check
 from tests.engines.test_designed_cases import TODAY, items, ledger
 
 pytestmark = pytest.mark.skipif(
-    not (MODEL_ROOT / "v1" / "metadata.json").exists(), reason="no risk model exported yet"
+    not (MODEL_ROOT / "v2" / "metadata.json").exists(), reason="no risk model exported yet"
 )
 
 

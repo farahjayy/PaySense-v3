@@ -9,7 +9,7 @@ from app.engines.risk.artefact import MODEL_ROOT, load_if_present
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
 
 pytestmark = pytest.mark.skipif(
-    not (MODEL_ROOT / "v1" / "metadata.json").exists(), reason="no risk model exported yet"
+    not (MODEL_ROOT / "v2" / "metadata.json").exists(), reason="no risk model exported yet"
 )
 
 
@@ -22,7 +22,7 @@ def predictor():
 
 @pytest.fixture(scope="module")
 def metadata():
-    return json.loads((MODEL_ROOT / "v1" / "metadata.json").read_text(encoding="utf-8"))
+    return json.loads((MODEL_ROOT / "v2" / "metadata.json").read_text(encoding="utf-8"))
 
 
 def test_the_committed_model_loads_against_the_running_code(predictor):

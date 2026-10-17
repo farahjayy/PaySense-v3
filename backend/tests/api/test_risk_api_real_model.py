@@ -9,7 +9,7 @@ from app.engines.risk.artefact import MODEL_ROOT, load_if_present
 from tests.api.test_risk_api import TODAY, body, fill
 
 pytestmark = pytest.mark.skipif(
-    not (MODEL_ROOT / "v1" / "metadata.json").exists(), reason="no risk model exported yet"
+    not (MODEL_ROOT / "v2" / "metadata.json").exists(), reason="no risk model exported yet"
 )
 
 
@@ -29,7 +29,7 @@ def test_a_small_purchase_on_a_comfortable_income_is_safe_end_to_end(api, amir, 
     assert res.status_code == 200
     out = res.json()
     assert out["status"] == "ok" and out["band"] == "Safe", out["probability"]
-    assert out["versions"]["model"] == "v1"
+    assert out["versions"]["model"] == "v2"
     assert out["suggestion"]["status"] == "already_safe"
     assert all(0 <= f["contribution"] <= 1 for f in out["factors"])
     assert len(out["with_plan_curve"]["months"]) >= 3
