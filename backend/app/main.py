@@ -35,6 +35,7 @@ from app.api import (
     recommendations,
     recurring,
     risk,
+    security,
     summary,
     transactions,
 )
@@ -205,6 +206,7 @@ def create_app(
     app.include_router(assistant.router, prefix="/api")
     app.include_router(account.router, prefix="/api")
     app.include_router(settings_api.router, prefix="/api")
+    app.include_router(security.router, prefix="/api")
     return app
 
 

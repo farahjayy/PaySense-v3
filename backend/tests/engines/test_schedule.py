@@ -41,24 +41,54 @@ def test_the_order_is_date_first_then_the_count_closest_to_the_one_typed():
     assert {d for d, _ in seen} == {TODAY, date(2026, 2, 2), date(2026, 3, 2)}  # two income dates
 
 
-def test_nothing_qualifies_when_the_student_is_already_at_risk_without_it():
+def test_no_search_runs_when_the_student_is_already_at_risk_without_it():
+    seen = []
+
     def evaluate(request):
+        seen.append(request)
         return 1.0, 1.0  # adds nothing, but the student is short on every path anyway
 
     out = schedule(evaluate, PHONE, INCOME)
     assert out.chosen is None and out.already_at_risk is True
-    assert all(not o.qualifies for o in out.options)
+    assert len(seen) == 1 and [o.as_typed for o in out.options] == [True]
 
 
-def test_a_manual_plan_keeps_its_count_and_moves_its_first_payment_with_the_date():
+def test_each_option_is_judged_against_its_own_baseline():
+    """A longer plan is simulated over a longer stretch, so its "without" differs; the reported
+    baseline and "already at risk" are the typed purchase's, and an option whose own baseline
+    is At Risk never qualifies."""
+    table = {3: (0.40, 0.10), 2: (0.40, 0.31), 4: (0.33, 0.30), 6: (0.20, 0.18)}
+
+    def evaluate(request):
+        return table.get(request.num_installments, (0.9, 0.5))
+
+    out = schedule(evaluate, PHONE, INCOME)
+    assert out.without == 0.10 and out.already_at_risk is False
+    by_count = {o.num_installments: o for o in out.options}
+    assert by_count[4].without == 0.30 and not by_count[4].qualifies
+    assert out.chosen is not None and out.chosen.num_installments == 6
+    assert out.chosen.without == 0.18 and abs(out.chosen.added - 0.02) < 1e-9
+
+
+def test_a_typed_first_payment_date_is_never_moved():
     manual = RiskRequest(provider="other", item_name="Laptop", purchase_date=TODAY,
                          num_installments=4, instalment_sen=30000,
                          first_payment_date=date(2026, 2, 10))  # fmt: skip
     evaluate, seen = fake({})
     out = schedule(evaluate, manual, INCOME)
-    assert {n for _, n in seen} == {4}
-    moved = [o for o in out.options if o.purchase_date == date(2026, 2, 2)][0]
-    assert moved.first_payment_date == date(2026, 3, 5)  # shifted by the same 23 days
+    assert seen == [(TODAY, 4)]
+    assert all(o.first_payment_date == date(2026, 2, 10) for o in out.options)
+
+
+def test_start_dates_after_the_last_accepted_purchase_date_are_not_tried():
+    evaluate, seen = fake({})
+    schedule(evaluate, PHONE, INCOME, latest=date(2026, 2, 15))
+    assert {d for d, _ in seen} == {TODAY, date(2026, 2, 2)}
+
+
+def test_a_typed_purchase_the_rules_refuse_gives_no_options():
+    out = schedule(lambda request: None, PHONE, INCOME)
+    assert out.options == () and out.chosen is None and out.without is None
 
 
 def test_an_option_the_plan_rules_refuse_is_skipped():

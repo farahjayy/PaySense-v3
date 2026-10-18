@@ -51,6 +51,9 @@ How a write is made safe: the payload is validated with the API's own models and
 | Audit log of every message, tool call, proposal, confirm, decline, refusal and fallback (tier, tool, status, provider, model, tokens) | `db/assistant_events.py` | `tests/assistant/test_actions.py`, `test_agent.py` |
 | Consent before the assistant sends anything to the provider; export and delete my data (PDPA) | `api/account.py`, `assistant/agent.py` | `tests/api/test_account_api.py` |
 
+### The security drill (on screen, D-58)
+The **Security drill** page (`/security`, `POST /api/security/drill`) runs 14 attacks, at least three for each of the four named classes (induced transfers, data extraction, privilege escalation, prompt injection), through the real assistant code. Each attack runs in its own throwaway in-memory sandbox with two made-up students; the model is a script that obeys every injected instruction, so it is fooled every time. Harm is measured on the sandbox afterwards (data changed without a confirm, another student's data in anything returned, an invented figure reaching the reply). The tests switch controls off to prove a broken control shows up as harm (`backend/tests/security/test_drill.py`). The caller's own data is never read or written (`tests/api/test_security_drill_api.py`). How a real model behaves is measured separately in `reports/assistant/`.
+
 ## 4. Threat model
 
 **Assets:** a student's ledger and plans (personal financial data); the session token; the passphrase; the model provider key; the integrity of the risk score (a student acts on it); the operator's model budget.

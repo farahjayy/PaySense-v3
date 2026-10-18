@@ -419,6 +419,7 @@ describe("RiskScreen: the Second-Opinion Check (D-57)", () => {
           num_installments: 6,
           first_payment_date: null,
           with_probability: 0.12,
+          without_probability: 0.1,
           added_probability: 0.02,
           qualifies: true,
           as_typed: false,
@@ -426,8 +427,9 @@ describe("RiskScreen: the Second-Opinion Check (D-57)", () => {
       ],
       chosen_index: 0,
     };
+    const scheduleOut = { ...schedule, chosen: schedule.options[0] };
     post.mockImplementation(async (path: string) =>
-      path === "/api/risk/schedule" ? ok(schedule) : ok(result()),
+      path === "/api/risk/schedule" ? ok(scheduleOut) : ok(result()),
     );
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });

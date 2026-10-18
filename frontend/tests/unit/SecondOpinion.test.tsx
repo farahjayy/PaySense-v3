@@ -120,6 +120,29 @@ describe("SecondOpinion", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("leaves out months with nothing due and no income, and says so", () => {
+    const base = opinion();
+    const empty = {
+      month: "2026-12",
+      by_provider: [],
+      new_plan_sen: 0,
+      total_sen: 0,
+      known_income_sen: 0,
+    };
+    render(
+      <SecondOpinion opinion={opinion({ stack: [...base.stack, empty] })} />,
+    );
+    const table = screen.getByRole("table", {
+      name: /what you owe each month/i,
+    });
+    expect(within(table).getAllByRole("row")).toHaveLength(3);
+    expect(
+      screen.getByText(
+        /1 month with nothing due and no confirmed income is left out/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("asks for limits instead of guessing when none are recorded", () => {
     const base = opinion();
     render(
@@ -149,7 +172,7 @@ const INPUT: PlanInput = {
 };
 
 function schedule(patch: Partial<Schedule> = {}): Schedule {
-  return {
+  const out: Omit<Schedule, "chosen"> = {
     status: "ok",
     without_probability: 0.08,
     already_at_risk: false,
@@ -161,6 +184,7 @@ function schedule(patch: Partial<Schedule> = {}): Schedule {
         num_installments: 3,
         first_payment_date: null,
         with_probability: 0.21,
+        without_probability: 0.08,
         added_probability: 0.13,
         qualifies: false,
         as_typed: true,
@@ -170,6 +194,7 @@ function schedule(patch: Partial<Schedule> = {}): Schedule {
         num_installments: 6,
         first_payment_date: null,
         with_probability: 0.11,
+        without_probability: 0.08,
         added_probability: 0.03,
         qualifies: true,
         as_typed: false,
@@ -177,6 +202,13 @@ function schedule(patch: Partial<Schedule> = {}): Schedule {
     ],
     chosen_index: 1,
     ...patch,
+  };
+  return {
+    ...out,
+    chosen:
+      out.chosen_index === null
+        ? null
+        : (out.options[out.chosen_index] ?? null),
   };
 }
 
@@ -207,8 +239,11 @@ describe("SaferTiming", () => {
     ).toBeInTheDocument();
     expect(within(items[0]).getByText(/\+13 points/)).toBeInTheDocument();
     expect(within(items[1]).getByText(/26 October 2026/)).toBeInTheDocument();
+    expect(
+      within(items[1]).queryByText(/date you entered/i),
+    ).not.toBeInTheDocument();
     expect(within(items[1]).getByText(/6 instalments/)).toBeInTheDocument();
-    expect(screen.getByText(/adds at most 5 points/i)).toBeInTheDocument();
+    expect(screen.getByText(/at most 5 points/i)).toBeInTheDocument();
 
     await user.click(
       within(items[1]).getByRole("button", { name: /use this/i }),
@@ -220,7 +255,43 @@ describe("SaferTiming", () => {
     });
   });
 
-  it("moves a typed first payment date with the option", async () => {
+  it("labels another count on the same day as the date you entered", () => {
+    const sameDay = { ...schedule().options[1], purchase_date: "2026-10-09" };
+    render(
+      <SaferTiming
+        result={schedule({ options: [schedule().options[0], sameDay] })}
+      />,
+      {
+        wrapper,
+      },
+    );
+    expect(
+      screen.getByText(/on the date you entered · 6 instalments/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows no rule figures before the server has sent them", () => {
+    render(<SaferTiming request={INPUT} onUse={vi.fn()} />, { wrapper });
+    const card = screen.getByText(/we try the date you entered/i);
+    expect(card.textContent).not.toMatch(/\d/);
+  });
+
+  it("shows each option's own chance without the purchase", async () => {
+    post.mockResolvedValue(ok(schedule()));
+    const user = userEvent.setup();
+    render(<SaferTiming request={INPUT} onUse={vi.fn()} />, { wrapper });
+    await user.click(
+      screen.getByRole("button", { name: /find a better time/i }),
+    );
+    const items = within(
+      await screen.findByRole("list", { name: /options tried/i }),
+    ).getAllByRole("listitem");
+    expect(
+      within(items[1]).getByText(/11% with it, 8% without/),
+    ).toBeInTheDocument();
+  });
+
+  it("carries the option's first payment date into the request", async () => {
     post.mockResolvedValue(
       ok(
         schedule({
@@ -279,7 +350,9 @@ describe("SaferTiming", () => {
     await user.click(
       screen.getByRole("button", { name: /find a better time/i }),
     );
-    expect(await screen.findByText(/no timing can fix/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/no timing changes that on its own/i),
+    ).toBeInTheDocument();
   });
 
   it("shows the locked state when history is short", async () => {

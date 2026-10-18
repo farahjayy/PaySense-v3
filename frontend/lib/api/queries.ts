@@ -33,6 +33,7 @@ export type ConfirmRow = Schemas["ConfirmRow"];
 export type RiskCheck = Schemas["RiskCheckOut"];
 export type RiskConfirm = Schemas["RiskConfirmOut"];
 export type Schedule = Schemas["ScheduleOut"];
+export type Drill = Schemas["DrillOut"];
 export type ModelInfo = Schemas["ModelInfoOut"];
 export type Category = Schemas["CategoryOut"];
 export type CategorySummary = Schemas["CategorySummaryOut"];
@@ -572,5 +573,12 @@ export function useDeleteCategory() {
     onSuccess: () => {
       void invalidate();
     },
+  });
+}
+
+/** D-58: run the security drill. A throwaway sandbox on the server; the user's data is untouched. */
+export function useSecurityDrill() {
+  return useMutation({
+    mutationFn: async () => unwrap(api.POST("/api/security/drill")),
   });
 }

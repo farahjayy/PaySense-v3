@@ -91,13 +91,16 @@ export const SCHEDULE: Schemas["ScheduleOut"] = {
       num_installments: 3,
       first_payment_date: null,
       with_probability: 0.09,
+      without_probability: 0.04,
       added_probability: 0.05,
       qualifies: true,
       as_typed: true,
     },
   ],
   chosen_index: 0,
+  chosen: null, // set below to options[0]
 };
+SCHEDULE.chosen = SCHEDULE.options[0] ?? null;
 
 export const RISK: Schemas["RiskCheckOut"] = {
   status: "ok",

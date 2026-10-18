@@ -398,7 +398,9 @@ def _second_opinion(
     proposal = result.proposal
     owed = [(i.due_date, i.amount_sen) for i in proposal.instalments if not i.paid_at_checkout]
     last = max([today, *(d for d, _ in owed)])
-    stack = second.stack_dues(plans, owed, _income_by_month(items, today, last), today)
+    # from the first of this month: overdue dues are shown in this month, so is income already in
+    income = _income_by_month(items, today.replace(day=1), last)
+    stack = second.stack_dues(plans, owed, income, today)
     exposure = second.exposure(plans, sum(sen for _, sen in owed), proposal.provider_label, limits)
     return SecondOpinionOut(
         without_probability=_stored(result.p_without),
@@ -641,6 +643,9 @@ class ScheduleOptionOut(ApiModel):
     num_installments: int
     first_payment_date: dt.date | None
     with_probability: float = Field(ge=0, le=1)
+    without_probability: float = Field(
+        ge=0, le=1, description="This option's own baseline: its plan's length sets the stretch"
+    )
     added_probability: float = Field(ge=0, le=1)
     qualifies: bool
     as_typed: bool
@@ -651,15 +656,20 @@ class ScheduleOut(ApiModel):
     until one adds at most `added_max` and stays below `at_risk_edge` (ASSUMED 43)."""
 
     status: Literal["ok", "locked"]
-    without_probability: float | None
-    already_at_risk: bool
+    without_probability: float | None = Field(description="The purchase as typed, without it")
+    already_at_risk: bool = Field(description="Without the purchase as typed; then no search runs")
     added_max: float = ADDED_MAX
     at_risk_edge: float = CAUTION_BELOW
     options: list[ScheduleOptionOut]
     chosen_index: int | None
+    chosen: ScheduleOptionOut | None = Field(
+        default=None, description="The option suggested, also at options[chosen_index]"
+    )
 
 
-SCHEDULES_PER_MINUTE = 5  # each one runs up to 21 simulations
+# each search judges up to 18 options, about two simulations each (with, and without to that
+# option's plan end); the assistant's tool shares this limit (`schedule_limit`)
+SCHEDULES_PER_MINUTE = 5
 
 
 @router.post(
@@ -693,19 +703,23 @@ def schedule_for(
     seed = daily_seed(user_id, today)
     cache: dict[Any, Any] = {}
 
+    typed = _request(body)
+
     def evaluate(request: RiskRequest) -> tuple[float, float] | None:
         try:
             result = run_check(
                 rows, items, plans, limits, request, today, forecaster, predictor,
                 seed=seed, cache=cache, savings_buffer_sen=buffer,
             )  # fmt: skip
-        except ProposalError:
-            return None
+        except ProposalError as err:
+            if request == typed:  # the purchase as typed: refused exactly as the check refuses it
+                raise unprocessable(err.code, err.message) from err
+            return None  # another date or count the plan rules refuse is skipped
         if result.status != "ok" or result.p_simulated is None or result.p_without is None:
             return None
         return result.p_simulated, result.p_without
 
-    request = _request(body)
+    request = typed
     horizon = request.purchase_date + dt.timedelta(days=NEXT_INCOME_LOOKAHEAD_DAYS)
     income_dates = sorted(
         day
@@ -714,7 +728,9 @@ def schedule_for(
         for day in occurrences(item, request.purchase_date, horizon)
     )
     with admitted():
-        found = schedule(evaluate, request, income_dates)
+        found = schedule(
+            evaluate, request, income_dates, latest=today + dt.timedelta(days=DAYS_AHEAD)
+        )
     if not found.options:
         return ScheduleOut(status="locked", without_probability=None, already_at_risk=False,
                            options=[], chosen_index=None)  # fmt: skip
@@ -724,6 +740,7 @@ def schedule_for(
             num_installments=o.num_installments,
             first_payment_date=o.first_payment_date,
             with_probability=_stored(o.with_purchase),
+            without_probability=_stored(o.without),
             added_probability=_stored(o.added),
             qualifies=o.qualifies,
             as_typed=o.as_typed,
@@ -737,6 +754,7 @@ def schedule_for(
         already_at_risk=found.already_at_risk,
         options=options,
         chosen_index=chosen,
+        chosen=options[chosen] if chosen is not None else None,
     )
 
 

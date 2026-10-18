@@ -1,8 +1,9 @@
 """Runs the repository contract against the REAL Supabase project: `uv run pytest -m integration`.
 
-These tests are the only check that tests/fakes.py behaves like PostgREST and that the migration's
-constraints (composite foreign keys, checks, unique index, row cap) hold. They create throwaway
-users with random usernames and delete them (rows cascade) afterwards.
+These tests are the only check that the in-memory database (app/db/memory.py) behaves like
+PostgREST and that the migration's constraints (composite foreign keys, checks, unique index,
+row cap) hold. They create throwaway users with random usernames and delete them (rows cascade)
+afterwards.
 """
 
 import pytest

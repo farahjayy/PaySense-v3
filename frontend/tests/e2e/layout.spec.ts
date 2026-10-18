@@ -14,22 +14,31 @@ const SCREENS = [
   "/import",
   "/account",
   "/model",
+  "/security",
 ];
 
 async function signIn(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Username").fill("e2e-phone-assistant-llm");
-  await page.getByLabel("Passphrase", { exact: true }).fill("correct horse battery staple");
+  await page
+    .getByLabel("Passphrase", { exact: true })
+    .fill("correct horse battery staple");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^hi,/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: /^hi,/i }),
+  ).toBeVisible();
 }
 
 async function overflow(page: Page): Promise<number> {
-  return page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  return page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
 }
 
 for (const width of [360, 375]) {
-  test(`every screen fits a ${width} px phone without sideways scrolling`, async ({ page }) => {
+  test(`every screen fits a ${width} px phone without sideways scrolling`, async ({
+    page,
+  }) => {
     test.skip(test.info().project.name !== "phone", "phone widths only");
     await page.setViewportSize({ width, height: 780 });
     await page.goto("/login");
@@ -43,7 +52,9 @@ for (const width of [360, 375]) {
     }
     await page.goto("/");
     await page.getByRole("button", { name: "Ask PaySense" }).click();
-    await expect(page.getByRole("dialog", { name: "Ask PaySense" })).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "Ask PaySense" }),
+    ).toBeVisible();
     expect(await overflow(page), "assistant panel").toBeLessThanOrEqual(0);
   });
 }
