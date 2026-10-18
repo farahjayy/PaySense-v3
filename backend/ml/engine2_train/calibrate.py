@@ -69,13 +69,17 @@ def _logit(p: np.ndarray) -> np.ndarray:
     return np.log(clipped / (1 - clipped))
 
 
-def fit_calibrator(kind: str, pred: np.ndarray, target: np.ndarray) -> Calibrator:
+def fit_calibrator(
+    kind: str, pred: np.ndarray, target: np.ndarray, weight: np.ndarray | None = None
+) -> Calibrator:
+    """`weight` per row (the two-part target's 1 - b, D-62); None weighs every row equally."""
+    weight = np.ones(len(pred)) if weight is None else np.asarray(weight, dtype=float)
     if kind == "none":
         return Calibrator("none")
     if kind == "platt":
         x = np.concatenate([_logit(pred), _logit(pred)]).reshape(-1, 1)
         y = np.concatenate([np.ones(len(pred)), np.zeros(len(pred))])
-        w = np.concatenate([target, 1 - target])
+        w = np.concatenate([target * weight, (1 - target) * weight])
         return Calibrator(
             "platt", LogisticRegression(C=1e6, max_iter=1000).fit(x, y, sample_weight=w)
         )
@@ -83,19 +87,37 @@ def fit_calibrator(kind: str, pred: np.ndarray, target: np.ndarray) -> Calibrato
         # a soft target is already a probability: regress it on the prediction, monotonically
         return Calibrator(
             "isotonic",
-            IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip").fit(pred, target),
+            IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip").fit(
+                pred, target, sample_weight=weight
+            ),
         )
     raise ValueError(f"unknown calibration {kind!r}; options are {OPTIONS}")
 
 
 def choose_calibration(
-    pred: np.ndarray, target: np.ndarray, folds: int = 5, seed: int = 0
+    pred: np.ndarray,
+    target: np.ndarray,
+    folds: int = 5,
+    seed: int = 0,
+    weight: np.ndarray | None = None,
+    base: np.ndarray | None = None,
 ) -> tuple[str, dict[str, float]]:
-    """The option with the lowest held-out Brier score, and every option's score."""
+    """The option with the lowest held-out Brier score, and every option's score. For the
+    two-part target `pred` and `target` are q-hat and q, each calibrator is fitted with `weight`
+    and scored on the composed probability b + (1 - b) * q against the label."""
+
+    def composed(q: np.ndarray, rows: np.ndarray) -> np.ndarray:
+        return q if base is None else base[rows] + (1 - base[rows]) * q
+
+    w = None if weight is None else np.asarray(weight, dtype=float)
     scores = {kind: [] for kind in OPTIONS}
     for train, test in KFold(folds, shuffle=True, random_state=seed).split(pred):
         for kind in OPTIONS:
-            fitted = fit_calibrator(kind, pred[train], target[train])
-            scores[kind].append(brier(fitted.apply(pred[test]), target[test]))
+            fitted = fit_calibrator(
+                kind, pred[train], target[train], None if w is None else w[train]
+            )
+            scores[kind].append(
+                brier(composed(fitted.apply(pred[test]), test), composed(target[test], test))
+            )
     mean = {kind: float(np.mean(values)) for kind, values in scores.items()}
     return min(mean, key=mean.get), mean

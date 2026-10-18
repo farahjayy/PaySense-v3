@@ -19,7 +19,7 @@ from typing import Any
 import numpy as np
 
 from app.engines.forecasting.simulate import band
-from app.engines.risk.features import BUFFER_FEATURE
+from app.engines.risk.features import BUFFER_FEATURE, EARLIER_BUFFER_FEATURES
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA = ROOT / "data" / "engine2"
@@ -42,9 +42,16 @@ def read_labels(path: Path) -> dict[int, dict[str, Any]]:
                 "label": float(r["label"]),
                 "p_without": float(r["p_without"]),
                 "persona": r.get("truth", {}).get("persona"),
-                "buffer": float(r["features"].get(BUFFER_FEATURE, 0.0)),
+                "buffer": _buffer(r["features"]),
             }
     return out
+
+
+def _buffer(features: dict[str, float]) -> float:
+    for name in (BUFFER_FEATURE, *EARLIER_BUFFER_FEATURES):
+        if name in features:
+            return float(features[name])
+    return 0.0
 
 
 def label_facts(labels: dict[int, dict[str, Any]]) -> dict[str, float]:

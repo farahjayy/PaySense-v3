@@ -14,6 +14,12 @@ Order:
 6. LAST, the final calibrated winner scored once on the lockbox (with the logistic benchmark and
    the constants beside it), and that scoring appended to `data/engine2/runs/lockbox_log.jsonl`.
    Everything that can fail is done before step 6, so a crash cannot spend the lockbox.
+
+Engine v3 (plan 2026-10-18-engine-v3 §5): the target is two-part by default (D-62): the models
+learn q from the features with weight 1 - b and are scored on b + (1 - b) * q-hat; the calibrator
+is chosen on that composed Brier and fitted on q-hat. When the labels hold profiles from index
+10,000 on, those are the new lockbox; the old every-tenth lockbox is kept out of every step and
+scored once beside it as continuity. The predict-p_without benchmark is scored on both.
 """
 
 import argparse
@@ -27,15 +33,28 @@ import joblib
 import numpy as np
 
 from app.engines.risk.artefact import live_constants
-from app.engines.risk.features import ENGINE1_FEATURES, FEATURE_NAMES, FEATURE_SCHEMA_HASH
-from ml.engine2_train.calibrate import choose_calibration, fit_calibrator
+from app.engines.risk.features import ENGINE1_FEATURES, FEATURE_SCHEMA_HASH
+from ml.engine2_train.calibrate import Calibrator, choose_calibration, fit_calibrator
 from ml.engine2_train.cv import CvResult, cross_validate, nadeau_bengio, nadeau_bengio_interval
-from ml.engine2_train.data import LABELS_PATH, Dataset, load_labels, split_lockbox
+from ml.engine2_train.data import (
+    LABELS_PATH,
+    Dataset,
+    continuity_lockbox,
+    load_labels,
+    split_lockbox,
+)
 from ml.engine2_train.labelstats import baseline_facts
 from ml.engine2_train.lockbox import LOG_FILE as LOCKBOX_LOG
 from ml.engine2_train.lockbox import append_log, score_lockbox
 from ml.engine2_train.metrics import brier
-from ml.engine2_train.models import CANDIDATES, Fitted, fit_soft, logistic_sign_check, tune
+from ml.engine2_train.models import (
+    CANDIDATES,
+    Fitted,
+    fit_soft,
+    logistic_sign_check,
+    tune,
+    two_part_target,
+)
 from ml.engine2_train.provenance import git_commit, library_versions, sha256_file
 from ml.engine2_train.select import choose
 from ml.engine2_train.sensitivity import learning_curve, monotonicity_cost, shortfall_definition
@@ -56,6 +75,7 @@ class TrainConfig:
     folds: int
     trials: int
     seed: int = 20251228
+    target: str = "two_part"  # engine v3 (D-62); "direct" is the v2 target, p_with itself
 
 
 CONFIGS = {
@@ -94,7 +114,7 @@ def _ablation(dev: Dataset, winner: str, config: TrainConfig) -> dict[str, Any]:
     every training fold, on the same fresh folds: neither is the model comparison's run of the
     winner, which was selected for being the best and would carry a winner's curse that the other
     arm lacks."""
-    keep = tuple(n for n in FEATURE_NAMES if n not in ENGINE1_FEATURES)
+    keep = tuple(n for n in dev.names if n not in ENGINE1_FEATURES)  # the base column stays
     seed = config.seed + FRESH_FOLDS_OFFSET
     full = cross_validate(winner, dev, config.repeats, config.folds, config.trials, seed)
     without = cross_validate(
@@ -161,21 +181,68 @@ def _sensitivity(
     }
 
 
-def _log_scoring(out_dir: Path, record: dict[str, Any], scores: dict[str, Any]) -> int:
-    """Append this scoring to the log beside the run directories; return how many it holds."""
+def _log_scoring(
+    out_dir: Path, record: dict[str, Any], scores: dict[str, Any], lockbox: str = ""
+) -> int:
+    """Append this scoring to the log beside the run directories; return how many it holds.
+    `lockbox` names which lockbox was scored when a label file holds two (engine v3)."""
     commit = record["git_commit"]
     run_id = f"{record['config']['name']}-{record['labels_sha256'][:12]}-{str(commit)[:12]}"
-    return append_log(
-        out_dir.parent / LOCKBOX_LOG,
-        {
-            "run_id": run_id,
-            "git_commit": commit,
-            "labels_sha256": record["labels_sha256"],
-            "winner": record["winner"],
-            "lockbox_brier_calibrated": scores["calibrated"]["brier"],
-            "lockbox_brier_raw": scores["raw"]["brier"],
-        },
-    )
+    entry = {
+        "run_id": run_id,
+        "git_commit": commit,
+        "labels_sha256": record["labels_sha256"],
+        "winner": record["winner"],
+        "lockbox_brier_calibrated": scores["calibrated"]["brier"],
+        "lockbox_brier_raw": scores["raw"]["brier"],
+    }
+    if lockbox:
+        entry["lockbox"] = lockbox
+    return append_log(out_dir.parent / LOCKBOX_LOG, entry)
+
+
+def calibrated_predict(final: Fitted, calibrator: Calibrator, x: np.ndarray) -> np.ndarray:
+    """What the served artefact computes: the calibrated q composed on the base for a two-part
+    model, the calibrated probability otherwise."""
+    if not final.two_part:
+        return calibrator.apply(final.predict(x))
+    base = x[:, -1]
+    return base + (1 - base) * calibrator.apply(final.predict_q(x[:, :-1]))
+
+
+def load_run(run_dir: Path) -> tuple[Fitted, Calibrator]:
+    final = joblib.load(run_dir / "final_model.joblib")
+    stored = json.loads((run_dir / "calibrator.json").read_text(encoding="utf-8"))
+    return final, Calibrator.from_dict(stored)
+
+
+def _q_of(composed: np.ndarray, base: np.ndarray) -> np.ndarray:
+    """q-hat back from a composed prediction (0 where b = 1, where q has no weight)."""
+    gap = 1 - base
+    return np.where(gap > 0, np.clip((composed - base) / np.where(gap > 0, gap, 1), 0, 1), 0.0)
+
+
+def _calibration(oof: np.ndarray, dev: Dataset, two_part: bool, seed: int):
+    """Choose and fit the calibrator: on the probability (direct) or on q-hat with weight 1 - b,
+    scored on the composed probability (two-part)."""
+    if not two_part:
+        chosen, scores = choose_calibration(oof, dev.y, seed=seed)
+        return chosen, scores, fit_calibrator(chosen, oof, dev.y)
+    base = dev.x[:, -1]
+    q, weight = two_part_target(dev.y, base)
+    q_hat = _q_of(oof, base)
+    chosen, scores = choose_calibration(q_hat, q, seed=seed, weight=weight, base=base)
+    return chosen, scores, fit_calibrator(chosen, q_hat, q, weight)
+
+
+def _benchmarks(box: Dataset, dev: Dataset, two_part: bool) -> dict[str, np.ndarray]:
+    if box.p_without is None:
+        return {}
+    out = {"p_without": box.p_without}
+    if dev.p_without is not None:
+        mean_q = float(two_part_target(dev.y, dev.p_without)[0].mean())
+        out["p_without_plus_mean_q"] = box.p_without + (1 - box.p_without) * mean_q
+    return out
 
 
 def check_labels_match_serving(manifest: dict[str, Any]) -> None:
@@ -194,7 +261,13 @@ def run(config: TrainConfig, labels_path: Path, out_dir: Path) -> dict[str, Any]
     manifest = _manifest(labels_path)
     check_labels_match_serving(manifest)
     data = load_labels(labels_path)
+    two_part = config.target == "two_part"
+    if two_part:
+        data = data.with_base()
+    elif config.target != "direct":
+        raise ValueError(f"unknown target {config.target!r}")
     dev, lockbox = split_lockbox(data)
+    continuity = continuity_lockbox(data)
     paths = manifest.get("paths")
     results = {
         name: cross_validate(name, dev, config.repeats, config.folds, config.trials, config.seed)
@@ -210,16 +283,17 @@ def run(config: TrainConfig, labels_path: Path, out_dir: Path) -> dict[str, Any]
 
     final_params = tuned(choice.winner)
     oof = winner.oof[0]  # one repeat: every profile predicted once, by a model that did not see it
-    calibration, calibration_scores = choose_calibration(oof, dev.y, seed=config.seed)
-    calibrator = fit_calibrator(calibration, oof, dev.y)
+    calibration, calibration_scores, calibrator = _calibration(oof, dev, two_part, config.seed)
     final = fit_soft(choice.winner, final_params, dev.x, dev.y, dev.names, config.seed)
     benchmark = fit_soft("logistic", tuned("logistic"), dev.x, dev.y, dev.names, config.seed)
 
     record = {
         "config": asdict(config),
+        "target": config.target,
         "profiles": len(data),
         "development_profiles": len(dev),
         "lockbox_profiles": len(lockbox),
+        "continuity_profiles": len(continuity),
         "strata": dev.n_strata,
         "label_facts": {
             "all": baseline_facts(data, paths),
@@ -257,14 +331,25 @@ def run(config: TrainConfig, labels_path: Path, out_dir: Path) -> dict[str, Any]
         "sensitivity": _sensitivity(dev, choice.winner, final_params, oof, config),
         "constant_baseline_brier": brier(np.full(len(dev), dev.y.mean()), dev.y),
     }
+
     # the last step: the one scoring of the final model on the lockbox, then its log line
-    raw = final.predict(lockbox.x)
-    scores = score_lockbox(
-        lockbox, raw, calibrator.apply(raw), benchmark.predict(lockbox.x),
-        float(dev.y.mean()), _group_bases(dev),
-    )  # fmt: skip
+    def scored(box: Dataset) -> dict[str, Any]:
+        return score_lockbox(
+            box, final.predict(box.x), calibrated_predict(final, calibrator, box.x),
+            benchmark.predict(box.x), float(dev.y.mean()), _group_bases(dev),
+            _benchmarks(box, dev, two_part),
+        )  # fmt: skip
+
+    scores = scored(lockbox)
     record["lockbox"] = scores
-    record["lockbox_scorings"] = _log_scoring(out_dir, record, scores)
+    record["lockbox_scorings"] = _log_scoring(
+        out_dir, record, scores, "new" if len(continuity) else ""
+    )
+    if len(continuity):
+        record["continuity"] = scored(continuity)
+        record["continuity_scorings"] = _log_scoring(
+            out_dir, record, record["continuity"], "old (continuity)"
+        )
     _save(out_dir, record, final, calibrator.to_dict(), oof)
     return record
 

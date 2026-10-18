@@ -10,7 +10,14 @@ from typing import Any
 
 from app.engines.forecasting.flows import occurrences
 from app.engines.forecasting.simulate import Forecaster
-from app.engines.risk.check import DEFAULT_PATHS, CheckResult, Predictor, RiskRequest, run_check
+from app.engines.risk.check import (
+    DEFAULT_PATHS,
+    CheckResult,
+    Predictor,
+    RiskRequest,
+    is_two_part,
+    run_check,
+)
 from app.engines.risk.counterfactual import Counterfactual, search
 from app.engines.risk.explain import ExplainedFactor, select_factors
 from app.engines.risk.features import as_vector
@@ -78,9 +85,12 @@ def assess(
         for provider, limit in provider_limits.items()
         if limit is not None and provider != request.provider
     }
-    factors = tuple(
-        select_factors(result.features, predictor.contributions(as_vector(result.features)))
-    )
+    contributions = list(predictor.contributions(as_vector(result.features)))
+    if is_two_part(predictor) and result.p_without is not None:
+        # Shapley values of q are about the purchase; times (1 - b) they are its share of the
+        # shown probability, on the scale the 0.02 threshold is written for (D-62)
+        contributions = [c * (1 - result.p_without) for c in contributions]
+    factors = tuple(select_factors(result.features, contributions))
     suggestion = search(
         request,
         next_income(items, today),

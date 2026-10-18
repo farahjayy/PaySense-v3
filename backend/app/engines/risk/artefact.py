@@ -36,6 +36,10 @@ logger = logging.getLogger("paysense")
 MODEL_ROOT = Path(__file__).resolve().parents[3] / "models" / "engine2"
 MODEL_FILE = "model.onnx"
 METADATA_FILE = "metadata.json"
+# What the model's output is (engine v3, D-62): "p_with", the chance of running short with the
+# purchase (v1, v2); or "two_part", q, the chance the purchase makes short a simulated future that
+# was not short without it, which the check composes with the simulated chance without it.
+TARGETS = ("p_with", "two_part")
 
 
 def _population_sha256() -> str | None:
@@ -148,6 +152,9 @@ class OnnxPredictor:
         self.version: str = str(meta["version"])
         self.feature_schema_hash: str = str(meta["feature_schema_hash"])
         self.family: str = str(meta.get("family", ""))
+        self.target: str = str(meta.get("target", "p_with"))
+        if self.target not in TARGETS:
+            raise ArtefactError(f"unknown model target {self.target!r}; expected one of {TARGETS}")
         metrics = meta.get("metrics", {})
         self.summary: dict[str, Any] = {
             "family": self.family,

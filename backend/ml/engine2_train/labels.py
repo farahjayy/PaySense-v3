@@ -39,15 +39,19 @@ from ml.engine2_train.provenance import git_commit, library_versions, sha256_fil
 
 DEFAULT_OUT = Path(__file__).resolve().parents[3] / "data" / "engine2"
 DEFAULT_SEED = 20251228
-DEFAULT_PROFILES = 10_000
+DEFAULT_PROFILES = 11_000  # indices 10,000-10,999 are the engine v3 lockbox
 LABELS_FILE = "labels.jsonl"
 MANIFEST_FILE = "MANIFEST.json"
 RUN_FILE = "labels.run.json"  # the settings a partial file was made with (for --resume)
-LABEL_VERSION = "3"  # bump when the way a label is made changes
+LABEL_VERSION = "4"  # bump when the way a label is made changes
 # 2: the simulation runs to the plan's last instalment (D-36) and each profile has its own as-of
 #    day (D-31 note); the feature schema hash now covers the window constants (audit M2).
 # 3: WP16 - the running margin starts from the profile's savings buffer (D-50) and the forecast
 #    band is widened by history length (C2, `band_inflation.json`).
+# 4: engine v3 - the served band rule floors each simulated MONTH at zero instead of each week
+#    (D-60) and resamples a population error record below 26 weeks of history (D-61); the savings
+#    feature is measured against expected outgoings (D-63); 11,000 profiles, the last 1,000 being
+#    the new lockbox (plan 2026-10-18-engine-v3 §5.2).
 PROGRESS_EVERY = 250
 Transform = Callable[[list[dict[str, Any]], date], list[dict[str, Any]]]
 
