@@ -63,3 +63,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp12-submission-pack.md](2026-10-18-wp12-submission-pack.md) | WP12 technical documentation, deck outline, registration summary (drafts) | ✅ Drafts done |
 | [2026-10-18-second-opinion-check.md](2026-10-18-second-opinion-check.md) | Second-Opinion Check: before/after/added risk, stacked dues across providers, safer timing | ✅ Done |
 | [2026-10-18-engine-outcome-check.md](2026-10-18-engine-outcome-check.md) | Engine 1 outcome check (served P against realised shortfalls) and recursion check beyond 13 weeks | ✅ Done (evaluation only) |
+| [2026-10-18-security-drill.md](2026-10-18-security-drill.md) | Security drill: the four named attack classes run in-app against a sandbox, fooled vs harmed | 🔶 In progress |

@@ -377,6 +377,15 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 
 **Rejected / Trade-off.** Federated learning (no second data holder — theatre); multilingual narration (rivals already ship it); screenshot OCR (a model producing amounts); ML stacking or categoriser models (circular synthetic data). On the current engines the main demo persona is already At Risk without the purchase, so the card says so instead of showing a gain; the engine fixes (D-60 onwards) are what let it show a visible difference.
 
+## D-58 — An in-app security drill for the four named attack classes
+*2026-10-18 · Claude decision after the competitive-edge research (author to confirm)*
+
+**Decision.** A signed-in user can run a **security drill**: `POST /api/security/drill` builds a throwaway in-memory sandbox (two synthetic students, secret markers) and runs a fixed list of attacks — at least three for each of the four named classes (induced transfers, data extraction, privilege escalation, prompt injection) — through the real assistant code with a hostile scripted model that obeys every injected instruction. For each attack it reports what the model was made to try ("fooled") and what happened to the sandbox data ("harm"), measured on the sandbox afterwards. The in-memory database moves from `tests/` into `app/db/memory.py` so the server can build the sandbox.
+
+**Why.** Security is 30% of the rubric and is judged against these four classes; rivals show scoreboards on screen; a pytest suite reads as self-reported. Assuming the model is always fooled shows that the defences do not depend on the model behaving.
+
+**Rejected / Trade-off.** Running attacks against the caller's own data (a bug would harm a real account); a live model in the drill (tokens, nondeterminism — the live evaluation in `reports/assistant/` covers real-model behaviour); a static evidence page only (not reproducible on screen). Cost: test-grade in-memory database code now ships in the server image, used only by the drill.
+
 ## Working assumptions (`ASSUMED:`)
 
 Not decisions — guesses made to keep moving. Each one must be confirmed or killed before anything load-bearing is built on it. When one is resolved, delete it here and write a real ADR above.

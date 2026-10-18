@@ -16,6 +16,7 @@ NOT_WRITES = {
     ("post", "/api/auth/logout"),
     ("post", "/api/risk/check"),
     ("post", "/api/risk/schedule"),  # stateless, like the check (D-57)
+    ("post", "/api/security/drill"),  # a throwaway sandbox; the caller's data is untouched (D-58)
     ("post", "/api/plans/preview"),
     ("post", "/api/import/csv"),
     ("post", "/api/assistant/chat"),
