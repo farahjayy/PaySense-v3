@@ -1,0 +1,46 @@
+{
+  "version": "3",
+  "replaces": "band rule v2 (D-54): weekly clip, the user's own record at every length",
+  "target_coverage": 0.8,
+  "clip": "month",
+  "population_record": {
+    "file": "population_errors.json",
+    "sha256": "0ce344731b6536a94bde9dedcee5274ee761de3f2e0b2d23c5e10feebb5cf5a8",
+    "below_weeks": 26
+  },
+  "buckets": [
+    {
+      "min_weeks": 17,
+      "spend": 1.1,
+      "income": 1.0
+    },
+    {
+      "min_weeks": 26,
+      "spend": 2.2,
+      "income": 1.2
+    },
+    {
+      "min_weeks": 39,
+      "spend": 2.0,
+      "income": 1.4
+    },
+    {
+      "min_weeks": 52,
+      "spend": 1.9,
+      "income": 1.1
+    }
+  ],
+  "fitted_on": {
+    "students": 300,
+    "rule": "group D: the 300 students the v2 table was fitted on",
+    "origins_per_kind": 3900,
+    "horizon_weeks": 13,
+    "draws": 300,
+    "grid": [
+      1.0,
+      6.0,
+      0.1
+    ]
+  },
+  "generated_by": "python -m ml.engine1_eval.band_v3 fit"
+}

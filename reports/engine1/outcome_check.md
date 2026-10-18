@@ -4,13 +4,13 @@
 
 2000 synthetic development students (cohort indices 4000-9999, not divisible by 10: never Engine 2's lockbox; none of the 60 Engine 1 test students, the 300 fresh-check students or the 300 students the served band table was fitted on). Evaluation only: nothing was fitted, chosen or changed.
 
-Each ledger is cut 13 and 26 weeks before its end. At the cut the script builds what serving builds: the user's own error record widened by the served band table, the served forecast and the same 1000-path Monte Carlo. P(shortfall) is the share of paths whose running margin (from RM0 at the start of the cut's month, plus the month so far) is below RM0 at any month-end inside the next 13 weeks. The **realised** outcome is the same code run on the 13 held-back weeks. History length is varied by starting the ledger later: one case per student, cut and bucket (17-25, 26-38, 39-51, 52+ weeks; 52+ is the whole history before the cut). Benchmarks: a **constant** (the realised rate of these students at that cut: in-sample, the best any constant can do) and **MA13** run through the same simulation instead of the LSTM.
+Each ledger is cut 13 and 26 weeks before its end. At the cut the script builds what serving builds under a band rule: the error record (the user's own, or under R3 the population record below 26 weeks) widened by that rule's table, the forecast and the same 1000-path Monte Carlo with that rule's floor at zero. **R2** is the D-54 table with every simulated week floored at zero (served before the engine v3 round); **R3** floors each month's total, uses the population record below 26 weeks and its own refitted table (`reports/engine1/band_v3.md`). P(shortfall) is the share of paths whose running margin (from RM0 at the start of the cut's month, plus the month so far) is below RM0 at any month-end inside the next 13 weeks. The **realised** outcome is the same code run on the 13 held-back weeks. History length is varied by starting the ledger later: one case per student, cut and bucket (17-25, 26-38, 39-51, 52+ weeks; 52+ is the whole history before the cut). Benchmarks: a **constant** (the realised rate of these students at that cut: in-sample, the best any constant can do) and **MA13** run through the same simulation instead of the LSTM (under R2 with the LSTM's table, under R3 with its own population record and table).
 
 Log loss clips P to 0.0005 from 0 and 1 (half a simulated path). ECE is the expected calibration error over 10 equal-width probability bins. Confident misses: P exactly 0 and short, or P exactly 1 and not short. Bands: Safe below 0.10, Caution below 0.30, At Risk from there.
 
 ## Cut 13 weeks before the end
 
-Forecast from 2025-09-29; month-ends checked: 2025-09, 2025-10, 2025-11. 8000 cases from 2000 students; realised shortfall rate (the constant) 0.050. Share of cases whose error record came from the fallback: served LSTM 0.028, MA13 0.028.
+Forecast from 2025-09-29; month-ends checked: 2025-09, 2025-10, 2025-11. 8000 cases from 2000 students; realised shortfall rate (the constant) 0.050. Share of cases whose error record came from the fallback: LSTM, R2 0.028, LSTM, R3 0.000, MA13, R2 (benchmark) 0.028, MA13, R3 (benchmark) 0.000.
 
 The first month-end is the cut's own month, so it is mostly decided by the actual month so far, which the simulation is given. Share of realised shortfalls already below RM0 at the first month-end: 0.717. Share of cases whose month so far was negative at the cut: 0.044. The table *By the month so far* separates the two.
 
@@ -18,29 +18,41 @@ The first month-end is the cut's own month, so it is mostly decided by the actua
 
 | method | cases | mean P | Brier | Brier skill vs constant | log loss | AUC | ECE | P exactly 0 | P exactly 1 | confident misses |
 |---|---|---|---|---|---|---|---|---|---|---|
-| served LSTM | 8000 | 0.060 | 0.0199 | +0.576 | 0.085 | 0.967 | 0.016 | 0.801 | 0.027 | 32 |
-| MA13 (benchmark) | 8000 | 0.075 | 0.0246 | +0.477 | 0.099 | 0.970 | 0.026 | 0.734 | 0.028 | 32 |
+| LSTM, R2 | 8000 | 0.060 | 0.0199 | +0.576 | 0.085 | 0.967 | 0.016 | 0.801 | 0.027 | 32 |
+| LSTM, R3 | 8000 | 0.066 | 0.0182 | +0.614 | 0.068 | 0.973 | 0.016 | 0.670 | 0.019 | 6 |
+| MA13, R2 (benchmark) | 8000 | 0.075 | 0.0246 | +0.477 | 0.099 | 0.970 | 0.026 | 0.734 | 0.028 | 32 |
+| MA13, R3 (benchmark) | 8000 | 0.080 | 0.0228 | +0.516 | 0.079 | 0.980 | 0.031 | 0.603 | 0.018 | 1 |
 | constant (benchmark) | 8000 | 0.050 | 0.0470 | +0.000 | 0.197 | 0.500 | 0.000 | 0.000 | 0.000 | 0 |
 
-- Brier, served LSTM minus MA13 (benchmark): -0.0047 (95% interval over students -0.0069 to -0.0021; below 0 = the LSTM is better).
-- Brier, served LSTM minus constant (benchmark): -0.0271 (95% interval over students -0.0349 to -0.0192; below 0 = the LSTM is better).
-- Lowest Brier by history length: all: served LSTM; 17-25: served LSTM; 26-38: served LSTM; 39-51: served LSTM; 52+: served LSTM.
+- Brier, LSTM, R2 minus MA13, R2 (benchmark): -0.0047 (95% interval over students -0.0069 to -0.0021; below 0 = LSTM, R2 is better).
+- Brier, LSTM, R2 minus constant (benchmark): -0.0271 (95% interval over students -0.0349 to -0.0192; below 0 = LSTM, R2 is better).
+- Brier, LSTM, R3 minus LSTM, R2: -0.0018 (95% interval over students -0.0034 to -0.0004; below 0 = LSTM, R3 is better).
+- Brier, LSTM, R3 minus MA13, R3 (benchmark): -0.0046 (95% interval over students -0.0065 to -0.0024; below 0 = LSTM, R3 is better).
+- Lowest Brier by history length: all: LSTM, R3; 17-25: LSTM, R3; 26-38: LSTM, R2; 39-51: LSTM, R2; 52+: LSTM, R2.
 
 ### By weeks of history
 
 | weeks of history | method | cases | realised rate | mean P | Brier | Brier skill | AUC | ECE | P exactly 0 | P exactly 1 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 17-25 | served LSTM | 2000 | 0.050 | 0.070 | 0.0295 | +0.373 | 0.936 | 0.029 | 0.858 | 0.040 |
-| 17-25 | MA13 (benchmark) | 2000 | 0.050 | 0.084 | 0.0359 | +0.237 | 0.933 | 0.043 | 0.826 | 0.042 |
+| 17-25 | LSTM, R2 | 2000 | 0.050 | 0.070 | 0.0295 | +0.373 | 0.936 | 0.029 | 0.858 | 0.040 |
+| 17-25 | LSTM, R3 | 2000 | 0.050 | 0.059 | 0.0157 | +0.666 | 0.985 | 0.010 | 0.619 | 0.001 |
+| 17-25 | MA13, R2 (benchmark) | 2000 | 0.050 | 0.084 | 0.0359 | +0.237 | 0.933 | 0.043 | 0.826 | 0.042 |
+| 17-25 | MA13, R3 (benchmark) | 2000 | 0.050 | 0.072 | 0.0189 | +0.599 | 0.985 | 0.023 | 0.532 | 0.002 |
 | 17-25 | constant (benchmark) | 2000 | 0.050 | 0.050 | 0.0470 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
-| 26-38 | served LSTM | 2000 | 0.050 | 0.058 | 0.0164 | +0.652 | 0.985 | 0.011 | 0.788 | 0.023 |
-| 26-38 | MA13 (benchmark) | 2000 | 0.050 | 0.077 | 0.0219 | +0.535 | 0.985 | 0.028 | 0.703 | 0.024 |
+| 26-38 | LSTM, R2 | 2000 | 0.050 | 0.058 | 0.0164 | +0.652 | 0.985 | 0.011 | 0.788 | 0.023 |
+| 26-38 | LSTM, R3 | 2000 | 0.050 | 0.067 | 0.0182 | +0.613 | 0.977 | 0.018 | 0.701 | 0.024 |
+| 26-38 | MA13, R2 (benchmark) | 2000 | 0.050 | 0.077 | 0.0219 | +0.535 | 0.985 | 0.028 | 0.703 | 0.024 |
+| 26-38 | MA13, R3 (benchmark) | 2000 | 0.050 | 0.085 | 0.0248 | +0.473 | 0.981 | 0.036 | 0.636 | 0.024 |
 | 26-38 | constant (benchmark) | 2000 | 0.050 | 0.050 | 0.0470 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
-| 39-51 | served LSTM | 2000 | 0.050 | 0.055 | 0.0165 | +0.650 | 0.973 | 0.012 | 0.788 | 0.020 |
-| 39-51 | MA13 (benchmark) | 2000 | 0.050 | 0.064 | 0.0188 | +0.600 | 0.984 | 0.016 | 0.734 | 0.019 |
+| 39-51 | LSTM, R2 | 2000 | 0.050 | 0.055 | 0.0165 | +0.650 | 0.973 | 0.012 | 0.788 | 0.020 |
+| 39-51 | LSTM, R3 | 2000 | 0.050 | 0.067 | 0.0191 | +0.594 | 0.964 | 0.018 | 0.687 | 0.024 |
+| 39-51 | MA13, R2 (benchmark) | 2000 | 0.050 | 0.064 | 0.0188 | +0.600 | 0.984 | 0.016 | 0.734 | 0.019 |
+| 39-51 | MA13, R3 (benchmark) | 2000 | 0.050 | 0.084 | 0.0243 | +0.484 | 0.981 | 0.036 | 0.597 | 0.021 |
 | 39-51 | constant (benchmark) | 2000 | 0.050 | 0.050 | 0.0470 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
-| 52+ | served LSTM | 2000 | 0.050 | 0.060 | 0.0175 | +0.629 | 0.976 | 0.014 | 0.772 | 0.026 |
-| 52+ | MA13 (benchmark) | 2000 | 0.050 | 0.076 | 0.0218 | +0.536 | 0.982 | 0.028 | 0.671 | 0.025 |
+| 52+ | LSTM, R2 | 2000 | 0.050 | 0.060 | 0.0175 | +0.629 | 0.976 | 0.014 | 0.772 | 0.026 |
+| 52+ | LSTM, R3 | 2000 | 0.050 | 0.070 | 0.0196 | +0.583 | 0.967 | 0.021 | 0.672 | 0.027 |
+| 52+ | MA13, R2 (benchmark) | 2000 | 0.050 | 0.076 | 0.0218 | +0.536 | 0.982 | 0.028 | 0.671 | 0.025 |
+| 52+ | MA13, R3 (benchmark) | 2000 | 0.050 | 0.079 | 0.0232 | +0.507 | 0.975 | 0.030 | 0.645 | 0.026 |
 | 52+ | constant (benchmark) | 2000 | 0.050 | 0.050 | 0.0470 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
 
 ### By the month so far at the cut
@@ -49,47 +61,57 @@ Here the constant is each row's own realised rate (the best constant that knows 
 
 | month so far | method | cases | realised rate | mean P | Brier | Brier skill | AUC | ECE | P exactly 0 | P exactly 1 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| negative | served LSTM | 352 | 0.841 | 0.853 | 0.0751 | +0.439 | 0.886 | 0.060 | 0.006 | 0.580 |
-| negative | MA13 (benchmark) | 352 | 0.841 | 0.916 | 0.1177 | +0.120 | 0.813 | 0.105 | 0.006 | 0.582 |
+| negative | LSTM, R2 | 352 | 0.841 | 0.853 | 0.0751 | +0.439 | 0.886 | 0.060 | 0.006 | 0.580 |
+| negative | LSTM, R3 | 352 | 0.841 | 0.877 | 0.0699 | +0.477 | 0.954 | 0.054 | 0.000 | 0.432 |
+| negative | MA13, R2 (benchmark) | 352 | 0.841 | 0.916 | 0.1177 | +0.120 | 0.813 | 0.105 | 0.006 | 0.582 |
+| negative | MA13, R3 (benchmark) | 352 | 0.841 | 0.924 | 0.1115 | +0.166 | 0.887 | 0.090 | 0.000 | 0.418 |
 | negative | constant (benchmark) | 352 | 0.841 | 0.841 | 0.1338 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
-| zero or positive | served LSTM | 7648 | 0.013 | 0.024 | 0.0174 | -0.349 | 0.895 | 0.015 | 0.838 | 0.002 |
-| zero or positive | MA13 (benchmark) | 7648 | 0.013 | 0.037 | 0.0203 | -0.575 | 0.908 | 0.024 | 0.767 | 0.002 |
+| zero or positive | LSTM, R2 | 7648 | 0.013 | 0.024 | 0.0174 | -0.349 | 0.895 | 0.015 | 0.838 | 0.002 |
+| zero or positive | LSTM, R3 | 7648 | 0.013 | 0.029 | 0.0158 | -0.223 | 0.904 | 0.015 | 0.701 | 0.000 |
+| zero or positive | MA13, R2 (benchmark) | 7648 | 0.013 | 0.037 | 0.0203 | -0.575 | 0.908 | 0.024 | 0.767 | 0.002 |
+| zero or positive | MA13, R3 (benchmark) | 7648 | 0.013 | 0.041 | 0.0187 | -0.449 | 0.932 | 0.028 | 0.630 | 0.000 |
 | zero or positive | constant (benchmark) | 7648 | 0.013 | 0.013 | 0.0129 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
 
 ### Calibration (all history lengths)
 
-| P(shortfall) | served LSTM: cases | mean P | realised rate | MA13: cases | mean P | realised rate |
-|---|---|---|---|---|---|---|
-| 0 exactly | 6411 | 0.000 | 0.002 | 5869 | 0.000 | 0.002 |
-| (0, 0.1) | 688 | 0.034 | 0.044 | 1007 | 0.029 | 0.018 |
-| [0.1, 0.2) | 241 | 0.141 | 0.104 | 269 | 0.142 | 0.067 |
-| [0.2, 0.3) | 136 | 0.241 | 0.125 | 163 | 0.247 | 0.092 |
-| [0.3, 0.4) | 92 | 0.343 | 0.141 | 135 | 0.351 | 0.067 |
-| [0.4, 0.5) | 60 | 0.452 | 0.167 | 78 | 0.445 | 0.115 |
-| [0.5, 0.6) | 32 | 0.544 | 0.094 | 62 | 0.542 | 0.129 |
-| [0.6, 0.7) | 27 | 0.657 | 0.444 | 39 | 0.645 | 0.538 |
-| [0.7, 0.8) | 26 | 0.760 | 0.577 | 48 | 0.753 | 0.458 |
-| [0.8, 0.9) | 31 | 0.853 | 0.806 | 52 | 0.855 | 0.481 |
-| [0.9, 1) | 38 | 0.939 | 0.947 | 58 | 0.936 | 0.776 |
-| 1 exactly | 218 | 1.000 | 0.908 | 220 | 1.000 | 0.895 |
+| P(shortfall) | LSTM, R2: cases | mean P | realised rate | LSTM, R3: cases | mean P | realised rate | MA13, R2 (benchmark): cases | mean P | realised rate | MA13, R3 (benchmark): cases | mean P | realised rate |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 exactly | 6411 | 0.000 | 0.002 | 5358 | 0.000 | 0.001 | 5869 | 0.000 | 0.002 | 4822 | 0.000 | 0.000 |
+| (0, 0.1) | 688 | 0.034 | 0.044 | 1643 | 0.024 | 0.018 | 1007 | 0.029 | 0.018 | 1948 | 0.027 | 0.010 |
+| [0.1, 0.2) | 241 | 0.141 | 0.104 | 256 | 0.144 | 0.078 | 269 | 0.142 | 0.067 | 327 | 0.145 | 0.055 |
+| [0.2, 0.3) | 136 | 0.241 | 0.125 | 172 | 0.243 | 0.105 | 163 | 0.247 | 0.092 | 203 | 0.244 | 0.064 |
+| [0.3, 0.4) | 92 | 0.343 | 0.141 | 122 | 0.344 | 0.074 | 135 | 0.351 | 0.067 | 129 | 0.344 | 0.093 |
+| [0.4, 0.5) | 60 | 0.452 | 0.167 | 67 | 0.441 | 0.164 | 78 | 0.445 | 0.115 | 101 | 0.444 | 0.139 |
+| [0.5, 0.6) | 32 | 0.544 | 0.094 | 49 | 0.547 | 0.184 | 62 | 0.542 | 0.129 | 69 | 0.543 | 0.072 |
+| [0.6, 0.7) | 27 | 0.657 | 0.444 | 26 | 0.650 | 0.346 | 39 | 0.645 | 0.538 | 31 | 0.648 | 0.452 |
+| [0.7, 0.8) | 26 | 0.760 | 0.577 | 21 | 0.754 | 0.667 | 48 | 0.753 | 0.458 | 44 | 0.750 | 0.523 |
+| [0.8, 0.9) | 31 | 0.853 | 0.806 | 32 | 0.853 | 0.719 | 52 | 0.855 | 0.481 | 59 | 0.848 | 0.508 |
+| [0.9, 1) | 38 | 0.939 | 0.947 | 102 | 0.962 | 0.931 | 58 | 0.936 | 0.776 | 120 | 0.954 | 0.825 |
+| 1 exactly | 218 | 1.000 | 0.908 | 152 | 1.000 | 1.000 | 220 | 1.000 | 0.895 | 147 | 1.000 | 1.000 |
 
 ### Served band against the realised outcome (all history lengths)
 
 | method | band | cases | realised short | realised not short | realised rate |
 |---|---|---|---|---|---|
-| served LSTM | Safe | 7099 | 42 | 7057 | 0.006 |
-| served LSTM | Caution | 377 | 42 | 335 | 0.111 |
-| served LSTM | At Risk | 524 | 312 | 212 | 0.595 |
-| MA13 (benchmark) | Safe | 6876 | 27 | 6849 | 0.004 |
-| MA13 (benchmark) | Caution | 432 | 33 | 399 | 0.076 |
-| MA13 (benchmark) | At Risk | 692 | 336 | 356 | 0.486 |
+| LSTM, R2 | Safe | 7099 | 42 | 7057 | 0.006 |
+| LSTM, R2 | Caution | 377 | 42 | 335 | 0.111 |
+| LSTM, R2 | At Risk | 524 | 312 | 212 | 0.595 |
+| LSTM, R3 | Safe | 7001 | 36 | 6965 | 0.005 |
+| LSTM, R3 | Caution | 428 | 38 | 390 | 0.089 |
+| LSTM, R3 | At Risk | 571 | 322 | 249 | 0.564 |
+| MA13, R2 (benchmark) | Safe | 6876 | 27 | 6849 | 0.004 |
+| MA13, R2 (benchmark) | Caution | 432 | 33 | 399 | 0.076 |
+| MA13, R2 (benchmark) | At Risk | 692 | 336 | 356 | 0.486 |
+| MA13, R3 (benchmark) | Safe | 6770 | 21 | 6749 | 0.003 |
+| MA13, R3 (benchmark) | Caution | 530 | 31 | 499 | 0.058 |
+| MA13, R3 (benchmark) | At Risk | 700 | 344 | 356 | 0.491 |
 | constant (benchmark) | Safe | 8000 | 396 | 7604 | 0.050 |
 | constant (benchmark) | Caution | 0 | 0 | 0 | - |
 | constant (benchmark) | At Risk | 0 | 0 | 0 | - |
 
 ## Cut 26 weeks before the end
 
-Forecast from 2025-06-30; month-ends checked: 2025-06, 2025-07, 2025-08. 8000 cases from 2000 students; realised shortfall rate (the constant) 0.137. Share of cases whose error record came from the fallback: served LSTM 0.027, MA13 0.027.
+Forecast from 2025-06-30; month-ends checked: 2025-06, 2025-07, 2025-08. 8000 cases from 2000 students; realised shortfall rate (the constant) 0.137. Share of cases whose error record came from the fallback: LSTM, R2 0.027, LSTM, R3 0.000, MA13, R2 (benchmark) 0.027, MA13, R3 (benchmark) 0.000.
 
 The first month-end is the cut's own month, so it is mostly decided by the actual month so far, which the simulation is given. Share of realised shortfalls already below RM0 at the first month-end: 0.916. Share of cases whose month so far was negative at the cut: 0.176. The table *By the month so far* separates the two.
 
@@ -97,29 +119,41 @@ The first month-end is the cut's own month, so it is mostly decided by the actua
 
 | method | cases | mean P | Brier | Brier skill vs constant | log loss | AUC | ECE | P exactly 0 | P exactly 1 | confident misses |
 |---|---|---|---|---|---|---|---|---|---|---|
-| served LSTM | 8000 | 0.182 | 0.0362 | +0.694 | 0.163 | 0.977 | 0.045 | 0.525 | 0.085 | 65 |
-| MA13 (benchmark) | 8000 | 0.226 | 0.0606 | +0.487 | 0.241 | 0.974 | 0.089 | 0.424 | 0.097 | 88 |
+| LSTM, R2 | 8000 | 0.182 | 0.0362 | +0.694 | 0.163 | 0.977 | 0.045 | 0.525 | 0.085 | 65 |
+| LSTM, R3 | 8000 | 0.186 | 0.0309 | +0.739 | 0.117 | 0.985 | 0.049 | 0.325 | 0.059 | 4 |
+| MA13, R2 (benchmark) | 8000 | 0.226 | 0.0606 | +0.487 | 0.241 | 0.974 | 0.089 | 0.424 | 0.097 | 88 |
+| MA13, R3 (benchmark) | 8000 | 0.261 | 0.0652 | +0.448 | 0.227 | 0.979 | 0.124 | 0.172 | 0.066 | 12 |
 | constant (benchmark) | 8000 | 0.137 | 0.1182 | +0.000 | 0.399 | 0.500 | 0.000 | 0.000 | 0.000 | 0 |
 
-- Brier, served LSTM minus MA13 (benchmark): -0.0245 (95% interval over students -0.0279 to -0.0210; below 0 = the LSTM is better).
-- Brier, served LSTM minus constant (benchmark): -0.0820 (95% interval over students -0.0937 to -0.0716; below 0 = the LSTM is better).
-- Lowest Brier by history length: all: served LSTM; 17-25: served LSTM; 26-38: served LSTM; 39-51: served LSTM; 52+: served LSTM.
+- Brier, LSTM, R2 minus MA13, R2 (benchmark): -0.0245 (95% interval over students -0.0279 to -0.0210; below 0 = LSTM, R2 is better).
+- Brier, LSTM, R2 minus constant (benchmark): -0.0820 (95% interval over students -0.0937 to -0.0716; below 0 = LSTM, R2 is better).
+- Brier, LSTM, R3 minus LSTM, R2: -0.0053 (95% interval over students -0.0073 to -0.0032; below 0 = LSTM, R3 is better).
+- Brier, LSTM, R3 minus MA13, R3 (benchmark): -0.0343 (95% interval over students -0.0384 to -0.0302; below 0 = LSTM, R3 is better).
+- Lowest Brier by history length: all: LSTM, R3; 17-25: LSTM, R3; 26-38: LSTM, R2; 39-51: LSTM, R2; 52+: LSTM, R2.
 
 ### By weeks of history
 
 | weeks of history | method | cases | realised rate | mean P | Brier | Brier skill | AUC | ECE | P exactly 0 | P exactly 1 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 17-25 | served LSTM | 2000 | 0.137 | 0.221 | 0.0688 | +0.418 | 0.957 | 0.089 | 0.594 | 0.135 |
-| 17-25 | MA13 (benchmark) | 2000 | 0.137 | 0.268 | 0.0998 | +0.156 | 0.953 | 0.131 | 0.538 | 0.158 |
+| 17-25 | LSTM, R2 | 2000 | 0.137 | 0.221 | 0.0688 | +0.418 | 0.957 | 0.089 | 0.594 | 0.135 |
+| 17-25 | LSTM, R3 | 2000 | 0.137 | 0.171 | 0.0308 | +0.740 | 0.990 | 0.034 | 0.279 | 0.013 |
+| 17-25 | MA13, R2 (benchmark) | 2000 | 0.137 | 0.268 | 0.0998 | +0.156 | 0.953 | 0.131 | 0.538 | 0.158 |
+| 17-25 | MA13, R3 (benchmark) | 2000 | 0.137 | 0.228 | 0.0513 | +0.566 | 0.985 | 0.091 | 0.104 | 0.013 |
 | 17-25 | constant (benchmark) | 2000 | 0.137 | 0.137 | 0.1182 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
-| 26-38 | served LSTM | 2000 | 0.137 | 0.168 | 0.0285 | +0.759 | 0.983 | 0.035 | 0.505 | 0.067 |
-| 26-38 | MA13 (benchmark) | 2000 | 0.137 | 0.222 | 0.0520 | +0.560 | 0.983 | 0.085 | 0.374 | 0.087 |
+| 26-38 | LSTM, R2 | 2000 | 0.137 | 0.168 | 0.0285 | +0.759 | 0.983 | 0.035 | 0.505 | 0.067 |
+| 26-38 | LSTM, R3 | 2000 | 0.137 | 0.193 | 0.0336 | +0.716 | 0.983 | 0.059 | 0.346 | 0.073 |
+| 26-38 | MA13, R2 (benchmark) | 2000 | 0.137 | 0.222 | 0.0520 | +0.560 | 0.983 | 0.085 | 0.374 | 0.087 |
+| 26-38 | MA13, R3 (benchmark) | 2000 | 0.137 | 0.285 | 0.0778 | +0.342 | 0.976 | 0.148 | 0.203 | 0.091 |
 | 26-38 | constant (benchmark) | 2000 | 0.137 | 0.137 | 0.1182 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
-| 39-51 | served LSTM | 2000 | 0.137 | 0.166 | 0.0237 | +0.800 | 0.987 | 0.032 | 0.518 | 0.074 |
-| 39-51 | MA13 (benchmark) | 2000 | 0.137 | 0.198 | 0.0452 | +0.618 | 0.983 | 0.062 | 0.446 | 0.075 |
+| 39-51 | LSTM, R2 | 2000 | 0.137 | 0.166 | 0.0237 | +0.800 | 0.987 | 0.032 | 0.518 | 0.074 |
+| 39-51 | LSTM, R3 | 2000 | 0.137 | 0.190 | 0.0300 | +0.746 | 0.985 | 0.055 | 0.348 | 0.083 |
+| 39-51 | MA13, R2 (benchmark) | 2000 | 0.137 | 0.198 | 0.0452 | +0.618 | 0.983 | 0.062 | 0.446 | 0.075 |
+| 39-51 | MA13, R3 (benchmark) | 2000 | 0.137 | 0.276 | 0.0723 | +0.388 | 0.978 | 0.139 | 0.169 | 0.087 |
 | 39-51 | constant (benchmark) | 2000 | 0.137 | 0.137 | 0.1182 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
-| 52+ | served LSTM | 2000 | 0.137 | 0.170 | 0.0238 | +0.799 | 0.985 | 0.040 | 0.483 | 0.066 |
-| 52+ | MA13 (benchmark) | 2000 | 0.137 | 0.215 | 0.0456 | +0.614 | 0.985 | 0.080 | 0.340 | 0.067 |
+| 52+ | LSTM, R2 | 2000 | 0.137 | 0.170 | 0.0238 | +0.799 | 0.985 | 0.040 | 0.483 | 0.066 |
+| 52+ | LSTM, R3 | 2000 | 0.137 | 0.191 | 0.0293 | +0.752 | 0.984 | 0.059 | 0.327 | 0.067 |
+| 52+ | MA13, R2 (benchmark) | 2000 | 0.137 | 0.215 | 0.0456 | +0.614 | 0.985 | 0.080 | 0.340 | 0.067 |
+| 52+ | MA13, R3 (benchmark) | 2000 | 0.137 | 0.257 | 0.0594 | +0.498 | 0.981 | 0.121 | 0.212 | 0.072 |
 | 52+ | constant (benchmark) | 2000 | 0.137 | 0.137 | 0.1182 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
 
 ### By the month so far at the cut
@@ -128,40 +162,50 @@ Here the constant is each row's own realised rate (the best constant that knows 
 
 | month so far | method | cases | realised rate | mean P | Brier | Brier skill | AUC | ECE | P exactly 0 | P exactly 1 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| negative | served LSTM | 1408 | 0.722 | 0.772 | 0.0847 | +0.578 | 0.914 | 0.067 | 0.025 | 0.471 |
-| negative | MA13 (benchmark) | 1408 | 0.722 | 0.885 | 0.1629 | +0.189 | 0.874 | 0.164 | 0.001 | 0.521 |
+| negative | LSTM, R2 | 1408 | 0.722 | 0.772 | 0.0847 | +0.578 | 0.914 | 0.067 | 0.025 | 0.471 |
+| negative | LSTM, R3 | 1408 | 0.722 | 0.763 | 0.0703 | +0.650 | 0.963 | 0.044 | 0.024 | 0.335 |
+| negative | MA13, R2 (benchmark) | 1408 | 0.722 | 0.885 | 0.1629 | +0.189 | 0.874 | 0.164 | 0.001 | 0.521 |
+| negative | MA13, R3 (benchmark) | 1408 | 0.722 | 0.894 | 0.1701 | +0.153 | 0.904 | 0.174 | 0.000 | 0.373 |
 | negative | constant (benchmark) | 1408 | 0.722 | 0.722 | 0.2009 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
-| zero or positive | served LSTM | 6592 | 0.012 | 0.055 | 0.0258 | -1.155 | 0.819 | 0.043 | 0.632 | 0.003 |
-| zero or positive | MA13 (benchmark) | 6592 | 0.012 | 0.085 | 0.0388 | -2.237 | 0.838 | 0.073 | 0.515 | 0.006 |
+| zero or positive | LSTM, R2 | 6592 | 0.012 | 0.055 | 0.0258 | -1.155 | 0.819 | 0.043 | 0.632 | 0.003 |
+| zero or positive | LSTM, R3 | 6592 | 0.012 | 0.063 | 0.0225 | -0.877 | 0.858 | 0.051 | 0.389 | 0.000 |
+| zero or positive | MA13, R2 (benchmark) | 6592 | 0.012 | 0.085 | 0.0388 | -2.237 | 0.838 | 0.073 | 0.515 | 0.006 |
+| zero or positive | MA13, R3 (benchmark) | 6592 | 0.012 | 0.126 | 0.0428 | -2.571 | 0.835 | 0.114 | 0.209 | 0.000 |
 | zero or positive | constant (benchmark) | 6592 | 0.012 | 0.012 | 0.0120 | +0.000 | 0.500 | 0.000 | 0.000 | 0.000 |
 
 ### Calibration (all history lengths)
 
-| P(shortfall) | served LSTM: cases | mean P | realised rate | MA13: cases | mean P | realised rate |
-|---|---|---|---|---|---|---|
-| 0 exactly | 4199 | 0.000 | 0.003 | 3396 | 0.000 | 0.002 |
-| (0, 0.1) | 1397 | 0.032 | 0.012 | 1623 | 0.034 | 0.007 |
-| [0.1, 0.2) | 494 | 0.143 | 0.018 | 528 | 0.147 | 0.021 |
-| [0.2, 0.3) | 298 | 0.244 | 0.030 | 406 | 0.250 | 0.022 |
-| [0.3, 0.4) | 225 | 0.347 | 0.067 | 259 | 0.345 | 0.042 |
-| [0.4, 0.5) | 125 | 0.448 | 0.152 | 164 | 0.451 | 0.098 |
-| [0.5, 0.6) | 92 | 0.541 | 0.163 | 160 | 0.554 | 0.119 |
-| [0.6, 0.7) | 88 | 0.648 | 0.523 | 168 | 0.645 | 0.196 |
-| [0.7, 0.8) | 98 | 0.751 | 0.633 | 174 | 0.754 | 0.276 |
-| [0.8, 0.9) | 181 | 0.863 | 0.840 | 231 | 0.855 | 0.606 |
-| [0.9, 1) | 121 | 0.923 | 0.901 | 118 | 0.927 | 0.847 |
-| 1 exactly | 682 | 1.000 | 0.924 | 773 | 1.000 | 0.894 |
+| P(shortfall) | LSTM, R2: cases | mean P | realised rate | LSTM, R3: cases | mean P | realised rate | MA13, R2 (benchmark): cases | mean P | realised rate | MA13, R3 (benchmark): cases | mean P | realised rate |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 exactly | 4199 | 0.000 | 0.003 | 2599 | 0.000 | 0.001 | 3396 | 0.000 | 0.002 | 1377 | 0.000 | 0.000 |
+| (0, 0.1) | 1397 | 0.032 | 0.012 | 2767 | 0.029 | 0.007 | 1623 | 0.034 | 0.007 | 2488 | 0.034 | 0.004 |
+| [0.1, 0.2) | 494 | 0.143 | 0.018 | 681 | 0.145 | 0.026 | 528 | 0.147 | 0.021 | 969 | 0.147 | 0.011 |
+| [0.2, 0.3) | 298 | 0.244 | 0.030 | 396 | 0.245 | 0.030 | 406 | 0.250 | 0.022 | 771 | 0.248 | 0.016 |
+| [0.3, 0.4) | 225 | 0.347 | 0.067 | 223 | 0.344 | 0.067 | 259 | 0.345 | 0.042 | 511 | 0.347 | 0.029 |
+| [0.4, 0.5) | 125 | 0.448 | 0.152 | 138 | 0.445 | 0.123 | 164 | 0.451 | 0.098 | 310 | 0.443 | 0.074 |
+| [0.5, 0.6) | 92 | 0.541 | 0.163 | 71 | 0.537 | 0.099 | 160 | 0.554 | 0.119 | 171 | 0.556 | 0.058 |
+| [0.6, 0.7) | 88 | 0.648 | 0.523 | 69 | 0.653 | 0.565 | 168 | 0.645 | 0.196 | 137 | 0.645 | 0.168 |
+| [0.7, 0.8) | 98 | 0.751 | 0.633 | 91 | 0.752 | 0.549 | 174 | 0.754 | 0.276 | 159 | 0.747 | 0.270 |
+| [0.8, 0.9) | 181 | 0.863 | 0.840 | 193 | 0.868 | 0.839 | 231 | 0.855 | 0.606 | 263 | 0.862 | 0.586 |
+| [0.9, 1) | 121 | 0.923 | 0.901 | 301 | 0.956 | 0.944 | 118 | 0.927 | 0.847 | 319 | 0.958 | 0.884 |
+| 1 exactly | 682 | 1.000 | 0.924 | 471 | 1.000 | 0.998 | 773 | 1.000 | 0.894 | 525 | 1.000 | 0.977 |
 
 ### Served band against the realised outcome (all history lengths)
 
 | method | band | cases | realised short | realised not short | realised rate |
 |---|---|---|---|---|---|
-| served LSTM | Safe | 5596 | 30 | 5566 | 0.005 |
-| served LSTM | Caution | 792 | 18 | 774 | 0.023 |
-| served LSTM | At Risk | 1612 | 1048 | 564 | 0.650 |
-| MA13 (benchmark) | Safe | 5019 | 18 | 5001 | 0.004 |
-| MA13 (benchmark) | Caution | 934 | 20 | 914 | 0.021 |
-| MA13 (benchmark) | At Risk | 2047 | 1058 | 989 | 0.517 |
+| LSTM, R2 | Safe | 5596 | 30 | 5566 | 0.005 |
+| LSTM, R2 | Caution | 792 | 18 | 774 | 0.023 |
+| LSTM, R2 | At Risk | 1612 | 1048 | 564 | 0.650 |
+| LSTM, R3 | Safe | 5366 | 22 | 5344 | 0.004 |
+| LSTM, R3 | Caution | 1077 | 30 | 1047 | 0.028 |
+| LSTM, R3 | At Risk | 1557 | 1044 | 513 | 0.671 |
+| MA13, R2 (benchmark) | Safe | 5019 | 18 | 5001 | 0.004 |
+| MA13, R2 (benchmark) | Caution | 934 | 20 | 914 | 0.021 |
+| MA13, R2 (benchmark) | At Risk | 2047 | 1058 | 989 | 0.517 |
+| MA13, R3 (benchmark) | Safe | 3865 | 10 | 3855 | 0.003 |
+| MA13, R3 (benchmark) | Caution | 1740 | 23 | 1717 | 0.013 |
+| MA13, R3 (benchmark) | At Risk | 2395 | 1063 | 1332 | 0.444 |
 | constant (benchmark) | Safe | 0 | 0 | 0 | - |
 | constant (benchmark) | Caution | 8000 | 1096 | 6904 | 0.137 |
 | constant (benchmark) | At Risk | 0 | 0 | 0 | - |
