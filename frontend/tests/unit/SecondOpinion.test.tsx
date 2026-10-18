@@ -120,6 +120,29 @@ describe("SecondOpinion", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("leaves out months with nothing due and no income, and says so", () => {
+    const base = opinion();
+    const empty = {
+      month: "2026-12",
+      by_provider: [],
+      new_plan_sen: 0,
+      total_sen: 0,
+      known_income_sen: 0,
+    };
+    render(
+      <SecondOpinion opinion={opinion({ stack: [...base.stack, empty] })} />,
+    );
+    const table = screen.getByRole("table", {
+      name: /what you owe each month/i,
+    });
+    expect(within(table).getAllByRole("row")).toHaveLength(3);
+    expect(
+      screen.getByText(
+        /1 month with nothing due and no confirmed income is left out/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("asks for limits instead of guessing when none are recorded", () => {
     const base = opinion();
     render(
@@ -207,6 +230,9 @@ describe("SaferTiming", () => {
     ).toBeInTheDocument();
     expect(within(items[0]).getByText(/\+13 points/)).toBeInTheDocument();
     expect(within(items[1]).getByText(/26 October 2026/)).toBeInTheDocument();
+    expect(
+      within(items[1]).queryByText(/date you entered/i),
+    ).not.toBeInTheDocument();
     expect(within(items[1]).getByText(/6 instalments/)).toBeInTheDocument();
     expect(screen.getByText(/adds at most 5 points/i)).toBeInTheDocument();
 
@@ -218,6 +244,21 @@ describe("SaferTiming", () => {
       purchase_date: "2026-10-26",
       num_installments: 6,
     });
+  });
+
+  it("labels another count on the same day as the date you entered", () => {
+    const sameDay = { ...schedule().options[1], purchase_date: "2026-10-09" };
+    render(
+      <SaferTiming
+        result={schedule({ options: [schedule().options[0], sameDay] })}
+      />,
+      {
+        wrapper,
+      },
+    );
+    expect(
+      screen.getByText(/on the date you entered · 6 instalments/i),
+    ).toBeInTheDocument();
   });
 
   it("moves a typed first payment date with the option", async () => {

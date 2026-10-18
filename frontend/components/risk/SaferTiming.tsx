@@ -90,6 +90,7 @@ function Outcome({
       </p>
     );
   }
+  const typedDate = schedule.options.find((o) => o.as_typed)?.purchase_date;
   return (
     <div className="mt-3 space-y-3">
       {schedule.already_at_risk && schedule.without_probability !== null ? (
@@ -124,7 +125,9 @@ function Outcome({
                 <p className="font-medium text-ink">
                   {o.as_typed
                     ? "As you entered it"
-                    : `Buy on ${formatDate(o.purchase_date)}`}{" "}
+                    : o.purchase_date === typedDate
+                      ? "On the date you entered"
+                      : `Buy on ${formatDate(o.purchase_date)}`}{" "}
                   · {plural(o.num_installments, "instalment")}
                 </p>
                 <p className="text-[12px] text-ink-secondary">

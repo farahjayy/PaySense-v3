@@ -36,6 +36,11 @@ function Stat({
  */
 export function SecondOpinion({ opinion }: { opinion: Opinion }) {
   const { exposure } = opinion;
+  // a month with nothing owed and no confirmed income adds nothing to read
+  const months = opinion.stack.filter(
+    (m) => m.total_sen > 0 || m.known_income_sen > 0,
+  );
+  const hidden = opinion.stack.length - months.length;
   return (
     <section aria-labelledby="second-opinion-title" className="space-y-4">
       <Card>
@@ -86,6 +91,8 @@ export function SecondOpinion({ opinion }: { opinion: Opinion }) {
         <CardCaption>
           Every unpaid instalment across your providers, with this purchase
           added. Anything overdue counts in this month.
+          {hidden > 0 &&
+            ` ${plural(hidden, "month")} with nothing due and no confirmed income ${hidden === 1 ? "is" : "are"} left out.`}
         </CardCaption>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[30rem] text-left text-[13px]">
@@ -110,7 +117,7 @@ export function SecondOpinion({ opinion }: { opinion: Opinion }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {opinion.stack.map((m) => (
+              {months.map((m) => (
                 <tr key={m.month}>
                   <th scope="row" className="py-2 pr-3 font-medium text-ink">
                     {formatMonth(m.month)}
