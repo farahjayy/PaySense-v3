@@ -8,3 +8,6 @@
 3. `backend/app/security/drill.py` (sandbox, hostile scripts, harm checks) and `backend/app/api/security.py` (`POST /api/security/drill`, auth, rate limit, not a write); API tests incl. 401 and 429; `NOT_WRITES` in the quota test.
 4. `npm run gen:api`; frontend `/security` screen (scoreboard per class, expandable attacks), nav link; Vitest, axe, Playwright.
 5. Docs: ADR D-58, CHANGELOG, STATUS, SECURITY.md pointer, demo video script line.
+
+## As built
+All five tasks done (CHANGELOG, "The security drill on screen (D-58)"). One deviation: a smuggled-id call that runs is not harm by itself (tools always run for the signed-in user); only the other student's marker data appearing is.

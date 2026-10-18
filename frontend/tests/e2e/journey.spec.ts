@@ -78,6 +78,7 @@ test("every screen loads for a signed-in tester with its own title", async ({
     ["/plans", /bnpl plans/i],
     ["/import", /import/i],
     ["/model", /about the model/i],
+    ["/security", /security drill/i],
   ];
   for (const [route, heading] of screens) {
     await page.goto(route);
@@ -190,5 +191,27 @@ test("the transactions page shows where the month went, and picking a category f
     page.getByRole("button", { name: "Clear filters" }).first(),
   ).toBeVisible();
 
+  expect(violations).toEqual([]);
+});
+
+test("the security drill runs the four attack classes in a sandbox and reports no harm", async ({
+  page,
+}) => {
+  const violations = watchForCspViolations(page);
+  await signIn(page, "screens");
+  await page.goto("/security");
+  await page.getByRole("button", { name: "Run the drill" }).click();
+  await expect(
+    page.getByText(/\d+ of \d+ attacks fooled the model/i),
+  ).toBeVisible();
+  await expect(page.getByText(/no harm done in any of them/i)).toBeVisible();
+  const board = page.getByRole("table", { name: "Scoreboard" });
+  await expect(board.getByRole("row")).toHaveCount(6);
+  await expect(
+    page.locator("summary").getByText("Harm done", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.locator("summary").getByText("No harm", { exact: true }),
+  ).not.toHaveCount(0);
   expect(violations).toEqual([]);
 });

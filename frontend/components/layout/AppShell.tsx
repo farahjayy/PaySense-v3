@@ -27,6 +27,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: "/risk", label: "Risk check", icon: "◔", mobile: true },
   { href: "/import", label: "Import", icon: "⇪", mobile: true },
   { href: "/model", label: "About the model", icon: "ⓘ", mobile: false },
+  { href: "/security", label: "Security drill", icon: "⛨", mobile: false },
   { href: "/account", label: "Your data", icon: "⚿", mobile: false },
 ];
 
@@ -39,7 +40,10 @@ function navLinkClass(active: boolean): string {
 function Sidebar({ pathname }: { pathname: string }) {
   return (
     <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 md:flex">
-      <Link href="/" className="mb-8 block px-2 text-lg font-bold tracking-tight text-ink">
+      <Link
+        href="/"
+        className="mb-8 block px-2 text-lg font-bold tracking-tight text-ink"
+      >
         Pay<span className="text-accent">Sense</span>
       </Link>
       <nav aria-label="Main navigation" className="flex flex-col gap-1">
@@ -105,7 +109,9 @@ export function AppShell({ user, children }: Props) {
   const firstRender = useRef(true);
   const askButton = useRef<HTMLButtonElement>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const [prompt, setPrompt] = useState<{ text: string; n: number } | null>(null);
+  const [prompt, setPrompt] = useState<{ text: string; n: number } | null>(
+    null,
+  );
 
   function openAssistant(text?: string) {
     if (text) setPrompt((current) => ({ text, n: (current?.n ?? 0) + 1 }));
@@ -148,7 +154,10 @@ export function AppShell({ user, children }: Props) {
       <Sidebar pathname={pathname} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4 sm:px-6">
-          <Link href="/" className="text-base font-bold tracking-tight text-ink md:hidden">
+          <Link
+            href="/"
+            className="text-base font-bold tracking-tight text-ink md:hidden"
+          >
             Pay<span className="text-accent">Sense</span>
           </Link>
           <div className="ml-auto flex items-center gap-3">
@@ -157,7 +166,9 @@ export function AppShell({ user, children }: Props) {
               variant="accent"
               size="sm"
               aria-expanded={assistantOpen}
-              onClick={() => (assistantOpen ? closeAssistant() : setAssistantOpen(true))}
+              onClick={() =>
+                assistantOpen ? closeAssistant() : setAssistantOpen(true)
+              }
             >
               Ask PaySense
             </Button>
@@ -190,11 +201,15 @@ export function AppShell({ user, children }: Props) {
           tabIndex={-1}
           className="flex-1 px-4 py-6 pb-24 outline-none sm:px-6 md:pb-8"
         >
-          <AssistantLauncher.Provider value={openAssistant}>{children}</AssistantLauncher.Provider>
+          <AssistantLauncher.Provider value={openAssistant}>
+            {children}
+          </AssistantLauncher.Provider>
         </main>
       </div>
       <MobileNav pathname={pathname} />
-      {assistantOpen && <AssistantPanel onClose={closeAssistant} prompt={prompt} />}
+      {assistantOpen && (
+        <AssistantPanel onClose={closeAssistant} prompt={prompt} />
+      )}
     </div>
   );
 }
