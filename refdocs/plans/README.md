@@ -63,3 +63,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-wp12-submission-pack.md](2026-10-18-wp12-submission-pack.md) | WP12 technical documentation, deck outline, registration summary (drafts) | ✅ Drafts done |
 | [2026-10-18-second-opinion-check.md](2026-10-18-second-opinion-check.md) | Second-Opinion Check: before/after/added risk, stacked dues across providers, safer timing | ✅ Done |
 | [2026-10-18-engine-outcome-check.md](2026-10-18-engine-outcome-check.md) | Engine 1 outcome check (served P against realised shortfalls) and recursion check beyond 13 weeks | ✅ Done (evaluation only) |
+| [2026-10-18-engine-v3.md](2026-10-18-engine-v3.md) | Engine v3 round: monthly clip, population error record, band refit, two-part Engine 2 target, savings feature against outgoings; pre-registered serve rules | 🔶 In progress |
