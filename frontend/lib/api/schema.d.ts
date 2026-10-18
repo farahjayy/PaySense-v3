@@ -494,6 +494,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/risk/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Schedule Risk
+         * @description Stateless: when would this purchase add little to the chance of running short?
+         */
+        post: operations["schedule_risk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/risk/checks/{check_id}": {
         parameters: {
             query?: never;
@@ -1434,7 +1454,7 @@ export interface components {
             /** Steps */
             steps: components["schemas"]["StepOut"][];
             /** Cards */
-            cards: (components["schemas"]["RiskCard"] | components["schemas"]["ForecastCard"] | components["schemas"]["MonthSummaryCard"] | components["schemas"]["CategorySpendingCard"] | components["schemas"]["TransactionsCard"] | components["schemas"]["BillsCard"] | components["schemas"]["BillAnalysisCard"] | components["schemas"]["SpendingInsightsCard"] | components["schemas"]["PlansCard"] | components["schemas"]["PlanPreviewCard"] | components["schemas"]["ProvidersCard"] | components["schemas"]["BudgetsCard"] | components["schemas"]["BudgetStatusCard"] | components["schemas"]["BudgetSuggestionCard"] | components["schemas"]["RecommendationsCard"] | components["schemas"]["PastePreviewCard"])[];
+            cards: (components["schemas"]["RiskCard"] | components["schemas"]["ScheduleCard"] | components["schemas"]["ForecastCard"] | components["schemas"]["MonthSummaryCard"] | components["schemas"]["CategorySpendingCard"] | components["schemas"]["TransactionsCard"] | components["schemas"]["BillsCard"] | components["schemas"]["BillAnalysisCard"] | components["schemas"]["SpendingInsightsCard"] | components["schemas"]["PlansCard"] | components["schemas"]["PlanPreviewCard"] | components["schemas"]["ProvidersCard"] | components["schemas"]["BudgetsCard"] | components["schemas"]["BudgetStatusCard"] | components["schemas"]["BudgetSuggestionCard"] | components["schemas"]["RecommendationsCard"] | components["schemas"]["PastePreviewCard"])[];
             /** Pending Actions */
             pending_actions: (components["schemas"]["AddTransactionAction"] | components["schemas"]["ConfirmImportAction"] | components["schemas"]["CreatePlanAction"] | components["schemas"]["SetBudgetAction"] | components["schemas"]["DeleteBudgetAction"])[];
             /**
@@ -1693,6 +1713,33 @@ export interface components {
          */
         ErrorEnvelope: {
             detail: components["schemas"]["ErrorDetail"];
+        };
+        /** ExposureOut */
+        ExposureOut: {
+            /** Unpaid Before Sen */
+            unpaid_before_sen: number;
+            /** Unpaid After Sen */
+            unpaid_after_sen: number;
+            /** Providers Before */
+            providers_before: string[];
+            /** Providers After */
+            providers_after: string[];
+            /** Plans Before */
+            plans_before: number;
+            /** Plans After */
+            plans_after: number;
+            /** Recorded Limits Sen */
+            recorded_limits_sen: number | null;
+            /**
+             * Reaches Bnm Line
+             * @description Recorded BNPL limits add up to RM1,500, the level at which BNM asks banks for a full affordability assessment; null when no limit is recorded
+             */
+            reaches_bnm_line: boolean | null;
+            /**
+             * Bnm Line Sen
+             * @default 150000
+             */
+            bnm_line_sen: number;
         };
         /** FactorOut */
         FactorOut: {
@@ -2452,6 +2499,7 @@ export interface components {
             versions: components["schemas"]["VersionsOut"] | null;
             /** Check Id */
             check_id: string | null;
+            second_opinion: components["schemas"]["SecondOpinionOut"] | null;
         };
         /** RiskConfirmOut */
         RiskConfirmOut: {
@@ -2493,6 +2541,84 @@ export interface components {
             };
             /** Pasted Text */
             pasted_text?: string | null;
+        };
+        /** ScheduleCard */
+        ScheduleCard: {
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "schedule";
+            data: components["schemas"]["ScheduleOut"];
+        };
+        /** ScheduleOptionOut */
+        ScheduleOptionOut: {
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Num Installments */
+            num_installments: number;
+            /** First Payment Date */
+            first_payment_date: string | null;
+            /** With Probability */
+            with_probability: number;
+            /** Added Probability */
+            added_probability: number;
+            /** Qualifies */
+            qualifies: boolean;
+            /** As Typed */
+            as_typed: boolean;
+        };
+        /**
+         * ScheduleOut
+         * @description D-57: start dates x instalment counts, judged by the simulation, tried in a fixed order
+         *     until one adds at most `added_max` and stays below `at_risk_edge` (ASSUMED 43).
+         */
+        ScheduleOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "locked";
+            /** Without Probability */
+            without_probability: number | null;
+            /** Already At Risk */
+            already_at_risk: boolean;
+            /**
+             * Added Max
+             * @default 0.05
+             */
+            added_max: number;
+            /**
+             * At Risk Edge
+             * @default 0.3
+             */
+            at_risk_edge: number;
+            /** Options */
+            options: components["schemas"]["ScheduleOptionOut"][];
+            /** Chosen Index */
+            chosen_index: number | null;
+        };
+        /**
+         * SecondOpinionOut
+         * @description D-57: what this purchase adds, from the simulation (the quantity the label is built on).
+         */
+        SecondOpinionOut: {
+            /** Without Probability */
+            without_probability: number;
+            /** With Probability */
+            with_probability: number;
+            /** Added Probability */
+            added_probability: number;
+            /** Already At Risk */
+            already_at_risk: boolean;
+            /** Stack */
+            stack: components["schemas"]["StackMonthOut"][];
+            exposure: components["schemas"]["ExposureOut"];
         };
         /** SetBudgetAction */
         SetBudgetAction: {
@@ -2647,6 +2773,26 @@ export interface components {
             unusual_note: string | null;
             /** Mad K */
             mad_k: number;
+        };
+        /** StackMonthOut */
+        StackMonthOut: {
+            /** Month */
+            month: string;
+            /** By Provider */
+            by_provider: components["schemas"]["StackProviderOut"][];
+            /** New Plan Sen */
+            new_plan_sen: number;
+            /** Total Sen */
+            total_sen: number;
+            /** Known Income Sen */
+            known_income_sen: number;
+        };
+        /** StackProviderOut */
+        StackProviderOut: {
+            /** Provider Label */
+            provider_label: string;
+            /** Amount Sen */
+            amount_sen: number;
         };
         /** StepOut */
         StepOut: {
@@ -4635,6 +4781,66 @@ export interface operations {
             };
             /** @description The same purchase was just added */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description The request body or parameters are invalid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too many requests; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description No trained model is loaded, or too many checks are running */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    schedule_risk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleOut"];
+                };
+            };
+            /** @description Not logged in, or the session is invalid */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

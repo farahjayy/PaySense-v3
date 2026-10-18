@@ -74,3 +74,20 @@ def test_the_schedule_is_rate_limited(api, amir, ledger):
     codes = [api.post("/api/risk/schedule", json=body(), headers=amir).status_code
              for _ in range(6)]  # fmt: skip
     assert codes[:5] == [200] * 5 and codes[5] == 429
+
+
+def test_a_saved_report_keeps_the_second_opinion_it_was_decided_on(api, amir, ledger):
+    """Going ahead freezes what the purchase added at that moment, like the band and score."""
+    confirmed = api.post("/api/risk/confirm", json=body(), headers=amir)
+    assert confirmed.status_code == 201, confirmed.text
+    seen = confirmed.json()["check"]["second_opinion"]
+    report = api.get(f"/api/risk/checks/{confirmed.json()['check_id']}", headers=amir).json()
+    assert report["second_opinion"] == seen
+
+
+def test_a_report_saved_before_the_second_opinion_still_reads(api, amir, ledger):
+    confirmed = api.post("/api/risk/confirm", json=body(), headers=amir).json()
+    row = next(r for r in ledger.rows("risk_checks") if r["id"] == confirmed["check_id"])
+    row["input"].pop("second_opinion")
+    report = api.get(f"/api/risk/checks/{confirmed['check_id']}", headers=amir).json()
+    assert report["status"] == "ok" and report["second_opinion"] is None

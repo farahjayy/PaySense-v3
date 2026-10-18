@@ -451,6 +451,10 @@ def _frozen_row(out: RiskCheckOut, request: PlanIn, features: dict[str, float]) 
                 "suspect_months": [s.model_dump(mode="json") for s in out.suspect_months],
             },
             "p_without": out.probability_without_purchase,
+            # D-57: kept in the report's input, so no new column; older reports have none
+            "second_opinion": (
+                out.second_opinion.model_dump(mode="json") if out.second_opinion else None
+            ),
         },
         "features": features,
         "feature_schema_hash": out.versions.feature_schema_hash,
@@ -506,6 +510,7 @@ def _from_row(row: dict[str, Any]) -> RiskCheckOut:
         repayment=row["repayment_flag"],
         with_plan_curve=curves.get("with_plan"),
         without_curve=curves.get("without"),
+        second_opinion=stored.get("second_opinion"),
         versions=VersionsOut(
             model=row["model_version"], feature_schema_hash=row["feature_schema_hash"]
         ),
