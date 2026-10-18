@@ -33,6 +33,7 @@ function check(patch: Partial<RiskCheck> = {}): RiskCheck {
     without_curve: null,
     versions: null,
     check_id: null,
+    second_opinion: null,
     ...patch,
   };
 }
@@ -53,7 +54,11 @@ describe("riskNotices", () => {
     const out = riskNotices(
       check({
         suspect_months: [
-          { month: "2026-08", reason: "no_income", detail: "No income was logged." },
+          {
+            month: "2026-08",
+            reason: "no_income",
+            detail: "No income was logged.",
+          },
         ],
         unmatched_items: ["Rent"],
       }),
@@ -82,7 +87,9 @@ describe("draftFromInput", () => {
       start_offset_months: 1,
       monthly_fee_applies: true,
     } as const;
-    expect(toPlanInput(draftFromInput(input, "2026-10-09"), provider)).toEqual(input);
+    expect(toPlanInput(draftFromInput(input, "2026-10-09"), provider)).toEqual(
+      input,
+    );
   });
 
   it("round-trips a manual request, keeping which amount the person typed", () => {
@@ -105,6 +112,8 @@ describe("draftFromInput", () => {
       start_offset_months: 0,
       monthly_fee_applies: false,
     } as const;
-    expect(toPlanInput(draftFromInput(input, "2026-10-09"), provider)).toEqual(input);
+    expect(toPlanInput(draftFromInput(input, "2026-10-09"), provider)).toEqual(
+      input,
+    );
   });
 });

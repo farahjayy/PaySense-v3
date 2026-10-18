@@ -23,11 +23,17 @@ import { PlansScreen } from "@/components/screens/PlansScreen";
 import { RecurringScreen } from "@/components/screens/RecurringScreen";
 import { TransactionsScreen } from "@/components/screens/TransactionsScreen";
 
+import { SECOND_OPINION } from "./assistantFixtures";
 import { BUDGET_STATUS, CONSENT, RECS } from "./topicTestUtils";
 
 const get = vi.fn();
 vi.mock("@/lib/api/client", () => ({
-  api: { GET: (...a: unknown[]) => get(...a), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
+  api: {
+    GET: (...a: unknown[]) => get(...a),
+    POST: vi.fn(),
+    PATCH: vi.fn(),
+    DELETE: vi.fn(),
+  },
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
@@ -35,7 +41,12 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("next/dynamic", () => ({ default: () => () => <div aria-hidden /> }));
 
-const USER = { id: "u1", username: "amir", display_name: "Amir", persona: null } as const;
+const USER = {
+  id: "u1",
+  username: "amir",
+  display_name: "Amir",
+  persona: null,
+} as const;
 
 const FORECAST = {
   status: "ok",
@@ -46,7 +57,9 @@ const FORECAST = {
   stale_days: 1,
   is_stale: true,
   unmatched_items: ["Rent"],
-  suspect_months: [{ month: "2026-08", reason: "no_income", detail: "No income was logged." }],
+  suspect_months: [
+    { month: "2026-08", reason: "no_income", detail: "No income was logged." },
+  ],
   lock_reason: null,
   band: "Caution",
   health_score: 78,
@@ -87,8 +100,20 @@ const PLAN = {
   next_due_date: "2026-10-01",
   risk_score_at_creation: null,
   installments: [
-    { seq: 1, due_date: "2026-10-01", amount_sen: 15000, is_paid: false, paid_date: null },
-    { seq: 2, due_date: "2026-11-01", amount_sen: 15000, is_paid: false, paid_date: null },
+    {
+      seq: 1,
+      due_date: "2026-10-01",
+      amount_sen: 15000,
+      is_paid: false,
+      paid_date: null,
+    },
+    {
+      seq: 2,
+      due_date: "2026-11-01",
+      amount_sen: 15000,
+      is_paid: false,
+      paid_date: null,
+    },
   ],
 };
 
@@ -111,7 +136,11 @@ const DATA: Record<string, unknown> = {
   "/api/alerts": { items: [], checked_rules: [], notes: [] },
   "/api/budgets/status": BUDGET_STATUS,
   "/api/recommendations": RECS,
-  "/api/account/consent": { ...CONSENT, accepted: true, accepted_at: "2026-10-18T10:00:00Z" },
+  "/api/account/consent": {
+    ...CONSENT,
+    accepted: true,
+    accepted_at: "2026-10-18T10:00:00Z",
+  },
   "/api/insights/bills": {
     as_of: "2026-10-10",
     window_days: 30,
@@ -171,7 +200,14 @@ const DATA: Record<string, unknown> = {
   },
   "/api/summary/months": {
     months: [
-      { month: "2026-09", income_sen: 1, spend_sen: 2, refund_sen: 0, savings_sen: 0, net_sen: -1 },
+      {
+        month: "2026-09",
+        income_sen: 1,
+        spend_sen: 2,
+        refund_sen: 0,
+        savings_sen: 0,
+        net_sen: -1,
+      },
     ],
     history: null,
   },
@@ -236,7 +272,12 @@ const DATA: Record<string, unknown> = {
     },
   },
   "/api/provider-limits": [
-    { provider: "atome", limit_sen: 50000, used_sen: 30000, remaining_sen: 20000 },
+    {
+      provider: "atome",
+      limit_sen: 50000,
+      used_sen: 30000,
+      remaining_sen: 20000,
+    },
   ],
   "/api/recurring-items": [
     {
@@ -267,7 +308,9 @@ const DATA: Record<string, unknown> = {
 };
 
 function wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
@@ -275,7 +318,9 @@ async function violations(container: HTMLElement) {
   const result = await axe.run(container, {
     rules: { "color-contrast": { enabled: false }, region: { enabled: false } },
   });
-  return result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`);
+  return result.violations.map(
+    (v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`,
+  );
 }
 
 const SCREENS: [string, ReactNode, string][] = [
@@ -301,21 +346,29 @@ describe("accessibility (axe)", () => {
     }));
   });
 
-  it.each(SCREENS)("%s has no detectable violations", async (_name, screenNode, ready) => {
-    const { container } = render(<AppShell user={USER}>{screenNode}</AppShell>, { wrapper });
-    await screen.findAllByText(new RegExp(ready, "i"));
-    expect(await violations(container)).toEqual([]);
-  });
+  it.each(SCREENS)(
+    "%s has no detectable violations",
+    async (_name, screenNode, ready) => {
+      const { container } = render(
+        <AppShell user={USER}>{screenNode}</AppShell>,
+        { wrapper },
+      );
+      await screen.findAllByText(new RegExp(ready, "i"));
+      expect(await violations(container)).toEqual([]);
+    },
+  );
 
   it("an open dialog (add transaction) has no detectable violations", async () => {
     const { container } = render(<TransactionsScreen />, { wrapper });
     await screen.findByText("Lunch");
-    await userEvent.click(screen.getByRole("button", { name: "Add transaction" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Add transaction" }),
+    );
     await screen.findByRole("dialog");
     expect(await violations(container)).toEqual([]);
   });
 
-  it("a risk result with reasons, a suggestion and a repayment warning has no detectable violations", async () => {
+  it("a risk result with reasons, a suggestion, the second opinion and a repayment warning has no detectable violations", async () => {
     const plan: ComponentProps<typeof RiskResult>["check"]["plan"] = {
       provider: "spaylater",
       provider_label: "SPayLater",
@@ -334,8 +387,18 @@ describe("accessibility (axe)", () => {
       limit_known: false,
       remaining_limit_sen: null,
       installments: [
-        { seq: 1, due_date: "2026-11-09", amount_sen: 30000, paid_at_checkout: false },
-        { seq: 2, due_date: "2026-12-09", amount_sen: 30000, paid_at_checkout: false },
+        {
+          seq: 1,
+          due_date: "2026-11-09",
+          amount_sen: 30000,
+          paid_at_checkout: false,
+        },
+        {
+          seq: 2,
+          due_date: "2026-12-09",
+          amount_sen: 30000,
+          paid_at_checkout: false,
+        },
       ],
     };
     const curve = {
@@ -347,6 +410,14 @@ describe("accessibility (axe)", () => {
     const { container } = render(
       <RiskResult
         onTrySuggestion={() => {}}
+        request={{
+          provider: "spaylater",
+          item_name: "Phone",
+          purchase_date: "2026-10-09",
+          num_installments: 2,
+          total_price_sen: 60000,
+          monthly_fee_rate_pct: 0,
+        }}
         check={{
           status: "ok",
           lock_reason: null,
@@ -362,12 +433,18 @@ describe("accessibility (axe)", () => {
           simulated_band: "At Risk",
           probability_without_purchase: 0.1,
           factors: [
-            { feature: "dsr_with_purchase", text: "About 40% of income.", contribution: 0.08 },
+            {
+              feature: "dsr_with_purchase",
+              text: "About 40% of income.",
+              contribution: 0.08,
+            },
           ],
           suggestion: {
             status: "found",
             basis: "model",
-            changes: [{ kind: "instalments", label: "Spread it over 6 instalments" }],
+            changes: [
+              { kind: "instalments", label: "Spread it over 6 instalments" },
+            ],
             probability: 0.07,
             band: "Safe",
             request: null,
@@ -385,6 +462,7 @@ describe("accessibility (axe)", () => {
           without_curve: curve,
           versions: { model: "m", feature_schema_hash: "h" },
           check_id: null,
+          second_opinion: { ...SECOND_OPINION, already_at_risk: true },
         }}
       />,
       { wrapper },

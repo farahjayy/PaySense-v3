@@ -43,6 +43,62 @@ export const PREVIEW: Schemas["PlanPreviewOut"] = {
   ],
 };
 
+export const SECOND_OPINION: NonNullable<
+  Schemas["RiskCheckOut"]["second_opinion"]
+> = {
+  without_probability: 0.04,
+  with_probability: 0.09,
+  added_probability: 0.05,
+  already_at_risk: false,
+  stack: [
+    {
+      month: "2025-12",
+      by_provider: [{ provider_label: "Atome", amount_sen: 10000 }],
+      new_plan_sen: 0,
+      total_sen: 10000,
+      known_income_sen: 120000,
+    },
+    {
+      month: "2026-01",
+      by_provider: [],
+      new_plan_sen: 26633,
+      total_sen: 26633,
+      known_income_sen: 0,
+    },
+  ],
+  exposure: {
+    unpaid_before_sen: 10000,
+    unpaid_after_sen: 89900,
+    providers_before: ["Atome"],
+    providers_after: ["Atome", "SPayLater"],
+    plans_before: 1,
+    plans_after: 2,
+    recorded_limits_sen: null,
+    reaches_bnm_line: null,
+    bnm_line_sen: 150000,
+  },
+};
+
+export const SCHEDULE: Schemas["ScheduleOut"] = {
+  status: "ok",
+  without_probability: 0.04,
+  already_at_risk: false,
+  added_max: 0.05,
+  at_risk_edge: 0.3,
+  options: [
+    {
+      purchase_date: "2025-12-29",
+      num_installments: 3,
+      first_payment_date: null,
+      with_probability: 0.09,
+      added_probability: 0.05,
+      qualifies: true,
+      as_typed: true,
+    },
+  ],
+  chosen_index: 0,
+};
+
 export const RISK: Schemas["RiskCheckOut"] = {
   status: "ok",
   lock_reason: null,
@@ -85,6 +141,7 @@ export const RISK: Schemas["RiskCheckOut"] = {
   without_curve: null,
   versions: { model: "v1", feature_schema_hash: "abc" },
   check_id: null,
+  second_opinion: SECOND_OPINION,
 };
 
 export const LOCKED_RISK: Schemas["RiskCheckOut"] = {
@@ -164,7 +221,9 @@ export const CARDS: ChatCard[] = [
       gross_spend_sen: 2,
       refund_sen: 0,
       savings_sen: 0,
-      categories: [{ category: "Food", spend_sen: 26293, count: 30, share: 0.3 }],
+      categories: [
+        { category: "Food", spend_sen: 26293, count: 30, share: 0.3 },
+      ],
     },
   },
   {
@@ -435,7 +494,8 @@ export const CARDS: ChatCard[] = [
           priority: 2,
           severity: "high",
           title: "Food is over budget",
-          detail: "You have spent RM 420.00 of your RM 400.00 Food budget this month.",
+          detail:
+            "You have spent RM 420.00 of your RM 400.00 Food budget this month.",
           sources: [
             {
               label: "Spent",
@@ -469,10 +529,13 @@ export const CARDS: ChatCard[] = [
           duplicate: true,
         },
       ],
-      rejected: [{ index: 1, reason: "RM 9.99 is not written in the pasted text." }],
+      rejected: [
+        { index: 1, reason: "RM 9.99 is not written in the pasted text." },
+      ],
       duplicate_count: 1,
     },
   },
+  { kind: "schedule", title: "Safer timing: Phone", data: SCHEDULE },
 ];
 
 export const BUDGET_ACTION: PendingAction = {

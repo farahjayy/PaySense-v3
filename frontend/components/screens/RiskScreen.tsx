@@ -24,11 +24,15 @@ export function RiskScreen() {
   const check = useRiskCheck();
   const confirm = useConfirmRisk();
   const [draft, setDraft] = useState<PlanDraft>(() => emptyDraft(todayIso()));
-  const [checked, setChecked] = useState<{ input: PlanInput; result: RiskCheck } | null>(null);
+  const [checked, setChecked] = useState<{
+    input: PlanInput;
+    result: RiskCheck;
+  } | null>(null);
 
   const provider = providers.data?.find((p) => p.key === draft.provider);
   const input = useMemo(() => toPlanInput(draft, provider), [draft, provider]);
-  const stale = checked !== null && JSON.stringify(checked.input) !== JSON.stringify(input);
+  const stale =
+    checked !== null && JSON.stringify(checked.input) !== JSON.stringify(input);
 
   function set<K extends keyof PlanDraft>(key: K, value: PlanDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -36,7 +40,9 @@ export function RiskScreen() {
 
   function run(body: PlanInput) {
     confirm.reset();
-    check.mutate(body, { onSuccess: (result) => setChecked({ input: body, result }) });
+    check.mutate(body, {
+      onSuccess: (result) => setChecked({ input: body, result }),
+    });
   }
 
   function trySuggestion(request: PlanInput) {
@@ -68,7 +74,12 @@ export function RiskScreen() {
               if (input) run(input);
             }}
           >
-            <PlanFields draft={draft} set={set} providers={providers.data ?? []} idPrefix="risk" />
+            <PlanFields
+              draft={draft}
+              set={set}
+              providers={providers.data ?? []}
+              idPrefix="risk"
+            />
             {providers.error && (
               <Banner tone="danger" title="Providers did not load">
                 {providers.error.message}
@@ -83,8 +94,16 @@ export function RiskScreen() {
               <p className="text-[12px] text-ink-secondary">
                 {input ? "" : "Fill in the purchase to check it."}
               </p>
-              <Button type="submit" variant="accent" disabled={!input || check.isPending}>
-                {check.isPending ? "Checking…" : checked ? "Check again" : "Check this purchase"}
+              <Button
+                type="submit"
+                variant="accent"
+                disabled={!input || check.isPending}
+              >
+                {check.isPending
+                  ? "Checking…"
+                  : checked
+                    ? "Check again"
+                    : "Check this purchase"}
               </Button>
             </div>
           </form>
@@ -92,11 +111,13 @@ export function RiskScreen() {
             <section aria-label="Result" className="space-y-4">
               {stale && (
                 <Banner tone="info" title="You have changed the purchase">
-                  This result is for what you entered before. Check again to update it.
+                  This result is for what you entered before. Check again to
+                  update it.
                 </Banner>
               )}
               <RiskResult
                 check={checked.result}
+                request={checked.input}
                 stale={stale}
                 busy={check.isPending}
                 onTrySuggestion={trySuggestion}
@@ -131,8 +152,9 @@ function GoAhead({ disabled, pending, error, onConfirm }: GoAheadProps) {
     <div className="space-y-3 rounded-card border border-line bg-surface p-4 sm:p-5">
       <h2 className="text-sm font-semibold text-ink">Going ahead?</h2>
       <p className="text-[13px] leading-relaxed text-ink-secondary">
-        Adding it saves this result as a report and creates the plan, so it shows up in your bills
-        and forecast. You can still change your mind first.
+        Adding it saves this result as a report and creates the plan, so it
+        shows up in your bills and forecast. You can still change your mind
+        first.
       </p>
       {error && (
         <Banner tone="danger" title="Not added">
@@ -150,8 +172,8 @@ function Added({ check }: { check: string }) {
   return (
     <div className="space-y-4">
       <Banner tone="success" title="Plan added">
-        The plan is in your bills and your forecast has been refreshed. This result is saved as a
-        report.
+        The plan is in your bills and your forecast has been refreshed. This
+        result is saved as a report.
       </Banner>
       <div className="flex flex-wrap gap-2">
         <Link

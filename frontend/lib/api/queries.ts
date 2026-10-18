@@ -3,7 +3,12 @@
  * loading, error and refetch behaviour is the same everywhere and the types come only from the
  * backend's OpenAPI document. No money is computed here: amounts are integer sen as received.
  */
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { api } from "./client";
 import { errorMessage } from "./errors";
@@ -27,6 +32,7 @@ export type ImportPreview = Schemas["ImportPreviewOut"];
 export type ConfirmRow = Schemas["ConfirmRow"];
 export type RiskCheck = Schemas["RiskCheckOut"];
 export type RiskConfirm = Schemas["RiskConfirmOut"];
+export type Schedule = Schemas["ScheduleOut"];
 export type ModelInfo = Schemas["ModelInfoOut"];
 export type Category = Schemas["CategoryOut"];
 export type CategorySummary = Schemas["CategorySummaryOut"];
@@ -63,8 +69,13 @@ export async function unwrap<T>(pending: Promise<Result<T>>): Promise<T> {
     throw new ApiError(errorMessage(error), 0, "network_error");
   }
   if (result.error !== undefined || result.data === undefined) {
-    if (result.response.ok && result.response.status === 204) return undefined as T;
-    throw new ApiError(errorMessage(result.error), result.response.status, codeOf(result.error));
+    if (result.response.ok && result.response.status === 204)
+      return undefined as T;
+    throw new ApiError(
+      errorMessage(result.error),
+      result.response.status,
+      codeOf(result.error),
+    );
   }
   return result.data;
 }
@@ -134,7 +145,9 @@ export async function fetchAllTransactions(filters: TransactionFilters) {
   let cursor: string | undefined;
   for (let page = 0; page < MAX_TRANSACTION_PAGES; page += 1) {
     const data = await unwrap(
-      api.GET("/api/transactions", { params: { query: { ...filters, cursor } } }),
+      api.GET("/api/transactions", {
+        params: { query: { ...filters, cursor } },
+      }),
     );
     rows.push(...data.transactions);
     if (!data.next_cursor) break;
@@ -180,7 +193,11 @@ export function useCategorySummary(month: string | null) {
   return useQuery({
     queryKey: queryKeys.categorySummary(month ?? ""),
     queryFn: async () =>
-      unwrap(api.GET("/api/summary/categories", { params: { query: { month: month ?? "" } } })),
+      unwrap(
+        api.GET("/api/summary/categories", {
+          params: { query: { month: month ?? "" } },
+        }),
+      ),
     enabled: month !== null,
   });
 }
@@ -242,7 +259,8 @@ export function useImportConfirm() {
 export function useCreateTransaction() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async (body: TransactionInput) => unwrap(api.POST("/api/transactions", { body })),
+    mutationFn: async (body: TransactionInput) =>
+      unwrap(api.POST("/api/transactions", { body })),
     onSuccess: () => {
       // Refresh behind the screen: a save is done when the server says so, not when every
       // active query (the forecast simulation included) has been fetched again.
@@ -254,7 +272,13 @@ export function useCreateTransaction() {
 export function useUpdateTransaction() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Schemas["TransactionPatch"] }) =>
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Schemas["TransactionPatch"];
+    }) =>
       unwrap(
         api.PATCH("/api/transactions/{transaction_id}", {
           params: { path: { transaction_id: id } },
@@ -289,7 +313,8 @@ export function useDeleteTransaction() {
 export function useCreateRecurring() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async (body: RecurringInput) => unwrap(api.POST("/api/recurring-items", { body })),
+    mutationFn: async (body: RecurringInput) =>
+      unwrap(api.POST("/api/recurring-items", { body })),
     onSuccess: () => {
       // Refresh behind the screen: a save is done when the server says so, not when every
       // active query (the forecast simulation included) has been fetched again.
@@ -301,7 +326,13 @@ export function useCreateRecurring() {
 export function useUpdateRecurring() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Schemas["RecurringPatch"] }) =>
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Schemas["RecurringPatch"];
+    }) =>
       unwrap(
         api.PATCH("/api/recurring-items/{item_id}", {
           params: { path: { item_id: id } },
@@ -320,7 +351,11 @@ export function useDeleteRecurring() {
   const invalidate = useInvalidateLedger();
   return useMutation({
     mutationFn: async (id: string) =>
-      unwrap(api.DELETE("/api/recurring-items/{item_id}", { params: { path: { item_id: id } } })),
+      unwrap(
+        api.DELETE("/api/recurring-items/{item_id}", {
+          params: { path: { item_id: id } },
+        }),
+      ),
     onSuccess: () => {
       // Refresh behind the screen: a save is done when the server says so, not when every
       // active query (the forecast simulation included) has been fetched again.
@@ -331,14 +366,16 @@ export function useDeleteRecurring() {
 
 export function usePreviewPlan() {
   return useMutation({
-    mutationFn: async (body: PlanInput) => unwrap(api.POST("/api/plans/preview", { body })),
+    mutationFn: async (body: PlanInput) =>
+      unwrap(api.POST("/api/plans/preview", { body })),
   });
 }
 
 export function useCreatePlan() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async (body: PlanInput) => unwrap(api.POST("/api/plans", { body })),
+    mutationFn: async (body: PlanInput) =>
+      unwrap(api.POST("/api/plans", { body })),
     onSuccess: () => {
       // Refresh behind the screen: a save is done when the server says so, not when every
       // active query (the forecast simulation included) has been fetched again.
@@ -402,7 +439,16 @@ export function useModelInfo() {
 /** Stateless: runs the whole check and stores nothing. */
 export function useRiskCheck() {
   return useMutation({
-    mutationFn: async (body: PlanInput) => unwrap(api.POST("/api/risk/check", { body })),
+    mutationFn: async (body: PlanInput) =>
+      unwrap(api.POST("/api/risk/check", { body })),
+  });
+}
+
+/** Stateless (D-57): when would this purchase add little to the chance of running short? */
+export function useRiskSchedule() {
+  return useMutation({
+    mutationFn: async (body: PlanInput) =>
+      unwrap(api.POST("/api/risk/schedule", { body })),
   });
 }
 
@@ -410,7 +456,8 @@ export function useRiskCheck() {
 export function useConfirmRisk() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async (body: PlanInput) => unwrap(api.POST("/api/risk/confirm", { body })),
+    mutationFn: async (body: PlanInput) =>
+      unwrap(api.POST("/api/risk/confirm", { body })),
     onSuccess: () => {
       void invalidate();
     },
@@ -422,7 +469,11 @@ export function useRiskReport(id: string) {
   return useQuery({
     queryKey: ["risk-report", id],
     queryFn: async () =>
-      unwrap(api.GET("/api/risk/checks/{check_id}", { params: { path: { check_id: id } } })),
+      unwrap(
+        api.GET("/api/risk/checks/{check_id}", {
+          params: { path: { check_id: id } },
+        }),
+      ),
     staleTime: Infinity,
   });
 }
@@ -430,10 +481,19 @@ export function useRiskReport(id: string) {
 export function useDeletePlan() {
   const invalidate = useInvalidateLedger();
   return useMutation({
-    mutationFn: async ({ id, keepPayments }: { id: string; keepPayments: boolean }) =>
+    mutationFn: async ({
+      id,
+      keepPayments,
+    }: {
+      id: string;
+      keepPayments: boolean;
+    }) =>
       unwrap(
         api.DELETE("/api/plans/{plan_id}", {
-          params: { path: { plan_id: id }, query: { keep_payments: keepPayments } },
+          params: {
+            path: { plan_id: id },
+            query: { keep_payments: keepPayments },
+          },
         }),
       ),
     onSuccess: () => {
@@ -447,7 +507,13 @@ export function useDeletePlan() {
 export function useSetProviderLimit() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async ({ provider, limitSen }: { provider: string; limitSen: number }) =>
+    mutationFn: async ({
+      provider,
+      limitSen,
+    }: {
+      provider: string;
+      limitSen: number;
+    }) =>
       unwrap(
         api.PUT("/api/provider-limits/{provider}", {
           params: { path: { provider: provider as ProviderLimit["provider"] } },
@@ -473,7 +539,8 @@ function useInvalidateCategories() {
 export function useAddCategory() {
   const invalidate = useInvalidateCategories();
   return useMutation({
-    mutationFn: async (name: string) => unwrap(api.POST("/api/categories", { body: { name } })),
+    mutationFn: async (name: string) =>
+      unwrap(api.POST("/api/categories", { body: { name } })),
     onSuccess: () => {
       void invalidate();
     },
@@ -484,7 +551,9 @@ export function useRenameCategory() {
   const invalidate = useInvalidateCategories();
   return useMutation({
     mutationFn: async ({ name, newName }: { name: string; newName: string }) =>
-      unwrap(api.PATCH("/api/categories", { body: { name, new_name: newName } })),
+      unwrap(
+        api.PATCH("/api/categories", { body: { name, new_name: newName } }),
+      ),
     onSuccess: () => {
       void invalidate();
     },

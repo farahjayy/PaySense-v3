@@ -6,6 +6,7 @@ import {
   formatMonth,
   formatMonthCompact,
   formatPercent,
+  formatPoints,
   plural,
 } from "@/lib/format";
 
@@ -72,5 +73,17 @@ describe("BAND_COPY", () => {
       expect(BAND_COPY[band].icon.length).toBeGreaterThan(0);
       expect(BAND_COPY[band].line.length).toBeGreaterThan(10);
     }
+  });
+});
+
+describe("formatPoints", () => {
+  it("shows an added chance in whole percentage points with a sign", () => {
+    expect(formatPoints(0.134)).toBe("+13 points");
+    expect(formatPoints(0.01)).toBe("+1 point");
+    expect(formatPoints(0)).toBe("+0 points");
+  });
+
+  it("never rounds a real increase down to nothing", () => {
+    expect(formatPoints(0.003)).toBe("+under 1 point");
   });
 });

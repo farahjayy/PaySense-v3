@@ -10,7 +10,10 @@ import { RiskScreen } from "@/components/screens/RiskScreen";
 const get = vi.fn();
 const post = vi.fn();
 vi.mock("@/lib/api/client", () => ({
-  api: { GET: (...a: unknown[]) => get(...a), POST: (...a: unknown[]) => post(...a) },
+  api: {
+    GET: (...a: unknown[]) => get(...a),
+    POST: (...a: unknown[]) => post(...a),
+  },
 }));
 vi.mock("next/dynamic", () => ({
   default: () =>
@@ -20,7 +23,9 @@ vi.mock("next/dynamic", () => ({
 }));
 
 function wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
@@ -54,9 +59,24 @@ const PLAN = {
   limit_known: false,
   remaining_limit_sen: null,
   installments: [
-    { seq: 1, due_date: "2026-11-09", amount_sen: 20000, paid_at_checkout: false },
-    { seq: 2, due_date: "2026-12-09", amount_sen: 20000, paid_at_checkout: false },
-    { seq: 3, due_date: "2027-01-09", amount_sen: 20000, paid_at_checkout: false },
+    {
+      seq: 1,
+      due_date: "2026-11-09",
+      amount_sen: 20000,
+      paid_at_checkout: false,
+    },
+    {
+      seq: 2,
+      due_date: "2026-12-09",
+      amount_sen: 20000,
+      paid_at_checkout: false,
+    },
+    {
+      seq: 3,
+      due_date: "2027-01-09",
+      amount_sen: 20000,
+      paid_at_checkout: false,
+    },
   ],
 };
 
@@ -133,7 +153,10 @@ function ok(data: unknown, status = 200) {
 }
 
 async function fillForm(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(await screen.findByLabelText(/what are you buying/i), "Headphones");
+  await user.type(
+    await screen.findByLabelText(/what are you buying/i),
+    "Headphones",
+  );
   await user.clear(screen.getByLabelText(/number of instalments/i));
   await user.type(screen.getByLabelText(/number of instalments/i), "3");
   await user.type(screen.getByLabelText(/^price/i), "600");
@@ -148,7 +171,9 @@ describe("RiskScreen", () => {
 
   it("will not run until the purchase is filled in", async () => {
     render(<RiskScreen />, { wrapper });
-    expect(await screen.findByRole("button", { name: "Check this purchase" })).toBeDisabled();
+    expect(
+      await screen.findByRole("button", { name: "Check this purchase" }),
+    ).toBeDisabled();
     expect(screen.getByText(/fill in the purchase/i)).toBeInTheDocument();
   });
 
@@ -157,17 +182,29 @@ describe("RiskScreen", () => {
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });
     await fillForm(user);
-    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
 
     expect(
       await screen.findByRole("img", { name: /score 58 out of 100, at risk/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/about 40% of your monthly income/i)).toBeInTheDocument();
-    expect(screen.getByText(/estimated chance of running short: 42%/i)).toBeInTheDocument();
-    expect(screen.getByText(/a direct simulation of this purchase gives 45%/i)).toBeInTheDocument();
-    expect(screen.getByText("Spread it over 6 instalments")).toBeInTheDocument();
+    expect(
+      screen.getByText(/about 40% of your monthly income/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/estimated chance of running short: 42%/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/a direct simulation of this purchase gives 45%/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Spread it over 6 instalments"),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("with-without-chart")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /your repayment history/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /your repayment history/i }),
+    ).toBeInTheDocument();
     expect(post.mock.calls[0][0]).toBe("/api/risk/check");
     expect(post.mock.calls[0][1].body).toMatchObject({
       provider: "spaylater",
@@ -197,10 +234,16 @@ describe("RiskScreen", () => {
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });
     await fillForm(user);
-    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
 
-    expect(await screen.findByText(/nothing in your numbers stands out/i)).toBeInTheDocument();
-    expect(screen.getByText(/no single change gets this to safe/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/nothing in your numbers stands out/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/no single change gets this to safe/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/we tried 60 combinations/i)).toBeInTheDocument();
   });
 
@@ -226,7 +269,9 @@ describe("RiskScreen", () => {
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });
     await fillForm(user);
-    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
     await user.click(await screen.findByRole("button", { name: "Try this" }));
 
     await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
@@ -236,8 +281,12 @@ describe("RiskScreen", () => {
       await screen.findByRole("img", { name: /score 93 out of 100, safe/i }),
     ).toBeInTheDocument();
     // and the new result counts as current: no "you have changed" notice, going ahead is allowed
-    expect(screen.queryByText(/you have changed the purchase/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add this as a plan" })).toBeEnabled();
+    expect(
+      screen.queryByText(/you have changed the purchase/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add this as a plan" }),
+    ).toBeEnabled();
   });
 
   it("dims the result and disables going ahead once the form has moved on", async () => {
@@ -245,26 +294,43 @@ describe("RiskScreen", () => {
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });
     await fillForm(user);
-    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
     await screen.findByRole("img", { name: /score 58/i });
 
     await user.type(screen.getByLabelText(/what are you buying/i), " 2");
 
-    expect(screen.getByText(/you have changed the purchase/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add this as a plan" })).toBeDisabled();
+    expect(
+      screen.getByText(/you have changed the purchase/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add this as a plan" }),
+    ).toBeDisabled();
   });
 
   it("adds the plan on confirmation and links to the saved report", async () => {
     post.mockImplementation(async (path: string) =>
       path === "/api/risk/check"
         ? ok(result())
-        : ok({ check_id: "11111111-1111-1111-1111-111111111111", check: result(), plan: {} }, 201),
+        : ok(
+            {
+              check_id: "11111111-1111-1111-1111-111111111111",
+              check: result(),
+              plan: {},
+            },
+            201,
+          ),
     );
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });
     await fillForm(user);
-    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
-    await user.click(await screen.findByRole("button", { name: "Add this as a plan" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Add this as a plan" }),
+    );
 
     expect(await screen.findByText("Plan added")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /saved report/i })).toHaveAttribute(
@@ -297,10 +363,16 @@ describe("RiskScreen", () => {
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });
     await fillForm(user);
-    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
 
-    expect(await screen.findByText(/unlocks with four months/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add this as a plan" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/unlocks with four months/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add this as a plan" }),
+    ).not.toBeInTheDocument();
   });
 
   it("explains a failed check and a refused confirmation", async () => {
@@ -317,11 +389,68 @@ describe("RiskScreen", () => {
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });
     await fillForm(user);
-    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
 
     expect(
       await screen.findByText("The risk check is not available right now."),
     ).toBeInTheDocument();
+  });
+});
+
+describe("RiskScreen: the Second-Opinion Check (D-57)", () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    get.mockImplementation(async () => ok(PROVIDERS));
+  });
+
+  it("finds a safer time and checks the purchase again with it", async () => {
+    const schedule = {
+      status: "ok",
+      without_probability: 0.1,
+      already_at_risk: false,
+      added_max: 0.05,
+      at_risk_edge: 0.3,
+      options: [
+        {
+          purchase_date: "2026-10-26",
+          num_installments: 6,
+          first_payment_date: null,
+          with_probability: 0.12,
+          added_probability: 0.02,
+          qualifies: true,
+          as_typed: false,
+        },
+      ],
+      chosen_index: 0,
+    };
+    post.mockImplementation(async (path: string) =>
+      path === "/api/risk/schedule" ? ok(schedule) : ok(result()),
+    );
+    const user = userEvent.setup();
+    render(<RiskScreen />, { wrapper });
+    await fillForm(user);
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /find a better time/i }),
+    );
+    await user.click(await screen.findByRole("button", { name: /use this/i }));
+
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(3));
+    expect(post.mock.calls[1][0]).toBe("/api/risk/schedule");
+    expect(post.mock.calls[2][0]).toBe("/api/risk/check");
+    expect(post.mock.calls[2][1].body).toMatchObject({
+      purchase_date: "2026-10-26",
+      num_installments: 6,
+    });
+    expect(screen.getByLabelText(/number of instalments/i)).toHaveValue("6");
+    expect(
+      screen.queryByText(/you have changed the purchase/i),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -332,16 +461,32 @@ describe("RiskReportScreen", () => {
     get.mockResolvedValue(ok(result({ check_id: "abc" })));
     render(<RiskReportScreen id="abc" />, { wrapper });
 
-    expect(await screen.findByRole("img", { name: /score 58 out of 100/i })).toBeInTheDocument();
-    expect(get.mock.calls[0][1]).toEqual({ params: { path: { check_id: "abc" } } });
-    expect(screen.queryByRole("button", { name: "Try this" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add this as a plan" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("img", { name: /score 58 out of 100/i }),
+    ).toBeInTheDocument();
+    expect(get.mock.calls[0][1]).toEqual({
+      params: { path: { check_id: "abc" } },
+    });
+    expect(
+      screen.queryByRole("button", { name: "Try this" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add this as a plan" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /find a better time/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("says plainly when there is no such report", async () => {
     get.mockResolvedValue({
       data: undefined,
-      error: { detail: { code: "risk_check_not_found", message: "No such risk check." } },
+      error: {
+        detail: {
+          code: "risk_check_not_found",
+          message: "No such risk check.",
+        },
+      },
       response: { ok: false, status: 404 },
     });
     render(<RiskReportScreen id="nope" />, { wrapper });
@@ -365,13 +510,17 @@ describe("RiskResult explanation of the two numbers", () => {
     const user = userEvent.setup();
     render(<RiskScreen />, { wrapper });
     await fillForm(user);
-    await user.click(screen.getByRole("button", { name: "Check this purchase" }));
+    await user.click(
+      screen.getByRole("button", { name: "Check this purchase" }),
+    );
     await screen.findByRole("img", { name: /out of 100/i });
   }
 
   it("explains what the second number is and which one decides the band", async () => {
     await show({});
-    expect(screen.getByText(/the estimate decides the band/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/the estimate decides the band/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/slower, direct calculation/i)).toBeInTheDocument();
   });
 
@@ -397,13 +546,20 @@ describe("RiskResult explanation of the two numbers", () => {
       suggestion: {
         status: "found",
         basis: "simulation",
-        changes: [{ kind: "wait", label: "Buy it on 2 June 2026, after your next income" }],
+        changes: [
+          {
+            kind: "wait",
+            label: "Buy it on 2 June 2026, after your next income",
+          },
+        ],
         probability: 0.04,
         band: "Safe",
         request: null,
         evaluated: 5,
       },
     });
-    expect(screen.getByText(/judged by a direct simulation/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/judged by a direct simulation/i),
+    ).toBeInTheDocument();
   });
 });

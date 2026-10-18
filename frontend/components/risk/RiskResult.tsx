@@ -6,6 +6,8 @@ import type { ReactNode } from "react";
 import { Notices } from "@/components/forecast/Notices";
 import { PlanPreviewPanel } from "@/components/plans/PlanPreviewPanel";
 import { RepaymentCard } from "@/components/risk/RepaymentCard";
+import { SaferTiming } from "@/components/risk/SaferTiming";
+import { SecondOpinion } from "@/components/risk/SecondOpinion";
 import { SuggestionCard } from "@/components/risk/SuggestionCard";
 import { BandBadge } from "@/components/ui/BandBadge";
 import { Banner } from "@/components/ui/Banner";
@@ -17,12 +19,17 @@ import { BAND_COPY, formatPercent } from "@/lib/format";
 import { riskNotices } from "@/lib/risk";
 
 const WithWithoutChart = dynamic(
-  () => import("@/components/risk/WithWithoutChart").then((m) => m.WithWithoutChart),
+  () =>
+    import("@/components/risk/WithWithoutChart").then(
+      (m) => m.WithWithoutChart,
+    ),
   { ssr: false, loading: () => <Skeleton lines={6} label="Loading chart" /> },
 );
 
 type Props = {
   check: RiskCheck;
+  /** The purchase as checked: with `onTrySuggestion`, the timing search can run and be used. */
+  request?: PlanInput;
   onTrySuggestion?: (request: PlanInput) => void;
   busy?: boolean;
   /** Dimmed while the form has moved on from what was checked. */
@@ -30,9 +37,26 @@ type Props = {
   footer?: ReactNode;
 };
 
-export function RiskResult({ check, onTrySuggestion, busy, stale = false, footer }: Props) {
-  if (check.status !== "ok" || check.probability === null || !check.band || check.score === null) {
-    return <LockedState reason={check.lock_reason} monthsOfHistory={check.months_of_history} />;
+export function RiskResult({
+  check,
+  request,
+  onTrySuggestion,
+  busy,
+  stale = false,
+  footer,
+}: Props) {
+  if (
+    check.status !== "ok" ||
+    check.probability === null ||
+    !check.band ||
+    check.score === null
+  ) {
+    return (
+      <LockedState
+        reason={check.lock_reason}
+        monthsOfHistory={check.months_of_history}
+      />
+    );
   }
   const copy = BAND_COPY[check.band];
   return (
@@ -41,9 +65,12 @@ export function RiskResult({ check, onTrySuggestion, busy, stale = false, footer
         <ScoreRing score={check.score} band={check.band} caption="out of 100" />
         <div className="text-center sm:text-left">
           <BandBadge band={check.band} large />
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-ink">{copy.line}</p>
+          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-ink">
+            {copy.line}
+          </p>
           <p className="mt-2 text-[13px] text-ink-secondary">
-            Estimated chance of running short: {formatPercent(check.probability)}.
+            Estimated chance of running short:{" "}
+            {formatPercent(check.probability)}.
             {check.simulated_probability !== null && (
               <>
                 {" "}
@@ -53,16 +80,19 @@ export function RiskResult({ check, onTrySuggestion, busy, stale = false, footer
             )}
           </p>
           <p className="mt-1 text-[12px] leading-relaxed text-ink-muted">
-            The estimate decides the band. It comes from a model trained on many simulations like
-            this one; the simulation is the slower, direct calculation of this exact purchase, shown
-            so you can see how close they are.
+            The estimate decides the band. It comes from a model trained on many
+            simulations like this one; the simulation is the slower, direct
+            calculation of this exact purchase, shown so you can see how close
+            they are.
           </p>
         </div>
       </Card>
+      {check.second_opinion && <SecondOpinion opinion={check.second_opinion} />}
       {check.simulated_band && check.simulated_band !== check.band && (
         <Banner tone="info" title="The two methods put this in different bands">
-          The estimate says {check.band} and the direct simulation says {check.simulated_band}. The
-          band above is the estimate&apos;s; treat this purchase as close to the line.
+          The estimate says {check.band} and the direct simulation says{" "}
+          {check.simulated_band}. The band above is the estimate&apos;s; treat
+          this purchase as close to the line.
         </Banner>
       )}
       <Notices items={riskNotices(check)} />
@@ -77,19 +107,36 @@ export function RiskResult({ check, onTrySuggestion, busy, stale = false, footer
           </ul>
         ) : (
           <CardCaption>
-            Nothing in your numbers stands out as pushing the risk up. The result reflects your
-            overall pattern.
+            Nothing in your numbers stands out as pushing the risk up. The
+            result reflects your overall pattern.
           </CardCaption>
         )}
       </Card>
       {check.suggestion && (
-        <SuggestionCard suggestion={check.suggestion} onTry={onTrySuggestion} busy={busy} />
+        <SuggestionCard
+          suggestion={check.suggestion}
+          onTry={onTrySuggestion}
+          busy={busy}
+        />
+      )}
+      {request && onTrySuggestion && !stale && (
+        <SaferTiming
+          key={JSON.stringify(request)}
+          request={request}
+          onUse={onTrySuggestion}
+          busy={busy}
+        />
       )}
       {check.with_plan_curve && check.without_curve && (
         <Card>
-          <CardTitle>Your running margin, with and without this purchase</CardTitle>
+          <CardTitle>
+            Your running margin, with and without this purchase
+          </CardTitle>
           <div className="mt-4">
-            <WithWithoutChart withPlan={check.with_plan_curve} without={check.without_curve} />
+            <WithWithoutChart
+              withPlan={check.with_plan_curve}
+              without={check.without_curve}
+            />
           </div>
         </Card>
       )}

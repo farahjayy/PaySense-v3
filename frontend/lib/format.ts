@@ -31,7 +31,9 @@ export function formatMonth(key: string, short = false): string {
   const match = ISO_MONTH.exec(key);
   const month = match ? MONTHS[Number(match[2]) - 1] : undefined;
   if (!match || !month) return key;
-  return short ? `${month.slice(0, 3)} ${match[1].slice(2)}` : `${month} ${match[1]}`;
+  return short
+    ? `${month.slice(0, 3)} ${match[1].slice(2)}`
+    : `${month} ${match[1]}`;
 }
 
 /** "2026-02" -> "Feb 2026": short enough for a narrow table column, with the year in full. */
@@ -46,6 +48,13 @@ export function formatPercent(probability: number): string {
   const percent = Math.round(probability * 100);
   if (probability > 0 && percent === 0) return "under 1%";
   return `${percent}%`;
+}
+
+/** An added chance in percentage points: 0.134 -> "+13 points"; a real rise below 0.5 is never 0. */
+export function formatPoints(added: number): string {
+  const points = Math.round(added * 100);
+  if (added > 0 && points === 0) return "+under 1 point";
+  return `+${points} ${points === 1 ? "point" : "points"}`;
 }
 
 export function plural(count: number, one: string, many = `${one}s`): string {
