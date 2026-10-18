@@ -42,8 +42,11 @@ NOT_DONE = """\
 ## Not done
 
 - **Real-data band check for this version.** MoneyData and Berka could not be downloaded where
-  this version was built (network policy), so the band widening (WP16, C2) was fitted and checked
-  on synthetic students only (`reports/engine1/band_calibration.md`).
+  this version was built (network policy), so the band rule (engine v3: monthly floor, population
+  record, refit; `reports/engine1/band_v3.md`) was fitted and checked on synthetic students only.
+- **Short histories in the training set.** Every generated profile has about 73-78 weeks of
+  history, so the model never sees the 17-25-week histories the demo personas have (the
+  generator history mix, G4 of the engine evaluation note, is left to a later round).
 - **Stale and incomplete ledgers in the training set.** The plan proposed adding them to training;
   the execution plan kept them apart, and they are kept apart (they are only used in the stress
   test, where training on them would contaminate it).
@@ -178,10 +181,22 @@ def _ablation_row(a: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def lockbox_table(record: dict[str, Any]) -> pd.DataFrame:
-    box = record["lockbox"]
+BENCHMARK_NAMES = {
+    "p_without": "predict p_without (benchmark): no added risk",
+    "p_without_plus_mean_q": "p_without + mean added share (benchmark)",
+}
+
+
+def lockbox_table(record: dict[str, Any], key: str = "lockbox") -> pd.DataFrame:
+    box = record[key]
     groups = box.get("subgroups", {}).get(LOW_BASELINE, {})
-    return pd.DataFrame(
+    benchmarks = box.get("benchmarks", {})
+    extra = [
+        {"model": label, "brier_all": benchmarks[name]["brier"]}
+        for name, label in BENCHMARK_NAMES.items()
+        if name in benchmarks
+    ]
+    frame = pd.DataFrame(
         [
             {
                 "model": f"{record['winner']} (calibrated: {record['calibration']['chosen']})",
@@ -203,8 +218,64 @@ def lockbox_table(record: dict[str, Any]) -> pd.DataFrame:
                 "brier_all": box["constant_brier"],
                 f"brier_{LOW_BASELINE}": groups.get("brier_constant"),
             },
+            *extra,
         ]
     )
+    frame["brier_skill_vs_constant"] = 1 - frame["brier_all"] / box["constant_brier"]
+    return frame
+
+
+def purchase_moves_table(record: dict[str, Any], key: str = "lockbox") -> pd.DataFrame | None:
+    moves = record[key].get("purchase_moves_band")
+    if not moves or moves.get("profiles", 0) == 0:
+        return None
+    names = {
+        "model": f"{record['winner']} (calibrated)",
+        "logistic": "logistic (benchmark)",
+        "constant": "constant (benchmark)",
+        **BENCHMARK_NAMES,
+    }
+    return pd.DataFrame(
+        [
+            {"model": label, "profiles": moves["profiles"], **moves[name]}
+            for name, label in names.items()
+            if name in moves
+        ]
+    )
+
+
+def _target_text(record: dict[str, Any]) -> str:
+    if record.get("target") != "two_part":
+        return ""
+    return (
+        "## The target: two-part (ADR D-62)\n\n"
+        "The label is written p_with = b + (1 - b) q, with b the simulated chance without the "
+        "purchase (same seed) and q the share of the futures that were not short without the "
+        "purchase that it makes short. Every candidate learns q from the features with weight "
+        "1 - b (b is never a feature), and every score below is on the composed b + (1 - b) "
+        "q-hat against the label. The calibrator is chosen on that composed Brier and fitted on "
+        "q-hat. Served, b is the request's own simulation, so the shown number is exact in its "
+        "starting position and the model only judges what the purchase adds; reasons are the "
+        "Shapley values of q times 1 - b. The **predict p_without** benchmark (no added risk at "
+        "all) shows how much of every score is the starting position.\n"
+    )
+
+
+def _continuity_text(record: dict[str, Any]) -> list[str]:
+    box = record.get("continuity")
+    if not box:
+        return []
+    c = box["calibrated"]
+    return [
+        "## The old lockbox, scored for continuity only\n",
+        f"The {box['profiles']} profiles of the earlier lockbox (every tenth index below 10,000) "
+        "were kept out of every step of this version as well and scored once beside the new "
+        "lockbox. They were scored for the v1 and v2 models before, so this is their scoring "
+        f"number {record.get('continuity_scorings', 'unknown')} in this log plus the v1 scoring "
+        "on the machine that trained it: a continuity figure, not a test. Nothing was chosen "
+        f"on it. Brier {c['brier']:.4f}; band agreement {box['band_agreement']:.1%}.\n",
+        _md(lockbox_table(record, "continuity")),
+    ]
 
 
 def lockbox_subgroup_table(record: dict[str, Any]) -> pd.DataFrame:
@@ -308,6 +379,11 @@ def _scoring_sentence(record: dict[str, Any]) -> str:
     if n is None:
         return "The number of times the lockbox has been scored was not recorded."
     times = "time" if n == 1 else "times"
+    if record.get("continuity_profiles"):
+        return (
+            "According to the append-only log beside the run directories, this lockbox has been "
+            f"scored {n} {times} (counted from the log's first line)."
+        )
     return (
         "According to the append-only log beside the run directories, the lockbox has been "
         f"scored {n} {times} (counted from the log's first line; a scoring made before the log "
@@ -320,8 +396,12 @@ def _scoring_sentence(record: dict[str, Any]) -> str:
 def _lockbox_text(record: dict[str, Any]) -> str:
     box = record["lockbox"]
     c = box["calibrated"]
+    which = (
+        "indices 10,000-10,999, new in this version" if record.get("continuity_profiles") else
+        "every tenth"
+    )  # fmt: skip
     return (
-        f"The {box['profiles']} lockbox profiles (every tenth) were excluded from "
+        f"The {box['profiles']} lockbox profiles ({which}) were excluded from "
         "cross-validation, model choice, tuning, calibration and the ablation; the final "
         "calibrated model was scored "
         f"on them once. Brier {c['brier']:.4f}, log-loss {c['log_loss']:.4f}, calibration slope "
@@ -430,11 +510,12 @@ def _limitations(
   and that every profile shared one calendar day; the horizon now runs to the last instalment
   (D-36) and each profile has its own as-of day. These were design corrections made on the
   label distribution, not on any model score, but they are choices made after looking.
-- **Probabilities are more extreme than a calibrated forecast.** Engine 1's bands are narrower than
-  nominal on short histories. This version widens each user's error record by history length
-  (WP16, `reports/engine1/band_calibration.md`), which brings spending to about the nominal 80%
-  from 26 weeks of history but leaves the shortest histories and income below it; the labels
-  inherit what remains.
+- **The forecast band.** The labels are made with the served band rule. Engine v3 floors each
+  simulated month (not each week) at zero, resamples a population error record below 26 weeks of
+  history and refits the widening table; on fresh synthetic students its band holds the real
+  13-week total about 80% of the time for spending and income (`reports/engine1/band_v3.md`),
+  but beyond 13 weeks the recursive forecast drifts low and the band is too narrow again
+  (`reports/engine1/recursion_check.md`), so long-plan labels are the least reliable.
 - **The savings buffer is assumed.** Each generated student's buffer (none, or a log-normal number
   of months of income) has no cited Malaysian source (`savings.*` in `params.yaml`, ASSUMED 19).
   The bias-term sensitivity and what changed from the earlier version are in `versions.md`.
@@ -642,9 +723,11 @@ def _sections(
         "`versus_winner_p_unadjusted` is the corrected resampled t-test against the winner, "
         "not adjusted for the number of comparisons.\n",
         "![Brier](figures/brier_by_model.png)\n",
+        _target_text(record),
         "## The final model on the lockbox\n",
         _lockbox_text(record),
         _md(tables["lockbox"]),
+        *_moves_section(record),
         _subgroup_text(record),
         _md(tables["subgroup"]),
         "**Brier by label class** (lockbox, descriptive).\n",
@@ -668,6 +751,7 @@ def _sections(
         "### By persona and by purchase size\n",
         _md(tables["persona"]),
         _md(tables["price"]),
+        *_continuity_text(record),
         "## Calibration\n\n"
         f"Chosen by cross-validation on the {record['calibration']['fitted_on']}, then fitted on "
         "all of them and stored with the model. The calibrator is fitted on out-of-fold "
@@ -699,6 +783,20 @@ def _sections(
         f"uv run python -m ml.engine2_train.train --config {name}\n"
         f"uv run python -m ml.engine2_train.stress --config {name}\n"
         f"uv run python -m ml.engine2_train.report --config {name}\n```\n",
+    ]
+
+
+def _moves_section(record: dict[str, Any]) -> list[str]:
+    table = purchase_moves_table(record)
+    if table is None:
+        return []
+    moves = record["lockbox"]["purchase_moves_band"]
+    return [
+        f"**Where the purchase moves the band** ({moves['profiles']} lockbox profiles, "
+        f"{moves['share']:.1%}: the band without the purchase differs from the band with it). "
+        "*mae* is the mean absolute error of the shown probability, which is also the error of "
+        "the added risk, since every row shares the exact simulated b.\n",
+        _md(table),
     ]
 
 

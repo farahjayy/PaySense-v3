@@ -174,10 +174,17 @@ def score_lockbox(
     }
 
 
+def _which(entry: dict[str, Any]) -> str:
+    """The lockbox a log line scored: the new one (engine v3), or the every-tenth one (untagged
+    lines and the continuity scorings)."""
+    return "new" if entry.get("lockbox") == "new" else "every tenth"
+
+
 def append_log(path: Path, entry: dict[str, Any]) -> int:
-    """Append one scoring to the log and return how many scorings it now holds."""
+    """Append one scoring to the log and return how many scorings of THAT lockbox it now holds."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    existing = len(path.read_text(encoding="utf-8").splitlines()) if path.exists() else 0
+    lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+    existing = sum(_which(json.loads(x)) == _which(entry) for x in lines if x.strip())
     line = {**entry, "scoring": existing + 1}
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(line, sort_keys=True) + "\n")

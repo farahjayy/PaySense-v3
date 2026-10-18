@@ -158,3 +158,20 @@ def test_a_stress_run_gives_a_two_part_model_its_base_column():
     np.testing.assert_allclose(run_.design(with_base=True)[:, -1], [0.2, 0.4])
     summary = run_.summary(lambda x: x[:, -1], with_base=True)
     assert summary["mean_prediction"] == pytest.approx(0.3)
+
+
+def test_the_report_shows_the_two_part_target_every_benchmark_and_the_continuity_scoring(
+    two_part_run, tmp_path
+):
+    from ml.engine2_train.report import build_report
+
+    root, _ = two_part_run
+    build_report(root / "run", tmp_path / "report", root / "labels.jsonl")
+    page = (tmp_path / "report" / "README.md").read_text(encoding="utf-8")
+    assert "two-part" in page and "D-62" in page
+    for name in ("predict p_without (benchmark)", "p_without + mean added share (benchmark)"):
+        assert name in page
+    assert "Where the purchase moves the band" in page
+    assert "indices 10000-10999" in page or "indices 10,000-10,999" in page
+    assert "## The old lockbox, scored for continuity only" in page
+    assert "nan" not in page.lower().replace("nanoseconds", "")
