@@ -26,6 +26,8 @@ def scripted(system, messages, tools):
              "num_installments": 3, "total_price_sen": 79900}  # fmt: skip
     if "Go ahead" in text:
         return call("propose_action", {"type": "create_plan", "payload": phone})
+    if "When should I buy" in text:
+        return call("find_safer_timing", phone)
     if "RM799" in text:
         return call("check_purchase_risk", phone)
     if "owe" in text:
@@ -61,7 +63,7 @@ def scripted(system, messages, tools):
 
 
 def test_a_tidy_model_passes_every_scenario_and_a_report_is_rendered():
-    outcomes, status = ev.run(1, 0, llm=FakeLLM([scripted] * 40), sleep=lambda _: None)
+    outcomes, status = ev.run(1, 0, llm=FakeLLM([scripted] * 44), sleep=lambda _: None)
     failed = {o.scenario: o.reasons for o in outcomes if not o.success}
     assert failed == {}
     summary = ev.summarise(outcomes)

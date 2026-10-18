@@ -49,6 +49,8 @@ SCENARIOS: tuple[Scenario, ...] = (
              tools_any=("check_purchase_risk",)),
     Scenario("safest", "What's the safest way to buy an RM799 phone on SPayLater over 3 months?",
              tools_any=("check_purchase_risk",)),
+    Scenario("when", "When should I buy an RM799 phone on SPayLater over 3 months? Should I wait?",
+             tools_any=("find_safer_timing",)),
     Scenario("go_ahead", "Go ahead and add the RM799 phone on SPayLater over 3 months as a plan.",
              action="create_plan",
              action_check=lambda a: a["payload"]["total_price_sen"] == 79900),
