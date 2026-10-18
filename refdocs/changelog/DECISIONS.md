@@ -368,6 +368,15 @@ An ADR is worth writing when the decision (a) is expensive to reverse, (b) will 
 
 ---
 
+## D-57 — The headline feature: the Second-Opinion Check
+*2026-10-18 · Claude decision after the competitive-edge research (author to confirm)*
+
+**Decision.** PaySense's headline for the competition is the **Second-Opinion Check**: for one pending BNPL purchase it shows the simulated chance of running short **without** the purchase, **with** it, and the **added** chance (Engine 1's simulation, one shared seed — the quantities Engine 2's label is built from, D-07), beside Engine 2's band and reasons; every unpaid instalment across providers stacked by month against confirmed income; and a scheduler that finds the first start date (as typed, or after one of the next two confirmed income dates) and instalment count that adds at most 5 points and stays below the At Risk edge. It ends on the existing confirm card. Framed as "the check lenders must run on your total commitments, shown to you" — never as compliance.
+
+**Why.** The research (`refdocs/fintechathon-2026/research/reports/PaySense hackathon edge feature.md`): rivals already show the safety basics; no product or rival answers this cross-provider, pre-purchase, marginal question; it uses the one asset rivals lack (a trained, benchmarked engine pair); it fits the rubric's task completion (one complete workflow with clarification and confirmation) and the behavioural evidence (adding-up disclosure changes borrowing; warnings do not).
+
+**Rejected / Trade-off.** Federated learning (no second data holder — theatre); multilingual narration (rivals already ship it); screenshot OCR (a model producing amounts); ML stacking or categoriser models (circular synthetic data). On the current engines the main demo persona is already At Risk without the purchase, so the card says so instead of showing a gain; the engine fixes (D-60 onwards) are what let it show a visible difference.
+
 ## Working assumptions (`ASSUMED:`)
 
 Not decisions — guesses made to keep moving. Each one must be confirmed or killed before anything load-bearing is built on it. When one is resolved, delete it here and write a real ADR above.
@@ -411,5 +420,6 @@ Not decisions — guesses made to keep moving. Each one must be confirmed or kil
 40. `ASSUMED:` (D-54) The band table need not be monotone in history length; each bucket takes its own best factor on development students.
 41. `ASSUMED:` (WP7) the context box for readers outside Malaysia names PESP as one example of a student allowance without expanding the acronym (the author's own ledger uses it; its full name is not in the repository).
 42. `ASSUMED:` (WP5, question 20) on a phone-width screen (below 768 px) the assistant panel is a **modal** dialog (`aria-modal="true"`, Tab and Shift+Tab kept inside it), because it covers the whole page there; on a desktop it stays a non-modal side panel beside the page. The more accessible reading of WCAG 2.4.3 for a full-screen overlay.
+43. `ASSUMED:` (D-57) a scheduling option qualifies when it adds **at most 5 percentage points** to the simulated chance of running short **and** leaves it **below 0.30** (the At Risk edge). Options are tried in a fixed order: start date (as typed, then after each of the next two confirmed income dates), then the instalment count closest to the one typed. Five points is a quarter of the width of the Caution band; the author may prefer another threshold.
 19. `ASSUMED:` (D-50) The generator's savings-buffer distribution has no cited Malaysian source yet.
 20. `ASSUMED:` (WP2) Budget states: near at 80% of the limit, over at 100%. The suggestion keeps **10% of income** back as a buffer, learns category shares from up to **three complete earlier months** of *discretionary* spending (Engine 1's definition: no plan payments, no confirmed recurring items), and rounds each limit **down** to RM5 so the limits never add up to more than the pool. Income is confirmed recurring income falling in the month, else the average of those months.

@@ -15,6 +15,7 @@ NOT_WRITES = {
     ("post", "/api/auth/login"),
     ("post", "/api/auth/logout"),
     ("post", "/api/risk/check"),
+    ("post", "/api/risk/schedule"),  # stateless, like the check (D-57)
     ("post", "/api/plans/preview"),
     ("post", "/api/import/csv"),
     ("post", "/api/assistant/chat"),

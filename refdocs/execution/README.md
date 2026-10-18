@@ -62,3 +62,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-18-wp10-repo-licence-docs.md](2026-10-18-wp10-repo-licence-docs.md) | [../plans/2026-10-18-wp10-repo-licence-docs.md](../plans/2026-10-18-wp10-repo-licence-docs.md) | ✅ Done |
 | [2026-10-18-wp11-deployment-prep.md](2026-10-18-wp11-deployment-prep.md) | [../plans/2026-10-18-wp11-deployment-prep.md](../plans/2026-10-18-wp11-deployment-prep.md) | 🔶 Prepared; deploy needs the author |
 | [2026-10-18-wp12-submission-pack.md](2026-10-18-wp12-submission-pack.md) | [../plans/2026-10-18-wp12-submission-pack.md](../plans/2026-10-18-wp12-submission-pack.md) | ✅ Drafts done |
+| [2026-10-18-second-opinion-check.md](2026-10-18-second-opinion-check.md) | [../plans/2026-10-18-second-opinion-check.md](../plans/2026-10-18-second-opinion-check.md) | 🔶 In progress |

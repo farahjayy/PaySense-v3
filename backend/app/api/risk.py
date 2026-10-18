@@ -39,13 +39,17 @@ from app.core.errors import api_error, not_found, unprocessable
 from app.db import plans as plans_repo
 from app.db import provider_limits as limits_repo
 from app.db import recurring_items, risk_checks, transactions, user_settings
+from app.domain import second_opinion as second
 from app.domain.plan_builder import ProposalError
+from app.engines.forecasting.flows import occurrences
+from app.engines.forecasting.simulate import CAUTION_BELOW
 from app.engines.forecasting.simulate import band as band_of
-from app.engines.risk.assess import assess
-from app.engines.risk.check import CheckResult, Curve, Predictor, RiskRequest
+from app.engines.risk.assess import NEXT_INCOME_LOOKAHEAD_DAYS, assess
+from app.engines.risk.check import CheckResult, Curve, Predictor, RiskRequest, run_check
 from app.engines.risk.counterfactual import Counterfactual, describe
 from app.engines.risk.explain import ExplainedFactor
 from app.engines.risk.repayment import RepaymentFlag, assess_repayment
+from app.engines.risk.schedule import ADDED_MAX, schedule
 
 logger = logging.getLogger("paysense")
 router = APIRouter(prefix="/risk", tags=["risk"], responses=PROTECTED_RESPONSES)
@@ -181,6 +185,45 @@ class VersionsOut(ApiModel):
     feature_schema_hash: str
 
 
+class StackProviderOut(ApiModel):
+    provider_label: str
+    amount_sen: int
+
+
+class StackMonthOut(ApiModel):
+    month: str
+    by_provider: list[StackProviderOut]
+    new_plan_sen: int
+    total_sen: int
+    known_income_sen: int
+
+
+class ExposureOut(ApiModel):
+    unpaid_before_sen: int
+    unpaid_after_sen: int
+    providers_before: list[str]
+    providers_after: list[str]
+    plans_before: int
+    plans_after: int
+    recorded_limits_sen: int | None
+    reaches_bnm_line: bool | None = Field(
+        description="Recorded BNPL limits add up to RM1,500, the level at which BNM asks banks "
+        "for a full affordability assessment; null when no limit is recorded"
+    )
+    bnm_line_sen: int = second.BNM_LIMIT_LINE_SEN
+
+
+class SecondOpinionOut(ApiModel):
+    """D-57: what this purchase adds, from the simulation (the quantity the label is built on)."""
+
+    without_probability: float = Field(ge=0, le=1)
+    with_probability: float = Field(ge=0, le=1)
+    added_probability: float = Field(ge=0, le=1)
+    already_at_risk: bool
+    stack: list[StackMonthOut]
+    exposure: ExposureOut
+
+
 class RiskCheckOut(ApiModel):
     status: Literal["ok", "locked"]
     lock_reason: Literal["needs_four_months", "no_usable_history"] | None
@@ -203,6 +246,7 @@ class RiskCheckOut(ApiModel):
     without_curve: CurveOut | None = None
     versions: VersionsOut | None = None
     check_id: str | None = None
+    second_opinion: SecondOpinionOut | None = None
 
 
 class RiskConfirmOut(ApiModel):
@@ -325,7 +369,66 @@ def _evaluate(
     except ProposalError as err:
         raise unprocessable(err.code, err.message) from err
     out = _out(found.result, found.factors, found.suggestion, _repayment(plans, today), predictor)
-    return out, found.result
+    opinion = _second_opinion(found.result, plans, items, limits, today)
+    return out.model_copy(update={"second_opinion": opinion}), found.result
+
+
+def _income_by_month(items: list[dict[str, Any]], start: dt.date, end: dt.date) -> dict[str, int]:
+    """Confirmed recurring income falling in each month, from the student's own items."""
+    out: dict[str, int] = {}
+    for item in items:
+        if item["kind"] != "income":
+            continue
+        for day in occurrences(item, start, end):
+            key = day.strftime("%Y-%m")
+            out[key] = out.get(key, 0) + int(item["amount_sen"])
+    return out
+
+
+def _second_opinion(
+    result: CheckResult,
+    plans: list[dict[str, Any]],
+    items: list[dict[str, Any]],
+    limits: dict[str, int | None],
+    today: dt.date,
+) -> SecondOpinionOut | None:
+    added = second.added_probability(result.p_simulated, result.p_without)
+    if result.status != "ok" or added is None or result.p_without is None:
+        return None
+    proposal = result.proposal
+    owed = [(i.due_date, i.amount_sen) for i in proposal.instalments if not i.paid_at_checkout]
+    last = max([today, *(d for d, _ in owed)])
+    stack = second.stack_dues(plans, owed, _income_by_month(items, today, last), today)
+    exposure = second.exposure(plans, sum(sen for _, sen in owed), proposal.provider_label, limits)
+    return SecondOpinionOut(
+        without_probability=_stored(result.p_without),
+        with_probability=_stored(result.p_simulated),
+        added_probability=_stored(added),
+        already_at_risk=result.p_without >= CAUTION_BELOW,
+        stack=[
+            StackMonthOut(
+                month=m.month,
+                by_provider=[
+                    StackProviderOut(provider_label=label, amount_sen=sen)
+                    for label, sen in m.by_provider
+                ],
+                new_plan_sen=m.new_plan_sen,
+                total_sen=m.total_sen,
+                known_income_sen=m.known_income_sen,
+            )
+            for m in stack
+        ],
+        exposure=ExposureOut(
+            unpaid_before_sen=exposure.unpaid_before_sen,
+            unpaid_after_sen=exposure.unpaid_after_sen,
+            providers_before=list(exposure.providers_before),
+            providers_after=list(exposure.providers_after),
+            plans_before=exposure.plans_before,
+            plans_after=exposure.plans_after,
+            recorded_limits_sen=exposure.recorded_limits_sen,
+            reaches_bnm_line=exposure.reaches_bnm_line,
+        ),
+    )
 
 
 def _frozen_row(out: RiskCheckOut, request: PlanIn, features: dict[str, float]) -> dict[str, Any]:
@@ -525,6 +628,110 @@ def _freeze_and_create(
         check_id=stored["id"],
         check=out.model_copy(update={"check_id": stored["id"]}),
         plan=plan_out(plan, today),
+    )
+
+
+class ScheduleOptionOut(ApiModel):
+    purchase_date: dt.date
+    num_installments: int
+    first_payment_date: dt.date | None
+    with_probability: float = Field(ge=0, le=1)
+    added_probability: float = Field(ge=0, le=1)
+    qualifies: bool
+    as_typed: bool
+
+
+class ScheduleOut(ApiModel):
+    """D-57: start dates x instalment counts, judged by the simulation, tried in a fixed order
+    until one adds at most `added_max` and stays below `at_risk_edge` (ASSUMED 43)."""
+
+    status: Literal["ok", "locked"]
+    without_probability: float | None
+    already_at_risk: bool
+    added_max: float = ADDED_MAX
+    at_risk_edge: float = CAUTION_BELOW
+    options: list[ScheduleOptionOut]
+    chosen_index: int | None
+
+
+SCHEDULES_PER_MINUTE = 5  # each one runs up to 21 simulations
+
+
+@router.post(
+    "/schedule",
+    response_model=ScheduleOut,
+    dependencies=[rate_limited("risk-schedule", SCHEDULES_PER_MINUTE, 60)],
+    responses=CHECK_RESPONSES,
+)
+def schedule_risk(
+    body: PlanIn,
+    user: CurrentUser,
+    db: DbDep,
+    today: TodayDep,
+    forecaster: ForecasterDep,
+    predictor: PredictorDep,
+) -> ScheduleOut:
+    """Stateless: when would this purchase add little to the chance of running short?"""
+    return schedule_for(body, user.id, db, today, forecaster, predictor)
+
+
+def schedule_for(
+    body: PlanIn, user_id: str, db: Any, today: dt.date, forecaster: Any, predictor: Predictor
+) -> ScheduleOut:
+    """Shared by the route and the assistant's `find_safer_timing` tool."""
+    _check_purchase_date(body, today)
+    rows = transactions.list_for_forecast(db, user_id, today)
+    items = recurring_items.list_items(db, user_id, active_only=True)
+    plans = plans_repo.list_with_instalments(db, user_id)
+    limits = {r["provider"]: r["limit_sen"] for r in limits_repo.list_limits(db, user_id)}
+    buffer = user_settings.get_savings_buffer(db, user_id)
+    seed = daily_seed(user_id, today)
+    cache: dict[Any, Any] = {}
+
+    def evaluate(request: RiskRequest) -> tuple[float, float] | None:
+        try:
+            result = run_check(
+                rows, items, plans, limits, request, today, forecaster, predictor,
+                seed=seed, cache=cache, savings_buffer_sen=buffer,
+            )  # fmt: skip
+        except ProposalError:
+            return None
+        if result.status != "ok" or result.p_simulated is None or result.p_without is None:
+            return None
+        return result.p_simulated, result.p_without
+
+    request = _request(body)
+    horizon = request.purchase_date + dt.timedelta(days=NEXT_INCOME_LOOKAHEAD_DAYS)
+    income_dates = sorted(
+        day
+        for item in items
+        if item["kind"] == "income"
+        for day in occurrences(item, request.purchase_date, horizon)
+    )
+    with admitted():
+        found = schedule(evaluate, request, income_dates)
+    if not found.options:
+        return ScheduleOut(status="locked", without_probability=None, already_at_risk=False,
+                           options=[], chosen_index=None)  # fmt: skip
+    options = [
+        ScheduleOptionOut(
+            purchase_date=o.purchase_date,
+            num_installments=o.num_installments,
+            first_payment_date=o.first_payment_date,
+            with_probability=_stored(o.with_purchase),
+            added_probability=_stored(o.added),
+            qualifies=o.qualifies,
+            as_typed=o.as_typed,
+        )
+        for o in found.options
+    ]
+    chosen = found.options.index(found.chosen) if found.chosen is not None else None
+    return ScheduleOut(
+        status="ok",
+        without_probability=_stored(found.without),
+        already_at_risk=found.already_at_risk,
+        options=options,
+        chosen_index=chosen,
     )
 
 

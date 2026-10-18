@@ -268,6 +268,7 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-54 | The forecast band's error record is widened by a factor by history length and series (`band_inflation.json`, fitted on development students); the artefact records its digest | One factor of 1.5 held the real total 61% / 50% of the time instead of 80% (replaces D-35's factor) |
 | D-55 | Export parity accepts a row beyond 1e-3 only with a proven float32 split flip, never beyond 1e-2 | ONNX keeps tree thresholds in float32 (amends D-40) |
 | D-56 | Serving keeps the user's forecast bias; re-centring the error record is reported as a sensitivity only | Re-centring changes labels little and without a consistent sign |
+| D-57 | Headline: the Second-Opinion Check — simulated chance of running short without / with / added by a purchase, stacked dues across providers, and a scheduler for the first start date and count that adds at most 5 points and stays below At Risk | No product answers the cross-provider pre-purchase marginal question; rivals already show the safety basics |
 
 ---
 
