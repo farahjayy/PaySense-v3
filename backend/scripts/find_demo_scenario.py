@@ -92,18 +92,36 @@ def post_check(
     auth: dict[str, str],
     body: dict[str, Any],
     sleep: Callable[[float], None] = time.sleep,
+    path: str = "/api/risk/check",
 ) -> httpx.Response:
     """POST a check, waiting out the per-user rate limit (Retry-After) rather than failing."""
-    for _ in range(MAX_WAITS):
-        response = client.post("/api/risk/check", json=body, headers=auth)
+    for _ in range(MAX_WAITS * 4 if path.endswith("schedule") else MAX_WAITS):
+        response = client.post(path, json=body, headers=auth)
         if response.status_code not in (429, 503):
             return response
         sleep(float(response.headers.get("Retry-After", "6")))
     return response
 
 
-def summarise(response: dict[str, Any]) -> dict[str, Any]:
+def timing_text(schedule: dict[str, Any] | None) -> str:
+    """What the timing search (D-57) found, in one cell."""
+    if schedule is None:
+        return "-"
+    if schedule["status"] == "locked":
+        return "locked"
+    if schedule["already_at_risk"]:
+        return "already At Risk without it"
+    if schedule["chosen_index"] is None:
+        return f"none of {len(schedule['options'])} qualifies"
+    o = schedule["options"][schedule["chosen_index"]]
+    return (
+        f"{o['purchase_date']}, {o['num_installments']} instalments (+{o['added_probability']:.3f})"
+    )
+
+
+def summarise(response: dict[str, Any], schedule: dict[str, Any] | None = None) -> dict[str, Any]:
     suggestion = response.get("suggestion") or {}
+    second = response.get("second_opinion") or {}
     return {
         "status": response["status"],
         "band": response.get("band"),
@@ -115,6 +133,10 @@ def summarise(response: dict[str, Any]) -> dict[str, Any]:
         "suggestion_changes": [c["label"] for c in suggestion.get("changes", [])],
         "suggestion_band": suggestion.get("band"),
         "top_factors": [f["text"] for f in response.get("factors", [])[:3]],
+        "added_probability": second.get("added_probability"),
+        "already_at_risk": second.get("already_at_risk"),
+        "providers_after": second.get("exposure", {}).get("providers_after"),
+        "timing": timing_text(schedule),
     }
 
 
@@ -135,6 +157,8 @@ def run_probes(
                 buffered.add(probe.persona)
             response = post_check(client, auth, probe.request, sleep)
             body = response.json()
+            timed = post_check(client, auth, probe.request, sleep, path="/api/risk/schedule")
+            schedule = timed.json() if timed.status_code == 200 else None
             results.append(
                 {
                     "persona": probe.persona,
@@ -142,8 +166,9 @@ def run_probes(
                     "request": probe.request,
                     "buffer_sen": probe.buffer_sen,
                     "http_status": response.status_code,
-                    "summary": summarise(body) if response.status_code == 200 else None,
+                    "summary": summarise(body, schedule) if response.status_code == 200 else None,
                     "response": body,
+                    "schedule": schedule,
                 }
             )
     finally:  # leave every account as it was found: no buffer
@@ -173,13 +198,14 @@ def render_markdown(
         f" risk model (`{model or 'unknown'}`). The persona ledgers are shifted to end just before"
         " the run date, so the figures move a little from one run to the next.",
         "",
-        "| Persona | Purchase | Band | Score | P(shortfall) | Without purchase | Smallest change |",
-        "|---|---|---|---|---|---|---|",
+        "| Persona | Purchase | Band | Score | P(shortfall) | Without purchase | Adds |"
+        " Smallest change | Safer timing |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in results:
         s = r["summary"]
         if s is None:
-            lines.append(f"| {r['persona']} | {r['label']} | HTTP {r['http_status']} | | | | |")
+            lines.append(f"| {r['persona']} | {r['label']} | HTTP {r['http_status']} | | | | | | |")
             continue
         change = "; ".join(s["suggestion_changes"]) or "-"
         if s["suggestion_status"] == "none_found":
@@ -188,9 +214,18 @@ def render_markdown(
             change = f"{change} -> {s['suggestion_band']}"
         lines.append(
             f"| {r['persona']} | {r['label']} | {s['band'] or s['status']} | {s['score']} | "
-            f"{_money(s['probability'])} | {_money(s['probability_without_purchase'])} | {change} |"
+            f"{_money(s['probability'])} | {_money(s['probability_without_purchase'])} | "
+            f"{_money(s.get('added_probability'))} | {change} | {s.get('timing', '-')} |"
         )
-    lines += ["", "## What this means for the demo script", ""]
+    lines += [
+        "",
+        "*Adds* is the Second-Opinion Check's added chance of running short (simulated with minus"
+        " without, D-57); *Safer timing* is the first start date and count the timing search"
+        " found that adds at most 0.05 and stays below 0.30.",
+        "",
+        "## What this means for the demo script",
+        "",
+    ]
     if safe:
         lines.append(
             "- Purchases that come back **Safe**: "

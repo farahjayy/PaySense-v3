@@ -30,7 +30,13 @@
      "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
      "Even before this purchase, you are about RM 202 short each month.",
      "You have no savings recorded to fall back on if a month runs short."
-    ]
+    ],
+    "added_probability": 0.0,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -152,7 +158,7 @@
      "cumulative_p10_sen": [
       -48238,
       -58508,
-      -112045,
+      -139649,
       -163580
      ],
      "cumulative_p50_sen": [
@@ -178,7 +184,7 @@
      "cumulative_p10_sen": [
       -48238,
       -38508,
-      -72045,
+      -99649,
       -103580
      ],
      "cumulative_p50_sen": [
@@ -198,7 +204,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 1.0,
+     "with_probability": 1.0,
+     "added_probability": 0.0,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 20000,
+       "total_sen": 20000,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 20000,
+       "total_sen": 20000,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 20000,
+       "total_sen": 20000,
+       "known_income_sen": 116269
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 60000,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 1.0,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -230,7 +457,13 @@
      "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
      "Even before this purchase, you are about RM 202 short each month.",
      "You have no savings recorded to fall back on if a month runs short."
-    ]
+    ],
+    "added_probability": 0.0,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -352,7 +585,7 @@
      "cumulative_p10_sen": [
       -48238,
       -60174,
-      -115377,
+      -142981,
       -168580
      ],
      "cumulative_p50_sen": [
@@ -378,7 +611,7 @@
      "cumulative_p10_sen": [
       -48238,
       -38508,
-      -72045,
+      -99649,
       -103580
      ],
      "cumulative_p50_sen": [
@@ -398,7 +631,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 1.0,
+     "with_probability": 1.0,
+     "added_probability": 0.0,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 21666,
+       "total_sen": 21666,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 21666,
+       "total_sen": 21666,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 21668,
+       "total_sen": 21668,
+       "known_income_sen": 116269
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 65000,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 1.0,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -430,7 +884,13 @@
      "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
      "Even before this purchase, you are about RM 202 short each month.",
      "You have no savings recorded to fall back on if a month runs short."
-    ]
+    ],
+    "added_probability": 0.0,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -552,7 +1012,7 @@
      "cumulative_p10_sen": [
       -48238,
       -61841,
-      -118711,
+      -146315,
       -173580
      ],
      "cumulative_p50_sen": [
@@ -578,7 +1038,7 @@
      "cumulative_p10_sen": [
       -48238,
       -38508,
-      -72045,
+      -99649,
       -103580
      ],
      "cumulative_p50_sen": [
@@ -598,7 +1058,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 1.0,
+     "with_probability": 1.0,
+     "added_probability": 0.0,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 23333,
+       "total_sen": 23333,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 23333,
+       "total_sen": 23333,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 23334,
+       "total_sen": 23334,
+       "known_income_sen": 116269
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 70000,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 1.0,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -630,7 +1311,13 @@
      "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
      "Even before this purchase, you are about RM 202 short each month.",
      "You have no savings recorded to fall back on if a month runs short."
-    ]
+    ],
+    "added_probability": 0.0,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -752,7 +1439,7 @@
      "cumulative_p10_sen": [
       -48238,
       -63508,
-      -122045,
+      -149649,
       -178580
      ],
      "cumulative_p50_sen": [
@@ -778,7 +1465,7 @@
      "cumulative_p10_sen": [
       -48238,
       -38508,
-      -72045,
+      -99649,
       -103580
      ],
      "cumulative_p50_sen": [
@@ -798,7 +1485,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 1.0,
+     "with_probability": 1.0,
+     "added_probability": 0.0,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 25000,
+       "total_sen": 25000,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 25000,
+       "total_sen": 25000,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 25000,
+       "total_sen": 25000,
+       "known_income_sen": 116269
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 75000,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 1.0,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -830,7 +1738,13 @@
      "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
      "Even before this purchase, you are about RM 202 short each month.",
      "You have no savings recorded to fall back on if a month runs short."
-    ]
+    ],
+    "added_probability": 0.0,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -952,7 +1866,7 @@
      "cumulative_p10_sen": [
       -48238,
       -65141,
-      -125311,
+      -152915,
       -183480
      ],
      "cumulative_p50_sen": [
@@ -978,7 +1892,7 @@
      "cumulative_p10_sen": [
       -48238,
       -38508,
-      -72045,
+      -99649,
       -103580
      ],
      "cumulative_p50_sen": [
@@ -998,7 +1912,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 1.0,
+     "with_probability": 1.0,
+     "added_probability": 0.0,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 116269
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 1.0,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -1018,7 +2153,7 @@
     "band": "At Risk",
     "score": 13,
     "probability": 0.869738,
-    "probability_without_purchase": 0.792,
+    "probability_without_purchase": 0.775,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
@@ -1030,7 +2165,13 @@
      "In a bad run of months your running margin could fall to about -RM 1,173 before this purchase.",
      "Even before this purchase, you are about RM 29 short each month.",
      "You have no savings recorded to fall back on if a month runs short."
-    ]
+    ],
+    "added_probability": 0.0,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -1080,9 +2221,9 @@
     "probability": 0.869738,
     "band": "At Risk",
     "score": 13,
-    "simulated_probability": 0.792,
+    "simulated_probability": 0.775,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.792,
+    "probability_without_purchase": 0.775,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
@@ -1118,7 +2259,7 @@
        "label": "Choose something priced at about RM 15"
       }
      ],
-     "probability": 0.665,
+     "probability": 0.672,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
@@ -1198,7 +2339,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.775,
+     "with_probability": 0.775,
+     "added_probability": 0.0,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 1000,
+       "total_sen": 1000,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 1000,
+       "total_sen": 1000,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 1000,
+       "total_sen": 1000,
+       "known_income_sen": 0
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 3000,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.775,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.846,
+      "added_probability": 0.039,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.841,
+      "added_probability": 0.018,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.813,
+      "added_probability": 0.007,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.807,
+      "added_probability": 0.001,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.763,
+      "added_probability": 0.064,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.774,
+      "added_probability": 0.061,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.78,
+      "added_probability": 0.003,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.791,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.763,
+      "added_probability": 0.064,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.774,
+      "added_probability": 0.061,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.749,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.783,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.764,
+      "added_probability": 0.002,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -1218,7 +2580,7 @@
     "band": "At Risk",
     "score": 13,
     "probability": 0.871322,
-    "probability_without_purchase": 0.792,
+    "probability_without_purchase": 0.775,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
@@ -1230,7 +2592,13 @@
      "In a bad run of months your running margin could fall to about -RM 1,173 before this purchase.",
      "Even before this purchase, you are about RM 29 short each month.",
      "You have no savings recorded to fall back on if a month runs short."
-    ]
+    ],
+    "added_probability": 0.0,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -1280,9 +2648,9 @@
     "probability": 0.871322,
     "band": "At Risk",
     "score": 13,
-    "simulated_probability": 0.792,
+    "simulated_probability": 0.775,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.792,
+    "probability_without_purchase": 0.775,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
@@ -1398,7 +2766,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.775,
+     "with_probability": 0.775,
+     "added_probability": 0.0,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 2000,
+       "total_sen": 2000,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 2000,
+       "total_sen": 2000,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 2000,
+       "total_sen": 2000,
+       "known_income_sen": 0
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 6000,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.775,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.846,
+      "added_probability": 0.039,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.841,
+      "added_probability": 0.018,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.853,
+      "added_probability": 0.047,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.842,
+      "added_probability": 0.036,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.763,
+      "added_probability": 0.064,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.783,
+      "added_probability": 0.07,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.822,
+      "added_probability": 0.045,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.832,
+      "added_probability": 0.041,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.763,
+      "added_probability": 0.064,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.774,
+      "added_probability": 0.061,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.799,
+      "added_probability": 0.05,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.827,
+      "added_probability": 0.044,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.769,
+      "added_probability": 0.007,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -1418,19 +3007,25 @@
     "band": "At Risk",
     "score": 12,
     "probability": 0.87892,
-    "probability_without_purchase": 0.792,
+    "probability_without_purchase": 0.775,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 12 instalments",
-     "Choose something priced at about RM 60"
+     "Spread it over 4 instalments",
+     "Buy it on 22 October 2026, after your next income"
     ],
     "suggestion_band": "At Risk",
     "top_factors": [
      "In a bad run of months your running margin could fall to about -RM 1,173 before this purchase.",
      "Even before this purchase, you are about RM 29 short each month.",
      "You have no savings recorded to fall back on if a month runs short."
-    ]
+    ],
+    "added_probability": 0.0,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -1480,9 +3075,9 @@
     "probability": 0.87892,
     "band": "At Risk",
     "score": 12,
-    "simulated_probability": 0.792,
+    "simulated_probability": 0.775,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.792,
+    "probability_without_purchase": 0.775,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
@@ -1507,25 +3102,25 @@
     ],
     "suggestion": {
      "status": "none_found",
-     "basis": "model",
+     "basis": "simulation",
      "changes": [
       {
        "kind": "instalments",
-       "label": "Spread it over 12 instalments"
+       "label": "Spread it over 4 instalments"
       },
       {
-       "kind": "price",
-       "label": "Choose something priced at about RM 60"
+       "kind": "wait",
+       "label": "Buy it on 22 October 2026, after your next income"
       }
      ],
-     "probability": 0.767152355686283,
+     "probability": 0.763,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Headphones",
-      "purchase_date": "2026-10-18",
-      "num_installments": 12,
-      "total_price_sen": 6000,
+      "purchase_date": "2026-10-22",
+      "num_installments": 4,
+      "total_price_sen": 12000,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
       "provider_label": null,
@@ -1598,7 +3193,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.775,
+     "with_probability": 0.775,
+     "added_probability": 0.0,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 4000,
+       "total_sen": 4000,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 4000,
+       "total_sen": 4000,
+       "known_income_sen": 67175
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 4000,
+       "total_sen": 4000,
+       "known_income_sen": 0
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 12000,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.775,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.846,
+      "added_probability": 0.039,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.879,
+      "added_probability": 0.056,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.862,
+      "added_probability": 0.056,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.845,
+      "added_probability": 0.039,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.763,
+      "added_probability": 0.064,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.783,
+      "added_probability": 0.07,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.822,
+      "added_probability": 0.045,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-22",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.832,
+      "added_probability": 0.041,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.763,
+      "added_probability": 0.064,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.775,
+      "added_probability": 0.103,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.774,
+      "added_probability": 0.061,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.799,
+      "added_probability": 0.05,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.827,
+      "added_probability": 0.044,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-22",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.811,
+      "added_probability": 0.049,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -1616,9 +3432,9 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 36,
-    "probability": 0.644909,
-    "probability_without_purchase": 0.445,
+    "score": 38,
+    "probability": 0.619485,
+    "probability_without_purchase": 0.427,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
@@ -1630,7 +3446,13 @@
      "In a bad run of months your running margin could fall to about -RM 332 before this purchase.",
      "You have no savings recorded to fall back on if a month runs short.",
      "Each instalment is about RM 266."
-    ]
+    ],
+    "added_probability": 0.055,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -1677,37 +3499,37 @@
       }
      ]
     },
-    "probability": 0.644909,
+    "probability": 0.619485,
     "band": "At Risk",
-    "score": 36,
-    "simulated_probability": 0.495,
+    "score": 38,
+    "simulated_probability": 0.482,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.445,
+    "probability_without_purchase": 0.427,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
       "text": "In a bad run of months your running margin could fall to about -RM 332 before this purchase.",
-      "contribution": 0.3816995974505091
+      "contribution": 0.36976880841094295
      },
      {
       "feature": "savings_buffer_to_income",
       "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.09056362580974256
+      "contribution": 0.08701489994478079
      },
      {
       "feature": "instalment_amount",
       "text": "Each instalment is about RM 266.",
-      "contribution": 0.07573473785809523
+      "contribution": 0.07546645527937122
      },
      {
       "feature": "income_p10_monthly",
       "text": "In a weak month your income could be as low as about RM 566.",
-      "contribution": 0.03827863797123357
+      "contribution": 0.03819967439227283
      },
      {
       "feature": "bnpl_outstanding_to_income",
       "text": "You would owe about 0.9 months of your income across BNPL plans.",
-      "contribution": 0.02548934649148643
+      "contribution": 0.025183787199025955
      }
     ],
     "suggestion": {
@@ -1757,20 +3579,20 @@
      "cumulative_p10_sen": [
       -33187,
       -39387,
-      -41720,
-      -28753
+      -43431,
+      -29882
      ],
      "cumulative_p50_sen": [
       4449,
       30615,
-      26621,
+      26751,
       63676
      ],
      "cumulative_p90_sen": [
       54454,
       85271,
-      117858,
-      158018
+      134940,
+      190374
      ]
     },
     "without_curve": {
@@ -1783,27 +3605,248 @@
      "cumulative_p10_sen": [
       -33187,
       -12754,
-      11546,
-      51147
+      9835,
+      50018
      ],
      "cumulative_p50_sen": [
       4449,
       57248,
-      79887,
+      80017,
       143576
      ],
      "cumulative_p90_sen": [
       54454,
       111904,
-      171124,
-      237918
+      188206,
+      270274
      ]
     },
     "versions": {
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.427,
+     "with_probability": 0.482,
+     "added_probability": 0.055,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 24076
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 24076
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 24076
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.427,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.482,
+      "added_probability": 0.055,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.569,
+      "added_probability": 0.142,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.447,
+      "added_probability": 0.033,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.462,
+      "added_probability": 0.006,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.425,
+      "added_probability": 0.003,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.48,
+      "added_probability": 0.001,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.435,
+      "added_probability": 0.021,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.449,
+      "added_probability": 0.022,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.465,
+      "added_probability": 0.009,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.428,
+      "added_probability": 0.007,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.424,
+      "added_probability": 0.002,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.451,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-12-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.464,
+      "added_probability": 0.008,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-12-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.435,
+      "added_probability": 0.021,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-12-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.46,
+      "added_probability": 0.004,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-12-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.423,
+      "added_probability": 0.002,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-12-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.48,
+      "added_probability": 0.001,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-12-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.451,
+      "added_probability": 0.0,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -1823,7 +3866,7 @@
     "band": "At Risk",
     "score": 15,
     "probability": 0.846828,
-    "probability_without_purchase": 0.78,
+    "probability_without_purchase": 0.777,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
@@ -1835,7 +3878,13 @@
      "In a bad run of months your running margin could fall to about -RM 536 before this purchase.",
      "Even before this purchase, you are about RM 202 short each month.",
      "Each instalment is about RM 266."
-    ]
+    ],
+    "added_probability": 0.223,
+    "already_at_risk": true,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "already At Risk without it"
    },
    "response": {
     "status": "ok",
@@ -1887,7 +3936,7 @@
     "score": 15,
     "simulated_probability": 1.0,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.78,
+    "probability_without_purchase": 0.777,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
@@ -1957,7 +4006,7 @@
      "cumulative_p10_sen": [
       1762,
       -15141,
-      -75311,
+      -102915,
       -133480
      ],
      "cumulative_p50_sen": [
@@ -1983,7 +4032,7 @@
      "cumulative_p10_sen": [
       1762,
       11492,
-      -22045,
+      -49649,
       -53580
      ],
      "cumulative_p50_sen": [
@@ -2003,7 +4052,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.777,
+     "with_probability": 1.0,
+     "added_probability": 0.223,
+     "already_at_risk": true,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 116269
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.777,
+    "already_at_risk": true,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.223,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.564,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.22,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.113,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.06,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.033,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.121,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.108,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.079,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.048,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.024,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.02,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.22,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.223,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.142,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.09,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.05,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.04,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -2023,7 +4293,7 @@
     "band": "At Risk",
     "score": 47,
     "probability": 0.530426,
-    "probability_without_purchase": 0.118,
+    "probability_without_purchase": 0.106,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
@@ -2035,7 +4305,13 @@
      "In a bad run of months your running margin could fall to about -RM 36 before this purchase.",
      "Even before this purchase, you are about RM 202 short each month.",
      "Each instalment is about RM 266."
-    ]
+    ],
+    "added_probability": 0.786,
+    "already_at_risk": false,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "none of 18 qualifies"
    },
    "response": {
     "status": "ok",
@@ -2085,9 +4361,9 @@
     "probability": 0.530426,
     "band": "At Risk",
     "score": 47,
-    "simulated_probability": 0.874,
+    "simulated_probability": 0.892,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.118,
+    "probability_without_purchase": 0.106,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
@@ -2162,7 +4438,7 @@
      "cumulative_p10_sen": [
       51762,
       34859,
-      -25311,
+      -52915,
       -83480
      ],
      "cumulative_p50_sen": [
@@ -2188,7 +4464,7 @@
      "cumulative_p10_sen": [
       51762,
       61492,
-      27955,
+      351,
       -3580
      ],
      "cumulative_p50_sen": [
@@ -2208,7 +4484,228 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.106,
+     "with_probability": 0.892,
+     "added_probability": 0.786,
+     "already_at_risk": false,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 116269
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.106,
+    "already_at_risk": false,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.892,
+      "added_probability": 0.786,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.777,
+      "added_probability": 0.777,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.84,
+      "added_probability": 0.722,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.985,
+      "added_probability": 0.664,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.993,
+      "added_probability": 0.419,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.971,
+      "added_probability": 0.321,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.646,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.668,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.504,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.999,
+      "added_probability": 0.387,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 1.0,
+      "added_probability": 0.312,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-12",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.986,
+      "added_probability": 0.212,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.814,
+      "added_probability": 0.696,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.667,
+      "added_probability": 0.561,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.897,
+      "added_probability": 0.656,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.993,
+      "added_probability": 0.562,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.962,
+      "added_probability": 0.378,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-17",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.968,
+      "added_probability": 0.279,
+      "qualifies": false,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": null
    }
   },
   {
@@ -2233,7 +4730,13 @@
     "suggestion_status": "already_safe",
     "suggestion_changes": [],
     "suggestion_band": "Safe",
-    "top_factors": []
+    "top_factors": [],
+    "added_probability": 0.0,
+    "already_at_risk": false,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "2026-10-18, 3 instalments (+0.000)"
    },
    "response": {
     "status": "ok",
@@ -2314,7 +4817,7 @@
      "cumulative_p10_sen": [
       151762,
       134859,
-      74689,
+      47085,
       16520
      ],
      "cumulative_p50_sen": [
@@ -2340,7 +4843,7 @@
      "cumulative_p10_sen": [
       151762,
       161492,
-      127955,
+      100351,
       96420
      ],
      "cumulative_p50_sen": [
@@ -2360,7 +4863,75 @@
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.0,
+     "with_probability": 0.0,
+     "added_probability": 0.0,
+     "already_at_risk": false,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 116269
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.0,
+    "already_at_risk": false,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.0,
+      "added_probability": 0.0,
+      "qualifies": true,
+      "as_typed": true
+     }
+    ],
+    "chosen_index": 0
    }
   },
   {
@@ -2377,19 +4948,23 @@
    "http_status": 200,
    "summary": {
     "status": "ok",
-    "band": "Caution",
+    "band": "Safe",
     "score": 90,
-    "probability": 0.103858,
+    "probability": 0.096602,
     "probability_without_purchase": 0.0,
     "simulated_band": "Caution",
-    "suggestion_status": "found",
-    "suggestion_changes": [
-     "Spread it over 4 instalments"
-    ],
+    "suggestion_status": "already_safe",
+    "suggestion_changes": [],
     "suggestion_band": "Safe",
     "top_factors": [
      "In a bad run of months your running margin could fall to about RM 168 before this purchase."
-    ]
+    ],
+    "added_probability": 0.122,
+    "already_at_risk": false,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "2026-10-18, 4 instalments (+0.023)"
    },
    "response": {
     "status": "ok",
@@ -2436,43 +5011,27 @@
       }
      ]
     },
-    "probability": 0.103858,
-    "band": "Caution",
+    "probability": 0.096602,
+    "band": "Safe",
     "score": 90,
-    "simulated_probability": 0.111,
+    "simulated_probability": 0.122,
     "simulated_band": "Caution",
     "probability_without_purchase": 0.0,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
       "text": "In a bad run of months your running margin could fall to about RM 168 before this purchase.",
-      "contribution": 0.054880720952593255
+      "contribution": 0.05236081157532731
      }
     ],
     "suggestion": {
-     "status": "found",
+     "status": "already_safe",
      "basis": "model",
-     "changes": [
-      {
-       "kind": "instalments",
-       "label": "Spread it over 4 instalments"
-      }
-     ],
-     "probability": 0.07809907742354738,
+     "changes": [],
+     "probability": 0.09660228344069978,
      "band": "Safe",
-     "request": {
-      "provider": "spaylater",
-      "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 4,
-      "total_price_sen": 79900,
-      "monthly_fee_rate_pct": 0.0,
-      "first_payment_date": null,
-      "provider_label": null,
-      "instalment_sen": null,
-      "total_payable_sen": null
-     },
-     "evaluated": 1
+     "request": null,
+     "evaluated": 0
     },
     "repayment": {
      "level": "none",
@@ -2492,20 +5051,20 @@
      "cumulative_p10_sen": [
       16813,
       10613,
-      8280,
-      21247
+      6569,
+      20118
      ],
      "cumulative_p50_sen": [
       54449,
       80615,
-      76621,
+      76751,
       113676
      ],
      "cumulative_p90_sen": [
       104454,
       135271,
-      167858,
-      208018
+      184940,
+      240374
      ]
     },
     "without_curve": {
@@ -2518,27 +5077,113 @@
      "cumulative_p10_sen": [
       16813,
       37246,
-      61546,
-      101147
+      59835,
+      100018
      ],
      "cumulative_p50_sen": [
       54449,
       107248,
-      129887,
+      130017,
       193576
      ],
      "cumulative_p90_sen": [
       104454,
       161904,
-      221124,
-      287918
+      238206,
+      320274
      ]
     },
     "versions": {
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.0,
+     "with_probability": 0.122,
+     "added_probability": 0.122,
+     "already_at_risk": false,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 24076
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 24076
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 24076
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.0,
+    "already_at_risk": false,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.122,
+      "added_probability": 0.122,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.23,
+      "added_probability": 0.23,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.023,
+      "added_probability": 0.023,
+      "qualifies": true,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": 2
    }
   },
   {
@@ -2557,13 +5202,19 @@
     "status": "ok",
     "band": "Safe",
     "score": 99,
-    "probability": 0.013508,
+    "probability": 0.012552,
     "probability_without_purchase": 0.0,
     "simulated_band": "Safe",
     "suggestion_status": "already_safe",
     "suggestion_changes": [],
     "suggestion_band": "Safe",
-    "top_factors": []
+    "top_factors": [],
+    "added_probability": 0.0,
+    "already_at_risk": false,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "2026-10-18, 3 instalments (+0.000)"
    },
    "response": {
     "status": "ok",
@@ -2610,7 +5261,7 @@
       }
      ]
     },
-    "probability": 0.013508,
+    "probability": 0.012552,
     "band": "Safe",
     "score": 99,
     "simulated_probability": 0.0,
@@ -2621,7 +5272,7 @@
      "status": "already_safe",
      "basis": "model",
      "changes": [],
-     "probability": 0.013508396000281378,
+     "probability": 0.012552258919706287,
      "band": "Safe",
      "request": null,
      "evaluated": 0
@@ -2644,20 +5295,20 @@
      "cumulative_p10_sen": [
       66813,
       60613,
-      58280,
-      71247
+      56569,
+      70118
      ],
      "cumulative_p50_sen": [
       104449,
       130615,
-      126621,
+      126751,
       163676
      ],
      "cumulative_p90_sen": [
       154454,
       185271,
-      217858,
-      258018
+      234940,
+      290374
      ]
     },
     "without_curve": {
@@ -2670,27 +5321,95 @@
      "cumulative_p10_sen": [
       66813,
       87246,
-      111546,
-      151147
+      109835,
+      150018
      ],
      "cumulative_p50_sen": [
       104449,
       157248,
-      179887,
+      180017,
       243576
      ],
      "cumulative_p90_sen": [
       154454,
       211904,
-      271124,
-      337918
+      288206,
+      370274
      ]
     },
     "versions": {
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.0,
+     "with_probability": 0.0,
+     "added_probability": 0.0,
+     "already_at_risk": false,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 24076
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 24076
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 24076
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.0,
+    "already_at_risk": false,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.0,
+      "added_probability": 0.0,
+      "qualifies": true,
+      "as_typed": true
+     }
+    ],
+    "chosen_index": 0
    }
   },
   {
@@ -2709,13 +5428,19 @@
     "status": "ok",
     "band": "Safe",
     "score": 100,
-    "probability": 0.001473,
+    "probability": 0.001368,
     "probability_without_purchase": 0.0,
     "simulated_band": "Safe",
     "suggestion_status": "already_safe",
     "suggestion_changes": [],
     "suggestion_band": "Safe",
-    "top_factors": []
+    "top_factors": [],
+    "added_probability": 0.0,
+    "already_at_risk": false,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "2026-10-18, 3 instalments (+0.000)"
    },
    "response": {
     "status": "ok",
@@ -2762,7 +5487,7 @@
       }
      ]
     },
-    "probability": 0.001473,
+    "probability": 0.001368,
     "band": "Safe",
     "score": 100,
     "simulated_probability": 0.0,
@@ -2773,7 +5498,7 @@
      "status": "already_safe",
      "basis": "model",
      "changes": [],
-     "probability": 0.0014730817822761978,
+     "probability": 0.0013676491460279515,
      "band": "Safe",
      "request": null,
      "evaluated": 0
@@ -2796,20 +5521,20 @@
      "cumulative_p10_sen": [
       166813,
       160613,
-      158280,
-      171247
+      156569,
+      170118
      ],
      "cumulative_p50_sen": [
       204449,
       230615,
-      226621,
+      226751,
       263676
      ],
      "cumulative_p90_sen": [
       254454,
       285271,
-      317858,
-      358018
+      334940,
+      390374
      ]
     },
     "without_curve": {
@@ -2822,27 +5547,95 @@
      "cumulative_p10_sen": [
       166813,
       187246,
-      211546,
-      251147
+      209835,
+      250018
      ],
      "cumulative_p50_sen": [
       204449,
       257248,
-      279887,
+      280017,
       343576
      ],
      "cumulative_p90_sen": [
       254454,
       311904,
-      371124,
-      437918
+      388206,
+      470274
      ]
     },
     "versions": {
      "model": "v2",
      "feature_schema_hash": "10c5b74d0b8dfdbe"
     },
-    "check_id": null
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.0,
+     "with_probability": 0.0,
+     "added_probability": 0.0,
+     "already_at_risk": false,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 0
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 24076
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 24076
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 24076
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.0,
+    "already_at_risk": false,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-18",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.0,
+      "added_probability": 0.0,
+      "qualifies": true,
+      "as_typed": true
+     }
+    ],
+    "chosen_index": 0
    }
   }
  ]

@@ -46,9 +46,17 @@ def test_probes_run_through_the_api_and_are_summarised(tmp_path):
         results = finder.run_probes(client, {"frequent_bnpl": auth}, probes, sleep=lambda _: None)
     assert [r["http_status"] for r in results] == [200, 200]
     assert all(r["summary"]["band"] in ("Safe", "Caution", "At Risk") for r in results)
+    # D-57: the second opinion and the timing search come from the same API, never from here
+    for r in results:
+        second = r["response"]["second_opinion"]
+        assert r["summary"]["added_probability"] == second["added_probability"]
+        assert r["summary"]["already_at_risk"] == second["already_at_risk"]
+        assert r["schedule"]["status"] in ("ok", "locked")
+        assert r["summary"]["timing"] == finder.timing_text(r["schedule"])
     page = finder.render_markdown(results, E2E_TODAY, "e2e-stub")
     assert "find_demo_scenario.py" in page
     assert "Phone RM600" in page
+    assert "| Adds |" in page and "| Safer timing |" in page
 
 
 def test_a_rate_limited_check_waits_and_retries():
@@ -124,3 +132,17 @@ def test_safe_only_with_a_buffer_is_said_plainly():
                 "http_status": 200, "buffer_sen": 200000, "summary": summary}]  # fmt: skip
     page = finder.render_markdown(results, E2E_TODAY, "v2")
     assert "Without a savings buffer, no purchase in this grid comes back Safe." in page
+
+
+def test_the_timing_column_says_what_the_search_found():
+    base = {"status": "ok", "without_probability": 0.1, "already_at_risk": False,
+            "added_max": 0.05, "at_risk_edge": 0.3, "chosen_index": None,
+            "options": [{"purchase_date": "2026-01-02", "num_installments": 6,
+                         "first_payment_date": None, "with_probability": 0.12,
+                         "added_probability": 0.02, "qualifies": True,
+                         "as_typed": False}]}  # fmt: skip
+    assert finder.timing_text({**base, "chosen_index": 0}) == "2026-01-02, 6 instalments (+0.020)"
+    assert finder.timing_text(base) == "none of 1 qualifies"
+    assert finder.timing_text({**base, "already_at_risk": True}) == "already At Risk without it"
+    assert finder.timing_text({**base, "status": "locked"}) == "locked"
+    assert finder.timing_text(None) == "-"
