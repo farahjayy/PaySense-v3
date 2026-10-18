@@ -168,8 +168,10 @@ export function SecondOpinion({ opinion }: { opinion: Opinion }) {
               Your recorded limits add up to{" "}
               {formatRm(exposure.recorded_limits_sen)}. That is{" "}
               {exposure.reaches_bnm_line ? "at or above" : "below"}{" "}
-              {formatRm(exposure.bnm_line_sen)}, the level at which Bank Negara
-              Malaysia asks banks for a full affordability assessment.
+              {formatRm(exposure.bnm_line_sen)}, the combined BNPL limit at
+              which Bank Negara Malaysia&apos;s 2025 policy on personal
+              financing asks banks that offer BNPL to run a full affordability
+              assessment.
             </p>
           ) : (
             <p className="text-ink-secondary">

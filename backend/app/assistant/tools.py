@@ -24,8 +24,9 @@ from app.api.insights import bills_for, spending_for
 from app.api.plans import PlanIn, plans_for, preview_out, propose_for
 from app.api.provider_limits import limits_for
 from app.api.providers import list_providers
+from app.api.rate_limit import RequestRateLimiter
 from app.api.recommendations import recommendations_for
-from app.api.risk import check_for, schedule_for
+from app.api.risk import SCHEDULES_PER_MINUTE, check_for, schedule_for
 from app.api.summary import categories_for, months_for
 from app.api.transactions import TransactionOut
 from app.assistant.context import ToolContext
@@ -198,17 +199,31 @@ def _check_risk(ctx: ToolContext, args: PlanIn) -> ToolOutput:
     return ToolOutput(f"Ran the risk check ({said}).", card, data)
 
 
+# The route's limit, applied to the tool too: the tool calls `schedule_for` directly, so without
+# it one user's chats could run many searches a minute (review finding 3). One process, in memory,
+# like the route limiters.
+_TIMING_LIMITER = RequestRateLimiter()
+
+
 def _safer_timing(ctx: ToolContext, args: PlanIn) -> ToolOutput:
     if ctx.predictor is None:
         raise api_error(503, "risk_check_unavailable", "The risk check is not available right now.")
+    allowed, wait = _TIMING_LIMITER.allow(f"risk-schedule:{ctx.user_id}", SCHEDULES_PER_MINUTE, 60)
+    if not allowed:
+        message = f"The timing search ran too often. Try again in {wait} seconds."
+        raise api_error(429, "too_many_requests", message)
     out = schedule_for(args, ctx.user_id, ctx.db, ctx.today, ctx.forecaster, ctx.predictor)
     card, data = _card("schedule", f"Safer timing: {args.item_name}", out)
     if out.status == "locked":
         said = "locked: needs more history"
-    elif out.chosen_index is None:
+    elif out.already_at_risk:
+        said = "already At Risk without it, so no search ran"
+    elif out.chosen is None:
         said = f"none of {len(out.options)} option(s) qualified"
     else:
-        said = f"option {out.chosen_index + 1} of {len(out.options)} qualified"
+        # named here too: the model's view cuts long lists, and the chosen option is the last one
+        said = (f"suggested: {out.chosen.purchase_date.isoformat()}, "
+                f"{out.chosen.num_installments} instalments")  # fmt: skip
     return ToolOutput(f"Searched start dates and instalment counts ({said}; nothing saved).",
                       card, data)  # fmt: skip
 

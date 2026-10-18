@@ -68,7 +68,8 @@ def stack_dues(
     today: date,
 ) -> list[StackMonth]:
     """Every month from this one to the new plan's last instalment. An unpaid instalment whose due
-    date has passed is still owed, so it sits in the current month."""
+    date has passed (an existing plan's, or the new plan's when its purchase date is in the past)
+    is still owed, so it sits in the current month."""
     current = _key(today)
     owed: dict[str, dict[str, int]] = {}
     for label, due, sen in _unpaid(plans):
@@ -77,7 +78,8 @@ def stack_dues(
         owed[month][label] = owed[month].get(label, 0) + sen
     new: dict[str, int] = {}
     for due, sen in new_instalments:
-        new[_key(due)] = new.get(_key(due), 0) + sen
+        month = max(_key(due), current)
+        new[month] = new.get(month, 0) + sen
     last = max([current, *new])
     months = []
     for month in _months(current, last):

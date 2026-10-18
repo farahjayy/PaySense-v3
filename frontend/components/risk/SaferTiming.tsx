@@ -42,10 +42,17 @@ export function SaferTiming({ request, onUse, result, busy = false }: Props) {
       <CardTitle>When would this hurt less?</CardTitle>
       <CardCaption>
         We try the date you entered and the day after each of your next two
-        income dates, with each instalment count, until one adds at most{" "}
-        {formatPoints(shown?.added_max ?? 0.05).slice(1)} to your chance of
-        running short and keeps it under{" "}
-        {formatPercent(shown?.at_risk_edge ?? 0.3)}.
+        income dates, with each instalment count, and stop at the first that
+        adds little to your chance of running short
+        {shown ? (
+          <>
+            {" "}
+            (at most {formatPoints(shown.added_max).slice(1)}) and keeps it
+            under {formatPercent(shown.at_risk_edge)}.
+          </>
+        ) : (
+          " and keeps you out of At Risk."
+        )}
       </CardCaption>
       {interactive && !shown && (
         <Button
@@ -97,16 +104,16 @@ function Outcome({
         <Banner tone="warning" title="Already At Risk without this purchase">
           Your chance of running short is{" "}
           {formatPercent(schedule.without_probability)} before you buy anything,
-          so no timing can fix that on its own. Paying down what you owe first
-          is the safer step.
+          so no timing changes that on its own: most of the risk comes from what
+          you already owe and spend, not from this purchase.
         </Banner>
       ) : (
         schedule.chosen_index === null && (
           <Banner tone="info">
             None of the {plural(schedule.options.length, "option")} we tried
             adds at most {formatPoints(schedule.added_max).slice(1)} and stays
-            under {formatPercent(schedule.at_risk_edge)}. Waiting longer or a
-            lower price may help.
+            under {formatPercent(schedule.at_risk_edge)}. Dates further away and
+            lower prices were not part of this search.
           </Banner>
         )
       )}
@@ -131,7 +138,8 @@ function Outcome({
                   · {plural(o.num_installments, "instalment")}
                 </p>
                 <p className="text-[12px] text-ink-secondary">
-                  Chance of running short {formatPercent(o.with_probability)} (
+                  Chance of running short {formatPercent(o.with_probability)}{" "}
+                  with it, {formatPercent(o.without_probability)} without (
                   {formatPoints(o.added_probability)})
                   {o.qualifies ? " · fits" : ""}
                 </p>

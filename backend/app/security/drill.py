@@ -494,6 +494,12 @@ def _attempt(settings: Settings, entry: tuple[str, str, str, str, str, Run]) -> 
         fooled, harmed, evidence = run_attack(box)
     except Exception as err:  # an attack that crashes the code under test is reported, not hidden
         fooled, harmed, evidence = True, True, f"The attack raised {type(err).__name__}."
+    finally:
+        # the confirm path keeps one lock per user in a module dict; the sandbox's users are
+        # thrown away, so their entries are too (review finding 11)
+        with actions._LOCKS_GUARD:
+            actions._LOCKS.pop(box.you, None)
+            actions._LOCKS.pop(box.other, None)
     if box.leaks(evidence):
         evidence = "The evidence mentioned another student's data and was withheld."
         harmed = True

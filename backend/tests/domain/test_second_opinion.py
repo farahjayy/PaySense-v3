@@ -53,6 +53,15 @@ def test_paid_instalments_are_never_counted():
     assert sum(m.total_sen for m in months) == 3000 + 5000 + 3000 + 5000 + 26633 * 2 + 26634
 
 
+def test_a_new_plan_backdated_into_an_earlier_month_is_owed_this_month():
+    """Review finding 4: a purchase dated in the past can have instalments already due."""
+    backdated = [(date(2025, 12, 25), 5000), (date(2026, 1, 25), 5000), (date(2026, 2, 25), 5000)]
+    months = stack_dues([], backdated, {}, TODAY)
+    assert [m.month for m in months] == ["2026-01", "2026-02"]
+    assert months[0].new_plan_sen == 10000
+    assert sum(m.new_plan_sen for m in months) == 15000
+
+
 def test_exposure_before_and_after_across_providers():
     out = exposure(PLANS, 79900, "SPayLater", {"spaylater": 100000, "atome": 60000})
     assert out.unpaid_before_sen == 16000 and out.unpaid_after_sen == 16000 + 79900

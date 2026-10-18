@@ -155,3 +155,28 @@ def test_the_timing_tool_without_a_risk_model_is_an_error_step(db, make_ctx):
     record = executor.run_tool(ctx, "find_safer_timing", PHONE, caller="model")
     assert record.step.status == "error"
     assert "not available" in record.step.summary.lower()
+
+
+def test_the_model_sees_the_chosen_timing_even_when_the_list_is_cut(ctx, monkeypatch):
+    """Review finding 2: the search stops at the chosen option, the last in a list the model's
+    view may cut; the result names it separately."""
+    from app.assistant.agent import MODEL_VIEW_LIST, _model_view
+
+    record = executor.run_tool(ctx, "find_safer_timing", PHONE, caller="model")
+    data = record.data
+    data["options"] = [data["options"][0]] * (MODEL_VIEW_LIST + 3)
+    view = _model_view(data)
+    assert "chosen" in view and len(view["options"]) == MODEL_VIEW_LIST + 1
+
+
+def test_the_timing_tool_shares_the_routes_rate_limit(ctx, monkeypatch):
+    """Review finding 3: the tool calls the search directly, so it carries the limit itself."""
+    from app.api.rate_limit import RequestRateLimiter
+    from app.api.risk import SCHEDULES_PER_MINUTE
+    from app.assistant import tools
+
+    monkeypatch.setattr(tools, "_TIMING_LIMITER", RequestRateLimiter())
+    steps = [executor.run_tool(ctx, "find_safer_timing", PHONE, caller="model").step
+             for _ in range(SCHEDULES_PER_MINUTE + 1)]  # fmt: skip
+    assert [s.status for s in steps[:-1]] == ["ok"] * SCHEDULES_PER_MINUTE
+    assert steps[-1].status == "error" and "too often" in steps[-1].summary

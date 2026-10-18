@@ -49,14 +49,33 @@ def test_the_schedule_lists_the_options_tried_and_the_rule(api, amir, ledger):
     assert out["status"] == "ok" and out["added_max"] == 0.05 and out["at_risk_edge"] == 0.30
     first = out["options"][0]
     assert first["as_typed"] and first["purchase_date"] == TODAY.isoformat()
+    assert out["without_probability"] == first["without_probability"]  # the purchase as typed
     for option in out["options"]:
-        added = max(option["with_probability"] - out["without_probability"], 0)
+        # each option against its own baseline (its plan's length sets the stretch simulated)
+        added = max(option["with_probability"] - option["without_probability"], 0)
         assert option["added_probability"] == pytest.approx(added, abs=1e-6)
-        assert option["qualifies"] == (added <= 0.05 and option["with_probability"] < 0.30)
+        assert option["qualifies"] == (
+            added <= 0.05
+            and option["with_probability"] < 0.30
+            and option["without_probability"] < 0.30
+        )
     chosen = out["chosen_index"]
     if chosen is not None:
         assert out["options"][chosen]["qualifies"]
+        assert out["chosen"] == out["options"][chosen]
         assert not any(o["qualifies"] for o in out["options"][:chosen])
+    else:
+        assert out["chosen"] is None
+
+
+def test_a_purchase_the_plan_rules_refuse_is_refused_like_the_check(api, amir, ledger):
+    """Review finding 5: not reported as "locked: needs more history"."""
+    bad = body(provider="other")  # a manual plan needs its instalment amounts, not a price
+    check = api.post("/api/risk/check", json=bad, headers=amir)
+    timing = api.post("/api/risk/schedule", json=bad, headers=amir)
+    assert check.status_code == 422
+    assert timing.status_code == 422
+    assert timing.json()["detail"]["code"] == check.json()["detail"]["code"]
 
 
 def test_a_short_ledger_gives_a_locked_schedule(api, amir):

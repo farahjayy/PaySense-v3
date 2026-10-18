@@ -102,3 +102,15 @@ def test_the_result_never_carries_the_secret_markers(result):
     blob = json.dumps([a.__dict__ for a in result.attacks])
     assert drill.OTHER_MARKER_TEXT not in blob
     assert "77,777.77" not in blob and "7777777" not in blob
+
+
+def test_the_drill_leaves_no_lock_entries_behind(result):
+    """Review finding 11: a drill run must not grow the confirm path's per-user lock dict."""
+    from app.assistant import actions
+    from app.core.settings import Settings
+
+    before = len(actions._LOCKS)
+    drill.run(Settings(_env_file=None, supabase_url="https://drill.invalid",
+                       supabase_service_key="not-used", session_secret="d" * 48,
+                       cors_origins="http://localhost:3000"))  # fmt: skip
+    assert len(actions._LOCKS) == before

@@ -2657,6 +2657,11 @@ export interface components {
             first_payment_date: string | null;
             /** With Probability */
             with_probability: number;
+            /**
+             * Without Probability
+             * @description This option's own baseline: its plan's length sets the stretch
+             */
+            without_probability: number;
             /** Added Probability */
             added_probability: number;
             /** Qualifies */
@@ -2675,9 +2680,15 @@ export interface components {
              * @enum {string}
              */
             status: "ok" | "locked";
-            /** Without Probability */
+            /**
+             * Without Probability
+             * @description The purchase as typed, without it
+             */
             without_probability: number | null;
-            /** Already At Risk */
+            /**
+             * Already At Risk
+             * @description Without the purchase as typed; then no search runs
+             */
             already_at_risk: boolean;
             /**
              * Added Max
@@ -2693,6 +2704,8 @@ export interface components {
             options: components["schemas"]["ScheduleOptionOut"][];
             /** Chosen Index */
             chosen_index: number | null;
+            /** @description The option suggested, also at options[chosen_index] */
+            chosen: components["schemas"]["ScheduleOptionOut"] | null;
         };
         /**
          * SecondOpinionOut
