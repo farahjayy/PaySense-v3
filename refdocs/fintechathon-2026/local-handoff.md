@@ -29,7 +29,7 @@
 8. **Deploy** (`deployment.md`): Render blueprint (`paysense-v3-api`), Vercel, CORS, `FORWARDED_ALLOW_IPS`, the smoke test, `demo_run.py --api <live URL>`, the phone checklist, a keep-alive choice.
 9. **Second-Opinion Check (D-57):** needs no migration (a saved report keeps it inside the existing jsonb `input`). On the real database, step 6's `find_demo_scenario.py` now also fills the *Adds* and *Safer timing* columns; pick the video's shot 10 from them. Answer questions.md 37 (the 5-point threshold and the RM1,500 wording) and 38 (the engine fixes the outcome check points to).
 10. **Optional, real data:** download MoneyData and Berka and run `uv run python -m ml.engine1_eval.serving_check` for real-data band coverage.
-11. **Before submitting:** re-run `scripts/run_security_scans.py` and `scripts/collect_test_evidence.py`; re-copy the figures in `submission/` from the reports they name; record the video with `demo-video-script.md`.
+11. **Before submitting:** re-run `scripts/run_security_scans.py`, `scripts/run_security_drill.py` and `scripts/collect_test_evidence.py`; re-copy the figures in `submission/` from the reports they name; record the video with `demo-video-script.md`.
 
 ## C. Checks that run without you
 
