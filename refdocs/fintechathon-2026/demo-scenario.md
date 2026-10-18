@@ -10,21 +10,21 @@
 | frequent_bnpl | Phone RM700, SPayLater, 3 months | At Risk | 5 | 0.948 | 1.000 | 0.000 | none reaches Safe | already At Risk without it |
 | frequent_bnpl | Phone RM750, SPayLater, 3 months | At Risk | 5 | 0.951 | 1.000 | 0.000 | none reaches Safe | already At Risk without it |
 | frequent_bnpl | Phone RM799, SPayLater, 3 months | At Risk | 5 | 0.952 | 1.000 | 0.000 | none reaches Safe | already At Risk without it |
-| budget_conscious | Headphones RM30, SPayLater, 3 months | At Risk | 13 | 0.870 | 0.775 | 0.000 | none reaches Safe | already At Risk without it |
-| budget_conscious | Headphones RM60, SPayLater, 3 months | At Risk | 13 | 0.871 | 0.775 | 0.000 | none reaches Safe | already At Risk without it |
-| budget_conscious | Headphones RM120, SPayLater, 3 months | At Risk | 12 | 0.879 | 0.775 | 0.000 | none reaches Safe | already At Risk without it |
-| irregular_income | Phone RM799, SPayLater, 3 months | At Risk | 38 | 0.619 | 0.427 | 0.055 | none reaches Safe | already At Risk without it |
-| frequent_bnpl | Phone RM799, SPayLater, 3 months, savings buffer RM500 entered | At Risk | 15 | 0.847 | 0.777 | 0.223 | none reaches Safe | already At Risk without it |
-| frequent_bnpl | Phone RM799, SPayLater, 3 months, savings buffer RM1,000 entered | At Risk | 47 | 0.530 | 0.106 | 0.786 | none reaches Safe | none of 18 qualifies |
+| budget_conscious | Headphones RM30, SPayLater, 3 months | At Risk | 20 | 0.799 | 0.780 | 0.000 | none reaches Safe | already At Risk without it |
+| budget_conscious | Headphones RM60, SPayLater, 3 months | At Risk | 20 | 0.801 | 0.780 | 0.000 | none reaches Safe | already At Risk without it |
+| budget_conscious | Headphones RM120, SPayLater, 3 months | At Risk | 19 | 0.812 | 0.780 | 0.000 | none reaches Safe | already At Risk without it |
+| irregular_income | Phone RM799, SPayLater, 3 months | At Risk | 34 | 0.664 | 0.429 | 0.056 | none reaches Safe | already At Risk without it |
+| frequent_bnpl | Phone RM799, SPayLater, 3 months, savings buffer RM500 entered | At Risk | 15 | 0.847 | 0.786 | 0.214 | none reaches Safe | already At Risk without it |
+| frequent_bnpl | Phone RM799, SPayLater, 3 months, savings buffer RM1,000 entered | At Risk | 47 | 0.530 | 0.114 | 0.783 | none reaches Safe | none of 18 qualifies |
 | frequent_bnpl | Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered | Safe | 98 | 0.023 | 0.000 | 0.000 | - | 2026-10-18, 3 instalments (+0.000) |
-| irregular_income | Phone RM799, SPayLater, 3 months, savings buffer RM500 entered | Safe | 90 | 0.097 | 0.000 | 0.122 | - | 2026-10-18, 4 instalments (+0.023) |
-| irregular_income | Phone RM799, SPayLater, 3 months, savings buffer RM1,000 entered | Safe | 99 | 0.013 | 0.000 | 0.000 | - | 2026-10-18, 3 instalments (+0.000) |
-| irregular_income | Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered | Safe | 100 | 0.001 | 0.000 | 0.000 | - | 2026-10-18, 3 instalments (+0.000) |
+| irregular_income | Phone RM799, SPayLater, 3 months, savings buffer RM500 entered | Caution | 89 | 0.112 | 0.000 | 0.111 | Spread it over 4 instalments -> Safe | 2026-10-18, 4 instalments (+0.045) |
+| irregular_income | Phone RM799, SPayLater, 3 months, savings buffer RM1,000 entered | Safe | 99 | 0.014 | 0.000 | 0.000 | - | 2026-10-18, 3 instalments (+0.000) |
+| irregular_income | Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered | Safe | 100 | 0.002 | 0.000 | 0.000 | - | 2026-10-18, 3 instalments (+0.000) |
 
 *Adds* is the Second-Opinion Check's added chance of running short (simulated with minus without, D-57); *Safer timing* is the first start date and count the timing search found that adds at most 0.05 and stays below 0.30.
 
 ## What this means for the demo script
 
-- Purchases that come back **Safe**: frequent_bnpl / Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered, irregular_income / Phone RM799, SPayLater, 3 months, savings buffer RM500 entered, irregular_income / Phone RM799, SPayLater, 3 months, savings buffer RM1,000 entered, irregular_income / Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered.
+- Purchases that come back **Safe**: frequent_bnpl / Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered, irregular_income / Phone RM799, SPayLater, 3 months, savings buffer RM1,000 entered, irregular_income / Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered.
 - **Without a savings buffer, no purchase in this grid comes back Safe.**
-- **No smallest change reaches Safe** for any purchase in this grid; the demo says so honestly (step 2 of the demo script) rather than inventing one.
+- A smallest change that reaches Safe exists for: irregular_income / Phone RM799, SPayLater, 3 months, savings buffer RM500 entered.
