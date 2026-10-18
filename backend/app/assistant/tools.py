@@ -25,7 +25,7 @@ from app.api.plans import PlanIn, plans_for, preview_out, propose_for
 from app.api.provider_limits import limits_for
 from app.api.providers import list_providers
 from app.api.recommendations import recommendations_for
-from app.api.risk import check_for
+from app.api.risk import check_for, schedule_for
 from app.api.summary import categories_for, months_for
 from app.api.transactions import TransactionOut
 from app.assistant.context import ToolContext
@@ -198,6 +198,21 @@ def _check_risk(ctx: ToolContext, args: PlanIn) -> ToolOutput:
     return ToolOutput(f"Ran the risk check ({said}).", card, data)
 
 
+def _safer_timing(ctx: ToolContext, args: PlanIn) -> ToolOutput:
+    if ctx.predictor is None:
+        raise api_error(503, "risk_check_unavailable", "The risk check is not available right now.")
+    out = schedule_for(args, ctx.user_id, ctx.db, ctx.today, ctx.forecaster, ctx.predictor)
+    card, data = _card("schedule", f"Safer timing: {args.item_name}", out)
+    if out.status == "locked":
+        said = "locked: needs more history"
+    elif out.chosen_index is None:
+        said = f"none of {len(out.options)} option(s) qualified"
+    else:
+        said = f"option {out.chosen_index + 1} of {len(out.options)} qualified"
+    return ToolOutput(f"Searched start dates and instalment counts ({said}; nothing saved).",
+                      card, data)  # fmt: skip
+
+
 def _preview_plan(ctx: ToolContext, args: PlanIn) -> ToolOutput:
     out = preview_out(propose_for(args, ctx.db, ctx.user_id))
     card, data = _card("plan_preview", f"Plan preview: {args.item_name}", out)
@@ -322,8 +337,16 @@ MODEL_TOOLS: dict[str, Tool] = {
              "colliding within a week, an At Risk forecast.", NoArgs, _alerts),
         Tool("check_purchase_risk", 1, "Can the user afford this BNPL purchase? Runs the risk "
              "check (forecast with and without the plan, the model's band and score, the reasons "
-             "and the smallest change that would make it safer). Stores nothing. " + _PURCHASE,
-             PlanIn, _check_risk),
+             "and the smallest change that would make it safer) and the second opinion: the "
+             "chance of running short without and with the purchase and what it adds, every "
+             "unpaid instalment across providers stacked by month with the new one, and the "
+             "exposure before and after. Stores nothing. " + _PURCHASE, PlanIn, _check_risk),
+        Tool("find_safer_timing", 1, "When would this purchase add little to the chance of "
+             "running short? Tries the date as typed and the day after each of the next two "
+             "income dates, with each instalment count, until one adds at most the limit shown "
+             "and stays below At Risk. Use it when the user asks when to buy, whether to wait, "
+             "or after a check that adds a lot. Stores nothing. " + _PURCHASE, PlanIn,
+             _safer_timing),
         Tool("preview_plan", 1, "The exact schedule, fee and total cost a purchase would have. "
              "Stores nothing. " + _PURCHASE, PlanIn, _preview_plan),
         Tool("suggest_budget", 1, "Suggested monthly budgets: income less bills, instalments and "

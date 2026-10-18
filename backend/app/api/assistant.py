@@ -29,7 +29,7 @@ from app.api.plans import PlanIn, PlanOut, PlanPreviewOut
 from app.api.provider_limits import LimitOut
 from app.api.providers import ProviderOut
 from app.api.recommendations import RecommendationListOut
-from app.api.risk import RiskCheckOut, RiskConfirmOut
+from app.api.risk import RiskCheckOut, RiskConfirmOut, ScheduleOut
 from app.api.schemas import NOT_FOUND_RESPONSE, PROTECTED_RESPONSES, ApiModel, ErrorEnvelope
 from app.api.summary import CategorySummaryOut, MonthSummaryOut
 from app.api.transactions import TransactionIn, TransactionOut
@@ -135,6 +135,11 @@ class RiskCard(_Card):
     data: RiskCheckOut
 
 
+class ScheduleCard(_Card):
+    kind: Literal["schedule"]
+    data: ScheduleOut
+
+
 class ForecastCard(_Card):
     kind: Literal["forecast"]
     data: ForecastOut
@@ -212,6 +217,7 @@ class PastePreviewCard(_Card):
 
 CARD_TYPES: dict[str, type[_Card]] = {
     "risk": RiskCard,
+    "schedule": ScheduleCard,
     "forecast": ForecastCard,
     "month_summary": MonthSummaryCard,
     "category_spending": CategorySpendingCard,
@@ -232,6 +238,7 @@ CARD_TYPES: dict[str, type[_Card]] = {
 
 Card = Annotated[
     RiskCard
+    | ScheduleCard
     | ForecastCard
     | MonthSummaryCard
     | CategorySpendingCard

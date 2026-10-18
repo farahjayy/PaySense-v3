@@ -32,6 +32,7 @@ COMPUTE_TOOLS = {
     "check_purchase_risk": (PHONE, "risk"),
     "preview_plan": (PHONE, "plan_preview"),
     "suggest_budget": ({}, "budget_suggestion"),
+    "find_safer_timing": (PHONE, "schedule"),
 }
 
 
@@ -118,3 +119,39 @@ def test_unknown_tools_and_unknown_arguments_are_refused(ctx):
     assert executor.run_tool(ctx, "drop_tables", {}, caller="model").step.status == "refused"
     record = executor.run_tool(ctx, "get_forecast", {"verbose": True}, caller="model")
     assert record.step.status == "error"
+
+
+def test_the_timing_tool_is_the_same_search_as_the_route(ctx, db):
+    """D-57: `find_safer_timing` and POST /api/risk/schedule share `schedule_for`."""
+    from app.api.plans import PlanIn
+    from app.api.risk import schedule_for
+    from app.engines.forecasting.serving import served_forecaster
+    from tests.assistant.conftest import TODAY
+
+    record = executor.run_tool(ctx, "find_safer_timing", PHONE, caller="model")
+    direct = schedule_for(
+        PlanIn.model_validate(PHONE), ctx.user_id, db, TODAY, served_forecaster(), ctx.predictor
+    )
+    assert record.card.data.model_dump() == direct.model_dump()
+    assert "nothing saved" in record.step.summary.lower()
+
+
+def test_the_risk_tool_tells_the_model_what_the_purchase_adds(ctx):
+    """D-57: the second opinion reaches the model, so it can narrate with/without/added."""
+    from app.assistant.agent import _model_view
+
+    record = executor.run_tool(ctx, "check_purchase_risk", PHONE, caller="model")
+    view = _model_view(record.data)
+    opinion = view["second_opinion"]
+    assert opinion is not None
+    assert {"without_probability", "with_probability", "added_probability"} <= set(opinion)
+    assert opinion["stack"] and opinion["exposure"]
+
+
+def test_the_timing_tool_without_a_risk_model_is_an_error_step(db, make_ctx):
+    load_persona(db, uid(db, "amir"))
+    ctx = make_ctx("amir")
+    ctx = ctx.__class__(**{**ctx.__dict__, "predictor": None})
+    record = executor.run_tool(ctx, "find_safer_timing", PHONE, caller="model")
+    assert record.step.status == "error"
+    assert "not available" in record.step.summary.lower()
