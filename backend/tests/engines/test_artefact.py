@@ -16,7 +16,12 @@ from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
 from app.engines.forecasting.service import DASHBOARD_MONTHS
 from app.engines.forecasting.serving import ARTEFACT_VERSION, SERVED_MODEL
 from app.engines.forecasting.simulate import BOOTSTRAP_BLOCK, RISK_CHECK_MAX_WEEKS
-from app.engines.risk.artefact import ArtefactError, load_engine2, load_if_present
+from app.engines.risk.artefact import (
+    ArtefactError,
+    live_constants,
+    load_engine2,
+    load_if_present,
+)
 from app.engines.risk.features import FEATURE_NAMES, FEATURE_SCHEMA_HASH
 from app.main import create_app
 
@@ -60,6 +65,7 @@ def metadata(onnx_bytes: bytes, **overrides) -> dict:
             "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
             "BAND_RULE_SHA256": text_digest(BAND_FILE),
             "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
+            "POPULATION_RECORD_SHA256": live_constants()["POPULATION_RECORD_SHA256"],
         },
     }
     meta.update(overrides)
@@ -263,3 +269,20 @@ def test_forecast_file_names_that_could_leave_the_folder_are_refused(tmp_path, n
     label = metadata(b"")["label"] | {"served_model_files": {name: "0" * 64}}
     with pytest.raises(ArtefactError, match="file name"):
         load_engine2(write(tmp_path / "v1", label=label))
+
+
+# --- engine v3 (D-62): the artefact says what its model predicts ---
+def test_a_two_part_artefact_says_so_and_a_direct_one_is_the_default(tmp_path):
+    assert load_engine2(write(tmp_path / "direct")).target == "p_with"
+    assert load_engine2(write(tmp_path / "two", target="two_part")).target == "two_part"
+
+
+def test_an_unknown_target_is_refused(tmp_path):
+    with pytest.raises(ArtefactError, match="target"):
+        load_engine2(write(tmp_path / "odd", target="added_risk"))
+
+
+def test_a_model_made_with_another_population_record_is_refused(tmp_path):
+    constants = {**metadata(b"")["serving_constants"], "POPULATION_RECORD_SHA256": "0" * 64}
+    with pytest.raises(ArtefactError, match="POPULATION_RECORD_SHA256"):
+        load_engine2(write(tmp_path / "pop", serving_constants=constants))

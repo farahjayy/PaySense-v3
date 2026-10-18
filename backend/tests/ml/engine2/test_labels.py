@@ -171,7 +171,7 @@ def test_a_label_records_the_per_month_definition_beside_the_cumulative_one():
 def test_the_manifest_records_the_provenance_of_the_run(tmp_path):
     manifest = generate_labels(PARAMS, SEED, 3, tmp_path, paths=100, forecaster=MODEL)
 
-    assert manifest["label_version"] == "3"
+    assert manifest["label_version"] == "4"
     assert len(manifest["band_rule_sha256"]) == 64 and manifest["recentre_errors"] is False
     assert {"python", "numpy", "onnxruntime", "scipy"} <= set(manifest["versions"])
     assert "git_commit" in manifest and manifest["capped_profiles"] == 0
@@ -222,7 +222,7 @@ def test_a_run_refuses_to_resume_with_fewer_profiles_than_are_already_written(tm
 def test_the_profiles_buffer_starts_the_label_and_is_a_feature():
     index = next(i for i in range(60) if profile(i).savings_buffer_sen > 0)
     record = label_profile(profile(index), MODEL, SEED, paths=200)
-    assert record["features"]["savings_buffer_to_income"] > 0
+    assert record["features"]["savings_buffer_to_outgoings"] > 0
     assert prepare(profile(index))["savings_buffer_sen"] == profile(index).savings_buffer_sen
 
 
@@ -246,7 +246,7 @@ def test_recentred_errors_are_a_separate_run_that_records_the_switch(tmp_path):
         PARAMS, SEED, 3, tmp_path / "centred", paths=100, forecaster=MODEL, recentre_errors=True
     )
     assert plain["recentre_errors"] is False and centred["recentre_errors"] is True
-    assert plain["label_version"] == centred["label_version"] == "3"
+    assert plain["label_version"] == centred["label_version"] == "4"
 
 
 def test_recentring_removes_the_records_mean_error():
