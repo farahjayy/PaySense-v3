@@ -34,4 +34,4 @@ Origins at 17 and 26 weeks from the start of each ledger (52 weeks of future rem
 - Income is total income, not the residual income serving forecasts after confirmed recurring items (note N2).
 
 ## 7. Definition of done
-Tests first (`tests/ml/engine1/test_outcome_check.py`, `test_recursion_check.py`; no LSTM); both scripts run for real; `uv run pytest tests/ml -q`, `uv run ruff check .` and `uv run ruff format --check .` green; reports carry "generated, do not edit"; merge notes in `refdocs/fintechathon-2026/outcome-check-merge-notes.md`.
+Tests first (`tests/ml/engine1/test_outcome_check.py`, `test_recursion_check.py`; no LSTM); both scripts run for real; `uv run pytest tests/ml -q`, `uv run ruff check .` and `uv run ruff format --check .` green; reports carry "generated, do not edit"; merge notes (folded into CHANGELOG, STATUS, DECISIONS and questions.md on merge, then removed).
