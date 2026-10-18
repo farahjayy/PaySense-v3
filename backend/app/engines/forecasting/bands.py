@@ -18,8 +18,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from app.engines.forecasting.simulate import CLIP_MODES
+
 BAND_FILE = Path(__file__).resolve().parents[3] / "models" / "engine1" / "band_inflation.json"
 KINDS = ("spend", "income")
+MIN_POPULATION_BELOW = 18  # a population record must cover at least the first bucket (17 weeks)
 
 
 class BandRuleError(RuntimeError):
@@ -34,9 +37,27 @@ class Bucket:
 
 
 @dataclass(frozen=True)
+class PopulationRef:
+    """Which population error record a short history uses (engine v3, D-61), and below how many
+    weeks of history. The file sits next to the band rule and must have this digest."""
+
+    file: str
+    sha256: str
+    below_weeks: int
+
+
+@dataclass(frozen=True)
 class BandRule:
     version: str
     buckets: tuple[Bucket, ...]  # ascending by min_weeks; the first starts at the forecast gate
+    clip: str = "week"  # where simulated spending and income are floored at zero (D-60)
+    population: PopulationRef | None = None
+    folder: Path | None = None  # where the rule file lives (for the population record)
+
+    def population_path(self) -> Path | None:
+        if self.population is None:
+            return None
+        return (self.folder or BAND_FILE.parent) / self.population.file
 
     def factor(self, weeks: int, kind: str) -> float:
         if kind not in KINDS:
@@ -61,7 +82,29 @@ def parse_rule(data: dict[str, Any]) -> BandRule:
         raise BandRuleError("band buckets must be non-empty and strictly ascending by min_weeks")
     if any(min(b.spend, b.income) < 1.0 for b in buckets):
         raise BandRuleError("a band factor below 1 would narrow the user's own error record")
-    return BandRule(version, buckets)
+    clip = data.get("clip", "week")
+    if clip not in CLIP_MODES:
+        raise BandRuleError(f"the band rule's clip must be one of {CLIP_MODES}, got {clip!r}")
+    return BandRule(version, buckets, clip, _population(data.get("population_record")))
+
+
+def _population(data: Any) -> PopulationRef | None:
+    if data is None:
+        return None
+    try:
+        ref = PopulationRef(str(data["file"]), str(data["sha256"]), int(data["below_weeks"]))
+    except (KeyError, TypeError, ValueError) as err:
+        raise BandRuleError(f"the population record reference is malformed: {err!r}") from err
+    plain = (
+        Path(ref.file).name == ref.file and ref.file not in {"", ".", ".."} and "\\" not in ref.file
+    )
+    if not plain:
+        raise BandRuleError(f"the population record {ref.file!r} is not a plain file name")
+    if len(ref.sha256) != 64:
+        raise BandRuleError("the population record reference needs a SHA-256 digest")
+    if ref.below_weeks < MIN_POPULATION_BELOW:
+        raise BandRuleError("a population record must cover at least the shortest histories")
+    return ref
 
 
 def text_digest(path: Path) -> str:
@@ -75,7 +118,8 @@ def load_band_rule(path: Path = BAND_FILE) -> BandRule:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as err:
         raise BandRuleError(f"cannot read the band table at {path}: {err}") from err
-    return parse_rule(data)
+    rule = parse_rule(data)
+    return BandRule(rule.version, rule.buckets, rule.clip, rule.population, path.parent)
 
 
 def inflation_for(weeks: int, kind: str) -> float:

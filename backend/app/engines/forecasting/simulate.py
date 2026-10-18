@@ -41,6 +41,12 @@ DEFAULT_PATHS = 1000
 SAFE_BELOW = 0.10  # pre-registered before training: Safe < 0.10, Caution < 0.30, At Risk >= 0.30
 CAUTION_BELOW = 0.30
 PERCENTILES = (10, 50, 90)
+# Where the floor at zero applies to the simulated spending and income (ADR D-60, F1). "week" is
+# engine version v2: every simulated week is floored, which deletes the negative part of the
+# error draws and so raises every simulated total (the income bias, ASSUMED 40). "month" floors
+# each calendar month's total instead: a week below the forecast inside a month can offset a week
+# above it, and only a month cannot be negative. The served band rule names the mode.
+CLIP_MODES = ("week", "month")
 
 
 class Forecaster(Protocol):
@@ -170,7 +176,10 @@ def simulate(
     fallback_errors: bool = False,
     max_weeks: int = MAX_WEEKS,
     starting_buffer_sen: int = 0,
+    clip: str = "week",
 ) -> Simulation:
+    if clip not in CLIP_MODES:
+        raise ValueError(f"clip must be one of {CLIP_MODES}, got {clip!r}")
     if starting_buffer_sen < 0:
         raise ValueError("a savings buffer cannot be negative")
     if series.start is None or series.weeks == 0:
@@ -204,13 +213,20 @@ def simulate(
         0,
         None,
     )
-    spend = np.clip(spend_point + _draw(spend_errors, weeks, paths, rng), 0, None)
-    income = np.clip(income_point + _draw(income_errors, weeks, paths, rng), 0, None)
+    spend_raw = spend_point + _draw(spend_errors, weeks, paths, rng)
+    income_raw = income_point + _draw(income_errors, weeks, paths, rng)
+    spend = np.clip(spend_raw, 0, None)  # a week of spending is never negative (feature summaries)
 
     weights = _month_weights(first_monday, weeks, start, last_day, months)
+    if clip == "month":
+        spend_monthly = np.clip(spend_raw @ weights, 0, None)
+        income_monthly = np.clip(income_raw @ weights, 0, None)
+    else:
+        spend_monthly = spend @ weights
+        income_monthly = np.clip(income_raw, 0, None) @ weights
     flows = [known[m] for m in months]
     fixed = np.array([f.income_sen - f.bills_sen - f.instalments_sen for f in flows], dtype=float)
-    margin = fixed + income @ weights - spend @ weights
+    margin = fixed + income_monthly - spend_monthly
     margin[:, 0] += month_to_date_sen  # actual net of the days of this month already gone
     # running through the savings buffer is a shortfall; dipping into it is not (D-50)
     cumulative = np.cumsum(margin, axis=1) + starting_buffer_sen
@@ -221,7 +237,7 @@ def simulate(
 
     in_horizon = weights.sum(axis=1) > 0
     spend_weeks = spend[:, in_horizon]
-    monthly_income = np.array([f.income_sen for f in flows], dtype=float) + income @ weights
+    monthly_income = np.array([f.income_sen for f in flows], dtype=float) + income_monthly
     monthly = _percentiles(margin)
     running = _percentiles(cumulative)
     worst = months[int(np.argmax(p_negative))] if p_shortfall > 0 else None
