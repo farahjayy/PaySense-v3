@@ -129,6 +129,32 @@ def error_record(
     return paths, False
 
 
+def served_error_record(
+    values: np.ndarray,
+    start: date | None,
+    forecaster: Forecaster,
+    kind: str,
+    rule: BandRule,
+    recentre_errors: bool = False,
+    own: tuple[np.ndarray, bool] | None = None,
+) -> tuple[np.ndarray, bool]:
+    """One series' widened error record and whether the user's own record came from the
+    fallback. Below the rule's population threshold (engine v3, D-61) the record is the
+    population's ratio paths times the user's recent level; otherwise it is the user's own
+    (`error_record`, or `own` when already computed). Either is then widened by the rule's factor
+    for the history length and series (D-54)."""
+    weeks = len(values)
+    fallback = False
+    if rule.population is not None and weeks < rule.population.below_weeks:
+        record = load_population(rule.population_path(), rule.population.sha256)
+        errors = scaled_paths(record, kind, recent_level(values))
+    else:
+        errors, fallback = own or error_record(values, start, forecaster, kind)
+    if recentre_errors and errors.size:
+        errors = errors - errors.mean()
+    return widen(errors, rule.factor(weeks, kind)), fallback
+
+
 def served_error_records(
     series: Any,
     forecaster: Forecaster,
@@ -136,30 +162,21 @@ def served_error_records(
     recentre_errors: bool = False,
     own: Mapping[str, tuple[np.ndarray, bool]] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, bool]:
-    """(spend errors, income errors, fallback): the error records serving resamples, widened.
-
-    Below the rule's population threshold (engine v3, D-61) each record is the population's ratio
-    paths times the user's recent level; otherwise it is the user's own record (`error_record`).
-    Either is then widened by the rule's factor for the history length and series (D-54).
-    `fallback` says whether the user's own record had to come from the series' spread. One
-    function for serving, the labels and every check, so what is measured is what is served.
-    `own` passes a user's own (unwidened) records already computed, by kind."""
+    """(spend errors, income errors, fallback): the error records serving resamples, widened
+    (`served_error_record` for each series). `fallback` says whether either of the user's own
+    records had to come from the series' spread. One function for serving, the labels and every
+    check, so what is measured is what is served. `own` passes a user's own (unwidened) records
+    already computed, by kind."""
     rule = rule or load_band_rule()
-    weeks = series.weeks
-    out: list[np.ndarray] = []
-    fallback = False
-    for kind, values in (("spend", series.spend), ("income", series.income)):
-        if rule.population is not None and weeks < rule.population.below_weeks:
-            record = load_population(rule.population_path(), rule.population.sha256)
-            errors = scaled_paths(record, kind, recent_level(values))
-        else:
-            found = (own or {}).get(kind)
-            errors, used_fallback = found or error_record(values, series.start, forecaster, kind)
-            fallback = fallback or used_fallback
-        if recentre_errors and errors.size:
-            errors = errors - errors.mean()
-        out.append(widen(errors, rule.factor(weeks, kind)))
-    return out[0], out[1], fallback
+    spend, spend_fallback = served_error_record(
+        series.spend, series.start, forecaster, "spend", rule, recentre_errors,
+        (own or {}).get("spend"),
+    )  # fmt: skip
+    income, income_fallback = served_error_record(
+        series.income, series.start, forecaster, "income", rule, recentre_errors,
+        (own or {}).get("income"),
+    )  # fmt: skip
+    return spend, income, spend_fallback or income_fallback
 
 
 def prepare_ledger(

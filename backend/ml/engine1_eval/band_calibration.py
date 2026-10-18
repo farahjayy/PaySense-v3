@@ -17,7 +17,7 @@ v2 widened every user's error record by one factor (1.5), and the 80% band held 
    wider band can hold the real total LESS often (draws are clipped at zero, so widening raises
    the whole simulated total), and the data decide;
 3. CHECKS the result on the 60 held-out Engine 1 test students (never used for fitting), beside
-   the v2 rule, and writes `backend/models/engine1/band_inflation.json` (the table the API reads)
+   the v2 rule, and writes `backend/models/engine1/rules/v2/band_inflation.json` (the v2 table)
    and `reports/engine1/band_calibration.md`.
 
 MoneyData and Berka are not used: their downloads are blocked in the environment this was run in
@@ -32,7 +32,7 @@ from pathlib import Path
 
 import numpy as np
 
-from app.engines.forecasting.bands import BAND_FILE, parse_rule
+from app.engines.forecasting.bands import parse_rule
 from app.engines.forecasting.onnx_model import load_served
 from app.engines.forecasting.service import MIN_SERIES_WEEKS, V1_ERROR_INFLATION, error_record
 from app.engines.forecasting.simulate import forecaster_for, path_bootstrap
@@ -41,6 +41,9 @@ from ml.engine1_eval.loaders.synthetic import DEFAULT_PATH, load_synthetic
 
 ROOT = Path(__file__).resolve().parents[3]
 REPORT = ROOT / "reports" / "engine1" / "band_calibration.md"
+# The v2 table this script fits. Engine v3 keeps every rule under `models/engine1/rules/` and the
+# served file is a copy of one of them, so re-running this never overwrites a newer served rule.
+RULE_FILE = ROOT / "backend" / "models" / "engine1" / "rules" / "v2" / "band_inflation.json"
 SEED = 20251228  # the Engine 1 evaluation's seed (configs/full.yaml)
 EVAL_POOL, EVAL_TRAIN, EVAL_TEST = 4000, 3000, 60  # configs/full.yaml: which students it used
 COHORT = 10_000
@@ -273,7 +276,8 @@ def report(
             *header,
             *_table_rows(dev, rule_of),
             "",
-            "## The table the API reads (`backend/models/engine1/band_inflation.json`)",
+            "## The v2 table (`backend/models/engine1/rules/v2/band_inflation.json`; served "
+            "before the engine v3 round, see `band_v3.md`)",
             "",
             "| weeks of history from | spend | income |",
             "|---|---|---|",
@@ -300,7 +304,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Fit and check the band widening by history.")
     parser.add_argument("--synthetic", type=Path, default=DEFAULT_PATH)
     parser.add_argument("--dev-profiles", type=int, default=DEV_PROFILES)
-    parser.add_argument("--out-json", type=Path, default=BAND_FILE)
+    parser.add_argument("--out-json", type=Path, default=RULE_FILE)
     parser.add_argument("--out-report", type=Path, default=REPORT)
     args = parser.parse_args(argv)
     served = load_served()

@@ -1,0 +1,40 @@
+{
+  "version": "2",
+  "replaces": "one factor of 1.5 for every user (engine version v2)",
+  "target_coverage": 0.8,
+  "buckets": [
+    {
+      "min_weeks": 17,
+      "spend": 2.8,
+      "income": 1.1
+    },
+    {
+      "min_weeks": 26,
+      "spend": 2.4,
+      "income": 1.3
+    },
+    {
+      "min_weeks": 39,
+      "spend": 2.1,
+      "income": 1.7
+    },
+    {
+      "min_weeks": 52,
+      "spend": 2.2,
+      "income": 1.2
+    }
+  ],
+  "fitted_on": {
+    "students": 300,
+    "rule": "cohort indices 4000-9999 not divisible by 10 (never used by the Engine 1 evaluation or training, never in Engine 2's lockbox), seeded draw",
+    "origins_per_kind": 3900,
+    "horizon_weeks": 13,
+    "draws": 300,
+    "grid": [
+      1.0,
+      6.0,
+      0.1
+    ]
+  },
+  "generated_by": "python -m ml.engine1_eval.band_calibration"
+}

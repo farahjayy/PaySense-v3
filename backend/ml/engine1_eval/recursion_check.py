@@ -11,6 +11,12 @@ MA13 (repeat the mean of the last 13 weeks). The error is (forecast total - real
 (recent level x weeks), where the recent level is the mean of the last 26 weeks of history: below
 0 means the forecast was too low. Spending and income are reported separately.
 
+Engine v3 (plan 2026-10-18-engine-v3 §4.5): F1 and F2 change the simulated band, not the point
+forecast, so a second section runs the SIMULATION to 52 weeks under band rule R2 (the D-54 table,
+weekly floor) and R3 (monthly floor, population record below 26 weeks, refitted table) and reports
+how often the realised cumulative total falls inside the simulated P10-P90 and the median bias of
+the simulated median, at each horizon.
+
 It fits, chooses and changes nothing that is served. Writes `reports/engine1/recursion_check.md`
 and `reports/engine1/tables/recursion_check.csv`.
 """
@@ -20,13 +26,16 @@ import csv
 import time
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
 
+from app.engines.forecasting.bands import BandRule, load_band_rule
+from app.engines.forecasting.service import served_error_record
 from app.engines.forecasting.serving import served_forecaster
-from app.engines.forecasting.simulate import Forecaster, forecaster_for
+from app.engines.forecasting.simulate import Forecaster, forecaster_for, path_bootstrap
+from ml.engine1_eval.band_v3 import RULE_V2, RULE_V3_DIR, window_totals
 from ml.engine1_eval.loaders.synthetic import DEFAULT_PATH, load_synthetic
 from ml.engine1_eval.outcome_check import OUTCOME_PROFILES, outcome_profiles
 
@@ -73,6 +82,131 @@ def scaled_errors(
     if len(actual) < longest:
         raise ValueError(f"the series has {len(actual)} weeks after week {origin}, need {longest}")
     return [float((forecast[:h].sum() - actual[:h].sum()) / (level * h)) for h in horizons]
+
+
+BAND_DRAWS = 300
+BAND_SEED = 20251228 + 11
+
+
+@dataclass(frozen=True)
+class BandScore:
+    profile: int
+    kind: str
+    origin: int
+    rule: str  # "R2" | "R3"
+    inside: tuple[bool, ...]  # the realised total inside the simulated P10-P90, per HORIZONS
+    bias: tuple[float, ...]  # (simulated median - realised) / (recent level x weeks)
+
+
+def band_scores(
+    values: np.ndarray,
+    start: date,
+    origin: int,
+    forecaster: Forecaster,
+    kind: str,
+    rule: BandRule,
+    rng: np.random.Generator,
+    horizons: Sequence[int] = HORIZONS,
+) -> tuple[list[bool], list[float]] | None:
+    """The served simulation of one series from `origin` under `rule`: inside and bias at each
+    horizon, or None when the recent level is 0."""
+    history = np.asarray(values[:origin], dtype=float)
+    level = float(np.mean(history[-LEVEL_WEEKS:]))
+    if level <= 0:
+        return None
+    longest = max(horizons)
+    errors, _ = served_error_record(history, start, forecaster, kind, rule)
+    point = np.clip(forecaster_for(forecaster, kind).forecast(history, longest, start), 0, None)
+    sims = point + path_bootstrap(errors, longest, BAND_DRAWS, rng)
+    monday = start + timedelta(days=7 * origin)
+    actual = np.asarray(values[origin : origin + longest], dtype=float)
+    inside, bias = [], []
+    for h in horizons:
+        totals = window_totals(sims[:, :h], monday, rule.clip)
+        low, high = np.percentile(totals, (10, 90))
+        realised = float(actual[:h].sum())
+        inside.append(bool(low <= realised <= high))
+        bias.append(float((np.median(totals) - realised) / (level * h)))
+    return inside, bias
+
+
+def collect_bands(
+    path: Path, profiles: Iterable[int], forecaster: Forecaster, rules: Mapping[str, BandRule]
+) -> list[BandScore]:
+    rng = np.random.default_rng(BAND_SEED)
+    out = []
+    for series in load_synthetic(path, profile_ids=set(profiles)):
+        profile = int(series.series_id.split("-")[1])
+        for origin in ORIGINS:
+            for name, rule in rules.items():
+                found = band_scores(
+                    series.values, series.start, origin, forecaster, series.kind, rule, rng
+                )
+                if found is not None:
+                    out.append(
+                        BandScore(profile, series.kind, origin, name, tuple(found[0]),
+                                  tuple(found[1]))
+                    )  # fmt: skip
+    return out
+
+
+def band_rows(scores: Sequence[BandScore]) -> list[dict]:
+    rows = []
+    for kind in KINDS:
+        for origin in ORIGINS:
+            for rule in sorted({s.rule for s in scores}):
+                part = [s for s in scores if (s.kind, s.origin, s.rule) == (kind, origin, rule)]
+                if not part:
+                    continue
+                for i, h in enumerate(HORIZONS):
+                    rows.append(
+                        {
+                            "kind": kind,
+                            "origin_weeks": origin,
+                            "rule": rule,
+                            "horizon_weeks": h,
+                            "series": len(part),
+                            "coverage": float(np.mean([s.inside[i] for s in part])),
+                            "median_bias": float(np.median([s.bias[i] for s in part])),
+                        }
+                    )
+    return rows
+
+
+def _band_section(scores: Sequence[BandScore]) -> list[str]:
+    rows = band_rows(scores)
+    lines = [
+        "## The simulated band beyond 13 weeks: R2 against R3",
+        "",
+        "The served simulation run to 52 weeks from the same origins: the error record under the "
+        f"band rule, {BAND_DRAWS} resampled paths around the recursive LSTM forecast, and the "
+        "rule's floor at zero (R2: each week; R3: each month). *Inside* is the share of series "
+        "whose realised cumulative total fell inside the simulated P10-P90 (nominal 0.80); "
+        "*bias* is the median of (simulated median - realised) / (recent level x weeks).",
+        "",
+    ]
+    header = "| rule | " + " | ".join(f"{h} weeks: inside | bias" for h in HORIZONS) + " |"
+    for kind in KINDS:
+        for origin in ORIGINS:
+            part = [r for r in rows if r["kind"] == kind and r["origin_weeks"] == origin]
+            if not part:
+                continue
+            lines += [
+                f"### {'Spending' if kind == 'spend' else 'Income'}, origin at week {origin} "
+                f"({part[0]['series']} series)",
+                "",
+                header,
+                "|---|" + "---|---|" * len(HORIZONS),
+            ]
+            for rule in dict.fromkeys(r["rule"] for r in part):
+                cells = [r for r in part if r["rule"] == rule]
+                lines.append(
+                    f"| {rule} | "
+                    + " | ".join(f"{c['coverage']:.2f} | {c['median_bias']:+.3f}" for c in cells)
+                    + " |"
+                )
+            lines.append("")
+    return lines
 
 
 def collect(
@@ -141,7 +275,10 @@ def summary_rows(records: Sequence[Errors]) -> list[dict]:
 
 
 def render(
-    records: Sequence[Errors], skipped: Mapping[tuple[str, int], int], ids: Sequence[int]
+    records: Sequence[Errors],
+    skipped: Mapping[tuple[str, int], int],
+    ids: Sequence[int],
+    bands: Sequence[BandScore] = (),
 ) -> str:
     rows = summary_rows(records)
     lines = [
@@ -198,6 +335,8 @@ def render(
                 + ".",
                 "",
             ]
+    if bands:
+        lines += _band_section(bands)
     lines += [
         "## Limits",
         "",
@@ -233,8 +372,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     began = time.perf_counter()
     ids = outcome_profiles(args.profiles)
     records, skipped = collect(args.synthetic, ids, {m: served_forecaster(m) for m in MODELS})
-    args.out_report.write_text(render(records, skipped, ids), encoding="utf-8", newline="\n")
+    rules = {"R2": load_band_rule(RULE_V2)}
+    if (RULE_V3_DIR / "band_inflation.json").exists():
+        rules["R3"] = load_band_rule(RULE_V3_DIR / "band_inflation.json")
+    bands = collect_bands(args.synthetic, ids, served_forecaster("lstm"), rules)
+    page = render(records, skipped, ids, bands)
+    args.out_report.write_text(page, encoding="utf-8", newline="\n")
     write_csv(summary_rows(records), args.out_table)
+    write_csv(band_rows(bands), args.out_table.with_name("recursion_band_check.csv"))
     seconds = time.perf_counter() - began
     print(f"wrote {args.out_report}, {args.out_table}: {len(records)} rows, {seconds:.1f} s")  # noqa: T201
 

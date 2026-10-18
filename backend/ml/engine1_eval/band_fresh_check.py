@@ -2,7 +2,7 @@
 
     cd backend && uv run python -m ml.engine1_eval.band_fresh_check
 
-The table in `backend/models/engine1/band_inflation.json` was fitted on 300 development students
+The v2 table (`backend/models/engine1/rules/v2/band_inflation.json`) was fitted on 300 students
 and checked on the 60 held-out Engine 1 test students; one design choice (dropping the
 "never smaller for shorter histories" rule) was made after seeing that held-out check, so those
 60 are no longer an untouched test. This script draws a FRESH group from the same pool as the
@@ -20,13 +20,14 @@ from pathlib import Path
 
 import numpy as np
 
-from app.engines.forecasting.bands import inflation_for
+from app.engines.forecasting.bands import load_band_rule
 from app.engines.forecasting.onnx_model import load_served
 from ml.engine1_eval.band_calibration import (
     BUCKETS,
     COHORT,
     DEV_PROFILES,
     EVAL_POOL,
+    RULE_FILE,
     SEED,
     TARGET,
     Record,
@@ -50,7 +51,8 @@ def fresh_profiles(count: int = FRESH_PROFILES, seed: int = SEED) -> list[int]:
 
 
 def served_factor(record: Record) -> float:
-    return inflation_for(record.weeks, record.kind)
+    """The v2 table's factor (the table this check was run for; engine v3 is in band_v3.md)."""
+    return load_band_rule(RULE_FILE).factor(record.weeks, record.kind)
 
 
 def render(records: Sequence[Record], ids: Sequence[int]) -> str:
@@ -69,7 +71,7 @@ def render(records: Sequence[Record], ids: Sequence[int]) -> str:
             "divisible by ten (never in Engine 2's lockbox, never used by the Engine 1 evaluation),"
             " and none of the 300 development students the table was fitted on. Nothing was "
             "fitted or chosen on them. The table is the one served "
-            "(`backend/models/engine1/band_inflation.json`); *inside P10-P90* should be "
+            "(`backend/models/engine1/rules/v2/band_inflation.json`); *inside P10-P90* should be "
             f"{TARGET:.2f}. Buckets start at {', '.join(str(b) for b in BUCKETS)} weeks.",
             "",
             *header,
