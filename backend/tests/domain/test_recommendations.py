@@ -195,3 +195,15 @@ def test_every_figure_in_every_sentence_comes_from_its_sources():
         for figure in NUMBER.findall(text):
             assert figure in allowed, f"{rec.rule}: {figure!r} is not in its sources ({shown})"
         assert rec.sources or rec.rule == "no_budgets"
+
+
+@pytest.mark.parametrize(
+    ("ratio", "text"),
+    [(0.465, "47%"), (0.464, "46%"), (0.475, "48%"), (0.005, "1%"), (0.0, "0%"), (1.0, "100%")],
+)
+def test_a_percentage_rounds_half_up_like_the_screens_do(ratio, text):
+    # Local run: the forecast's shortfall chance was exactly 0.465. Python's round() takes half to
+    # even ("46%") while the dashboard's Math.round shows "47%", so one page said both.
+    from app.domain.recommendations import _pct
+
+    assert _pct(ratio) == text

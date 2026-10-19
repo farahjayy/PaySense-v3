@@ -7,6 +7,7 @@ can be traced to the tool that produced it (a test checks every number). An acti
 screen or a pre-filled proposal that still needs the person's confirmation (ADR D-48).
 """
 
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -93,7 +94,9 @@ def _month_name(key: str) -> str:
 
 
 def _pct(ratio: float) -> str:
-    return f"{round(ratio * 100)}%"
+    # Half up, as the screens' Math.round does; Python's round() takes half to even, so a chance
+    # of exactly 0.465 read "46%" in an alert beside "47%" on the dashboard card.
+    return f"{math.floor(ratio * 100 + 0.5)}%"
 
 
 def format_source(source: Source) -> str:
