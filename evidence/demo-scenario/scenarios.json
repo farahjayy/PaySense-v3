@@ -1,5 +1,5 @@
 {
- "run_date": "2026-10-18",
+ "run_date": "2026-10-19",
  "results": [
   {
    "persona": "frequent_bnpl",
@@ -7,7 +7,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 60000
    },
@@ -16,22 +16,22 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 6,
-    "probability": 0.939559,
-    "probability_without_purchase": 1.0,
+    "score": 29,
+    "probability": 0.711648,
+    "probability_without_purchase": 0.537,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 9 instalments",
+     "Spread it over 12 instalments",
      "Choose something priced at about RM 300"
     ],
     "suggestion_band": "At Risk",
     "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-     "Even before this purchase, you are about RM 202 short each month.",
-     "You have no savings recorded to fall back on if a month runs short."
+     "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+     "Before this purchase you are left with only about RM 147 each month.",
+     "Each instalment is about RM 200."
     ],
-    "added_probability": 0.0,
+    "added_probability": 0.21,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -42,7 +42,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -58,57 +58,52 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 20000,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 20000,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 20000,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.939559,
+    "probability": 0.711648,
     "band": "At Risk",
-    "score": 6,
-    "simulated_probability": 1.0,
+    "score": 29,
+    "simulated_probability": 0.747,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 1.0,
+    "probability_without_purchase": 0.537,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-      "contribution": 0.6626369387816489
+      "text": "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+      "contribution": 0.07021807093391026
      },
      {
       "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 202 short each month.",
-      "contribution": 0.1635680360263197
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.06209550839368054
+      "text": "Before this purchase you are left with only about RM 147 each month.",
+      "contribution": 0.04848164609425267
      },
      {
       "feature": "instalment_amount",
       "text": "Each instalment is about RM 200.",
-      "contribution": 0.0298484942840529
+      "contribution": 0.04072111053819173
      }
     ],
     "suggestion": {
@@ -117,20 +112,20 @@
      "changes": [
       {
        "kind": "instalments",
-       "label": "Spread it over 9 instalments"
+       "label": "Spread it over 12 instalments"
       },
       {
        "kind": "price",
        "label": "Choose something priced at about RM 300"
       }
      ],
-     "probability": 0.9127172923674378,
+     "probability": 0.5139734288409211,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 9,
+      "purchase_date": "2026-10-19",
+      "num_installments": 12,
       "total_price_sen": 30000,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
@@ -156,22 +151,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -58508,
-      -139649,
-      -163580
+      -23600,
+      -51009,
+      -71085,
+      -126584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -38639,
-      -83695,
-      -114386
+      5521,
+      6977,
+      11440,
+      -28614
      ],
      "cumulative_p90_sen": [
-      26351,
-      -25258,
-      -34501,
-      -68838
+      25396,
+      54100,
+      78150,
+      58052
      ]
     },
     "without_curve": {
@@ -182,33 +177,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -38508,
-      -99649,
-      -103580
+      -23600,
+      -31009,
+      -31085,
+      -66584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -18639,
-      -43695,
-      -54386
+      5521,
+      26977,
+      51440,
+      31386
      ],
      "cumulative_p90_sen": [
-      26351,
-      -5258,
-      5499,
-      -8838
+      25396,
+      74100,
+      118150,
+      118052
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 1.0,
-     "with_probability": 1.0,
-     "added_probability": 0.0,
+     "without_probability": 0.537,
+     "with_probability": 0.747,
+     "added_probability": 0.21,
      "already_at_risk": true,
      "stack": [
       {
@@ -237,7 +232,7 @@
        "by_provider": [],
        "new_plan_sen": 20000,
        "total_sen": 20000,
-       "known_income_sen": 116269
+       "known_income_sen": 45353
       }
      ],
      "exposure": {
@@ -257,18 +252,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 1.0,
+    "without_probability": 0.537,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 1.0,
-      "added_probability": 0.0,
+      "with_probability": 0.747,
+      "without_probability": 0.537,
+      "added_probability": 0.21,
       "qualifies": false,
       "as_typed": true
      }
@@ -283,7 +278,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 65000
    },
@@ -292,22 +287,22 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 5,
-    "probability": 0.94505,
-    "probability_without_purchase": 1.0,
+    "score": 26,
+    "probability": 0.743924,
+    "probability_without_purchase": 0.537,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 9 instalments",
+     "Spread it over 12 instalments",
      "Choose something priced at about RM 325"
     ],
     "suggestion_band": "At Risk",
     "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-     "Even before this purchase, you are about RM 202 short each month.",
-     "You have no savings recorded to fall back on if a month runs short."
+     "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+     "Before this purchase you are left with only about RM 147 each month.",
+     "Each instalment is about RM 217."
     ],
-    "added_probability": 0.0,
+    "added_probability": 0.225,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -318,7 +313,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -334,57 +329,52 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 21666,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 21666,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 21668,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.94505,
+    "probability": 0.743924,
     "band": "At Risk",
-    "score": 5,
-    "simulated_probability": 1.0,
+    "score": 26,
+    "simulated_probability": 0.762,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 1.0,
+    "probability_without_purchase": 0.537,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-      "contribution": 0.670154761600106
+      "text": "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+      "contribution": 0.08024338853679391
      },
      {
       "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 202 short each month.",
-      "contribution": 0.15476181339656936
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.05913627111259535
+      "text": "Before this purchase you are left with only about RM 147 each month.",
+      "contribution": 0.05513179860005328
      },
      {
       "feature": "instalment_amount",
       "text": "Each instalment is about RM 217.",
-      "contribution": 0.03143053948643994
+      "contribution": 0.04879904260598816
      }
     ],
     "suggestion": {
@@ -393,20 +383,20 @@
      "changes": [
       {
        "kind": "instalments",
-       "label": "Spread it over 9 instalments"
+       "label": "Spread it over 12 instalments"
       },
       {
        "kind": "price",
        "label": "Choose something priced at about RM 325"
       }
      ],
-     "probability": 0.9127172923674378,
+     "probability": 0.5145444964443715,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 9,
+      "purchase_date": "2026-10-19",
+      "num_installments": 12,
       "total_price_sen": 32500,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
@@ -432,22 +422,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -60174,
-      -142981,
-      -168580
+      -23600,
+      -52675,
+      -74417,
+      -131584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -40305,
-      -87027,
-      -119386
+      5521,
+      5311,
+      8108,
+      -33614
      ],
      "cumulative_p90_sen": [
-      26351,
-      -26924,
-      -37833,
-      -73838
+      25396,
+      52434,
+      74818,
+      53052
      ]
     },
     "without_curve": {
@@ -458,33 +448,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -38508,
-      -99649,
-      -103580
+      -23600,
+      -31009,
+      -31085,
+      -66584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -18639,
-      -43695,
-      -54386
+      5521,
+      26977,
+      51440,
+      31386
      ],
      "cumulative_p90_sen": [
-      26351,
-      -5258,
-      5499,
-      -8838
+      25396,
+      74100,
+      118150,
+      118052
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 1.0,
-     "with_probability": 1.0,
-     "added_probability": 0.0,
+     "without_probability": 0.537,
+     "with_probability": 0.762,
+     "added_probability": 0.225,
      "already_at_risk": true,
      "stack": [
       {
@@ -513,7 +503,7 @@
        "by_provider": [],
        "new_plan_sen": 21668,
        "total_sen": 21668,
-       "known_income_sen": 116269
+       "known_income_sen": 45353
       }
      ],
      "exposure": {
@@ -533,18 +523,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 1.0,
+    "without_probability": 0.537,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 1.0,
-      "added_probability": 0.0,
+      "with_probability": 0.762,
+      "without_probability": 0.537,
+      "added_probability": 0.225,
       "qualifies": false,
       "as_typed": true
      }
@@ -559,7 +549,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 70000
    },
@@ -568,22 +558,22 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 5,
-    "probability": 0.947917,
-    "probability_without_purchase": 1.0,
+    "score": 23,
+    "probability": 0.768155,
+    "probability_without_purchase": 0.537,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 9 instalments",
+     "Spread it over 12 instalments",
      "Choose something priced at about RM 350"
     ],
     "suggestion_band": "At Risk",
     "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-     "Even before this purchase, you are about RM 202 short each month.",
-     "You have no savings recorded to fall back on if a month runs short."
+     "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+     "Before this purchase you are left with only about RM 147 each month.",
+     "Each instalment is about RM 233."
     ],
-    "added_probability": 0.0,
+    "added_probability": 0.241,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -594,7 +584,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -610,57 +600,52 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 23333,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 23333,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 23334,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.947917,
+    "probability": 0.768155,
     "band": "At Risk",
-    "score": 5,
-    "simulated_probability": 1.0,
+    "score": 23,
+    "simulated_probability": 0.778,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 1.0,
+    "probability_without_purchase": 0.537,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-      "contribution": 0.6726306508173044
+      "text": "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+      "contribution": 0.08771048294409257
      },
      {
       "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 202 short each month.",
-      "contribution": 0.15327204250500287
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.05699976228221568
+      "text": "Before this purchase you are left with only about RM 147 each month.",
+      "contribution": 0.0596726982233586
      },
      {
       "feature": "instalment_amount",
       "text": "Each instalment is about RM 233.",
-      "contribution": 0.03132823110201808
+      "contribution": 0.05377529093399289
      }
     ],
     "suggestion": {
@@ -669,20 +654,20 @@
      "changes": [
       {
        "kind": "instalments",
-       "label": "Spread it over 9 instalments"
+       "label": "Spread it over 12 instalments"
       },
       {
        "kind": "price",
        "label": "Choose something priced at about RM 350"
       }
      ],
-     "probability": 0.9127172923674378,
+     "probability": 0.5151705508378018,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 9,
+      "purchase_date": "2026-10-19",
+      "num_installments": 12,
       "total_price_sen": 35000,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
@@ -708,22 +693,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -61841,
-      -146315,
-      -173580
+      -23600,
+      -54342,
+      -77751,
+      -136584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -41972,
-      -90361,
-      -124386
+      5521,
+      3644,
+      4774,
+      -38614
      ],
      "cumulative_p90_sen": [
-      26351,
-      -28591,
-      -41167,
-      -78838
+      25396,
+      50767,
+      71484,
+      48052
      ]
     },
     "without_curve": {
@@ -734,33 +719,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -38508,
-      -99649,
-      -103580
+      -23600,
+      -31009,
+      -31085,
+      -66584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -18639,
-      -43695,
-      -54386
+      5521,
+      26977,
+      51440,
+      31386
      ],
      "cumulative_p90_sen": [
-      26351,
-      -5258,
-      5499,
-      -8838
+      25396,
+      74100,
+      118150,
+      118052
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 1.0,
-     "with_probability": 1.0,
-     "added_probability": 0.0,
+     "without_probability": 0.537,
+     "with_probability": 0.778,
+     "added_probability": 0.241,
      "already_at_risk": true,
      "stack": [
       {
@@ -789,7 +774,7 @@
        "by_provider": [],
        "new_plan_sen": 23334,
        "total_sen": 23334,
-       "known_income_sen": 116269
+       "known_income_sen": 45353
       }
      ],
      "exposure": {
@@ -809,18 +794,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 1.0,
+    "without_probability": 0.537,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 1.0,
-      "added_probability": 0.0,
+      "with_probability": 0.778,
+      "without_probability": 0.537,
+      "added_probability": 0.241,
       "qualifies": false,
       "as_typed": true
      }
@@ -835,7 +820,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 75000
    },
@@ -844,22 +829,22 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 5,
-    "probability": 0.950686,
-    "probability_without_purchase": 1.0,
+    "score": 21,
+    "probability": 0.786304,
+    "probability_without_purchase": 0.537,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 9 instalments",
+     "Spread it over 12 instalments",
      "Choose something priced at about RM 375"
     ],
     "suggestion_band": "At Risk",
     "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-     "Even before this purchase, you are about RM 202 short each month.",
-     "You have no savings recorded to fall back on if a month runs short."
+     "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+     "Before this purchase you are left with only about RM 147 each month.",
+     "Each instalment is about RM 250."
     ],
-    "added_probability": 0.0,
+    "added_probability": 0.258,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -870,7 +855,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -886,57 +871,52 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 25000,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 25000,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 25000,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.950686,
+    "probability": 0.786304,
     "band": "At Risk",
-    "score": 5,
-    "simulated_probability": 1.0,
+    "score": 21,
+    "simulated_probability": 0.795,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 1.0,
+    "probability_without_purchase": 0.537,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-      "contribution": 0.6776420677637957
+      "text": "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+      "contribution": 0.09264414081882834
      },
      {
       "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 202 short each month.",
-      "contribution": 0.14748075573161332
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.055240924877872466
+      "text": "Before this purchase you are left with only about RM 147 each month.",
+      "contribution": 0.06360568254487158
      },
      {
       "feature": "instalment_amount",
       "text": "Each instalment is about RM 250.",
-      "contribution": 0.034218107413110654
+      "contribution": 0.056886552748374924
      }
     ],
     "suggestion": {
@@ -945,20 +925,20 @@
      "changes": [
       {
        "kind": "instalments",
-       "label": "Spread it over 9 instalments"
+       "label": "Spread it over 12 instalments"
       },
       {
        "kind": "price",
        "label": "Choose something priced at about RM 375"
       }
      ],
-     "probability": 0.9143761639201474,
+     "probability": 0.5166328016794487,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 9,
+      "purchase_date": "2026-10-19",
+      "num_installments": 12,
       "total_price_sen": 37500,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
@@ -984,22 +964,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -63508,
-      -149649,
-      -178580
+      -23600,
+      -56009,
+      -81085,
+      -141584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -43639,
-      -93695,
-      -129386
+      5521,
+      1977,
+      1440,
+      -43614
      ],
      "cumulative_p90_sen": [
-      26351,
-      -30258,
-      -44501,
-      -83838
+      25396,
+      49100,
+      68150,
+      43052
      ]
     },
     "without_curve": {
@@ -1010,33 +990,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -38508,
-      -99649,
-      -103580
+      -23600,
+      -31009,
+      -31085,
+      -66584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -18639,
-      -43695,
-      -54386
+      5521,
+      26977,
+      51440,
+      31386
      ],
      "cumulative_p90_sen": [
-      26351,
-      -5258,
-      5499,
-      -8838
+      25396,
+      74100,
+      118150,
+      118052
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 1.0,
-     "with_probability": 1.0,
-     "added_probability": 0.0,
+     "without_probability": 0.537,
+     "with_probability": 0.795,
+     "added_probability": 0.258,
      "already_at_risk": true,
      "stack": [
       {
@@ -1065,7 +1045,7 @@
        "by_provider": [],
        "new_plan_sen": 25000,
        "total_sen": 25000,
-       "known_income_sen": 116269
+       "known_income_sen": 45353
       }
      ],
      "exposure": {
@@ -1085,18 +1065,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 1.0,
+    "without_probability": 0.537,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 1.0,
-      "added_probability": 0.0,
+      "with_probability": 0.795,
+      "without_probability": 0.537,
+      "added_probability": 0.258,
       "qualifies": false,
       "as_typed": true
      }
@@ -1111,7 +1091,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 79900
    },
@@ -1120,22 +1100,22 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 5,
-    "probability": 0.952017,
-    "probability_without_purchase": 1.0,
+    "score": 20,
+    "probability": 0.801438,
+    "probability_without_purchase": 0.537,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 9 instalments",
+     "Spread it over 12 instalments",
      "Choose something priced at about RM 400"
     ],
     "suggestion_band": "At Risk",
     "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-     "Even before this purchase, you are about RM 202 short each month.",
-     "You have no savings recorded to fall back on if a month runs short."
+     "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+     "Before this purchase you are left with only about RM 147 each month.",
+     "Each instalment is about RM 266."
     ],
-    "added_probability": 0.0,
+    "added_probability": 0.272,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -1146,7 +1126,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -1162,57 +1142,52 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 26634,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.952017,
+    "probability": 0.801438,
     "band": "At Risk",
-    "score": 5,
-    "simulated_probability": 1.0,
+    "score": 20,
+    "simulated_probability": 0.809,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 1.0,
+    "probability_without_purchase": 0.537,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 1,036 before this purchase.",
-      "contribution": 0.6801303377325205
+      "text": "In a bad run of months your running margin could fall to about -RM 666 before this purchase.",
+      "contribution": 0.09748835851302627
      },
      {
       "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 202 short each month.",
-      "contribution": 0.14585479329871662
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.05465780209654355
+      "text": "Before this purchase you are left with only about RM 147 each month.",
+      "contribution": 0.06674104506590149
      },
      {
       "feature": "instalment_amount",
       "text": "Each instalment is about RM 266.",
-      "contribution": 0.03293065389676463
+      "contribution": 0.059874677495777996
      }
     ],
     "suggestion": {
@@ -1221,20 +1196,20 @@
      "changes": [
       {
        "kind": "instalments",
-       "label": "Spread it over 9 instalments"
+       "label": "Spread it over 12 instalments"
       },
       {
        "kind": "price",
        "label": "Choose something priced at about RM 400"
       }
      ],
-     "probability": 0.9143761639201474,
+     "probability": 0.5166328016794487,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 9,
+      "purchase_date": "2026-10-19",
+      "num_installments": 12,
       "total_price_sen": 39950,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
@@ -1260,22 +1235,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -65141,
-      -152915,
-      -183480
+      -23600,
+      -57642,
+      -84351,
+      -146484
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -45272,
-      -96961,
-      -134286
+      5521,
+      344,
+      -1826,
+      -48514
      ],
      "cumulative_p90_sen": [
-      26351,
-      -31891,
-      -47767,
-      -88738
+      25396,
+      47467,
+      64884,
+      38152
      ]
     },
     "without_curve": {
@@ -1286,33 +1261,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -48238,
-      -38508,
-      -99649,
-      -103580
+      -23600,
+      -31009,
+      -31085,
+      -66584
      ],
      "cumulative_p50_sen": [
-      -25975,
-      -18639,
-      -43695,
-      -54386
+      5521,
+      26977,
+      51440,
+      31386
      ],
      "cumulative_p90_sen": [
-      26351,
-      -5258,
-      5499,
-      -8838
+      25396,
+      74100,
+      118150,
+      118052
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 1.0,
-     "with_probability": 1.0,
-     "added_probability": 0.0,
+     "without_probability": 0.537,
+     "with_probability": 0.809,
+     "added_probability": 0.272,
      "already_at_risk": true,
      "stack": [
       {
@@ -1341,7 +1316,7 @@
        "by_provider": [],
        "new_plan_sen": 26634,
        "total_sen": 26634,
-       "known_income_sen": 116269
+       "known_income_sen": 45353
       }
      ],
      "exposure": {
@@ -1361,18 +1336,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 1.0,
+    "without_probability": 0.537,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 1.0,
-      "added_probability": 0.0,
+      "with_probability": 0.809,
+      "without_probability": 0.537,
+      "added_probability": 0.272,
       "qualifies": false,
       "as_typed": true
      }
@@ -1387,7 +1362,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Headphones",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 3000
    },
@@ -1396,22 +1371,17 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 20,
-    "probability": 0.798966,
-    "probability_without_purchase": 0.78,
+    "score": 16,
+    "probability": 0.843091,
+    "probability_without_purchase": 0.837,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Buy it on 22 October 2026, after your next income",
-     "Choose something priced at about RM 15"
+     "Buy it on 22 October 2026, after your next income"
     ],
     "suggestion_band": "At Risk",
-    "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 671 before this purchase.",
-     "Even before this purchase, you are about RM 29 short each month.",
-     "You have no savings recorded to fall back on if a month runs short."
-    ],
-    "added_probability": 0.0,
+    "top_factors": [],
+    "added_probability": 0.036,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -1422,7 +1392,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 1,
+    "stale_days": 2,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -1438,59 +1408,38 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 1000,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 1000,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 1000,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.798966,
+    "probability": 0.843091,
     "band": "At Risk",
-    "score": 20,
-    "simulated_probability": 0.78,
+    "score": 16,
+    "simulated_probability": 0.873,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.78,
-    "factors": [
-     {
-      "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 671 before this purchase.",
-      "contribution": 0.5107876693429705
-     },
-     {
-      "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 29 short each month.",
-      "contribution": 0.17928597880328362
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.09784913310216593
-     },
-     {
-      "feature": "income_p10_monthly",
-      "text": "In a weak month your income could be as low as about RM 504.",
-      "contribution": 0.027220810740804766
-     }
-    ],
+    "probability_without_purchase": 0.837,
+    "factors": [],
     "suggestion": {
      "status": "none_found",
      "basis": "simulation",
@@ -1498,20 +1447,16 @@
       {
        "kind": "wait",
        "label": "Buy it on 22 October 2026, after your next income"
-      },
-      {
-       "kind": "price",
-       "label": "Choose something priced at about RM 15"
       }
      ],
-     "probability": 0.666,
+     "probability": 0.408,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Headphones",
       "purchase_date": "2026-10-22",
       "num_installments": 3,
-      "total_price_sen": 1500,
+      "total_price_sen": 3000,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
       "provider_label": null,
@@ -1536,22 +1481,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -39343,
-      -42816,
-      -43924,
-      -70053
+      -7587,
+      -11612,
+      -19971,
+      -62364
      ],
      "cumulative_p50_sen": [
-      -5487,
-      24204,
-      -738,
-      -45610
+      6268,
+      10699,
+      14612,
+      -23993
      ],
      "cumulative_p90_sen": [
-      3525,
-      30894,
-      39979,
-      27237
+      13513,
+      25823,
+      35966,
+      2673
      ]
     },
     "without_curve": {
@@ -1562,33 +1507,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -39343,
-      -41816,
-      -41924,
-      -67053
+      -7587,
+      -10612,
+      -17971,
+      -59364
      ],
      "cumulative_p50_sen": [
-      -5487,
-      25204,
-      1262,
-      -42610
+      6268,
+      11699,
+      16612,
+      -20993
      ],
      "cumulative_p90_sen": [
-      3525,
-      31894,
-      41979,
-      30237
+      13513,
+      26823,
+      37966,
+      5673
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 0.78,
-     "with_probability": 0.78,
-     "added_probability": 0.0,
+     "without_probability": 0.837,
+     "with_probability": 0.873,
+     "added_probability": 0.036,
      "already_at_risk": true,
      "stack": [
       {
@@ -1637,18 +1582,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 0.78,
+    "without_probability": 0.837,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 0.78,
-      "without_probability": 0.78,
-      "added_probability": 0.0,
+      "with_probability": 0.873,
+      "without_probability": 0.837,
+      "added_probability": 0.036,
       "qualifies": false,
       "as_typed": true
      }
@@ -1663,7 +1608,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Headphones",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 6000
    },
@@ -1672,22 +1617,18 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 20,
-    "probability": 0.801214,
-    "probability_without_purchase": 0.78,
+    "score": 15,
+    "probability": 0.84504,
+    "probability_without_purchase": 0.837,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 12 instalments",
-     "Choose something priced at about RM 45"
+     "Buy it on 22 October 2026, after your next income",
+     "Choose something priced at about RM 30"
     ],
     "suggestion_band": "At Risk",
-    "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 671 before this purchase.",
-     "Even before this purchase, you are about RM 29 short each month.",
-     "You have no savings recorded to fall back on if a month runs short."
-    ],
-    "added_probability": 0.0,
+    "top_factors": [],
+    "added_probability": 0.066,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -1698,7 +1639,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 1,
+    "stale_days": 2,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -1714,80 +1655,59 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 2000,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 2000,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 2000,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.801214,
+    "probability": 0.84504,
     "band": "At Risk",
-    "score": 20,
-    "simulated_probability": 0.78,
+    "score": 15,
+    "simulated_probability": 0.903,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.78,
-    "factors": [
-     {
-      "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 671 before this purchase.",
-      "contribution": 0.5129962036320219
-     },
-     {
-      "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 29 short each month.",
-      "contribution": 0.17728687390860087
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.09818588349897522
-     },
-     {
-      "feature": "income_p10_monthly",
-      "text": "In a weak month your income could be as low as about RM 504.",
-      "contribution": 0.027496397217711833
-     }
-    ],
+    "probability_without_purchase": 0.837,
+    "factors": [],
     "suggestion": {
      "status": "none_found",
-     "basis": "model",
+     "basis": "simulation",
      "changes": [
       {
-       "kind": "instalments",
-       "label": "Spread it over 12 instalments"
+       "kind": "wait",
+       "label": "Buy it on 22 October 2026, after your next income"
       },
       {
        "kind": "price",
-       "label": "Choose something priced at about RM 45"
+       "label": "Choose something priced at about RM 30"
       }
      ],
-     "probability": 0.7521706212146212,
+     "probability": 0.408,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Headphones",
-      "purchase_date": "2026-10-18",
-      "num_installments": 12,
-      "total_price_sen": 4500,
+      "purchase_date": "2026-10-22",
+      "num_installments": 3,
+      "total_price_sen": 3000,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
       "provider_label": null,
@@ -1812,22 +1732,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -39343,
-      -43816,
-      -45924,
-      -73053
+      -7587,
+      -12612,
+      -21971,
+      -65364
      ],
      "cumulative_p50_sen": [
-      -5487,
-      23204,
-      -2738,
-      -48610
+      6268,
+      9699,
+      12612,
+      -26993
      ],
      "cumulative_p90_sen": [
-      3525,
-      29894,
-      37979,
-      24237
+      13513,
+      24823,
+      33966,
+      -327
      ]
     },
     "without_curve": {
@@ -1838,33 +1758,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -39343,
-      -41816,
-      -41924,
-      -67053
+      -7587,
+      -10612,
+      -17971,
+      -59364
      ],
      "cumulative_p50_sen": [
-      -5487,
-      25204,
-      1262,
-      -42610
+      6268,
+      11699,
+      16612,
+      -20993
      ],
      "cumulative_p90_sen": [
-      3525,
-      31894,
-      41979,
-      30237
+      13513,
+      26823,
+      37966,
+      5673
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 0.78,
-     "with_probability": 0.78,
-     "added_probability": 0.0,
+     "without_probability": 0.837,
+     "with_probability": 0.903,
+     "added_probability": 0.066,
      "already_at_risk": true,
      "stack": [
       {
@@ -1913,18 +1833,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 0.78,
+    "without_probability": 0.837,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 0.78,
-      "without_probability": 0.78,
-      "added_probability": 0.0,
+      "with_probability": 0.903,
+      "without_probability": 0.837,
+      "added_probability": 0.066,
       "qualifies": false,
       "as_typed": true
      }
@@ -1939,7 +1859,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Headphones",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 12000
    },
@@ -1948,22 +1868,18 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 19,
-    "probability": 0.812059,
-    "probability_without_purchase": 0.78,
+    "score": 14,
+    "probability": 0.858025,
+    "probability_without_purchase": 0.837,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 4 instalments",
-     "Buy it on 22 October 2026, after your next income"
+     "Buy it on 22 October 2026, after your next income",
+     "Choose something priced at about RM 60"
     ],
     "suggestion_band": "At Risk",
-    "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 671 before this purchase.",
-     "Even before this purchase, you are about RM 29 short each month.",
-     "You have no savings recorded to fall back on if a month runs short."
-    ],
-    "added_probability": 0.0,
+    "top_factors": [],
+    "added_probability": 0.116,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -1974,7 +1890,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 1,
+    "stale_days": 2,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -1990,80 +1906,59 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 4000,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 4000,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 4000,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.812059,
+    "probability": 0.858025,
     "band": "At Risk",
-    "score": 19,
-    "simulated_probability": 0.78,
+    "score": 14,
+    "simulated_probability": 0.953,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.78,
-    "factors": [
-     {
-      "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 671 before this purchase.",
-      "contribution": 0.5178217343210286
-     },
-     {
-      "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 29 short each month.",
-      "contribution": 0.17902194019056125
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.0977604348981094
-     },
-     {
-      "feature": "income_p10_monthly",
-      "text": "In a weak month your income could be as low as about RM 504.",
-      "contribution": 0.027236505503699354
-     }
-    ],
+    "probability_without_purchase": 0.837,
+    "factors": [],
     "suggestion": {
      "status": "none_found",
      "basis": "simulation",
      "changes": [
       {
-       "kind": "instalments",
-       "label": "Spread it over 4 instalments"
-      },
-      {
        "kind": "wait",
        "label": "Buy it on 22 October 2026, after your next income"
+      },
+      {
+       "kind": "price",
+       "label": "Choose something priced at about RM 60"
       }
      ],
-     "probability": 0.764,
+     "probability": 0.418,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Headphones",
       "purchase_date": "2026-10-22",
-      "num_installments": 4,
-      "total_price_sen": 12000,
+      "num_installments": 3,
+      "total_price_sen": 6000,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
       "provider_label": null,
@@ -2088,22 +1983,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -39343,
-      -45816,
-      -49924,
-      -79053
+      -7587,
+      -14612,
+      -25971,
+      -71364
      ],
      "cumulative_p50_sen": [
-      -5487,
-      21204,
-      -6738,
-      -54610
+      6268,
+      7699,
+      8612,
+      -32993
      ],
      "cumulative_p90_sen": [
-      3525,
-      27894,
-      33979,
-      18237
+      13513,
+      22823,
+      29966,
+      -6327
      ]
     },
     "without_curve": {
@@ -2114,33 +2009,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -39343,
-      -41816,
-      -41924,
-      -67053
+      -7587,
+      -10612,
+      -17971,
+      -59364
      ],
      "cumulative_p50_sen": [
-      -5487,
-      25204,
-      1262,
-      -42610
+      6268,
+      11699,
+      16612,
+      -20993
      ],
      "cumulative_p90_sen": [
-      3525,
-      31894,
-      41979,
-      30237
+      13513,
+      26823,
+      37966,
+      5673
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 0.78,
-     "with_probability": 0.78,
-     "added_probability": 0.0,
+     "without_probability": 0.837,
+     "with_probability": 0.953,
+     "added_probability": 0.116,
      "already_at_risk": true,
      "stack": [
       {
@@ -2189,18 +2084,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 0.78,
+    "without_probability": 0.837,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 0.78,
-      "without_probability": 0.78,
-      "added_probability": 0.0,
+      "with_probability": 0.953,
+      "without_probability": 0.837,
+      "added_probability": 0.116,
       "qualifies": false,
       "as_typed": true
      }
@@ -2215,7 +2110,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 79900
    },
@@ -2224,9 +2119,9 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 34,
-    "probability": 0.664496,
-    "probability_without_purchase": 0.429,
+    "score": 15,
+    "probability": 0.845832,
+    "probability_without_purchase": 0.714,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
@@ -2235,11 +2130,11 @@
     ],
     "suggestion_band": "At Risk",
     "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 332 before this purchase.",
-     "You have no savings recorded to fall back on if a month runs short.",
-     "Each instalment is about RM 266."
+     "In a bad run of months your running margin could fall to about -RM 253 before this purchase.",
+     "Each instalment is about RM 266.",
+     "Before this purchase you are left with only about RM 227 each month."
     ],
-    "added_probability": 0.056,
+    "added_probability": 0.115,
     "already_at_risk": true,
     "providers_after": [
      "SPayLater"
@@ -2250,7 +2145,7 @@
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -2266,62 +2161,52 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 26634,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.664496,
+    "probability": 0.845832,
     "band": "At Risk",
-    "score": 34,
-    "simulated_probability": 0.485,
+    "score": 15,
+    "simulated_probability": 0.829,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.429,
+    "probability_without_purchase": 0.714,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 332 before this purchase.",
-      "contribution": 0.3902301797650699
-     },
-     {
-      "feature": "savings_buffer_to_income",
-      "text": "You have no savings recorded to fall back on if a month runs short.",
-      "contribution": 0.09092035805210126
+      "text": "In a bad run of months your running margin could fall to about -RM 253 before this purchase.",
+      "contribution": 0.04813069831676373
      },
      {
       "feature": "instalment_amount",
       "text": "Each instalment is about RM 266.",
-      "contribution": 0.07672238247827043
-     },
-     {
-      "feature": "income_p10_monthly",
-      "text": "In a weak month your income could be as low as about RM 566.",
-      "contribution": 0.03828955064774174
+      "contribution": 0.030577322338600835
      },
      {
       "feature": "margin_monthly_p50_without",
-      "text": "Before this purchase you are left with only about RM 368 each month.",
-      "contribution": 0.03126274175464671
+      "text": "Before this purchase you are left with only about RM 227 each month.",
+      "contribution": 0.028989378373123396
      }
     ],
     "suggestion": {
@@ -2337,12 +2222,12 @@
        "label": "Choose something priced at about RM 400"
       }
      ],
-     "probability": 0.3568360454735562,
+     "probability": 0.7202728342818916,
      "band": "At Risk",
      "request": {
       "provider": "spaylater",
       "item_name": "Phone",
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 9,
       "total_price_sen": 39950,
       "monthly_fee_rate_pct": 0.0,
@@ -2369,22 +2254,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -33187,
-      -39387,
-      -41886,
-      -29882
+      -25280,
+      -44583,
+      -53091,
+      -69875
      ],
      "cumulative_p50_sen": [
-      4449,
-      30615,
-      26621,
-      63676
+      -6511,
+      -9786,
+      394,
+      3081
      ],
      "cumulative_p90_sen": [
-      54454,
-      85271,
-      116520,
-      135848
+      19389,
+      55246,
+      89819,
+      109172
      ]
     },
     "without_curve": {
@@ -2395,33 +2280,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      -33187,
-      -12754,
-      11380,
-      50018
+      -25280,
+      -17950,
+      175,
+      10025
      ],
      "cumulative_p50_sen": [
-      4449,
-      57248,
-      79887,
-      143576
+      -6511,
+      16847,
+      53660,
+      82981
      ],
      "cumulative_p90_sen": [
-      54454,
-      111904,
-      169786,
-      215748
+      19389,
+      81879,
+      143085,
+      189072
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 0.429,
-     "with_probability": 0.485,
-     "added_probability": 0.056,
+     "without_probability": 0.714,
+     "with_probability": 0.829,
+     "added_probability": 0.115,
      "already_at_risk": true,
      "stack": [
       {
@@ -2450,7 +2335,7 @@
        "by_provider": [],
        "new_plan_sen": 26634,
        "total_sen": 26634,
-       "known_income_sen": 24076
+       "known_income_sen": 0
       }
      ],
      "exposure": {
@@ -2470,18 +2355,18 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 0.429,
+    "without_probability": 0.714,
     "already_at_risk": true,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 0.485,
-      "without_probability": 0.429,
-      "added_probability": 0.056,
+      "with_probability": 0.829,
+      "without_probability": 0.714,
+      "added_probability": 0.115,
       "qualifies": false,
       "as_typed": true
      }
@@ -2496,7 +2381,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 79900
    },
@@ -2505,309 +2390,33 @@
    "summary": {
     "status": "ok",
     "band": "At Risk",
-    "score": 15,
-    "probability": 0.846828,
-    "probability_without_purchase": 0.786,
+    "score": 40,
+    "probability": 0.598311,
+    "probability_without_purchase": 0.155,
     "simulated_band": "At Risk",
     "suggestion_status": "none_found",
     "suggestion_changes": [
-     "Spread it over 4 instalments",
-     "Choose something priced at about RM 400"
-    ],
-    "suggestion_band": "At Risk",
-    "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 536 before this purchase.",
-     "Even before this purchase, you are about RM 202 short each month.",
-     "Each instalment is about RM 266."
-    ],
-    "added_probability": 0.214,
-    "already_at_risk": true,
-    "providers_after": [
-     "SPayLater"
-    ],
-    "timing": "already At Risk without it"
-   },
-   "response": {
-    "status": "ok",
-    "lock_reason": null,
-    "months_of_history": 6,
-    "stale_days": 7,
-    "unmatched_items": [],
-    "suspect_months": [],
-    "plan": {
-     "provider": "spaylater",
-     "provider_label": "SPayLater",
-     "schedule_source": "provider_rule",
-     "total_price_sen": 79900,
-     "financed_sen": 79900,
-     "upfront_sen": 0,
-     "total_payable_sen": 79900,
-     "fee_sen": 0,
-     "total_cost_sen": 79900,
-     "cash_at_purchase_sen": 0,
-     "monthly_fee_rate_pct": 0.0,
-     "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
-     "limit_known": false,
-     "remaining_limit_sen": null,
-     "installments": [
-      {
-       "seq": 1,
-       "due_date": "2026-11-18",
-       "amount_sen": 26633,
-       "paid_at_checkout": false
-      },
-      {
-       "seq": 2,
-       "due_date": "2026-12-18",
-       "amount_sen": 26633,
-       "paid_at_checkout": false
-      },
-      {
-       "seq": 3,
-       "due_date": "2027-01-18",
-       "amount_sen": 26634,
-       "paid_at_checkout": false
-      }
-     ]
-    },
-    "probability": 0.846828,
-    "band": "At Risk",
-    "score": 15,
-    "simulated_probability": 1.0,
-    "simulated_band": "At Risk",
-    "probability_without_purchase": 0.786,
-    "factors": [
-     {
-      "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 536 before this purchase.",
-      "contribution": 0.5170076716826765
-     },
-     {
-      "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 202 short each month.",
-      "contribution": 0.18482666677004322
-     },
-     {
-      "feature": "instalment_amount",
-      "text": "Each instalment is about RM 266.",
-      "contribution": 0.07749883882492209
-     },
-     {
-      "feature": "bnpl_outstanding_to_income",
-      "text": "You would owe about 0.7 months of your income across BNPL plans.",
-      "contribution": 0.02282522505407945
-     }
-    ],
-    "suggestion": {
-     "status": "none_found",
-     "basis": "model",
-     "changes": [
-      {
-       "kind": "instalments",
-       "label": "Spread it over 4 instalments"
-      },
-      {
-       "kind": "price",
-       "label": "Choose something priced at about RM 400"
-      }
-     ],
-     "probability": 0.6831164842431788,
-     "band": "At Risk",
-     "request": {
-      "provider": "spaylater",
-      "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 4,
-      "total_price_sen": 39950,
-      "monthly_fee_rate_pct": 0.0,
-      "first_payment_date": null,
-      "provider_label": null,
-      "instalment_sen": null,
-      "total_payable_sen": null
-     },
-     "evaluated": 27
-    },
-    "repayment": {
-     "level": "none",
-     "overdue_count": 0,
-     "overdue_sen": 0,
-     "late_paid_count": 0,
-     "longest_miss_run": 0,
-     "reason": "No overdue instalments, and none paid late in the last six months."
-    },
-    "with_plan_curve": {
-     "months": [
-      "2026-10",
-      "2026-11",
-      "2026-12",
-      "2027-01"
-     ],
-     "cumulative_p10_sen": [
-      1762,
-      -15141,
-      -102915,
-      -133480
-     ],
-     "cumulative_p50_sen": [
-      24025,
-      4728,
-      -46961,
-      -84286
-     ],
-     "cumulative_p90_sen": [
-      76351,
-      18109,
-      2233,
-      -38738
-     ]
-    },
-    "without_curve": {
-     "months": [
-      "2026-10",
-      "2026-11",
-      "2026-12",
-      "2027-01"
-     ],
-     "cumulative_p10_sen": [
-      1762,
-      11492,
-      -49649,
-      -53580
-     ],
-     "cumulative_p50_sen": [
-      24025,
-      31361,
-      6305,
-      -4386
-     ],
-     "cumulative_p90_sen": [
-      76351,
-      44742,
-      55499,
-      41162
-     ]
-    },
-    "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
-    },
-    "check_id": null,
-    "second_opinion": {
-     "without_probability": 0.786,
-     "with_probability": 1.0,
-     "added_probability": 0.214,
-     "already_at_risk": true,
-     "stack": [
-      {
-       "month": "2026-10",
-       "by_provider": [],
-       "new_plan_sen": 0,
-       "total_sen": 0,
-       "known_income_sen": 116269
-      },
-      {
-       "month": "2026-11",
-       "by_provider": [],
-       "new_plan_sen": 26633,
-       "total_sen": 26633,
-       "known_income_sen": 116269
-      },
-      {
-       "month": "2026-12",
-       "by_provider": [],
-       "new_plan_sen": 26633,
-       "total_sen": 26633,
-       "known_income_sen": 116269
-      },
-      {
-       "month": "2027-01",
-       "by_provider": [],
-       "new_plan_sen": 26634,
-       "total_sen": 26634,
-       "known_income_sen": 116269
-      }
-     ],
-     "exposure": {
-      "unpaid_before_sen": 0,
-      "unpaid_after_sen": 79900,
-      "providers_before": [],
-      "providers_after": [
-       "SPayLater"
-      ],
-      "plans_before": 0,
-      "plans_after": 1,
-      "recorded_limits_sen": null,
-      "reaches_bnm_line": null,
-      "bnm_line_sen": 150000
-     }
-    }
-   },
-   "schedule": {
-    "status": "ok",
-    "without_probability": 0.786,
-    "already_at_risk": true,
-    "added_max": 0.05,
-    "at_risk_edge": 0.3,
-    "options": [
-     {
-      "purchase_date": "2026-10-18",
-      "num_installments": 3,
-      "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 0.786,
-      "added_probability": 0.214,
-      "qualifies": false,
-      "as_typed": true
-     }
-    ],
-    "chosen_index": null,
-    "chosen": null
-   }
-  },
-  {
-   "persona": "frequent_bnpl",
-   "label": "Phone RM799, SPayLater, 3 months, savings buffer RM1,000 entered",
-   "request": {
-    "provider": "spaylater",
-    "item_name": "Phone",
-    "purchase_date": "2026-10-18",
-    "num_installments": 3,
-    "total_price_sen": 79900
-   },
-   "buffer_sen": 100000,
-   "http_status": 200,
-   "summary": {
-    "status": "ok",
-    "band": "At Risk",
-    "score": 47,
-    "probability": 0.530426,
-    "probability_without_purchase": 0.114,
-    "simulated_band": "At Risk",
-    "suggestion_status": "none_found",
-    "suggestion_changes": [
-     "Spread it over 4 instalments",
+     "Spread it over 12 instalments",
      "Choose something priced at about RM 400"
     ],
     "suggestion_band": "Caution",
     "top_factors": [
-     "In a bad run of months your running margin could fall to about -RM 36 before this purchase.",
-     "Even before this purchase, you are about RM 202 short each month.",
+     "In a bad run of months your running margin could fall to about -RM 166 before this purchase.",
+     "Before this purchase you are left with only about RM 147 each month.",
      "Each instalment is about RM 266."
     ],
-    "added_probability": 0.783,
+    "added_probability": 0.34,
     "already_at_risk": false,
     "providers_after": [
      "SPayLater"
     ],
-    "timing": "none of 18 qualifies"
+    "timing": "2026-11-19, 12 instalments (+0.039)"
    },
    "response": {
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -2823,62 +2432,62 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 26634,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.530426,
+    "probability": 0.598311,
     "band": "At Risk",
-    "score": 47,
-    "simulated_probability": 0.897,
+    "score": 40,
+    "simulated_probability": 0.495,
     "simulated_band": "At Risk",
-    "probability_without_purchase": 0.114,
+    "probability_without_purchase": 0.155,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about -RM 36 before this purchase.",
-      "contribution": 0.2689633676298641
+      "text": "In a bad run of months your running margin could fall to about -RM 166 before this purchase.",
+      "contribution": 0.1573282456224814
      },
      {
       "feature": "margin_monthly_p50_without",
-      "text": "Even before this purchase, you are about RM 202 short each month.",
-      "contribution": 0.1356188536854848
+      "text": "Before this purchase you are left with only about RM 147 each month.",
+      "contribution": 0.113122378715116
      },
      {
       "feature": "instalment_amount",
       "text": "Each instalment is about RM 266.",
-      "contribution": 0.09073453013550845
+      "contribution": 0.10508664696303928
+     },
+     {
+      "feature": "instalment_to_income",
+      "text": "Each instalment is about 16% of your monthly income.",
+      "contribution": 0.035815010254497966
      },
      {
       "feature": "bnpl_outstanding_to_income",
-      "text": "You would owe about 0.7 months of your income across BNPL plans.",
-      "contribution": 0.026815532245789763
-     },
-     {
-      "feature": "disc_weekly_p50",
-      "text": "Your everyday spending is about RM 119 a week.",
-      "contribution": 0.020612459266004003
+      "text": "You would owe about 0.5 months of your income across BNPL plans.",
+      "contribution": 0.028593880146110143
      }
     ],
     "suggestion": {
@@ -2887,20 +2496,20 @@
      "changes": [
       {
        "kind": "instalments",
-       "label": "Spread it over 4 instalments"
+       "label": "Spread it over 12 instalments"
       },
       {
        "kind": "price",
        "label": "Choose something priced at about RM 400"
       }
      ],
-     "probability": 0.24851547960419976,
+     "probability": 0.15211556202664472,
      "band": "Caution",
      "request": {
       "provider": "spaylater",
       "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 4,
+      "purchase_date": "2026-10-19",
+      "num_installments": 12,
       "total_price_sen": 39950,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
@@ -2926,22 +2535,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      51762,
-      34859,
-      -52915,
-      -83480
+      26400,
+      -7642,
+      -34351,
+      -96484
      ],
      "cumulative_p50_sen": [
-      74025,
-      54728,
-      3039,
-      -34286
+      55521,
+      50344,
+      48174,
+      1486
      ],
      "cumulative_p90_sen": [
-      126351,
-      68109,
-      52233,
-      11262
+      75396,
+      97467,
+      114884,
+      88152
      ]
     },
     "without_curve": {
@@ -2952,33 +2561,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      51762,
-      61492,
-      351,
-      -3580
+      26400,
+      18991,
+      18915,
+      -16584
      ],
      "cumulative_p50_sen": [
-      74025,
-      81361,
-      56305,
-      45614
+      55521,
+      76977,
+      101440,
+      81386
      ],
      "cumulative_p90_sen": [
-      126351,
-      94742,
-      105499,
-      91162
+      75396,
+      124100,
+      168150,
+      168052
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 0.114,
-     "with_probability": 0.897,
-     "added_probability": 0.783,
+     "without_probability": 0.155,
+     "with_probability": 0.495,
+     "added_probability": 0.34,
      "already_at_risk": false,
      "stack": [
       {
@@ -3007,7 +2616,7 @@
        "by_provider": [],
        "new_plan_sen": 26634,
        "total_sen": 26634,
-       "known_income_sen": 116269
+       "known_income_sen": 45353
       }
      ],
      "exposure": {
@@ -3027,231 +2636,246 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 0.114,
+    "without_probability": 0.155,
     "already_at_risk": false,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 0.897,
-      "without_probability": 0.114,
-      "added_probability": 0.783,
+      "with_probability": 0.495,
+      "without_probability": 0.155,
+      "added_probability": 0.34,
       "qualifies": false,
       "as_typed": true
      },
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 2,
       "first_payment_date": null,
-      "with_probability": 0.786,
-      "without_probability": 0.0,
-      "added_probability": 0.786,
+      "with_probability": 0.366,
+      "without_probability": 0.094,
+      "added_probability": 0.272,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 4,
       "first_payment_date": null,
-      "with_probability": 0.855,
-      "without_probability": 0.12,
-      "added_probability": 0.735,
+      "with_probability": 0.396,
+      "without_probability": 0.143,
+      "added_probability": 0.253,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 6,
       "first_payment_date": null,
-      "with_probability": 0.993,
-      "without_probability": 0.351,
-      "added_probability": 0.642,
+      "with_probability": 0.291,
+      "without_probability": 0.155,
+      "added_probability": 0.136,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 9,
       "first_payment_date": null,
-      "with_probability": 0.993,
-      "without_probability": 0.563,
-      "added_probability": 0.43,
+      "with_probability": 0.242,
+      "without_probability": 0.155,
+      "added_probability": 0.087,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 12,
       "first_payment_date": null,
-      "with_probability": 0.981,
-      "without_probability": 0.649,
-      "added_probability": 0.332,
+      "with_probability": 0.204,
+      "without_probability": 0.143,
+      "added_probability": 0.061,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-11-12",
+      "purchase_date": "2026-10-24",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 0.328,
-      "added_probability": 0.672,
-      "qualifies": false,
-      "as_typed": false
-     },
-     {
-      "purchase_date": "2026-11-12",
-      "num_installments": 2,
-      "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 0.334,
-      "added_probability": 0.666,
-      "qualifies": false,
-      "as_typed": false
-     },
-     {
-      "purchase_date": "2026-11-12",
-      "num_installments": 4,
-      "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 0.494,
-      "added_probability": 0.506,
-      "qualifies": false,
-      "as_typed": false
-     },
-     {
-      "purchase_date": "2026-11-12",
-      "num_installments": 6,
-      "first_payment_date": null,
-      "with_probability": 0.994,
-      "without_probability": 0.631,
-      "added_probability": 0.363,
-      "qualifies": false,
-      "as_typed": false
-     },
-     {
-      "purchase_date": "2026-11-12",
-      "num_installments": 9,
-      "first_payment_date": null,
-      "with_probability": 1.0,
-      "without_probability": 0.696,
-      "added_probability": 0.304,
-      "qualifies": false,
-      "as_typed": false
-     },
-     {
-      "purchase_date": "2026-11-12",
-      "num_installments": 12,
-      "first_payment_date": null,
-      "with_probability": 0.99,
-      "without_probability": 0.777,
+      "with_probability": 0.324,
+      "without_probability": 0.111,
       "added_probability": 0.213,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-11-17",
-      "num_installments": 3,
-      "first_payment_date": null,
-      "with_probability": 0.822,
-      "without_probability": 0.12,
-      "added_probability": 0.702,
-      "qualifies": false,
-      "as_typed": false
-     },
-     {
-      "purchase_date": "2026-11-17",
+      "purchase_date": "2026-10-24",
       "num_installments": 2,
       "first_payment_date": null,
-      "with_probability": 0.677,
-      "without_probability": 0.114,
-      "added_probability": 0.563,
+      "with_probability": 0.366,
+      "without_probability": 0.094,
+      "added_probability": 0.272,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-11-17",
+      "purchase_date": "2026-10-24",
       "num_installments": 4,
       "first_payment_date": null,
-      "with_probability": 0.913,
-      "without_probability": 0.266,
-      "added_probability": 0.647,
+      "with_probability": 0.304,
+      "without_probability": 0.124,
+      "added_probability": 0.18,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-11-17",
+      "purchase_date": "2026-10-24",
       "num_installments": 6,
       "first_payment_date": null,
-      "with_probability": 0.991,
-      "without_probability": 0.457,
-      "added_probability": 0.534,
+      "with_probability": 0.251,
+      "without_probability": 0.137,
+      "added_probability": 0.114,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-11-17",
+      "purchase_date": "2026-10-24",
       "num_installments": 9,
       "first_payment_date": null,
-      "with_probability": 0.966,
-      "without_probability": 0.572,
-      "added_probability": 0.394,
+      "with_probability": 0.234,
+      "without_probability": 0.153,
+      "added_probability": 0.081,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-11-17",
+      "purchase_date": "2026-10-24",
       "num_installments": 12,
       "first_payment_date": null,
-      "with_probability": 0.966,
-      "without_probability": 0.682,
-      "added_probability": 0.284,
+      "with_probability": 0.201,
+      "without_probability": 0.143,
+      "added_probability": 0.058,
       "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-19",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.385,
+      "without_probability": 0.143,
+      "added_probability": 0.242,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-19",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.492,
+      "without_probability": 0.155,
+      "added_probability": 0.337,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-19",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.342,
+      "without_probability": 0.159,
+      "added_probability": 0.183,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-19",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.258,
+      "without_probability": 0.149,
+      "added_probability": 0.109,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-19",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.215,
+      "without_probability": 0.154,
+      "added_probability": 0.061,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-11-19",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.182,
+      "without_probability": 0.143,
+      "added_probability": 0.039,
+      "qualifies": true,
       "as_typed": false
      }
     ],
-    "chosen_index": null,
-    "chosen": null
+    "chosen_index": 17,
+    "chosen": {
+     "purchase_date": "2026-11-19",
+     "num_installments": 12,
+     "first_payment_date": null,
+     "with_probability": 0.182,
+     "without_probability": 0.143,
+     "added_probability": 0.039,
+     "qualifies": true,
+     "as_typed": false
+    }
    }
   },
   {
    "persona": "frequent_bnpl",
-   "label": "Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered",
+   "label": "Phone RM799, SPayLater, 3 months, savings buffer RM1,000 entered",
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 79900
    },
-   "buffer_sen": 200000,
+   "buffer_sen": 100000,
    "http_status": 200,
    "summary": {
     "status": "ok",
-    "band": "Safe",
-    "score": 98,
-    "probability": 0.022723,
-    "probability_without_purchase": 0.0,
-    "simulated_band": "Safe",
-    "suggestion_status": "already_safe",
-    "suggestion_changes": [],
+    "band": "Caution",
+    "score": 78,
+    "probability": 0.222912,
+    "probability_without_purchase": 0.063,
+    "simulated_band": "Caution",
+    "suggestion_status": "found",
+    "suggestion_changes": [
+     "Spread it over 6 instalments"
+    ],
     "suggestion_band": "Safe",
-    "top_factors": [],
-    "added_probability": 0.0,
+    "top_factors": [
+     "In a bad run of months your running margin could fall to about RM 334 before this purchase.",
+     "Before this purchase you are left with only about RM 147 each month.",
+     "Each instalment is about RM 266."
+    ],
+    "added_probability": 0.178,
     "already_at_risk": false,
     "providers_after": [
      "SPayLater"
     ],
-    "timing": "2026-10-18, 3 instalments (+0.000)"
+    "timing": "2026-10-19, 12 instalments (+0.036)"
    },
    "response": {
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -3267,43 +2891,367 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 26634,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.022723,
+    "probability": 0.222912,
+    "band": "Caution",
+    "score": 78,
+    "simulated_probability": 0.241,
+    "simulated_band": "Caution",
+    "probability_without_purchase": 0.063,
+    "factors": [
+     {
+      "feature": "margin_cum_p10_without",
+      "text": "In a bad run of months your running margin could fall to about RM 334 before this purchase.",
+      "contribution": 0.048808105179734135
+     },
+     {
+      "feature": "margin_monthly_p50_without",
+      "text": "Before this purchase you are left with only about RM 147 each month.",
+      "contribution": 0.04458676793618997
+     },
+     {
+      "feature": "instalment_amount",
+      "text": "Each instalment is about RM 266.",
+      "contribution": 0.04128336661535941
+     },
+     {
+      "feature": "instalment_to_income",
+      "text": "Each instalment is about 16% of your monthly income.",
+      "contribution": 0.02087388588894599
+     }
+    ],
+    "suggestion": {
+     "status": "found",
+     "basis": "model",
+     "changes": [
+      {
+       "kind": "instalments",
+       "label": "Spread it over 6 instalments"
+      }
+     ],
+     "probability": 0.07778660660350023,
+     "band": "Safe",
+     "request": {
+      "provider": "spaylater",
+      "item_name": "Phone",
+      "purchase_date": "2026-10-19",
+      "num_installments": 6,
+      "total_price_sen": 79900,
+      "monthly_fee_rate_pct": 0.0,
+      "first_payment_date": null,
+      "provider_label": null,
+      "instalment_sen": null,
+      "total_payable_sen": null
+     },
+     "evaluated": 2
+    },
+    "repayment": {
+     "level": "none",
+     "overdue_count": 0,
+     "overdue_sen": 0,
+     "late_paid_count": 0,
+     "longest_miss_run": 0,
+     "reason": "No overdue instalments, and none paid late in the last six months."
+    },
+    "with_plan_curve": {
+     "months": [
+      "2026-10",
+      "2026-11",
+      "2026-12",
+      "2027-01"
+     ],
+     "cumulative_p10_sen": [
+      76400,
+      42358,
+      15649,
+      -46484
+     ],
+     "cumulative_p50_sen": [
+      105521,
+      100344,
+      98174,
+      51486
+     ],
+     "cumulative_p90_sen": [
+      125396,
+      147467,
+      164884,
+      138152
+     ]
+    },
+    "without_curve": {
+     "months": [
+      "2026-10",
+      "2026-11",
+      "2026-12",
+      "2027-01"
+     ],
+     "cumulative_p10_sen": [
+      76400,
+      68991,
+      68915,
+      33416
+     ],
+     "cumulative_p50_sen": [
+      105521,
+      126977,
+      151440,
+      131386
+     ],
+     "cumulative_p90_sen": [
+      125396,
+      174100,
+      218150,
+      218052
+     ]
+    },
+    "versions": {
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
+    },
+    "check_id": null,
+    "second_opinion": {
+     "without_probability": 0.063,
+     "with_probability": 0.241,
+     "added_probability": 0.178,
+     "already_at_risk": false,
+     "stack": [
+      {
+       "month": "2026-10",
+       "by_provider": [],
+       "new_plan_sen": 0,
+       "total_sen": 0,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-11",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2026-12",
+       "by_provider": [],
+       "new_plan_sen": 26633,
+       "total_sen": 26633,
+       "known_income_sen": 116269
+      },
+      {
+       "month": "2027-01",
+       "by_provider": [],
+       "new_plan_sen": 26634,
+       "total_sen": 26634,
+       "known_income_sen": 45353
+      }
+     ],
+     "exposure": {
+      "unpaid_before_sen": 0,
+      "unpaid_after_sen": 79900,
+      "providers_before": [],
+      "providers_after": [
+       "SPayLater"
+      ],
+      "plans_before": 0,
+      "plans_after": 1,
+      "recorded_limits_sen": null,
+      "reaches_bnm_line": null,
+      "bnm_line_sen": 150000
+     }
+    }
+   },
+   "schedule": {
+    "status": "ok",
+    "without_probability": 0.063,
+    "already_at_risk": false,
+    "added_max": 0.05,
+    "at_risk_edge": 0.3,
+    "options": [
+     {
+      "purchase_date": "2026-10-19",
+      "num_installments": 3,
+      "first_payment_date": null,
+      "with_probability": 0.241,
+      "without_probability": 0.063,
+      "added_probability": 0.178,
+      "qualifies": false,
+      "as_typed": true
+     },
+     {
+      "purchase_date": "2026-10-19",
+      "num_installments": 2,
+      "first_payment_date": null,
+      "with_probability": 0.131,
+      "without_probability": 0.021,
+      "added_probability": 0.11,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-19",
+      "num_installments": 4,
+      "first_payment_date": null,
+      "with_probability": 0.184,
+      "without_probability": 0.06,
+      "added_probability": 0.124,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-19",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.151,
+      "without_probability": 0.062,
+      "added_probability": 0.089,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-19",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.116,
+      "without_probability": 0.064,
+      "added_probability": 0.052,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-19",
+      "num_installments": 12,
+      "first_payment_date": null,
+      "with_probability": 0.09,
+      "without_probability": 0.054,
+      "added_probability": 0.036,
+      "qualifies": true,
+      "as_typed": false
+     }
+    ],
+    "chosen_index": 5,
+    "chosen": {
+     "purchase_date": "2026-10-19",
+     "num_installments": 12,
+     "first_payment_date": null,
+     "with_probability": 0.09,
+     "without_probability": 0.054,
+     "added_probability": 0.036,
+     "qualifies": true,
+     "as_typed": false
+    }
+   }
+  },
+  {
+   "persona": "frequent_bnpl",
+   "label": "Phone RM799, SPayLater, 3 months, savings buffer RM2,000 entered",
+   "request": {
+    "provider": "spaylater",
+    "item_name": "Phone",
+    "purchase_date": "2026-10-19",
+    "num_installments": 3,
+    "total_price_sen": 79900
+   },
+   "buffer_sen": 200000,
+   "http_status": 200,
+   "summary": {
+    "status": "ok",
     "band": "Safe",
     "score": 98,
-    "simulated_probability": 0.0,
+    "probability": 0.017698,
+    "probability_without_purchase": 0.007,
     "simulated_band": "Safe",
-    "probability_without_purchase": 0.0,
+    "suggestion_status": "already_safe",
+    "suggestion_changes": [],
+    "suggestion_band": "Safe",
+    "top_factors": [],
+    "added_probability": 0.03,
+    "already_at_risk": false,
+    "providers_after": [
+     "SPayLater"
+    ],
+    "timing": "2026-10-19, 3 instalments (+0.030)"
+   },
+   "response": {
+    "status": "ok",
+    "lock_reason": null,
+    "months_of_history": 6,
+    "stale_days": 1,
+    "unmatched_items": [],
+    "suspect_months": [],
+    "plan": {
+     "provider": "spaylater",
+     "provider_label": "SPayLater",
+     "schedule_source": "provider_rule",
+     "total_price_sen": 79900,
+     "financed_sen": 79900,
+     "upfront_sen": 0,
+     "total_payable_sen": 79900,
+     "fee_sen": 0,
+     "total_cost_sen": 79900,
+     "cash_at_purchase_sen": 0,
+     "monthly_fee_rate_pct": 0.0,
+     "num_installments": 3,
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
+     "limit_known": false,
+     "remaining_limit_sen": null,
+     "installments": [
+      {
+       "seq": 1,
+       "due_date": "2026-11-19",
+       "amount_sen": 26633,
+       "paid_at_checkout": false
+      },
+      {
+       "seq": 2,
+       "due_date": "2026-12-19",
+       "amount_sen": 26633,
+       "paid_at_checkout": false
+      },
+      {
+       "seq": 3,
+       "due_date": "2027-01-19",
+       "amount_sen": 26634,
+       "paid_at_checkout": false
+      }
+     ]
+    },
+    "probability": 0.017698,
+    "band": "Safe",
+    "score": 98,
+    "simulated_probability": 0.037,
+    "simulated_band": "Safe",
+    "probability_without_purchase": 0.007,
     "factors": [],
     "suggestion": {
      "status": "already_safe",
      "basis": "model",
      "changes": [],
-     "probability": 0.022722863684962246,
+     "probability": 0.01769845750436266,
      "band": "Safe",
      "request": null,
      "evaluated": 0
@@ -3324,22 +3272,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      151762,
-      134859,
-      47085,
-      16520
+      176400,
+      142358,
+      115649,
+      53516
      ],
      "cumulative_p50_sen": [
-      174025,
-      154728,
-      103039,
-      65714
+      205521,
+      200344,
+      198174,
+      151486
      ],
      "cumulative_p90_sen": [
-      226351,
-      168109,
-      152233,
-      111262
+      225396,
+      247467,
+      264884,
+      238152
      ]
     },
     "without_curve": {
@@ -3350,33 +3298,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      151762,
-      161492,
-      100351,
-      96420
+      176400,
+      168991,
+      168915,
+      133416
      ],
      "cumulative_p50_sen": [
-      174025,
-      181361,
-      156305,
-      145614
+      205521,
+      226977,
+      251440,
+      231386
      ],
      "cumulative_p90_sen": [
-      226351,
-      194742,
-      205499,
-      191162
+      225396,
+      274100,
+      318150,
+      318052
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 0.0,
-     "with_probability": 0.0,
-     "added_probability": 0.0,
+     "without_probability": 0.007,
+     "with_probability": 0.037,
+     "added_probability": 0.03,
      "already_at_risk": false,
      "stack": [
       {
@@ -3405,7 +3353,7 @@
        "by_provider": [],
        "new_plan_sen": 26634,
        "total_sen": 26634,
-       "known_income_sen": 116269
+       "known_income_sen": 45353
       }
      ],
      "exposure": {
@@ -3425,30 +3373,30 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 0.0,
+    "without_probability": 0.007,
     "already_at_risk": false,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 0.0,
-      "without_probability": 0.0,
-      "added_probability": 0.0,
+      "with_probability": 0.037,
+      "without_probability": 0.007,
+      "added_probability": 0.03,
       "qualifies": true,
       "as_typed": true
      }
     ],
     "chosen_index": 0,
     "chosen": {
-     "purchase_date": "2026-10-18",
+     "purchase_date": "2026-10-19",
      "num_installments": 3,
      "first_payment_date": null,
-     "with_probability": 0.0,
-     "without_probability": 0.0,
-     "added_probability": 0.0,
+     "with_probability": 0.037,
+     "without_probability": 0.007,
+     "added_probability": 0.03,
      "qualifies": true,
      "as_typed": true
     }
@@ -3460,7 +3408,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 79900
    },
@@ -3469,30 +3417,32 @@
    "summary": {
     "status": "ok",
     "band": "Caution",
-    "score": 89,
-    "probability": 0.111685,
-    "probability_without_purchase": 0.0,
+    "score": 81,
+    "probability": 0.194681,
+    "probability_without_purchase": 0.018,
     "simulated_band": "Caution",
     "suggestion_status": "found",
     "suggestion_changes": [
-     "Spread it over 4 instalments"
+     "Spread it over 6 instalments"
     ],
     "suggestion_band": "Safe",
     "top_factors": [
-     "In a bad run of months your running margin could fall to about RM 168 before this purchase."
+     "In a bad run of months your running margin could fall to about RM 247 before this purchase.",
+     "Each instalment is about RM 266.",
+     "Before this purchase you are left with only about RM 227 each month."
     ],
-    "added_probability": 0.111,
+    "added_probability": 0.212,
     "already_at_risk": false,
     "providers_after": [
      "SPayLater"
     ],
-    "timing": "2026-10-18, 4 instalments (+0.045)"
+    "timing": "2026-10-19, 9 instalments (+0.049)"
    },
    "response": {
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -3508,42 +3458,62 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 26634,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.111685,
+    "probability": 0.194681,
     "band": "Caution",
-    "score": 89,
-    "simulated_probability": 0.111,
+    "score": 81,
+    "simulated_probability": 0.23,
     "simulated_band": "Caution",
-    "probability_without_purchase": 0.0,
+    "probability_without_purchase": 0.018,
     "factors": [
      {
       "feature": "margin_cum_p10_without",
-      "text": "In a bad run of months your running margin could fall to about RM 168 before this purchase.",
-      "contribution": 0.05744702652624077
+      "text": "In a bad run of months your running margin could fall to about RM 247 before this purchase.",
+      "contribution": 0.05751188342962944
+     },
+     {
+      "feature": "instalment_amount",
+      "text": "Each instalment is about RM 266.",
+      "contribution": 0.0465781064047725
+     },
+     {
+      "feature": "margin_monthly_p50_without",
+      "text": "Before this purchase you are left with only about RM 227 each month.",
+      "contribution": 0.042856461922208766
+     },
+     {
+      "feature": "bnpl_outstanding_to_income",
+      "text": "You would owe about 0.8 months of your income across BNPL plans.",
+      "contribution": 0.03011004111435509
+     },
+     {
+      "feature": "instalment_to_income",
+      "text": "Each instalment is about 25% of your monthly income.",
+      "contribution": 0.023467960577729992
      }
     ],
     "suggestion": {
@@ -3552,16 +3522,16 @@
      "changes": [
       {
        "kind": "instalments",
-       "label": "Spread it over 4 instalments"
+       "label": "Spread it over 6 instalments"
       }
      ],
-     "probability": 0.09696039214718472,
+     "probability": 0.08459222529403657,
      "band": "Safe",
      "request": {
       "provider": "spaylater",
       "item_name": "Phone",
-      "purchase_date": "2026-10-18",
-      "num_installments": 4,
+      "purchase_date": "2026-10-19",
+      "num_installments": 6,
       "total_price_sen": 79900,
       "monthly_fee_rate_pct": 0.0,
       "first_payment_date": null,
@@ -3569,7 +3539,7 @@
       "instalment_sen": null,
       "total_payable_sen": null
      },
-     "evaluated": 1
+     "evaluated": 2
     },
     "repayment": {
      "level": "none",
@@ -3587,22 +3557,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      16813,
-      10613,
-      8114,
-      20118
+      24720,
+      5417,
+      -3091,
+      -19875
      ],
      "cumulative_p50_sen": [
-      54449,
-      80615,
-      76621,
-      113676
+      43489,
+      40214,
+      50394,
+      53081
      ],
      "cumulative_p90_sen": [
-      104454,
-      135271,
-      166520,
-      185848
+      69389,
+      105246,
+      139819,
+      159172
      ]
     },
     "without_curve": {
@@ -3613,33 +3583,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      16813,
-      37246,
-      61380,
-      100018
+      24720,
+      32050,
+      50175,
+      60025
      ],
      "cumulative_p50_sen": [
-      54449,
-      107248,
-      129887,
-      193576
+      43489,
+      66847,
+      103660,
+      132981
      ],
      "cumulative_p90_sen": [
-      104454,
-      161904,
-      219786,
-      265748
+      69389,
+      131879,
+      193085,
+      239072
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 0.0,
-     "with_probability": 0.111,
-     "added_probability": 0.111,
+     "without_probability": 0.018,
+     "with_probability": 0.23,
+     "added_probability": 0.212,
      "already_at_risk": false,
      "stack": [
       {
@@ -3668,7 +3638,7 @@
        "by_provider": [],
        "new_plan_sen": 26634,
        "total_sen": 26634,
-       "known_income_sen": 24076
+       "known_income_sen": 0
       }
      ],
      "exposure": {
@@ -3688,50 +3658,70 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 0.0,
+    "without_probability": 0.018,
     "already_at_risk": false,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 0.111,
-      "without_probability": 0.0,
-      "added_probability": 0.111,
+      "with_probability": 0.23,
+      "without_probability": 0.018,
+      "added_probability": 0.212,
       "qualifies": false,
       "as_typed": true
      },
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 2,
       "first_payment_date": null,
-      "with_probability": 0.217,
-      "without_probability": 0.0,
-      "added_probability": 0.217,
+      "with_probability": 0.334,
+      "without_probability": 0.012,
+      "added_probability": 0.322,
       "qualifies": false,
       "as_typed": false
      },
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 4,
       "first_payment_date": null,
-      "with_probability": 0.045,
-      "without_probability": 0.0,
-      "added_probability": 0.045,
+      "with_probability": 0.143,
+      "without_probability": 0.018,
+      "added_probability": 0.125,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-19",
+      "num_installments": 6,
+      "first_payment_date": null,
+      "with_probability": 0.094,
+      "without_probability": 0.021,
+      "added_probability": 0.073,
+      "qualifies": false,
+      "as_typed": false
+     },
+     {
+      "purchase_date": "2026-10-19",
+      "num_installments": 9,
+      "first_payment_date": null,
+      "with_probability": 0.068,
+      "without_probability": 0.019,
+      "added_probability": 0.049,
       "qualifies": true,
       "as_typed": false
      }
     ],
-    "chosen_index": 2,
+    "chosen_index": 4,
     "chosen": {
-     "purchase_date": "2026-10-18",
-     "num_installments": 4,
+     "purchase_date": "2026-10-19",
+     "num_installments": 9,
      "first_payment_date": null,
-     "with_probability": 0.045,
-     "without_probability": 0.0,
-     "added_probability": 0.045,
+     "with_probability": 0.068,
+     "without_probability": 0.019,
+     "added_probability": 0.049,
      "qualifies": true,
      "as_typed": false
     }
@@ -3743,7 +3733,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 79900
    },
@@ -3752,26 +3742,26 @@
    "summary": {
     "status": "ok",
     "band": "Safe",
-    "score": 99,
-    "probability": 0.014472,
-    "probability_without_purchase": 0.0,
+    "score": 98,
+    "probability": 0.020825,
+    "probability_without_purchase": 0.001,
     "simulated_band": "Safe",
     "suggestion_status": "already_safe",
     "suggestion_changes": [],
     "suggestion_band": "Safe",
     "top_factors": [],
-    "added_probability": 0.0,
+    "added_probability": 0.029,
     "already_at_risk": false,
     "providers_after": [
      "SPayLater"
     ],
-    "timing": "2026-10-18, 3 instalments (+0.000)"
+    "timing": "2026-10-19, 3 instalments (+0.029)"
    },
    "response": {
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -3787,43 +3777,43 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 26634,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.014472,
+    "probability": 0.020825,
     "band": "Safe",
-    "score": 99,
-    "simulated_probability": 0.0,
+    "score": 98,
+    "simulated_probability": 0.03,
     "simulated_band": "Safe",
-    "probability_without_purchase": 0.0,
+    "probability_without_purchase": 0.001,
     "factors": [],
     "suggestion": {
      "status": "already_safe",
      "basis": "model",
      "changes": [],
-     "probability": 0.014471953884990613,
+     "probability": 0.020825103590097458,
      "band": "Safe",
      "request": null,
      "evaluated": 0
@@ -3844,22 +3834,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      66813,
-      60613,
-      58114,
-      70118
+      74720,
+      55417,
+      46909,
+      30125
      ],
      "cumulative_p50_sen": [
-      104449,
-      130615,
-      126621,
-      163676
+      93489,
+      90214,
+      100394,
+      103081
      ],
      "cumulative_p90_sen": [
-      154454,
-      185271,
-      216520,
-      235848
+      119389,
+      155246,
+      189819,
+      209172
      ]
     },
     "without_curve": {
@@ -3870,33 +3860,33 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      66813,
-      87246,
-      111380,
-      150018
+      74720,
+      82050,
+      100175,
+      110025
      ],
      "cumulative_p50_sen": [
-      104449,
-      157248,
-      179887,
-      243576
+      93489,
+      116847,
+      153660,
+      182981
      ],
      "cumulative_p90_sen": [
-      154454,
-      211904,
-      269786,
-      315748
+      119389,
+      181879,
+      243085,
+      289072
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
-     "without_probability": 0.0,
-     "with_probability": 0.0,
-     "added_probability": 0.0,
+     "without_probability": 0.001,
+     "with_probability": 0.03,
+     "added_probability": 0.029,
      "already_at_risk": false,
      "stack": [
       {
@@ -3925,7 +3915,7 @@
        "by_provider": [],
        "new_plan_sen": 26634,
        "total_sen": 26634,
-       "known_income_sen": 24076
+       "known_income_sen": 0
       }
      ],
      "exposure": {
@@ -3945,30 +3935,30 @@
    },
    "schedule": {
     "status": "ok",
-    "without_probability": 0.0,
+    "without_probability": 0.001,
     "already_at_risk": false,
     "added_max": 0.05,
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
-      "with_probability": 0.0,
-      "without_probability": 0.0,
-      "added_probability": 0.0,
+      "with_probability": 0.03,
+      "without_probability": 0.001,
+      "added_probability": 0.029,
       "qualifies": true,
       "as_typed": true
      }
     ],
     "chosen_index": 0,
     "chosen": {
-     "purchase_date": "2026-10-18",
+     "purchase_date": "2026-10-19",
      "num_installments": 3,
      "first_payment_date": null,
-     "with_probability": 0.0,
-     "without_probability": 0.0,
-     "added_probability": 0.0,
+     "with_probability": 0.03,
+     "without_probability": 0.001,
+     "added_probability": 0.029,
      "qualifies": true,
      "as_typed": true
     }
@@ -3980,7 +3970,7 @@
    "request": {
     "provider": "spaylater",
     "item_name": "Phone",
-    "purchase_date": "2026-10-18",
+    "purchase_date": "2026-10-19",
     "num_installments": 3,
     "total_price_sen": 79900
    },
@@ -3990,7 +3980,7 @@
     "status": "ok",
     "band": "Safe",
     "score": 100,
-    "probability": 0.00158,
+    "probability": 0.002451,
     "probability_without_purchase": 0.0,
     "simulated_band": "Safe",
     "suggestion_status": "already_safe",
@@ -4002,13 +3992,13 @@
     "providers_after": [
      "SPayLater"
     ],
-    "timing": "2026-10-18, 3 instalments (+0.000)"
+    "timing": "2026-10-19, 3 instalments (+0.000)"
    },
    "response": {
     "status": "ok",
     "lock_reason": null,
     "months_of_history": 6,
-    "stale_days": 7,
+    "stale_days": 1,
     "unmatched_items": [],
     "suspect_months": [],
     "plan": {
@@ -4024,32 +4014,32 @@
      "cash_at_purchase_sen": 0,
      "monthly_fee_rate_pct": 0.0,
      "num_installments": 3,
-     "purchase_date": "2026-10-18",
-     "first_payment_date": "2026-11-18",
+     "purchase_date": "2026-10-19",
+     "first_payment_date": "2026-11-19",
      "limit_known": false,
      "remaining_limit_sen": null,
      "installments": [
       {
        "seq": 1,
-       "due_date": "2026-11-18",
+       "due_date": "2026-11-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 2,
-       "due_date": "2026-12-18",
+       "due_date": "2026-12-19",
        "amount_sen": 26633,
        "paid_at_checkout": false
       },
       {
        "seq": 3,
-       "due_date": "2027-01-18",
+       "due_date": "2027-01-19",
        "amount_sen": 26634,
        "paid_at_checkout": false
       }
      ]
     },
-    "probability": 0.00158,
+    "probability": 0.002451,
     "band": "Safe",
     "score": 100,
     "simulated_probability": 0.0,
@@ -4060,7 +4050,7 @@
      "status": "already_safe",
      "basis": "model",
      "changes": [],
-     "probability": 0.0015796324436024313,
+     "probability": 0.0024508778093834034,
      "band": "Safe",
      "request": null,
      "evaluated": 0
@@ -4081,22 +4071,22 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      166813,
-      160613,
-      158114,
-      170118
+      174720,
+      155417,
+      146909,
+      130125
      ],
      "cumulative_p50_sen": [
-      204449,
-      230615,
-      226621,
-      263676
+      193489,
+      190214,
+      200394,
+      203081
      ],
      "cumulative_p90_sen": [
-      254454,
-      285271,
-      316520,
-      335848
+      219389,
+      255246,
+      289819,
+      309172
      ]
     },
     "without_curve": {
@@ -4107,27 +4097,27 @@
       "2027-01"
      ],
      "cumulative_p10_sen": [
-      166813,
-      187246,
-      211380,
-      250018
+      174720,
+      182050,
+      200175,
+      210025
      ],
      "cumulative_p50_sen": [
-      204449,
-      257248,
-      279887,
-      343576
+      193489,
+      216847,
+      253660,
+      282981
      ],
      "cumulative_p90_sen": [
-      254454,
-      311904,
-      369786,
-      415748
+      219389,
+      281879,
+      343085,
+      389072
      ]
     },
     "versions": {
-     "model": "v2",
-     "feature_schema_hash": "10c5b74d0b8dfdbe"
+     "model": "v3",
+     "feature_schema_hash": "5f8bc37590df913b"
     },
     "check_id": null,
     "second_opinion": {
@@ -4162,7 +4152,7 @@
        "by_provider": [],
        "new_plan_sen": 26634,
        "total_sen": 26634,
-       "known_income_sen": 24076
+       "known_income_sen": 0
       }
      ],
      "exposure": {
@@ -4188,7 +4178,7 @@
     "at_risk_edge": 0.3,
     "options": [
      {
-      "purchase_date": "2026-10-18",
+      "purchase_date": "2026-10-19",
       "num_installments": 3,
       "first_payment_date": null,
       "with_probability": 0.0,
@@ -4200,7 +4190,7 @@
     ],
     "chosen_index": 0,
     "chosen": {
-     "purchase_date": "2026-10-18",
+     "purchase_date": "2026-10-19",
      "num_installments": 3,
      "first_payment_date": null,
      "with_probability": 0.0,
