@@ -52,7 +52,17 @@ def test_default_settings_row_has_no_balance_columns(db, two_users):
     settings = user_settings.create_default(db, two_users[0]["id"])
 
     assert settings["onboarding_state"] == "new"
-    assert set(settings) == {"user_id", "onboarding_state"}
+    # No balance column (a balance is never stored, only derived); the three after 0001 are the
+    # optional savings buffer (0005, D-50) and the accepted privacy notice (0006), all defaults.
+    assert set(settings) == {
+        "user_id",
+        "onboarding_state",
+        "savings_buffer_sen",
+        "consent_version",
+        "consent_at",
+    }
+    assert settings["savings_buffer_sen"] == 0
+    assert settings["consent_version"] is None and settings["consent_at"] is None
 
 
 def test_rows_are_isolated_between_users(db, two_users):
