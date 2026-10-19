@@ -17,6 +17,8 @@ students (seed 90001; no training label and not the lockbox).
 | 95th percentile of the absolute gap | 0.1164 |
 | largest absolute gap | 0.3683 |
 | same band | 95.5% |
+| same band, benchmark: show the chance without the purchase | 91.0% |
+| mean absolute gap, benchmark: show the chance without the purchase | 0.0722 |
 | same band, students not already short before the purchase (112) | 93.8% |
 
 ## What a student gets
@@ -39,7 +41,7 @@ Single process, one request at a time, on the machine that made this report.
 
 | p50 | p95 | max |
 |---|---|---|
-| 0.30 s | 0.92 s | 2.16 s |
+| 0.26 s | 0.76 s | 1.97 s |
 
 The ledgers here come from the generator through the same detection the labels used, not from the database path (24-month window, confirmed items); the engine is the same. The target was a p95 of 3 s. Slowest five (profile index, seconds):
-48: 2.16, 108: 2.04, 182: 1.93, 164: 1.41, 16: 1.38.
+48: 1.97, 108: 1.71, 182: 1.63, 164: 1.36, 16: 1.29.

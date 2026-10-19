@@ -73,3 +73,23 @@ def test_the_report_says_n_a_when_there_is_nothing_to_share():
     text = render(result, SimpleNamespace(version="v1", feature_schema_hash="abc"))
     assert "n/a" in text and "Engine 2 serving check" in text
     assert str(SERVING_SEED) in text
+
+
+def test_the_benchmark_that_ignores_the_purchase_is_scored_beside_the_model():
+    # ml-audit C4: "same band" needs the benchmark "show the chance without the purchase".
+    rows = [
+        # the purchase moves Safe -> Caution; the model gets it, the benchmark does not
+        row(p=0.15, p_simulated=0.14, band="Caution", band_simulated="Caution", p_without=0.04),
+        # the purchase changes nothing; both agree
+        row(p=0.03, p_simulated=0.03, band="Safe", band_simulated="Safe", p_without=0.03),
+    ]
+    result = summarise(rows, 2, 0, Counter())
+    assert result["band_agreement"] == 1.0
+    assert result["band_agreement_benchmark_without"] == 0.5
+    assert result["gap_benchmark_without"]["mean_abs"] == pytest.approx((0.10 + 0.0) / 2)
+
+
+def test_the_rendered_report_shows_the_benchmark_row(tmp_path):
+    result = summarise([row()], 1, 0, Counter())
+    text = render(result, SimpleNamespace(version="v3"))
+    assert "benchmark: show the chance without the purchase" in text

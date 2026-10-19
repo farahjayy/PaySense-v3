@@ -15,6 +15,7 @@ PaySense's risk score is trained on **synthetic** students, not on real repaymen
 | already short before the purchase | 42.7% (46.0%) | `reports/engine2/README.md`, "Read this before trusting any number" (`ml.engine2_train.report`); `versions.md` `share_short_before_purchase` = 0.4274 |
 | purchase moves the band | 10.7% (10.7%) | `reports/engine2/README.md`, same section; `versions.md` (decided before the purchase 0.8931) |
 | lockbox Brier, constant, predict-p_without | 0.0078, 0.1608, 0.0532 (0.0142, 0.1674, -) | `reports/engine2/README.md`, "The final model on the lockbox" (new lockbox, indices 10,000–10,999, scored once) |
+| same band as the direct simulation, benchmark "show the chance without the purchase" | 91.0% (mean absolute gap 0.0722 against the model's 0.0205) | `reports/engine2/serving_check.md` / `.json` `band_agreement_benchmark_without` |
 | same band as the direct simulation | 95.5% (92.0%) | `reports/engine2/serving_check.md` (`ml.engine2_train.serving_check`, 200 fresh students) |
 | a change reaches Safe | 16.0%, 17 of 106 (12.6%, 14 of 111) | `reports/engine2/serving_check.json` `suggestion_reaches_safe` = 0.1604, `non_safe` = 106 |
 | non-Safe results with no reason shown | 56.6% (0.0%) | `reports/engine2/serving_check.json` `non_safe_with_no_reason` = 0.5660 |

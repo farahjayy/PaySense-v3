@@ -1,12 +1,16 @@
 {
   "assessed": 200,
   "band_agreement": 0.955,
+  "band_agreement_benchmark_without": 0.91,
   "band_agreement_where_plan_decides": 0.9375,
   "gap": {
     "max_abs": 0.3683427227345557,
     "mean": 0.004184325594494567,
     "mean_abs": 0.02047247677657087,
     "p95_abs": 0.11638768043435924
+  },
+  "gap_benchmark_without": {
+    "mean_abs": 0.072225
   },
   "locked": 0,
   "mean_evaluations_when_not_safe": 15.68867924528302,
@@ -19,31 +23,31 @@
   "rejected_by_plan_rules": 0,
   "rejected_reasons": {},
   "seconds": {
-    "max": 2.1583384699999897,
-    "p50": 0.30360268299999404,
-    "p95": 0.9221750171500025
+    "max": 1.9736979000008432,
+    "p50": 0.2607027499907417,
+    "p95": 0.7578977649958681
   },
   "share_with_no_factor": 0.735,
   "slowest": [
     {
       "index": 48,
-      "seconds": 2.158
+      "seconds": 1.974
     },
     {
       "index": 108,
-      "seconds": 2.038
+      "seconds": 1.712
     },
     {
       "index": 182,
-      "seconds": 1.925
+      "seconds": 1.634
     },
     {
       "index": 164,
-      "seconds": 1.411
+      "seconds": 1.358
     },
     {
       "index": 16,
-      "seconds": 1.384
+      "seconds": 1.291
     }
   ],
   "suggestion_basis": {

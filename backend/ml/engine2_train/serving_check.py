@@ -142,6 +142,13 @@ def summarise(
             "max_abs": float(np.abs(gap).max()),
         },
         "band_agreement": float(np.mean([r["band"] == r["band_simulated"] for r in rows])),
+        # benchmark: show the chance without the purchase, as if the purchase added nothing
+        "band_agreement_benchmark_without": float(
+            np.mean([band(r["p_without"]) == r["band_simulated"] for r in rows])
+        ),
+        "gap_benchmark_without": {
+            "mean_abs": float(np.mean([abs(r["p_without"] - r["p_simulated"]) for r in rows]))
+        },
         "non_safe": len(needed),
         "non_safe_short_before_purchase": _share(needed, lambda r: r["p_without"] >= SAFE_BELOW),
         "band_agreement_where_plan_decides": _share(
@@ -211,6 +218,8 @@ students (seed {SERVING_SEED}; no training label and not the lockbox).
 | 95th percentile of the absolute gap | {gap["p95_abs"]:.4f} |
 | largest absolute gap | {gap["max_abs"]:.4f} |
 | same band | {pct(result["band_agreement"])} |
+| same band, benchmark: show the chance without the purchase | {pct(result["band_agreement_benchmark_without"])} |
+| mean absolute gap, benchmark: show the chance without the purchase | {result["gap_benchmark_without"]["mean_abs"]:.4f} |
 | same band, students not already short before the purchase ({result["plan_decides_profiles"]}) | {pct(result["band_agreement_where_plan_decides"])} |
 
 ## What a student gets
