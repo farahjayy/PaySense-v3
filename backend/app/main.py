@@ -170,7 +170,10 @@ def create_app(
         )
 
     @app.exception_handler(httpx.HTTPError)
-    async def _upstream_handler(_: Request, __: httpx.HTTPError) -> JSONResponse:
+    async def _upstream_handler(request: Request, err: httpx.HTTPError) -> JSONResponse:
+        # The class and the path only: the message of an httpx error can carry the request URL,
+        # never a header, and a retry-able outage must still leave a trace of what it was.
+        logger.warning("Database unreachable on %s: %s", request.url.path, type(err).__name__)
         return _envelope(
             503, "upstream_unavailable", "The database is not reachable. Try again shortly."
         )

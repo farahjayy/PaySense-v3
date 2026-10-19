@@ -123,3 +123,22 @@ def test_api_error_accepts_extra_headers():
     err = api_error(429, "slow_down", "Wait.", headers={"Retry-After": "30"})
 
     assert err.headers == {"Retry-After": "30"}
+
+
+def test_a_database_outage_logs_the_error_class_so_the_cause_is_not_lost(settings, caplog):
+    # Local run on the real database: five endpoints answered 503 at the same instant and the
+    # log held nothing but the status lines, so the cause (reset, timeout, protocol) was unknown.
+    app = create_app(settings)
+
+    @app.get("/db-reset")
+    def db_reset():
+        raise httpx.ReadError("connection reset by peer")
+
+    with caplog.at_level("WARNING", logger="paysense"):
+        res = TestClient(app, raise_server_exceptions=False).get("/db-reset")
+
+    assert res.status_code == 503
+    assert any(
+        "ReadError" in r.getMessage() and "/db-reset" in r.getMessage() for r in caplog.records
+    )
+    assert settings.supabase_service_key.get_secret_value() not in caplog.text
