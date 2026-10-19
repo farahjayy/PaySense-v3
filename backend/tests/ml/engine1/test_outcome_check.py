@@ -6,7 +6,7 @@ from datetime import date, timedelta
 import numpy as np
 import pytest
 
-from app.engines.forecasting.bands import parse_rule
+from app.engines.forecasting.bands import load_band_rule, parse_rule
 from app.engines.forecasting.models import MovingAverage
 from app.engines.forecasting.series import WeeklySeries
 from ml.engine1_eval.band_calibration import COHORT, DEV_PROFILES, EVAL_POOL, dev_profiles
@@ -18,6 +18,7 @@ from ml.engine1_eval.outcome_check import (
     EPS,
     HORIZON,
     OUTCOME_PROFILES,
+    RULE_FILES,
     Case,
     auc,
     band_rows,
@@ -127,7 +128,10 @@ def test_served_p_is_certain_when_the_record_has_no_error():
     p, fallback = served_p(_history(30, spend=1_000.0), flat, END, 0, seed=1)
     assert (p, fallback) == (1.0, False)
     assert served_p(_history(30, spend=1_000.0, income=5_000.0), flat, END, 0, seed=1)[0] == 0.0
-    assert served_p(_history(17, spend=1_000.0), flat, END, 0, seed=1)[1]  # too short: fallback
+    v2 = load_band_rule(RULE_FILES["lstm"])  # the R2 rule: a user's own record at every length
+    assert served_p(_history(17, spend=1_000.0), flat, END, 0, seed=1, rule=v2)[1]  # fallback
+    # the served rule (R3, D-61) uses the population record below 26 weeks instead: no fallback
+    assert not served_p(_history(17, spend=1_000.0), flat, END, 0, seed=1)[1]
 
 
 class _Spy:
