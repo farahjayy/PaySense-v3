@@ -61,22 +61,22 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen --no-group ml
         working-directory: backend
+      - uses: pnpm/action-setup@v4 # version from "packageManager" in the root package.json
       - uses: actions/setup-node@v4
         with:
           node-version-file: frontend/.nvmrc
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+          cache: pnpm
+      # --ignore-scripts skips the root postinstall (a full `uv sync`); the backend was synced above.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm lint
         working-directory: frontend
-      - run: npm run lint
+      - run: pnpm exec tsc --noEmit
         working-directory: frontend
-      - run: npx tsc --noEmit
+      - run: pnpm check:api
         working-directory: frontend
-      - run: npm run check:api
+      - run: pnpm exec vitest run --coverage
         working-directory: frontend
-      - run: npx vitest run --coverage
-        working-directory: frontend
-      - run: npm run build
+      - run: pnpm build
         working-directory: frontend
 
   e2e:
@@ -92,16 +92,16 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen --no-group ml
         working-directory: backend
+      - uses: pnpm/action-setup@v4 # version from "packageManager" in the root package.json
       - uses: actions/setup-node@v4
         with:
           node-version-file: frontend/.nvmrc
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+          cache: pnpm
+      # --ignore-scripts skips the root postinstall (a full `uv sync`); the backend was synced above.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm exec playwright install --with-deps chromium
         working-directory: frontend
-      - run: npx playwright install --with-deps chromium
-        working-directory: frontend
-      - run: npx playwright test
+      - run: pnpm exec playwright test
         working-directory: frontend
       - if: failure()
         uses: actions/upload-artifact@v4

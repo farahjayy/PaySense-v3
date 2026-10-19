@@ -1,7 +1,7 @@
 // Generate (or drift-check) lib/api/schema.d.ts from the backend's OpenAPI document (ADR D-18).
 //
-//   npm run gen:api     regenerate lib/api/schema.d.ts
-//   npm run check:api   fail (exit 1) if the committed file differs from a fresh generation
+//   pnpm gen:api     regenerate lib/api/schema.d.ts
+//   pnpm check:api   fail (exit 1) if the committed file differs from a fresh generation
 //
 // The spec comes from `uv run python -m app.export_openapi`, which needs no database,
 // credentials or running server. Requires `uv` on PATH.
@@ -36,7 +36,7 @@ try {
       /* missing file counts as drift */
     }
     if (current !== fresh) {
-      console.error("lib/api/schema.d.ts is out of date with the backend. Run: npm run gen:api");
+      console.error("lib/api/schema.d.ts is out of date with the backend. Run: pnpm gen:api");
       process.exitCode = 1;
     } else {
       console.log("lib/api/schema.d.ts matches the backend OpenAPI document.");

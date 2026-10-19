@@ -15,7 +15,7 @@ const launchOptions = process.env.PW_CHROMIUM_PATH
  * --port 8000`). A throwaway account is created before and deleted after (cascade), so the run
  * leaves nothing behind.
  *
- *   cd frontend && npx playwright test -c playwright.real.config.ts
+ *   cd frontend && pnpm exec playwright test -c playwright.real.config.ts
  */
 const FRONTEND_URL = "http://localhost:3000"; // must be in the API's CORS_ORIGINS
 export const REAL_API_URL = process.env.REAL_API_URL ?? "http://localhost:8000";
@@ -35,7 +35,7 @@ export default defineConfig({
   projects: [{ name: "desktop", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: "npm run build && npm run start -- --port 3000",
+      command: "pnpm build && pnpm start --port 3000",
       url: FRONTEND_URL,
       env: { NEXT_PUBLIC_API_BASE_URL: REAL_API_URL, NEXT_DIST_DIR: ".next-real" },
       reuseExistingServer: false,

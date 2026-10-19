@@ -9,8 +9,8 @@
 | **The Docker image builds and runs** | `docker build` of `backend/Dockerfile` with two substitutions forced by this environment's network (the base image pulled from `mirror.gcr.io` because Docker Hub answered 429, and the local `uv` binary because `ghcr.io` blobs are blocked); every other line ran as written. The container started with the session's configuration, loaded both models (start-up refuses any artefact mismatch), answered `/api/health`, and idled at **82 MiB**; image 471 MB. Render pulls from Docker Hub and ghcr.io itself, so it uses the Dockerfile unchanged |
 | The smoke script against that container | `smoke_live.py`: the service answers, CORS allows the origin, anonymous calls are refused; **login answers 503** because the real database does not yet have migration 0003's `passphrase_hash` column. Expected until the migrations are applied |
 | The API runs with only its runtime dependencies | `uv sync --frozen --no-default-groups` (what the image runs); the backend test suite also passes without the ML group (`uv run --no-group ml pytest --ignore=tests/ml`) |
-| The frontend builds for production and runs under the Content-Security-Policy | `npm run build`; 26 Playwright journeys on desktop and phone with no policy violations, and no sideways scroll at 360 / 375 px |
-| The assistant against the real provider | `scripts/assistant_eval.py --runs 3` (36 / 36), `scripts/demo_run.py --in-memory`, and the browser journey `npx playwright test -c playwright.live.config.ts`, all with the real Gemini key |
+| The frontend builds for production and runs under the Content-Security-Policy | `pnpm build`; 26 Playwright journeys on desktop and phone with no policy violations, and no sideways scroll at 360 / 375 px |
+| The assistant against the real provider | `scripts/assistant_eval.py --runs 3` (36 / 36), `scripts/demo_run.py --in-memory`, and the browser journey `pnpm exec playwright test -c playwright.live.config.ts`, all with the real Gemini key |
 
 | **Not** verified — do these on deploy | Why |
 |---|---|
@@ -31,7 +31,7 @@
    - `FORWARDED_ALLOW_IPS`: see "Proxy addresses" below.
    - `SESSION_SECRET` is generated for you; the token budgets, assistant cap and write quota have values in the blueprint.
    Deploys are manual (`autoDeploy: false`).
-5. **Vercel** (the app). Import the repository, root directory `frontend`. Set `NEXT_PUBLIC_API_BASE_URL` to the Render URL **before** the first build (it is baked into the bundle). Deploy.
+5. **Vercel** (the app). Import the repository, root directory `frontend` (keep "Include files outside the root directory" on: the pnpm lockfile and workspace file are at the repo root). Set `NEXT_PUBLIC_API_BASE_URL` to the Render URL **before** the first build (it is baked into the bundle). Deploy.
 6. **Close the loop.** Set Render's `CORS_ORIGINS` to the Vercel URL (no trailing slash) and redeploy the API.
 7. **Smoke test.** `SMOKE_PASSPHRASE=<that tester's passphrase> uv run python scripts/smoke_live.py --api https://<service>.onrender.com --origin https://<app>.vercel.app --username <a persona account>`. All seven lines must say PASS.
 8. **The demo on the live URL**: `uv run python scripts/demo_run.py --api https://<service>.onrender.com` (writes `evidence/demo-run/`), then the checklist below on a phone.

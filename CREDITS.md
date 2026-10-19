@@ -6,7 +6,7 @@ PaySense was designed and built by **Nur Farah Binti Ahmad Nazri** as a Final Ye
 
 ## FinTechathon 2026 team
 
-The competition entry (International Track, Topic A) is submitted by a team of five from Universiti Teknologi PETRONAS:
+The competition entry (International Track, Topic A) is submitted by **Dang Wangi**, a team of five from Universiti Teknologi PETRONAS:
 
 | Member | Role |
 |---|---|

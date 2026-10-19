@@ -89,22 +89,24 @@ One product, three source trees. Frontend and backend share **no source** — on
 | Tree | Root | Run | Can | Cannot |
 |---|---|---|---|---|
 | Backend API | `backend/app/` | `cd backend && uv run uvicorn app.main:app --reload --port 8000` | Serve the API, run both engines, talk to Supabase | Train models (it only loads artefacts) |
-| Frontend | `frontend/` | `cd frontend && npm run dev` | Render screens, call the API through the generated client | Talk to Supabase, compute any score or forecast, hold provider rules (served by `GET /api/providers`) |
+| Frontend | `frontend/` | `cd frontend && pnpm dev` | Render screens, call the API through the generated client | Talk to Supabase, compute any score or forecast, hold provider rules (served by `GET /api/providers`) |
 | Offline ML | `backend/ml/` | `cd backend && uv run python -m ml.<module>` | Generate synthetic data, evaluate candidates, train and export artefacts to `backend/models/`, write `reports/` | Be imported by `app/` |
 
-**A backend route or schema change does nothing for the frontend until `npm run gen:api` is run** — the generated types are the contract.
+**A backend route or schema change does nothing for the frontend until `pnpm gen:api` is run** — the generated types are the contract.
 
 ## Running it
 
 | What | Command | Notes |
 |---|---|---|
+| Install everything | `pnpm install` (repo root) | Frontend packages, then `uv sync` for the backend |
+| Both dev servers | `pnpm dev` (repo root) | API on 8000, app on 3000; `pnpm dev:api` / `pnpm dev:web` for one |
 | Backend dev server | `cd backend && uv run uvicorn app.main:app --reload --port 8000` | Created in P0; needs `backend/.env` |
 | Backend tests | `cd backend && uv run pytest` | `-m integration` hits the real Supabase |
 | Backend lint | `cd backend && uv run ruff check . && uv run ruff format --check .` | |
-| Frontend dev server | `cd frontend && npm run dev` | Needs `frontend/.env.local` |
-| Frontend checks | `cd frontend && npm run lint && npx tsc --noEmit && npm run test && npm run build` | |
-| Regenerate API types | `cd frontend && npm run gen:api` | After any backend route/schema change |
-| E2E | `cd frontend && npx playwright test` | Backend must be running with a seeded user |
+| Frontend dev server | `cd frontend && pnpm dev` | Needs `frontend/.env.local` |
+| Frontend checks | `cd frontend && pnpm lint && pnpm exec tsc --noEmit && pnpm test && pnpm build` | |
+| Regenerate API types | `cd frontend && pnpm gen:api` | After any backend route/schema change |
+| E2E | `cd frontend && pnpm exec playwright test` | Backend must be running with a seeded user |
 | Seed a tester | `cd backend && uv run python scripts/seed_users.py --username <name> --display <Name> --persona <persona>` | Idempotent |
 
 All of the above are created in P0; until then they don't exist.

@@ -48,7 +48,7 @@ PaySense has three pairs that break silently, because the first half compiles an
 | If I changed… | …I must also | Enforced by |
 |---|---|---|
 | An Engine 2 feature in `engines/risk/features.py` | Regenerate the dataset, retrain, export a new artefact version whose `metadata.json` carries the new feature-schema hash | Startup hash check refuses a mismatched artefact (D-09) |
-| A backend route or Pydantic schema | Run `npm run gen:api` and commit the regenerated `frontend/lib/api/schema.d.ts` | `npm run check:api` fails on drift (D-18) |
+| A backend route or Pydantic schema | Run `pnpm gen:api` and commit the regenerated `frontend/lib/api/schema.d.ts` | `pnpm check:api` fails on drift (D-18) |
 | A DB column or table | Add a numbered migration in `backend/migrations/`, update the repository function and the Pydantic schema | Repository tests; checklist "API contract changes" |
 
 And the one that is never mechanical: **is any real personal data about to enter this public repo?** If a file came from `data/private/`, a real statement, or the v1 author's spreadsheets — stop.

@@ -10,9 +10,9 @@ You run PaySense v3's checks and report exactly what happened.
 Find the real commands from `backend/pyproject.toml` and `frontend/package.json` (do not guess a test runner). The expected set, once P0 exists:
 - `cd backend && uv run pytest` (add `-m integration` only if asked and `SUPABASE_URL` is configured)
 - `cd backend && uv run ruff check . && uv run ruff format --check .`
-- `cd frontend && npm run lint && npx tsc --noEmit && npm run test && npm run build`
-- `cd frontend && npm run check:api` (generated API types up to date)
-- `cd frontend && npx playwright test` only if the user asks or the change touches a user journey, and only when the backend is running
+- `cd frontend && pnpm lint && pnpm exec tsc --noEmit && pnpm test && pnpm build`
+- `cd frontend && pnpm check:api` (generated API types up to date)
+- `cd frontend && pnpm exec playwright test` only if the user asks or the change touches a user journey, and only when the backend is running
 
 Report: each command, pass/fail, counts, coverage if printed, and the **verbatim output of every failure** — not a paraphrase. For each failure, name the file and line if the output gives one.
 

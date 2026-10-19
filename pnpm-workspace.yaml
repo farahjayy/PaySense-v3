@@ -1,0 +1,7 @@
+packages:
+  - frontend
+
+# Dependency install scripts pnpm may run. unrs-resolver (ESLint import resolver) ships a
+# prebuilt binary as an optional dependency, so its fallback build script is not needed.
+allowBuilds:
+  unrs-resolver: false

@@ -1,0 +1,14 @@
+{
+  "name": "paysense-v3",
+  "private": true,
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=22.22"
+  },
+  "scripts": {
+    "postinstall": "cd backend && uv sync",
+    "dev": "pnpm run \"/^dev:/\"",
+    "dev:api": "cd backend && uv run uvicorn app.main:app --reload --port 8000",
+    "dev:web": "pnpm --filter frontend dev"
+  }
+}

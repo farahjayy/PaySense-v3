@@ -5,12 +5,12 @@
 Writes to `evidence/scans/`:
   pip-audit-runtime.json   the backend's runtime dependencies (what the server runs)
   pip-audit-all.json       runtime + dev + ml groups
-  npm-audit-prod.json      the frontend's production dependencies
-  npm-audit-all.json       every frontend dependency, dev tools included
+  pnpm-audit-prod.json     the frontend's production dependencies
+  pnpm-audit-all.json      every frontend dependency, dev tools included
   gitleaks.json            a secret scan of the whole git history (findings redacted)
   SUMMARY.md               the counts, generated from the files above
 
-Needs `uvx` (pip-audit), `npm`, and `gitleaks` on PATH or in $GITLEAKS. A scanner that cannot run
+Needs `uvx` (pip-audit), `pnpm`, and `gitleaks` on PATH or in $GITLEAKS. A scanner that cannot run
 is recorded as not run, never as clean.
 """
 
@@ -56,16 +56,16 @@ def pip_audit(groups: list[str], name: str) -> str:
     return f"{len(deps)} packages audited, {len(vulns)} known vulnerabilities ({listed})"
 
 
-def npm_audit(prod: bool, name: str) -> str:
-    cmd = ["npm", "audit", "--json"] + (["--omit=dev"] if prod else [])
+def pnpm_audit(prod: bool, name: str) -> str:
+    cmd = ["pnpm", "audit", "--json"] + (["--prod"] if prod else [])
     result = _run(cmd, ROOT / "frontend")
     try:
         data = json.loads(result.stdout)
     except json.JSONDecodeError:
-        return f"not run (npm audit: {result.stderr.strip()[:200]})"
+        return f"not run (pnpm audit: {result.stderr.strip()[:200]})"
     (OUT / f"{name}.json").write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
     counts = data.get("metadata", {}).get("vulnerabilities", {})
-    names = sorted(data.get("vulnerabilities", {}))
+    names = sorted({a["module_name"] for a in data.get("advisories", {}).values()})
     tail = f" ({', '.join(names)})" if names else ""
     return ", ".join(f"{k} {v}" for k, v in counts.items()) + tail
 
@@ -94,8 +94,8 @@ def main() -> int:
     rows = [
         ("pip-audit, backend runtime", pip_audit([], "pip-audit-runtime")),
         ("pip-audit, backend runtime + dev + ml", pip_audit(["dev", "ml"], "pip-audit-all")),
-        ("npm audit, frontend production", npm_audit(True, "npm-audit-prod")),
-        ("npm audit, frontend all (dev tools included)", npm_audit(False, "npm-audit-all")),
+        ("pnpm audit, frontend production", pnpm_audit(True, "pnpm-audit-prod")),
+        ("pnpm audit, frontend all (dev tools included)", pnpm_audit(False, "pnpm-audit-all")),
         ("gitleaks, whole git history", gitleaks()),
     ]
     lines = [

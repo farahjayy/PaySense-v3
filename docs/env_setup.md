@@ -60,17 +60,11 @@ Last updated: 2026-10-08
 ## Setup
 
 ```bash
-# backend (after P0 creates the uv project)
-cd backend
-cp .env.example .env          # then fill in the values above
-uv sync
-uv run uvicorn app.main:app --reload --port 8000
-
-# frontend
-cd frontend
-cp .env.example .env.local    # then set NEXT_PUBLIC_API_BASE_URL
-npm install
-npm run dev
+# from the repo root
+pnpm install                                  # frontend packages, then `uv sync` for the backend
+cp backend/.env.example backend/.env          # then fill in the values above
+cp frontend/.env.example frontend/.env.local  # then set NEXT_PUBLIC_API_BASE_URL
+pnpm dev                                      # API on :8000 and the app on :3000
 ```
 
 **Behind a proxy (Render, P8):** the login rate limiter keys on the TCP peer address, so start uvicorn with `--proxy-headers --forwarded-allow-ips=<the proxy's address>` — never `*` (a wildcard lets a client spoof `X-Forwarded-For` and dodge the limit) — and run a **single worker** (the limiter state is per-process). Without the flag every user shares the proxy's bucket and ten mistyped usernames lock everyone out.

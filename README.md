@@ -56,21 +56,24 @@ The sources of every figure in this paragraph are listed in [`docs/honest-limits
 
 ## Run it locally
 
-Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), Node.js 24 (`frontend/.nvmrc`; at least 22.22, which jsdom and undici in the test toolchain require), a Supabase project (free tier) for the database. Commands work the same on Windows, macOS and Linux.
+Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), [pnpm](https://pnpm.io/installation), Node.js 24 (`frontend/.nvmrc`; at least 22.22, which jsdom and undici in the test toolchain require), a Supabase project (free tier) for the database. Commands work the same on Windows, macOS and Linux.
 
 ```bash
 git clone <this repo> && cd PaySense-v3
-cd backend && cp .env.example .env    # fill in: docs/env_setup.md
-uv sync                               # runtime + dev + ml groups; `uv sync --no-group ml` for the API and its tests only
-cd ../frontend && cp .env.example .env.local && npm install
+pnpm install                          # frontend packages, then `uv sync` for the backend (venv, runtime + dev + ml groups)
+cp backend/.env.example backend/.env  # fill in: docs/env_setup.md
+cp frontend/.env.example frontend/.env.local
 ```
+
+For the API and its tests only, without the ML stack: `cd backend && uv sync --no-group ml`.
 
 Apply `backend/migrations/0001` to `0006` in order in the Supabase SQL editor ([`backend/migrations/README.md`](backend/migrations/README.md)), check the lock-down with `cd backend && uv run python scripts/check_rls.py`, then:
 
 ```bash
-cd backend && uv run uvicorn app.main:app --reload --port 8000      # terminal 1
-cd frontend && npm run dev                                          # terminal 2: http://localhost:3000
+pnpm dev     # API on http://localhost:8000 and the app on http://localhost:3000; Ctrl+C stops both
 ```
+
+Each half alone: `pnpm dev:api` or `pnpm dev:web`.
 
 ## Demo accounts
 
@@ -83,9 +86,9 @@ Accounts are made by the operator; there is no public sign-up. `cd backend && uv
 | Backend lint and format | `cd backend && uv run ruff check . && uv run ruff format --check .` |
 | Backend tests (in-memory database; `-m integration` hits the real one) | `cd backend && uv run pytest` |
 | Backend tests without the ML stack (no torch) | `cd backend && uv run --no-group ml pytest --ignore=tests/ml` |
-| Frontend | `cd frontend && npm run lint && npx tsc --noEmit && npm run test && npm run build` |
-| API types match the backend | `cd frontend && npm run check:api` (after a backend change: `npm run gen:api`) |
-| Browser journeys, desktop and phone | `cd frontend && npx playwright test` (starts both servers on an in-memory backend) |
+| Frontend | `cd frontend && pnpm lint && pnpm exec tsc --noEmit && pnpm test && pnpm build` |
+| API types match the backend | `cd frontend && pnpm check:api` (after a backend change: `pnpm gen:api`) |
+| Browser journeys, desktop and phone | `cd frontend && pnpm exec playwright test` (starts both servers on an in-memory backend) |
 | Everything, with outputs kept in `evidence/tests/` | `cd backend && uv run python scripts/collect_test_evidence.py` |
 
 ## Deployment
@@ -108,6 +111,7 @@ frontend/           Next.js app: app/ routes, components/, lib/ (API client from
 data/               synthetic personas and manifests (raw third-party data and private data are gitignored)
 reports/            generated evaluation reports
 evidence/           generated demo, test and scan evidence
+public/             team photos for this README
 docs/               technical documentation, honest limits, roadmap, deployment and setup guides
 ```
 
@@ -130,6 +134,20 @@ Design notes, plans and decision records are kept in the team's private reposito
 ## Data and privacy
 
 No real personal financial data is in this repository. Personas and training data are synthetic; the two public datasets used only as benchmarks are downloaded by scripts and never committed (see [`THIRD_PARTY.md`](THIRD_PARTY.md)). The database is in Singapore (a cross-border transfer under Malaysia's PDPA, stated in the consent notice).
+
+## Team: Dang Wangi
+
+<table>
+  <tr>
+    <td align="center" width="20%"><img src="public/Farah.png" width="140" alt="Nur Farah binti Ahmad Nazri"><br><b>Nur Farah binti Ahmad Nazri</b></td>
+    <td align="center" width="20%"><br><b>Nurlisa Nabiha Binti Roslan</b></td>
+    <td align="center" width="20%"><img src="public/Chip.png" width="140" alt="Fakhrul Azim Bin Ahmed Mardzukie"><br><b>Fakhrul Azim Bin Ahmed Mardzukie</b></td>
+    <td align="center" width="20%"><img src="public/Hao.png" width="140" alt="Por Jie Hao"><br><b>Por Jie Hao</b></td>
+    <td align="center" width="20%"><img src="public/Sharvin.png" width="140" alt="Sharvin A/L Kanesan"><br><b>Sharvin A/L Kanesan</b></td>
+  </tr>
+</table>
+
+Roles: [`CREDITS.md`](CREDITS.md).
 
 ## Licence
 

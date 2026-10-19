@@ -3,7 +3,8 @@
     cd backend && uv run python scripts/gen_third_party.py
 
 Python licences come from `pip-licenses` (run through `uv run --with`, so it is not a project
-dependency); frontend licences from `license-checker-rseidelsohn` over the production tree.
+dependency); frontend licences from the
+installed production tree (`frontend_rows`).
 Each Python package is marked runtime (the server needs it) or dev/ml (tests and offline
 training only). The datasets section is fixed text: neither dataset is committed.
 """
@@ -15,7 +16,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-LICENSE_CHECKER = "license-checker-rseidelsohn@4.4.2"
 
 DATASETS = """## Datasets (not committed; fetched by scripts)
 
@@ -85,20 +85,44 @@ def python_rows() -> list[str]:
     return rows
 
 
+def _resolve(name: str, start: Path) -> Path | None:
+    """Node's lookup: the nearest `node_modules/<name>` from `start` upwards (follows pnpm links)."""
+    for folder in (start, *start.parents):
+        candidate = folder / "node_modules" / name
+        if candidate.is_dir():
+            return candidate.resolve()
+    return None
+
+
 def frontend_rows() -> list[str]:
-    data = json.loads(
-        _run(["npx", "--yes", LICENSE_CHECKER, "--production", "--json"], ROOT / "frontend")
-    )
-    rows = []
-    for spec, item in sorted(data.items()):
-        name, _, version = spec.rpartition("@")
-        if name in ("frontend", "paysense-frontend"):
-            continue
-        licence = item.get("licenses", "UNKNOWN")
-        if isinstance(licence, list):
-            licence = " / ".join(licence)
-        rows.append(f"| {name} | {version} | {licence} |")
-    return rows
+    # Walked by hand: `pnpm licenses list --prod` drops transitive optional dependencies (sharp's
+    # LGPL libvips binary, which Next loads at runtime). Follows dependencies, optional
+    # dependencies installed on this platform, and required peers; never devDependencies.
+    seen: dict[Path, dict] = {}
+    queue = [(ROOT / "frontend").resolve()]
+    while queue:
+        folder = queue.pop()
+        manifest = json.loads((folder / "package.json").read_text(encoding="utf-8"))
+        optional_peers = {
+            k for k, v in manifest.get("peerDependenciesMeta", {}).items() if v.get("optional")
+        }
+        wanted = {
+            *manifest.get("dependencies", {}),
+            *manifest.get("optionalDependencies", {}),
+            *(set(manifest.get("peerDependencies", {})) - optional_peers),
+        }
+        for name in wanted:
+            found = _resolve(name, folder)
+            if found and found not in seen:
+                seen[found] = json.loads((found / "package.json").read_text(encoding="utf-8"))
+                queue.append(found)
+    rows = set()
+    for item in seen.values():
+        licence = item.get("license", "UNKNOWN")
+        if isinstance(licence, dict):
+            licence = licence.get("type", "UNKNOWN")
+        rows.add(f"| {item['name']} | {item['version']} | {licence} |")
+    return sorted(rows, key=str.lower)
 
 
 def main() -> int:

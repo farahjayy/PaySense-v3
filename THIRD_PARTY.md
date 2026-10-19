@@ -153,7 +153,7 @@ synthetic (D-14).
 | xgboost | 3.4.1 | Apache-2.0 | dev/ml |
 | yarl | 1.25.1 | Apache-2.0 | runtime |
 
-## Frontend packages, production tree (71)
+## Frontend packages, production tree (66)
 
 | Package | Version | Licence |
 |---|---|---|
@@ -162,7 +162,6 @@ synthetic (D-14).
 | @img/sharp-linux-x64 | 0.35.5 | Apache-2.0 |
 | @next/env | 16.4.0 | MIT |
 | @next/swc-linux-x64-gnu | 16.4.0 | MIT |
-| @playwright/test | 1.64.0 | Apache-2.0 |
 | @reduxjs/toolkit | 2.13.0 | MIT |
 | @standard-schema/spec | 1.1.0 | MIT |
 | @standard-schema/utils | 0.3.0 | MIT |
@@ -178,13 +177,11 @@ synthetic (D-14).
 | @types/d3-shape | 3.2.0 | MIT |
 | @types/d3-time | 3.0.4 | MIT |
 | @types/d3-timer | 3.0.2 | MIT |
-| @types/react | 19.3.0 | MIT |
 | @types/use-sync-external-store | 0.0.6 | MIT |
 | baseline-browser-mapping | 2.11.27 | Apache-2.0 |
 | caniuse-lite | 1.0.30001815 | CC-BY-4.0 |
 | client-only | 0.0.1 | MIT |
 | clsx | 2.1.1 | MIT |
-| csstype | 3.2.3 | MIT |
 | d3-array | 3.2.4 | ISC |
 | d3-color | 3.1.0 | ISC |
 | d3-ease | 3.0.1 | BSD-3-Clause |
@@ -193,8 +190,8 @@ synthetic (D-14).
 | d3-path | 3.1.0 | ISC |
 | d3-scale | 4.0.2 | ISC |
 | d3-shape | 3.2.0 | ISC |
-| d3-time-format | 4.1.0 | ISC |
 | d3-time | 3.1.0 | ISC |
+| d3-time-format | 4.1.0 | ISC |
 | d3-timer | 3.0.1 | ISC |
 | decimal.js-light | 2.5.1 | MIT |
 | detect-libc | 2.1.2 | Apache-2.0 |
@@ -207,16 +204,14 @@ synthetic (D-14).
 | openapi-fetch | 0.17.0 | MIT |
 | openapi-typescript-helpers | 0.1.0 | MIT |
 | picocolors | 1.1.1 | ISC |
-| playwright-core | 1.64.0 | Apache-2.0 |
-| playwright | 1.64.0 | Apache-2.0 |
 | postcss | 8.5.23 | MIT |
-| react-dom | 19.3.0 | MIT |
-| react-is | 16.13.1 | MIT |
-| react-redux | 9.3.0 | MIT |
 | react | 19.3.0 | MIT |
+| react-dom | 19.3.0 | MIT |
+| react-is | 17.0.2 | MIT |
+| react-redux | 9.3.0 | MIT |
 | recharts | 3.10.1 | MIT |
-| redux-thunk | 3.1.0 | MIT |
 | redux | 5.0.1 | MIT |
+| redux-thunk | 3.1.0 | MIT |
 | reselect | 5.2.0 | MIT |
 | scheduler | 0.28.0 | MIT |
 | semver | 7.8.5 | ISC |

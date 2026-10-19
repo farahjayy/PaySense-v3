@@ -8,7 +8,7 @@ import { defineConfig, devices } from "@playwright/test";
  * test app with the real served risk model and the provider configured in the environment
  * (`backend/tests/live_server.py`); screenshots and the replies go to `evidence/live-browser/`.
  *
- *   cd frontend && npx playwright test -c playwright.live.config.ts
+ *   cd frontend && pnpm exec playwright test -c playwright.live.config.ts
  */
 const launchOptions = process.env.PW_CHROMIUM_PATH
   ? { executablePath: process.env.PW_CHROMIUM_PATH }
@@ -36,7 +36,7 @@ export default defineConfig({
       timeout: 180_000,
     },
     {
-      command: "npm run build && npm run start -- --port 3100",
+      command: "pnpm build && pnpm start --port 3100",
       url: FRONTEND_URL,
       env: { NEXT_PUBLIC_API_BASE_URL: API_URL, NEXT_DIST_DIR: ".next-live" },
       reuseExistingServer: false,

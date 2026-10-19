@@ -25,12 +25,12 @@ CHECKS: list[tuple[str, str, list[str]]] = [
     ("backend-format", "backend", ["uv", "run", "ruff", "format", "--check", "."]),
     ("backend-pytest", "backend",
      ["uv", "run", "pytest", "-q", "-p", "no:cacheprovider", "--cov=app", "--cov-report=term"]),
-    ("frontend-lint", "frontend", ["npm", "run", "lint"]),
-    ("frontend-tsc", "frontend", ["npx", "tsc", "--noEmit"]),
-    ("frontend-api-types", "frontend", ["npm", "run", "check:api"]),
-    ("frontend-vitest", "frontend", ["npx", "vitest", "run", "--coverage"]),
-    ("frontend-build", "frontend", ["npm", "run", "build"]),
-    ("frontend-playwright", "frontend", ["npx", "playwright", "test"]),
+    ("frontend-lint", "frontend", ["pnpm", "lint"]),
+    ("frontend-tsc", "frontend", ["pnpm", "exec", "tsc", "--noEmit"]),
+    ("frontend-api-types", "frontend", ["pnpm", "check:api"]),
+    ("frontend-vitest", "frontend", ["pnpm", "exec", "vitest", "run", "--coverage"]),
+    ("frontend-build", "frontend", ["pnpm", "build"]),
+    ("frontend-playwright", "frontend", ["pnpm", "exec", "playwright", "test"]),
 ]  # fmt: skip
 
 RESULT = re.compile(

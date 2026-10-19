@@ -66,5 +66,5 @@ export const API_BASE_URL = resolveApiBaseUrl(
   process.env.NODE_ENV,
 );
 
-/** The app-wide client. Types come from the backend's OpenAPI document (`npm run gen:api`). */
+/** The app-wide client. Types come from the backend's OpenAPI document (`pnpm gen:api`). */
 export const api = createApiClient(API_BASE_URL);

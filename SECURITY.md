@@ -98,7 +98,7 @@ An independent read-only security review of the competition code (backend `app/`
 
 ## 6. Scans
 
-Run `cd backend && uv run python scripts/run_security_scans.py` (needs `uvx`, `npm`, and `gitleaks` on PATH or in `$GITLEAKS`). The latest results are in `evidence/scans/SUMMARY.md`, with the raw JSON beside it.
+Run `cd backend && uv run python scripts/run_security_scans.py` (needs `uvx`, `pnpm`, and `gitleaks` on PATH or in `$GITLEAKS`). The latest results are in `evidence/scans/SUMMARY.md`, with the raw JSON beside it.
 
 ## 7. Responsible use
 

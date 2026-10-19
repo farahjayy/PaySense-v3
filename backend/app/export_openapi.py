@@ -2,7 +2,7 @@
 
     cd backend && uv run python -m app.export_openapi ../frontend/openapi.json
 
-`npm run gen:api` (frontend) calls this, then runs openapi-typescript on the result (ADR D-18).
+`pnpm gen:api` (frontend) calls this, then runs openapi-typescript on the result (ADR D-18).
 The settings are placeholders: building the app and its schema never touches them.
 """
 
