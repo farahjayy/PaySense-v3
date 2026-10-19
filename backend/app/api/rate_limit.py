@@ -1,6 +1,6 @@
 """Failed-login limiter. In-memory and per-process: enough for a small closed UAT.
 
-Deployment note (refdocs/guides/env_setup.md): the key is the TCP peer address, so behind a
+Deployment note (docs/env_setup.md): the key is the TCP peer address, so behind a
 proxy uvicorn must be started with `--proxy-headers --forwarded-allow-ips=<proxy address>`
 (never a wildcard), or every user shares the proxy's bucket. Run a single worker.
 """

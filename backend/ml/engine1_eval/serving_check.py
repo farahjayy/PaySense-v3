@@ -210,9 +210,9 @@ def build(config_name: str, previous_report: str | None = None) -> str:
         "training and serving agree.\n\n"
         "## 3. The served band rule (R3) on real data\n\n"
         "Sections 1 and 2 score the engine v2 rules. This section scores the rule served now, "
-        "through the function serving uses (`real_band_check.py`; plan "
-        "`refdocs/plans/2026-10-19-local-completion.md`, section 3, rule written before this "
-        f"was run).\n\n{real_band_section(synthetic, real, served, config.seed)}"
+        "through the function serving uses (`real_band_check.py`; rule written before this was "
+        "run, in the team's private planning notes).\n\n"
+        f"{real_band_section(synthetic, real, served, config.seed)}"
     )
 
 

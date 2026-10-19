@@ -10,7 +10,7 @@ Logs in as the persona accounts in `data/private/persona_accounts.json` (made by
 `load_personas.py`), runs a small grid of risk checks through `POST /api/risk/check` (stateless:
 nothing is stored), and writes every request and response to
 `evidence/demo-scenario/scenarios.json` and a readable summary to
-`refdocs/fintechathon-2026/demo-scenario.md`. Nothing here is chosen by hand: the summary only
+`docs/demo-scenario.md`. Nothing here is chosen by hand: the summary only
 reports what the model returned, including when no purchase reaches Safe.
 """
 
@@ -29,7 +29,7 @@ import httpx
 ROOT = Path(__file__).resolve().parents[2]
 ACCOUNTS_FILE = ROOT / "data" / "private" / "persona_accounts.json"
 EVIDENCE_FILE = ROOT / "evidence" / "demo-scenario" / "scenarios.json"
-SUMMARY_FILE = ROOT / "refdocs" / "fintechathon-2026" / "demo-scenario.md"
+SUMMARY_FILE = ROOT / "docs" / "demo-scenario.md"
 MAX_WAITS = 6
 
 

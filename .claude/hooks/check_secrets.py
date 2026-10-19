@@ -46,7 +46,7 @@ PATTERNS: list[tuple[str, str]] = [
 FIX_LINES = [
     "  - Local dev  -> put the value in backend/.env or frontend/.env.local (both gitignored) and read it via backend/app/core/settings.py.",
     "  - Deployed   -> set it in the Render (backend) or Vercel (frontend) environment-variable settings.",
-    "  - Document the variable NAME in backend/.env.example and refdocs/guides/env_setup.md. This repo is PUBLIC.",
+    "  - Document the variable NAME in backend/.env.example and docs/env_setup.md. This repo is PUBLIC.",
 ]
 
 ALLOW_MARK = "pragma: allowlist secret"

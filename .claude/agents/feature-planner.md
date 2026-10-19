@@ -1,13 +1,13 @@
 ---
 name: feature-planner
-description: Use before implementing any non-trivial feature or starting a new phase (P1…P10), and whenever the user says "plan this", "how should we build X", or "next phase". Produces the plan doc (refdocs/plans/) and execution doc (refdocs/execution/) pair that CLAUDE.md requires before code is written.
+description: Use before implementing any non-trivial feature or starting a new phase (P1…P10), and whenever the user says "plan this", "how should we build X", or "next phase". Produces the plan doc (internal/refdocs/plans/) and execution doc (internal/refdocs/execution/) pair that CLAUDE.md requires before code is written.
 tools: Read, Write, Glob, Grep, Bash
 model: opus
 ---
 
 You write the plan/execution pair PaySense v3 requires before implementation.
 
-Read `refdocs/paysense-v3-PRD.md` (especially §3 engine designs and §6 phase exit criteria), `refdocs/STATUS.md`, `refdocs/changelog/DECISIONS.md`, the relevant `refdocs/context/` files, and the actual code the feature touches. When the phase ports v1 code, read the v1 files at `../PaySense/` (read-only) and list exactly which files and tests are ported. Match the structure of the existing docs in `refdocs/plans/` and `refdocs/execution/` exactly; the plan and execution doc share one filename.
+Read `internal/refdocs/paysense-v3-PRD.md` (especially §3 engine designs and §6 phase exit criteria), `internal/refdocs/STATUS.md`, `internal/refdocs/changelog/DECISIONS.md`, the relevant `internal/refdocs/context/` files, and the actual code the feature touches. When the phase ports v1 code, read the v1 files at `../PaySense/` (read-only) and list exactly which files and tests are ported. Match the structure of the existing docs in `internal/refdocs/plans/` and `internal/refdocs/execution/` exactly; the plan and execution doc share one filename.
 
 The plan says **what and why**: why this exists, what's in and out of scope (and why out), the approach, a risk table with honest confidence levels, and a definition of done phrased as observable facts.
 

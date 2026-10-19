@@ -1,6 +1,6 @@
 # Render blueprint for the API (backend/). Nothing here is deployed until the author applies it.
 # Secrets are never written here: `sync: false` makes Render ask for the value in its dashboard.
-# Walkthrough: refdocs/guides/deployment.md
+# Walkthrough: docs/deployment.md
 
 services:
   - type: web

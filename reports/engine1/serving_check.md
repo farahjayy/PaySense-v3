@@ -40,7 +40,7 @@ The bands are narrower than nominal, as the P4 audit predicted; the widening fac
 
 ## 3. The served band rule (R3) on real data
 
-Sections 1 and 2 score the engine v2 rules. This section scores the rule served now, through the function serving uses (`real_band_check.py`; plan `refdocs/plans/2026-10-19-local-completion.md`, section 3, rule written before this was run).
+Sections 1 and 2 score the engine v2 rules. This section scores the rule served now, through the function serving uses (`real_band_check.py`; rule written before this was run, in the team's private planning notes).
 
 R1 is the single 1.5 factor, R2 the v2 table (D-54) and R3 the rule served now (monthly floor, population record below 26 weeks, refitted table). All three are scored on the same origins (from 17 weeks of history, every fourth week) with the same random draws; *inside P10-P90* should be 0.80 and *median bias* is (simulated median - realised) as a share of the recent level, above 0 meaning too high. The synthetic rows are the held-out Engine 1 test students scored by the same code, so the two can be read side by side.
 

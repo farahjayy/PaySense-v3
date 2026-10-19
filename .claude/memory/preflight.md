@@ -7,7 +7,7 @@
 
 ## 1. Where are we?
 
-Open `refdocs/STATUS.md`. Find the current phase and the one next action.
+Open `internal/refdocs/STATUS.md`. Find the current phase and the one next action.
 If STATUS's claims and the code disagree, **that's the session's first task** — not the thing you were about to do.
 
 ---
@@ -28,14 +28,14 @@ The frontend and backend share no source — only the generated API types. They 
 
 ## 3. Does a plan exist for what I'm about to build?
 
-Non-trivial feature → a plan doc in `refdocs/plans/` **and** an execution doc in `refdocs/execution/`.
+Non-trivial feature → a plan doc in `internal/refdocs/plans/` **and** an execution doc in `internal/refdocs/execution/`.
 If neither exists, write them first (`/plan-feature`). If one exists but reality has moved, update it before building on it.
 
 ---
 
 ## 4. Has this already been decided?
 
-Skim `refdocs/changelog/DECISIONS.md` before re-opening an architectural choice. If your plan contradicts an ADR, you need a new ADR that says why — not a silent reversal. In particular: candidate algorithms (D-05), the Engine 2 label (D-07), the single feature module (D-09), username-only login (D-03).
+Skim `internal/refdocs/changelog/DECISIONS.md` before re-opening an architectural choice. If your plan contradicts an ADR, you need a new ADR that says why — not a silent reversal. In particular: candidate algorithms (D-05), the Engine 2 label (D-07), the single feature module (D-09), username-only login (D-03).
 
 Check the open `ASSUMED:` list at the bottom of that file. If today's work is load-bearing on one of them, **confirm it before you build**, not after.
 
@@ -66,11 +66,11 @@ The changelog entry is mandatory after any session that changed code, made a dec
 
 | Doc | Purpose |
 |---|---|
-| `refdocs/STATUS.md` | Where the build actually is |
+| `internal/refdocs/STATUS.md` | Where the build actually is |
 | `CLAUDE.md` | Operating brief — rules, constraints, stack |
-| `refdocs/paysense-v3-PRD.md` | Scope, both engine designs, roadmap, decision log |
-| `refdocs/changelog/DECISIONS.md` | Settled calls — read before re-debating |
-| `refdocs/guides/env_setup.md` | Every env var, where to get it |
-| `refdocs/guides/checklist.md` | Pre-ship checklist |
-| `refdocs/plans/` · `refdocs/execution/` | What/why · how/in what order |
-| `refdocs/context/` | v1 lessons, research brief, academic constraints, billing rules |
+| `internal/refdocs/paysense-v3-PRD.md` | Scope, both engine designs, roadmap, decision log |
+| `internal/refdocs/changelog/DECISIONS.md` | Settled calls — read before re-debating |
+| `docs/env_setup.md` | Every env var, where to get it |
+| `internal/refdocs/guides/checklist.md` | Pre-ship checklist |
+| `internal/refdocs/plans/` · `internal/refdocs/execution/` | What/why · how/in what order |
+| `internal/refdocs/context/` | v1 lessons, research brief, academic constraints, billing rules |

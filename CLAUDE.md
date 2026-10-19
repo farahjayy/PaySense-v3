@@ -1,13 +1,13 @@
 # PaySense v3 — Claude Context
 
-> Read this file at the start of every session, then run through `.claude/memory/preflight.md` — it's the six-question gate that turns these rules into something you actually did. PaySense v3 is an AI-driven decision support system that helps Malaysian university students make informed BNPL purchasing decisions by combining financial health forecasting with BNPL risk classification — forked from PaySense v2 (the UTP final-year project, commit `cdd43cf`) for the FinTechaton 2026 Shenzhen competition. v2 lives separately at `C:\Users\User\Documents\College\FYP\PaySense_v2` and is a read-only reference from this repo — never edit it from a v3 session. The competition-specific differences are recorded in the PRD and `refdocs/changelog/DECISIONS.md`.
+> Read this file at the start of every session, then run through `.claude/memory/preflight.md` — it's the six-question gate that turns these rules into something you actually did. PaySense v3 is an AI-driven decision support system that helps Malaysian university students make informed BNPL purchasing decisions by combining financial health forecasting with BNPL risk classification — forked from PaySense v2 (the UTP final-year project, commit `cdd43cf`) for the FinTechaton 2026 Shenzhen competition. v2 lives separately at `C:\Users\User\Documents\College\FYP\PaySense_v2` and is a read-only reference from this repo — never edit it from a v3 session. The competition-specific differences are recorded in the PRD and `internal/refdocs/changelog/DECISIONS.md`.
 > The PRD is the source of truth; this file is the short operating brief; preflight is the gate. Keep all three short.
 
 ---
 
 ## Competition variant (FinTechathon 2026, Topic A)
 
-This copy has its **own Supabase project** (`paysense-v3`); the FYP repo is frozen at tag `fyp-final` and never touched from here. Scope and order: `refdocs/fintechathon-2026/work-packages.md`. Overrides, each with an ADR:
+This copy has its **own Supabase project** (`paysense-v3`); the FYP repo is frozen at tag `fyp-final` and never touched from here. Scope and order: `internal/refdocs/fintechathon-2026/work-packages.md`. Overrides, each with an ADR:
 - **D-05 → D-47:** an assistant layer uses an LLM. The LLM **narrates and proposes; it never produces a score, forecast or amount**. Engine candidates are unchanged.
 - **D-53:** the LLM is provider-agnostic: Gemini free tier first, Claude (Anthropic API) as the upgrade.
 - **D-48:** three permission tiers; the model has **no write tool**; writes run only from a user-confirmed pending action.
@@ -20,13 +20,15 @@ This copy has its **own Supabase project** (`paysense-v3`); the FYP repo is froz
 
 ## Order of authority (when docs conflict, surface it — don't resolve silently)
 
-0. `refdocs/STATUS.md` — **where we are right now.** Phase checklist + the current module's progress. Check this first, every session.
-1. `refdocs/paysense-v3-PRD.md` — **what & why.** Owns scope, architecture, both engine designs, roadmap, Decision Log.
-2. `refdocs/changelog/DECISIONS.md` — **settled calls.** Read before re-debating an architectural choice.
-3. `refdocs/plans/*.md` — **what to build & why.**
-4. `refdocs/execution/*.md` — **how & in what order.**
-5. `refdocs/guides/` — **operational reference.** `env_setup.md` (every variable, where to get it), `checklist.md` (pre-ship).
-6. `refdocs/paysense-v3-sources.md` and `refdocs/context/` — **raw research and founding context** (v1 lessons, research brief, academic constraints, BNPL billing rules).
+**Public vs private.** `internal/` is gitignored and is its own private git repo: `internal/refdocs/` (PRD, status, decisions, plans, research, competition material) and `internal/pdfs/` (organiser PDFs, deck). Only `docs/` (technical documentation, honest limits, roadmap, demo scenario, deployment, env setup, file structure), `SECURITY.md` and the root files are public. Never link a public file to anything under `internal/`, and never copy private content into `docs/`.
+
+0. `internal/refdocs/STATUS.md` — **where we are right now.** Phase checklist + the current module's progress. Check this first, every session.
+1. `internal/refdocs/paysense-v3-PRD.md` — **what & why.** Owns scope, architecture, both engine designs, roadmap, Decision Log.
+2. `internal/refdocs/changelog/DECISIONS.md` — **settled calls.** Read before re-debating an architectural choice.
+3. `internal/refdocs/plans/*.md` — **what to build & why.**
+4. `internal/refdocs/execution/*.md` — **how & in what order.**
+5. `docs/` (public) and `internal/refdocs/guides/` — **operational reference.** `docs/env_setup.md` (every variable, where to get it), `docs/deployment.md`, `internal/refdocs/guides/checklist.md` (pre-ship).
+6. `internal/refdocs/paysense-v3-sources.md` and `internal/refdocs/context/` — **raw research and founding context** (v1 lessons, research brief, academic constraints, BNPL billing rules).
 
 If two docs disagree, stop and ask. Don't pick one and move on.
 
@@ -35,13 +37,13 @@ If two docs disagree, stop and ask. Don't pick one and move on.
 ## Mandatory rules
 
 ### 1. Update the changelog after every session
-After any session that changed code, made a decision, or modified a plan, add an entry to **`refdocs/changelog/CHANGELOG.md`** (format is in that file). Do not skip. Even a one-line fix gets a one-line entry. Update `refdocs/STATUS.md` in the same pass — the author relies on it as the single source of truth.
+After any session that changed code, made a decision, or modified a plan, add an entry to **`internal/refdocs/changelog/CHANGELOG.md`** (format is in that file). Do not skip. Even a one-line fix gets a one-line entry. Update `internal/refdocs/STATUS.md` in the same pass — the author relies on it as the single source of truth.
 
 ### 2. Plan before you build
-Before implementing any non-trivial feature, a **plan doc** (`refdocs/plans/`) and an **execution doc** (`refdocs/execution/`) must exist. If they don't, create them before writing code (`/plan-feature`).
+Before implementing any non-trivial feature, a **plan doc** (`internal/refdocs/plans/`) and an **execution doc** (`internal/refdocs/execution/`) must exist. If they don't, create them before writing code (`/plan-feature`).
 
 ### 3. Log decisions as ADRs
-New architectural/design decision → add an ADR to `refdocs/changelog/DECISIONS.md` (Decision → Why → Rejected/Trade-off) and its one-liner to PRD §7 with the same id. Mark unresolved assumptions `ASSUMED:` and surface them at the next checkpoint.
+New architectural/design decision → add an ADR to `internal/refdocs/changelog/DECISIONS.md` (Decision → Why → Rejected/Trade-off) and its one-liner to PRD §7 with the same id. Mark unresolved assumptions `ASSUMED:` and surface them at the next checkpoint.
 
 ### 4. Keep docs current
 If you deviate from a plan during execution, update the execution doc to match reality. Stale docs are worse than no docs.
@@ -126,4 +128,4 @@ P0 Foundation → P1 Ledger & BNPL domain → P2 Synthetic population → P3 Eng
 
 ---
 
-*Companion brief to `refdocs/paysense-v3-PRD.md`. Last updated: 2026-10-08.*
+*Companion brief to `internal/refdocs/paysense-v3-PRD.md`. Last updated: 2026-10-08.*

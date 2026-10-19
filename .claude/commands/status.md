@@ -5,7 +5,7 @@ allowed-tools: Read, Glob, Grep, Bash
 
 Tell me where PaySense v3 actually stands.
 
-Read `refdocs/STATUS.md`, the last few `refdocs/changelog/CHANGELOG.md` entries, and any in-progress execution doc. Then check reality: `git log --oneline -10`, `git status`, and the code for the current phase. If tests exist, say whether STATUS's verification ledger is backed by a recent real run.
+Read `internal/refdocs/STATUS.md`, the last few `internal/refdocs/changelog/CHANGELOG.md` entries, and any in-progress execution doc. Then check reality: `git log --oneline -10`, `git status`, and the code for the current phase. If tests exist, say whether STATUS's verification ledger is backed by a recent real run.
 
 Report:
 - Current phase and what's genuinely done vs claimed done

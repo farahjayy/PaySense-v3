@@ -88,7 +88,7 @@ The **Security drill** page (`/security`, `POST /api/security/drill`) runs 14 at
 8. **Synthetic training data:** Engine 2 is trained on simulated students; its probabilities are as good as the generator's assumptions (see the honest-limits paragraph and `reports/engine2/`).
 9. **The global token cap reads every user's token counts** (an aggregate-only, unscoped read: ASSUMED 26).
 10. **The Anthropic adapter has been tested only against a mocked transport** (no credit yet).
-11. **Migrations 0003–0006 are written but not yet applied** to the real project at the time of writing (`refdocs/fintechathon-2026/questions.md`).
+11. **Database protections depend on the migrations being applied.** Migrations 0003–0006 are applied to the real project and `scripts/check_rls.py` passes on all 13 tables; a new environment must apply them all before it serves anyone.
 12. **"Delete my data" keeps the (seeded) account**, empty; the account itself is removed by the operator.
 13. **The number check reads figures, not meaning.** A sign flip ("you gain RM50" for −50) or a correct figure attached to the wrong thing passes; the cards beside the narration carry the computed values.
 14. **Import by chat does not check the row type.** The model chooses income or expense; the person sees it in the preview before confirming.

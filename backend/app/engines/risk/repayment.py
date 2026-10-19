@@ -7,7 +7,7 @@ disagree with its own label. It is shown beside the probability instead, plainly
 Two different things are counted. A *missed* instalment is unpaid and past its due date, however
 old: it is still owed. A *late* one was paid after its due date, looked at over the last six months
 only. The warning level borrows Bank Negara Malaysia's personal-financing practice of suspending an
-account after three consecutive missed payments (refdocs/context/research-2026-10-08.md): three
+account after three consecutive missed payments (the team's research brief): three
 missed instalments in a row on one plan is when the flag stops being a note and becomes a warning.
 An instalment paid late is not missed, so late payments alone never reach the warning.
 """

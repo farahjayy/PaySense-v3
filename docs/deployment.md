@@ -14,7 +14,7 @@
 
 | **Not** verified — do these on deploy | Why |
 |---|---|
-| Migrations 0003–0006 on the real Supabase project | They cannot be applied from the build session (`questions.md`); every v3 feature that stores something needs them |
+| Migrations 0003–0006 on the real Supabase project | They cannot be applied from the build session (the author applies them); every v3 feature that stores something needs them |
 | Anything v3 against the real database | Login itself needs 0003 |
 | `FORWARDED_ALLOW_IPS` | Render's proxy addresses must be read from its documentation or observed (below) |
 | A phone browser on the live URL | Needs the live URL |

@@ -39,7 +39,10 @@ NOTES = """## Notes on specific licences
 - **`caniuse-lite` (CC-BY-4.0)** is browser-support data used at build time by the CSS
   toolchain. Attribution: data from caniuse.com by Alexis Deveria.
 - Python packages marked *dev/ml* are used only for tests and offline training; they are not
-  part of the deployed server."""
+  part of the deployed server.
+- **Fonts: Bricolage Grotesque and Figtree (SIL Open Font License 1.1)**, used on the login
+  page through `next/font/google`, which downloads them at build time and serves them from the
+  app's own domain. They are used unmodified. Licence: https://openfontlicense.org."""
 
 
 def _run(cmd: list[str], cwd: Path) -> str:

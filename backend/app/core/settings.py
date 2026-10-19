@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import Field, SecretStr, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ENV_GUIDE = "refdocs/guides/env_setup.md"
+ENV_GUIDE = "docs/env_setup.md"
 MIN_SECRET_LENGTH = 32
 
 

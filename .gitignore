@@ -1,29 +1,23 @@
-# OS
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Editors
 .vscode/
 .idea/
 *.swp
 
-# Secrets — never commit
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
-# Claude Code per-machine settings
 .claude/settings.local.json
 
-# Local scratch
 tmp/
 scratch/
 *.log
 
-# Node / TypeScript
 node_modules/
 dist/
 .next/
@@ -35,7 +29,6 @@ coverage/
 playwright-report/
 test-results/
 
-# Python
 __pycache__/
 *.py[cod]
 .venv/
@@ -48,12 +41,8 @@ venv/
 .coverage
 htmlcov/
 
-# Data / ML
-# Real personal data — NEVER committed (public repo, ADR D-14)
 data/private/
-# Downloaded public datasets are fetched by scripts, not committed
 data/external/**/raw/
-# Training checkpoints and experiment tracking (served artefacts in backend/models/ ARE committed)
 backend/ml/**/checkpoints/
 *.ckpt
 mlruns/
@@ -61,19 +50,16 @@ wandb/
 optuna_studies/
 data/engine1/
 
-# UAT: real response files stay local; only the invented example is committed
 uat/data/*
 !uat/data/example/
 uat/testers.csv
-# UAT reports of real runs stay local too; only the report made from the invented example is committed
 reports/uat/*
 !reports/uat/example*
 
-# Author's working material: real bank statements and screenshots. Public repo (D-14): never commit.
 progress_material/
 
-# Agent worktrees (local only)
 .claude/worktrees/
 
-# Scratch NumPy arrays from ad-hoc analysis (none are part of the project)
 *.npy
+
+internal/

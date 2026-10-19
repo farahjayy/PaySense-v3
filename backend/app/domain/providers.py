@@ -1,7 +1,7 @@
 """BNPL provider rules as data (ADR D-24). Served by the API; never mirrored in the frontend (D-17).
 
 Only SPayLater, TikTok PayLater and Atome are rule-driven — their rules are confirmed from real
-students' checkouts (refdocs/context/bnpl-billing-rules-my.md). Every other provider is the manual
+students' checkouts (the team's billing-rules research note). Every other provider is the manual
 "Other provider" path: the user types the dates and amounts from their own checkout and the app
 applies no rule and no fee formula. A provider becomes rule-driven only after a real checkout
 example is recorded in that file and a test pins its schedule.

@@ -42,7 +42,7 @@
 
 ## bnpl_billing_rules_my
 
-- **Reference:** `refdocs/context/bnpl-billing-rules-my.md` in this repo (researched 2026-09-25 from provider pages; the first-payment timing for SPayLater, TikTok PayLater and Atome was confirmed against real students' checkouts, D-24).
+- **Reference:** the team's billing-rules research note (researched 2026-09-25 from provider pages; the first-payment timing for SPayLater, TikTok PayLater and Atome was confirmed against real students' checkouts, D-24).
 - **States:** SPayLater — nothing at checkout, first bill a month later; 0% for the 1-month plan (and 3-month on Shopee marketplace checkouts), about 1.5%/month on 12/18/24-month plans, limit RM2,500 to RM10,000. TikTok PayLater — nothing at checkout, about 1.5%/month on the 12-month plan, 0% on the 1- and 6-month plans, limit up to RM10,000. Atome — first payment on the purchase date, 3-payment plan at 0%, 6 and 12 months at 1.5%/month, limit varies by user.
 - **Used for:** the instalment counts each provider offers, the fee rates, and the range of credit limits.
 - **Does NOT state / limits:** the document itself lists unverified items (TikTok's late fee; whether SPayLater's 6-month plan is 0%; the billing cut-off). Limits are for the general user base, **not students specifically**.
