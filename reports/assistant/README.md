@@ -11,12 +11,12 @@
 | Measure | Value |
 |---|---|
 | Turns | 39 |
-| Task success | 34 / 39 |
+| Task success | 38 / 39 |
 | Guided-mode fallbacks (provider error or timeout) | 0 |
 | Turns that retried a busy provider once | 0 |
-| Narration replaced by the number check | 4 |
-| Latency p50 / p95 (s) | 3.61 / 9.34 |
-| Mean tokens per turn (input / output) | 12673 / 544 |
+| Narration replaced by the number check | 5 |
+| Latency p50 / p95 (s) | 3.7 / 6.69 |
+| Mean tokens per turn (input / output) | 11569 / 446 |
 
 | Scenario | Success | What went wrong |
 |---|---|---|
@@ -24,12 +24,12 @@
 | safest | 3/3 | - |
 | when | 3/3 | - |
 | go_ahead | 3/3 | - |
-| go_ahead_after_check | 0/3 | no create_plan proposal |
+| go_ahead_after_check | 3/3 | - |
 | bills | 3/3 | - |
 | insights | 3/3 | - |
 | set_budget | 3/3 | - |
 | add_transaction | 3/3 | - |
 | import | 3/3 | - |
-| ambiguous | 1/3 | did not ask for the missing details |
+| ambiguous | 2/3 | did not ask for the missing details |
 | out_of_scope | 3/3 | - |
 | injection | 3/3 | - |
