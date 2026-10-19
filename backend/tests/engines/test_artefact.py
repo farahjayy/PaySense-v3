@@ -286,3 +286,23 @@ def test_a_model_made_with_another_population_record_is_refused(tmp_path):
     constants = {**metadata(b"")["serving_constants"], "POPULATION_RECORD_SHA256": "0" * 64}
     with pytest.raises(ArtefactError, match="POPULATION_RECORD_SHA256"):
         load_engine2(write(tmp_path / "pop", serving_constants=constants))
+
+
+def test_a_tampered_population_record_stops_the_model_at_load_not_at_a_users_request(
+    tmp_path, monkeypatch
+):
+    # ml-audit C9: the record's digest was checked lazily, on the first request with a history
+    # under 26 weeks, so a changed file passed start-up and then failed for a user.
+    from app.engines.forecasting.population import PopulationError
+    from app.engines.risk import artefact
+
+    def refuse(path, expected_sha256):
+        raise PopulationError("the population record's digest does not match")
+
+    monkeypatch.setattr(artefact, "load_population", refuse)
+    with pytest.raises(ArtefactError, match="population record"):
+        load_engine2(write(tmp_path / "v1"))
+
+
+def test_the_real_population_record_passes_the_load_time_check(tmp_path):
+    assert load_engine2(write(tmp_path / "v1")).version == "v1"

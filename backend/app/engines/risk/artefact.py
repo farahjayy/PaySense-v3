@@ -24,6 +24,7 @@ import onnxruntime
 
 from app.engines.forecasting.bands import BAND_FILE, load_band_rule, text_digest
 from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
+from app.engines.forecasting.population import PopulationError, load_population
 from app.engines.forecasting.service import DASHBOARD_MONTHS
 from app.engines.forecasting.serving import ARTEFACT_VERSION as ENGINE1_VERSION
 from app.engines.forecasting.serving import SERVED_MODEL
@@ -95,6 +96,20 @@ def _read_metadata(folder: Path) -> dict[str, Any]:
         raise ArtefactError(f"cannot read the model metadata at {path}: {err}") from err
 
 
+def _check_population_record() -> None:
+    """The band rule's population record must be readable and match its digest now, not on the
+    first request from a student with under 26 weeks of history (ml-audit C9)."""
+    if not BAND_FILE.exists():
+        return
+    rule = load_band_rule(BAND_FILE)
+    if rule.population is None:
+        return
+    try:
+        load_population(rule.population_path(), rule.population.sha256)
+    except PopulationError as err:
+        raise ArtefactError(f"the population record cannot be used: {err}") from err
+
+
 def _check_matches_running_code(meta: Mapping[str, Any], folder: Path) -> None:
     if meta.get("feature_schema_hash") != FEATURE_SCHEMA_HASH:
         raise ArtefactError(
@@ -110,6 +125,7 @@ def _check_matches_running_code(meta: Mapping[str, Any], folder: Path) -> None:
                 f"{name} was {recorded.get(name)!r} when the model's labels were made but is "
                 f"{live!r} now"
             )
+    _check_population_record()
     label = meta.get("label", {})
     if label.get("horizon_max_weeks") != RISK_CHECK_MAX_WEEKS:
         raise ArtefactError(
