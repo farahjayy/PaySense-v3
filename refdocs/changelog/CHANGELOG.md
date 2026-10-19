@@ -28,6 +28,11 @@ Rules that make this file worth keeping:
 
 ## [Unreleased]
 
+### 2026-10-19 — Engine v3 merged into the working branch: verification
+- **Changed:** merged `worktree-agent-a358e084def240858` (engine v3 round) into `claude/fervent-tesla-2rh1ov`; the round's merge notes were folded into CHANGELOG, STATUS and `questions.md` (rows 39–44; rows 22, 34 and 38 marked resolved or partly resolved) and removed; the technical documentation, deck outline, demo video script and `demo-scenario.md` now quote the v3 reports.
+- **Verified (on the merged code):** `cd backend && uv run pytest -q` → **2723 passed**, 25 integration deselected; ruff check and format clean; `cd frontend && npx vitest run` → 48 files, **432 passed**; `npm run check:api` matches; `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npx playwright test` → **28 passed**.
+- **Known issues / next steps:** the ml-auditor pass over the v3 round is still running when this is written; its findings go in the next entry.
+
 ### 2026-10-18 — Engine v3 round (F1, F2, G1, G5): both engines replaced by pre-registered rules
 - **Decided:** D-60 (monthly floor), D-61 (population error record below 26 weeks), D-62 (two-part Engine 2 target, reasons about the purchase), D-63 (savings in months of outgoings), D-64 (serve rules, coupling, new lockbox 10,000–10,999); ASSUMED 50–53. All "Claude decision, author to confirm".
 - **Changed:** `simulate.py` (`clip`), `bands.py` (clip, population reference), new `population.py`, `service.served_error_record(s)` (one path for serving, labels and checks), `artefact.py` (`target`, `POPULATION_RECORD_SHA256`), `check.py` (`compose`), `assess.py` (scaled reasons), `features.py` (`savings_buffer_to_outgoings`, `DEFINITIONS_VERSION` v3), `templates.py`; `ml/engine1_eval/band_v3.py` (new), outcome and recursion checks run R2 and R3; `ml/engine2_train` two-part target in models/cv/calibrate/train/lockbox/stress/export/report/compare_versions; labels version 4 (11,000). Served files: `models/engine1/band_inflation.json` = `rules/v3`, `population_errors.json`, `models/engine2/v3/`. Reports: `reports/engine1/band_v3.md`, `outcome_check.md`, `recursion_check.md`, `reports/engine2/*` (v2 kept in `reports/engine2/v2/`), `demo-scenario.md`, `honest-limits.md`.
