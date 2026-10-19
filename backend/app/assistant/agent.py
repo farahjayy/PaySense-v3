@@ -252,7 +252,14 @@ def _turn(ctx: ToolContext, llm: LLM, body: ChatIn, allowance: int) -> ChatOut:
         sources = [r.data for r in records] + [
             r.pending_action.model_dump(mode="json") for r in records if r.pending_action
         ]
-        person = [body.message, body.pasted_text or ""]
+        # The student's own words are a source: this message, the paste and their earlier turns
+        # (a price typed two turns ago is not invented). The assistant's earlier turns never are:
+        # a figure only an assistant turn contains is exactly what the check exists to catch.
+        person = [
+            body.message,
+            body.pasted_text or "",
+            *(turn.text for turn in body.history if turn.role == "user"),
+        ]
         allowed = numbers.allowed_figures(
             sources, [r.step.summary for r in records], echoed=echoed, trusted=person
         )

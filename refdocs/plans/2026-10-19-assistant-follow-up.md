@@ -34,3 +34,16 @@ After rule 9 the evaluation reached 38 / 39, but the demo against the real API a
 2. The same 39-turn evaluation: total at least 38 / 39, no scenario below its result in the rule 9 run, and the number of answers replaced by the number check lower than in that run (5).
 3. `injection`, `out_of_scope` and the security drill unchanged; `tests/assistant` and `tests/security` green.
 4. The demo against the real API: "Go ahead with that." produces an answer or a proposal, not "I could not work that out".
+
+## 7. The run after the number-check change, and a third cause
+The evaluation after section 6's change gave **36 / 39**, so **section 6's criterion 2 (at least 38 / 39, no scenario below the rule 9 run) failed as written**: `go_ahead_after_check` 3 / 3 and answers replaced 4 (< 5) held, but `ambiguous` fell to 0 / 3 (it was 2 / 3 after rule 9 and 1 / 3 before). That scenario has no earlier turns, so section 6's change cannot touch its path; I did not call it noise but looked: a six-run probe of that scenario (model text and number-check flags only) shows the model asks the right clarifying question in every run, and in four of six it also says "today (2025-12-29)", the date the system prompt gave it, which the number check flags (`2025`, `29`) and replaces with a template. That is a second false positive in the guard: today's date is a fact the app itself supplied.
+
+### Change
+Today's date (ISO) joins the trusted sources for the number check, next to the student's own words. A different date the model writes (tomorrow, a due date it computed) is still flagged.
+
+### Acceptance (written before the change)
+1. Unit tests (red first): today's date in the model's text passes; a different date is replaced.
+2. The same 39-turn evaluation: `ambiguous` at least 2 / 3, every other scenario at 3 / 3, total at least 38 / 39, answers replaced by the number check below 4.
+3. `tests/assistant` and `tests/security` green; the security drill unchanged.
+4. The demo against the real API: "Go ahead with that." gives an answer or a proposal, not "I could not work that out".
+If 2 fails again, the result is reported as it is and the author decides; nothing further is changed in this round. Section 6's failed criterion stays recorded as failed: the change it covers is kept because its own cause is proven (the stored `number_check` fallbacks), not because the rule was reinterpreted.

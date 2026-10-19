@@ -276,3 +276,35 @@ def test_provider_status_codes_that_are_worth_one_retry():
 
     assert {429, 500, 502, 503, 504} <= RETRYABLE_STATUS
     assert 400 not in RETRYABLE_STATUS and 401 not in RETRYABLE_STATUS
+
+
+# --- the student's own earlier words are a source for figures; the assistant's are not ---
+def test_a_figure_the_student_typed_in_an_earlier_turn_is_not_flagged_as_invented(chat):
+    # Found in the audit log of the real demo: the model asked "Do you want me to prepare the
+    # RM799 plan?" after "Go ahead with that." and the number check replaced it, because 799 was
+    # only in the student's FIRST message, not the current one: "I could not work that out".
+    history = [
+        {"role": "user", "text": "Can I afford an RM799 phone on SPayLater over 3 months?"},
+        {"role": "assistant", "text": "It rates At Risk, so I would wait."},
+    ]
+    body = chat([say("Do you want me to prepare the RM799 SPayLater plan over 3 months anyway?")],
+                message="Go ahead with that.", history=history).json()  # fmt: skip
+    assert body["narration_replaced"] is False
+    assert "RM799" in body["reply"]
+
+
+def test_a_figure_only_an_earlier_assistant_turn_contains_is_still_replaced(chat):
+    history = [
+        {"role": "user", "text": "Can I afford a phone?"},
+        {"role": "assistant", "text": "A phone at RM1,234 would be fine."},
+    ]
+    body = chat([say("As I said, RM1,234 would be fine.")],
+                message="Go ahead with that.", history=history).json()  # fmt: skip
+    assert body["narration_replaced"] is True
+
+
+def test_a_figure_in_no_turn_is_replaced(chat):
+    history = [{"role": "user", "text": "Can I afford an RM799 phone?"}]
+    body = chat([say("That comes to RM42 a month.")],
+                message="Go ahead with that.", history=history).json()  # fmt: skip
+    assert body["narration_replaced"] is True
