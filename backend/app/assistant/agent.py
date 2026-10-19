@@ -255,7 +255,9 @@ def _turn(ctx: ToolContext, llm: LLM, body: ChatIn, allowance: int) -> ChatOut:
         # The student's own words are a source: this message, the paste and their earlier turns
         # (a price typed two turns ago is not invented). The assistant's earlier turns never are:
         # a figure only an assistant turn contains is exactly what the check exists to catch.
+        # Today's date is the other legitimate source: the system prompt gives it to the model.
         person = [
+            ctx.today.isoformat(),
             body.message,
             body.pasted_text or "",
             *(turn.text for turn in body.history if turn.role == "user"),

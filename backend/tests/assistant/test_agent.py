@@ -308,3 +308,19 @@ def test_a_figure_in_no_turn_is_replaced(chat):
     body = chat([say("That comes to RM42 a month.")],
                 message="Go ahead with that.", history=history).json()  # fmt: skip
     assert body["narration_replaced"] is True
+
+
+# --- today's date is a fact the app itself gave the model ---
+def test_todays_date_in_the_models_text_is_not_flagged_as_invented(chat):
+    # Found by probing the "ambiguous" scenario: the model asks the right question and adds "I'll
+    # use today (2025-12-29) as the purchase date"; the number check flagged 2025 and 29.
+    body = chat([say("Which provider and how many instalments? I'll use today, 2025-12-29, as "
+                     "the purchase date.")], message="Can I afford a phone?").json()  # fmt: skip
+    assert body["narration_replaced"] is False
+    assert "Which provider" in body["reply"]
+
+
+def test_a_different_date_the_model_writes_is_still_replaced(chat):
+    body = chat([say("Your next instalment is due on 2026-01-30.")],
+                message="When is my next payment?").json()  # fmt: skip
+    assert body["narration_replaced"] is True
