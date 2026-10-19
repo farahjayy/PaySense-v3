@@ -1,11 +1,14 @@
 import { render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import LoginPage from "@/app/login/page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
-vi.mock("@/lib/api/client", () => ({ api: { POST: vi.fn() } }));
+vi.mock("@/lib/api/client", () => ({
+  API_BASE_URL: "http://api.test",
+  api: { POST: vi.fn() },
+}));
 
 describe("LoginPage", () => {
   it("says what PaySense does in one headline and one line", () => {
@@ -71,5 +74,29 @@ describe("LoginPage", () => {
     const results = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
 
     expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
+  describe("with Google sign-in on", () => {
+    beforeEach(() => vi.stubEnv("NEXT_PUBLIC_GOOGLE_SIGNIN", "true"));
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("offers Google first and keeps the passphrase form under a test-account fold", () => {
+      render(<LoginPage />);
+
+      const google = screen.getByRole("link", { name: "Continue with Google" });
+      const fold = screen.getByText("Use a test account").closest("details") as HTMLElement;
+      expect(fold).not.toHaveAttribute("open");
+      expect(within(fold).getByLabelText(/username/i)).toBeInTheDocument();
+      expect(google.compareDocumentPosition(fold) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.getByText("Continue with Google to start.")).toBeVisible();
+    });
+
+    it("has no automated accessibility violations", async () => {
+      const { container } = render(<LoginPage />);
+
+      const results = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+
+      expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    });
   });
 });

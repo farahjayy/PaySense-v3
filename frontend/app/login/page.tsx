@@ -9,8 +9,9 @@ import { LocalTerms } from "@/components/ui/LocalTerms";
 export const metadata: Metadata = { title: "Log in" };
 
 export default function LoginPage() {
-  // The pitch panel has nothing to tab to, so the username field is still the first stop for
-  // keyboard users even though the panel comes first in the document.
+  // With Google sign-in on (D-69) it is the main way in; the passphrase form stays for the
+  // seeded test and judge accounts, folded away. The pitch panel has nothing to tab to.
+  const google = process.env.NEXT_PUBLIC_GOOGLE_SIGNIN === "true";
   return (
     <main className="lg-shell">
       <LoginPanel />
@@ -18,9 +19,21 @@ export default function LoginPage() {
         <section className="lg-card">
           <HelloFace />
           <h1>Welcome</h1>
-          <p className="lg-lede">Enter your username and passphrase to start.</p>
-          <LoginForm />
-          <GoogleSignIn />
+          {google ? (
+            <>
+              <p className="lg-lede">Continue with Google to start.</p>
+              <GoogleSignIn />
+              <details className="lg-test-account">
+                <summary>Use a test account</summary>
+                <LoginForm />
+              </details>
+            </>
+          ) : (
+            <>
+              <p className="lg-lede">Enter your username and passphrase to start.</p>
+              <LoginForm />
+            </>
+          )}
           <p className="lg-note">
             PaySense gives estimates from your own records. It is not financial advice and not a
             credit decision: you decide, and nothing changes until you confirm it.

@@ -63,7 +63,6 @@ export function GoogleSignIn() {
   if (!enabled) return null;
   return (
     <div className="lg-google-block">
-      <p className="lg-or">or</p>
       {/* A real navigation, not fetch: the flow runs through Google's pages and the API's cookie. */}
       <a className="lg-google" href={`${API_BASE_URL}/api/auth/google`}>
         <GoogleMark />

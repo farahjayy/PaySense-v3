@@ -31,12 +31,13 @@ def normalise(token: str) -> str:
 
 
 def _number_forms(value: float, key: str) -> set[str]:
+    # A sen field is only ever written in ringgit: its raw value would let a 100x error pass.
+    if key.endswith("_sen"):
+        ringgit = abs(value) / 100
+        return {normalise(f"{ringgit:.2f}"), normalise(str(round(ringgit)))}
     forms = {normalise(f"{value:.6f}"), normalise(str(round(value)))}
     for digits in (1, 2):
         forms.add(normalise(f"{value:.{digits}f}"))
-    if key.endswith("_sen"):
-        ringgit = abs(value) / 100
-        forms |= {normalise(f"{ringgit:.2f}"), normalise(str(round(ringgit)))}
     if 0 <= abs(value) <= 1 and isinstance(value, float):
         percent = abs(value) * 100
         forms |= {normalise(str(round(percent))), normalise(f"{percent:.1f}")}

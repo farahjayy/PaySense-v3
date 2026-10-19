@@ -32,8 +32,9 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
     assistant_model: str | None = None  # None: the provider adapter's default model
-    # Transaction descriptions are user text; hide them from the LLM provider if preferred.
-    assistant_redact_descriptions: bool = False
+    # Transaction descriptions are user text (merchant names, notes, injected instructions): kept
+    # from the LLM provider unless a deployment turns this off.
+    assistant_redact_descriptions: bool = True
     assistant_max_tool_calls: int = Field(default=6, ge=1, le=12)  # ASSUMED 16 (D-47)
     assistant_max_output_tokens: int = Field(default=1024, ge=64, le=8192)
     assistant_timeout_seconds: float = Field(default=45.0, gt=0, le=120)

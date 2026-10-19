@@ -451,22 +451,6 @@
 }
 
 /* WP7: the responsible-use line and the context box under the form */
-.login-theme .lg-or {
-  margin: 18px 0 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 0.8125rem;
-  color: var(--lg-ink-2);
-}
-.login-theme .lg-or::before,
-.login-theme .lg-or::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.3;
-}
 .login-theme .lg-google {
   width: 100%;
   min-height: 56px;
@@ -487,6 +471,14 @@
 .login-theme .lg-google:focus-visible {
   outline: 3px solid var(--lg-teal);
   outline-offset: 3px;
+}
+.login-theme .lg-test-account {
+  margin-top: 1rem;
+}
+.login-theme .lg-test-account summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--lg-ink-2);
 }
 .login-theme .lg-note {
   margin-top: 1rem;

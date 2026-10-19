@@ -41,6 +41,9 @@ def decode_access_token(
             algorithms=[ALGORITHM],
             issuer=ISSUER,
             options={"require": ["exp", "sub", "iss", "ver"], "verify_exp": False},
+            # a token checked a moment after it was issued can read as "not yet valid" when the
+            # clock steps back (seen on WSL2); expiry is still checked exactly below
+            leeway=30,
         )
     except jwt.PyJWTError as err:
         raise InvalidTokenError(str(err)) from err

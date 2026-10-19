@@ -63,3 +63,10 @@ def test_small_counts_need_no_source():
 def test_a_figure_glued_to_rm_or_a_word_is_still_checked():
     assert unsupported("You can spend RM450 more.", set()) == ["450"]
     assert unsupported("Costs RM799.00 in total.", allowed_figures([{"x_sen": 79900}], [])) == []
+
+
+def test_a_sen_value_written_as_ringgit_is_refused():
+    """Mock panel finding 1: "RM122,488.00" passed for 122,488 sen (RM1,224.88), a 100x error."""
+    allowed = allowed_figures([{"total_spent_sen": 122488}], [])
+    assert unsupported("You spent RM1,224.88 this month.", allowed) == []
+    assert unsupported("You spent RM122,488.00 this month.", allowed) == ["122,488.00"]
