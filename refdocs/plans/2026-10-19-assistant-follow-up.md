@@ -22,3 +22,15 @@ If any of the three fails, the rule is reverted and both runs are reported. If i
 ## 5. Risks
 - A prompt that says "do not run the check" could make the model propose a plan for a purchase nobody discussed: the proposal still needs Confirm and the server re-checks before saving, and the rule only applies to a purchase just discussed. The security drill and the assistant security suites must stay green.
 - One run of 3 per scenario is a small sample; the result is reported with that stated.
+
+## 6. A second cause, found after the rule 9 re-run (the audit log, not a guess)
+After rule 9 the evaluation reached 38 / 39, but the demo against the real API and the live browser journey still answered "I could not work that out" to "Go ahead with that." The stored `number_check` fallbacks (`assistant_events`, kind `fallback`) hold what the model wrote before it was replaced: a sensible clarifying question ("Do you want me to prepare the RM799 SPayLater plan over 3 months anyway, even though the risk check rates it At Risk?"), replaced because `799` was "unsupported". The number check allows figures from tool results, the step summaries and the **current** message only (`person = [body.message, body.pasted_text]` in `agent.py`), so a price the student typed in an earlier turn of the same conversation counts as invented. That is a defect in the guard, not in the model: the student's own words are a legitimate source, and a template that hides a correct question is worse than the figure it blocks.
+
+### Change
+`person` also includes the text of the **user** turns in the request's `history`. The assistant's earlier turns stay untrusted: a figure that only an earlier assistant reply contains is still replaced (that is the case the guard exists for). The history is client-supplied, but it can only whitelist numbers the signed-in student wrote themselves, exactly as the current message already can.
+
+### Acceptance (written before the change)
+1. Unit tests (red first): a figure from a user history turn passes; the same figure only in an assistant history turn is replaced; a figure in neither is replaced.
+2. The same 39-turn evaluation: total at least 38 / 39, no scenario below its result in the rule 9 run, and the number of answers replaced by the number check lower than in that run (5).
+3. `injection`, `out_of_scope` and the security drill unchanged; `tests/assistant` and `tests/security` green.
+4. The demo against the real API: "Go ahead with that." produces an answer or a proposal, not "I could not work that out".
