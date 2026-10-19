@@ -29,13 +29,14 @@ def both_have_everything(api, amir, siti, fake_db):
             "anchor_date": "2026-01-02"})  # fmt: skip
         import datetime as dt
 
-        from app.db import assistant_actions, assistant_events, risk_checks
+        from app.db import assistant_actions, assistant_events, auth_events, risk_checks
 
         uid = ids(fake_db, name)
         assistant_actions.create(fake_db, uid, type="set_budget",
                                  payload={"category": "Food", "limit_sen": 1}, digest="a" * 64,
                                  summary="x", expires_at=dt.datetime.now(dt.UTC))  # fmt: skip
         assistant_events.record(fake_db, uid, "message", detail={"text": "hi"})
+        auth_events.record(fake_db, "login", user_id=uid, email=f"{name}@example.com")
         risk_checks.create(fake_db, uid, {
             "input": {}, "features": {}, "feature_schema_hash": "h", "model_version": "v",
             "p": 0.1, "p_simulated": 0.1, "score": 90, "label": "safe", "factors": [],
@@ -70,15 +71,11 @@ def test_delete_removes_every_row_of_mine_in_every_table_and_none_of_theirs(
     assert res.json()["deleted"]["transactions"] > 100
 
 
-@pytest.mark.parametrize(
-    "body",
-    [
-        {"confirmation": "delete", "passphrase": TEST_PASSPHRASE},
-        {"confirmation": "delete my data"},
-    ],
-)
-def test_delete_needs_the_phrase_and_the_passphrase(api, amir, body):
-    assert api.post("/api/account/delete", json=body, headers=amir).status_code == 422
+def test_delete_needs_the_phrase_and_the_passphrase(api, amir):
+    wrong_phrase = {"confirmation": "delete", "passphrase": TEST_PASSPHRASE}
+    assert api.post("/api/account/delete", json=wrong_phrase, headers=amir).status_code == 422
+    no_passphrase = {"confirmation": "delete my data"}  # optional in the schema for Google (D-69)
+    assert api.post("/api/account/delete", json=no_passphrase, headers=amir).status_code == 403
 
 
 def test_a_wrong_passphrase_deletes_nothing(api, amir, fake_db, both_have_everything):

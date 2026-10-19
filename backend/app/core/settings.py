@@ -45,6 +45,13 @@ class Settings(BaseSettings):
     assistant_daily_requests: int = Field(default=300, ge=0)
     assistant_action_ttl_minutes: int = Field(default=10, ge=1, le=60)  # ASSUMED 17 (D-48)
 
+    # ---- Sign in with Google (ADR D-69). Off unless the client ID, secret and the API's public
+    # URL are all set; the redirect URI is API_PUBLIC_URL + /api/auth/google/callback.
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
+    api_public_url: str | None = None  # the origin the browser uses for the API, no trailing slash
+    app_url: str | None = None  # the frontend origin; defaults to the first CORS origin
+
     @field_validator("cors_origins")
     @classmethod
     def _origins_are_explicit(cls, value: str) -> str:
@@ -61,6 +68,14 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def google_enabled(self) -> bool:
+        return bool(self.google_client_id and self.google_client_secret and self.api_public_url)
+
+    @property
+    def frontend_url(self) -> str:
+        return (self.app_url or self.cors_origin_list[0]).rstrip("/")
 
 
 def load_settings(env_file: str | None = ".env") -> Settings:

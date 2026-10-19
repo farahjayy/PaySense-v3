@@ -49,6 +49,11 @@ Last updated: 2026-10-08
 | `ASSISTANT_GLOBAL_DAILY_TOKENS` | `3000000` | Global daily cap across all users; switch a public URL on only with this set |
 | `ASSISTANT_DAILY_REQUESTS` | `300` | Assistant chat and guided calls per user per Malaysian day (each writes audit rows); counted apart from `DAILY_WRITE_QUOTA` |
 | `ASSISTANT_ACTION_TTL_MINUTES` | `10` | How long a proposal can be confirmed |
+| `GOOGLE_CLIENT_ID` | unset → Google sign-in off | Google Cloud Console → APIs & Services → Credentials → OAuth client (Web application). Sign in with Google (D-69) is on only when this, `GOOGLE_CLIENT_SECRET` and `API_PUBLIC_URL` are all set |
+| `GOOGLE_CLIENT_SECRET` | unset → Google sign-in off | Same OAuth client; shown once at creation. Server-side only (`SecretStr`) |
+| `API_PUBLIC_URL` | unset → Google sign-in off | The API origin the browser uses, no trailing slash (`http://localhost:8000`; the Render URL in production). Register `API_PUBLIC_URL/api/auth/google/callback` as the client's redirect URI **exactly** (`localhost` ≠ `127.0.0.1`). `https://` also makes the sign-in flow cookie `Secure` |
+| `APP_URL` | first `CORS_ORIGINS` entry | The frontend origin the API sends the browser back to after Google sign-in |
+| `NEXT_PUBLIC_GOOGLE_SIGNIN` (frontend) | unset → no Google button | `true` shows "Continue with Google" on the login page. Build-time on Vercel. Set it only when the backend has the three Google variables |
 
 ---
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { HelloFace } from "@/components/auth/LoginArt";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { LoginPanel } from "@/components/auth/LoginPanel";
@@ -19,6 +20,7 @@ export default function LoginPage() {
           <h1>Welcome</h1>
           <p className="lg-lede">Enter your username and passphrase to start.</p>
           <LoginForm />
+          <GoogleSignIn />
           <p className="lg-note">
             PaySense gives estimates from your own records. It is not financial advice and not a
             credit decision: you decide, and nothing changes until you confirm it.

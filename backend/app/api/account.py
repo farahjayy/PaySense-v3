@@ -1,26 +1,30 @@
 """The person's own data (WP19, PDPA): the privacy notice, export, and delete.
 
-Delete needs two confirmations: the typed phrase and the passphrase. It removes every row the
+Delete needs two confirmations: the typed phrase and the passphrase (for a Google account, a
+sign-in in the last 15 minutes). It removes every row the
 person owns in every table and keeps the account, so they can start again.
 """
 
 import datetime as dt
 import logging
+import time
 from typing import Any, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import WRITE_QUOTA, CurrentUser, DbDep, SettingsDep, rate_limited
 from app.api.schemas import PROTECTED_RESPONSES, ApiModel, ErrorEnvelope
 from app.core.errors import api_error, conflict
 from app.core.passphrase import verify_passphrase
+from app.core.security import token_issued_at
 from app.db import account, user_settings, users
 from app.domain.consent import CONSENT_VERSION, consent_sections
 
 logger = logging.getLogger("paysense")
 router = APIRouter(prefix="/account", tags=["account"], responses=PROTECTED_RESPONSES)
 DELETE_PHRASE = "delete my data"
+FRESH_SIGN_IN_SECONDS = 15 * 60
 
 
 class ConsentSectionOut(ApiModel):
@@ -52,7 +56,9 @@ class DeleteIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     confirmation: Literal["delete my data"] = Field(description='Type exactly "delete my data"')
-    passphrase: str = Field(min_length=1, max_length=128)
+    # Required for a passphrase account; a Google account has none and must have signed in
+    # within FRESH_SIGN_IN_SECONDS instead (ADR D-69).
+    passphrase: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class DeleteOut(ApiModel):
@@ -107,10 +113,18 @@ def export_data(user: CurrentUser, db: DbDep) -> AccountExportOut:
     dependencies=[WRITE_QUOTA, rate_limited("account-delete", 3, 3600)],
     responses={403: {"model": ErrorEnvelope, "description": "Wrong passphrase"}},
 )
-def delete_data(body: DeleteIn, user: CurrentUser, db: DbDep) -> DeleteOut:
+def delete_data(
+    body: DeleteIn, user: CurrentUser, db: DbDep, settings: SettingsDep, request: Request
+) -> DeleteOut:
     """Delete every row you own in every table. Your account stays, empty."""
     row = users.get_by_id(db, user.id) or {}
-    if not verify_passphrase(row.get("passphrase_hash"), body.passphrase):
+    if row.get("google_sub") and not row.get("passphrase_hash"):
+        token = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+        if time.time() - token_issued_at(token, settings) > FRESH_SIGN_IN_SECONDS:
+            raise api_error(
+                403, "sign_in_again", "Sign in again with Google, then delete. Nothing was deleted."
+            )
+    elif not verify_passphrase(row.get("passphrase_hash"), body.passphrase or ""):
         raise api_error(
             403, "wrong_passphrase", "That passphrase is not right. Nothing was deleted."
         )

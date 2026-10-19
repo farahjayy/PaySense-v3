@@ -53,3 +53,19 @@ def decode_access_token(
     if isinstance(version, bool) or not isinstance(version, int):
         raise InvalidTokenError("ver claim must be an integer")
     return claims["sub"], version
+
+
+def token_issued_at(token: str, settings: Settings) -> float:
+    """When a valid token was issued (seconds since the epoch). Only call it on a token that
+    `decode_access_token` has already accepted."""
+    claims = jwt.decode(
+        token,
+        settings.session_secret.get_secret_value(),
+        algorithms=[ALGORITHM],
+        issuer=ISSUER,
+        options={"verify_exp": False},
+    )
+    issued = claims.get("iat")
+    if isinstance(issued, bool) or not isinstance(issued, int | float):
+        raise InvalidTokenError("iat claim must be a number")
+    return float(issued)

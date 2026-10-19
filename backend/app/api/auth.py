@@ -15,7 +15,8 @@ from app.api.schemas import ERROR_RESPONSES, LoginRequest, LoginResponse, UserOu
 from app.core.errors import api_error, unauthorized
 from app.core.passphrase import verify_passphrase
 from app.core.security import create_access_token
-from app.db import users
+from app.core.settings import Settings
+from app.db import auth_events, users
 
 router = APIRouter(prefix="/auth", tags=["auth"], responses=ERROR_RESPONSES)
 
@@ -75,6 +76,11 @@ def login(
         raise unauthorized(*_INVALID)  # the attempt is already counted
     limiter.forgive(key)
     username_limiter.forgive(name_key)
+    return session_for(row, settings)
+
+
+def session_for(row: dict, settings: Settings) -> LoginResponse:
+    """The session a sign-in hands out, whichever way the person signed in."""
     token, _ = create_access_token(row["id"], settings, version=int(row.get("token_version") or 0))
     return LoginResponse(
         access_token=token,
@@ -89,9 +95,13 @@ def login(
 
 
 @router.post("/logout", status_code=204)
-def logout(user: CurrentUser, db: DbDep) -> Response:
+def logout(user: CurrentUser, db: DbDep, request: Request) -> Response:
     """End every session of this user: their token version moves on, so older tokens fail."""
     users.bump_token_version(db, user.id)
+    auth_events.record(
+        db, "logout", user_id=user.id, ip=client_key(request),
+        user_agent=request.headers.get("user-agent"),
+    )  # fmt: skip
     return Response(status_code=204)
 
 

@@ -12,6 +12,7 @@ from app.db.base import ScopedTable, require_user_id
 from app.db.client import Database
 
 USER_TABLES = (
+    "auth_events",
     "assistant_events",
     "assistant_actions",
     "transactions",

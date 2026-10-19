@@ -8,6 +8,7 @@ The backend never runs migrations itself.
 | `0001_init.sql` | All tables, composite `(id, user_id)` foreign keys, RLS on with no policies, anon/authenticated privileges revoked. Requires Postgres 15+ (Supabase default). |
 | `0005_savings_buffer.sql` | WP16 (D-50): `user_settings.savings_buffer_sen` (bigint sen, default 0, never negative). The table's RLS and revoked privileges are unchanged. Apply after 0004. |
 | `0006_privacy.sql` | WP19: `user_settings.consent_version`, `consent_at` (the accepted privacy notice). Apply after 0005. |
+| `0007_google_sign_in.sql` | ADR D-69: `users.google_sub` (unique), `users.email`, table `auth_events` (sign-in audit). Apply after 0006. |
 | `0004_budgets_assistant.sql` | WP2: `budgets` (unique per user and lower(category)); WP4b adds `assistant_actions` and `assistant_events`. RLS on, privileges revoked. Apply after 0003. |
 | `0003_login_hardening.sql` | WP18 (D-49): `users.passphrase_hash` and `users.token_version`, the `user_locks` table, the keyset index on transactions. RLS on, privileges revoked. **After applying, set a passphrase on every account** (`scripts/seed_users.py --passphrase-file`): a user without one cannot log in. |
 | `0002_user_categories.sql` | `user_categories`: the categories a person adds themselves (the twelve built-in ones live in code). RLS on with no policies, privileges revoked. Apply after 0001, then run `check_rls.py`. |

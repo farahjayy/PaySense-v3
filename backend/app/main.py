@@ -25,6 +25,7 @@ from app.api import (
     budgets,
     categories,
     forecast,
+    google_auth,
     health,
     imports,
     insights,
@@ -42,6 +43,7 @@ from app.api import (
 from app.api import settings as settings_api  # `settings` is create_app's parameter name
 from app.api.rate_limit import DailyQuota, LoginRateLimiter, RequestRateLimiter
 from app.core.body_limit import BodySizeLimitMiddleware
+from app.core.google import HandoffStore
 from app.core.settings import MissingSettingsError, Settings, get_settings
 from app.db.client import Database
 from app.db.transactions import ImportInProgressError, LedgerFullError
@@ -116,6 +118,8 @@ def create_app(
     app.state.request_limiter = RequestRateLimiter()
     app.state.write_quota = DailyQuota()
     app.state.predictor = predictor  # the trained risk model; None until an artefact is loaded
+    app.state.google_handoff = HandoffStore()  # one-time sign-in codes (ADR D-69)
+    app.state.google_transport = None  # tests put a mock transport for Google's token endpoint
 
     # Added first, so it sits *inside* CORS: its 413 responses still carry CORS headers.
     app.add_middleware(BodySizeLimitMiddleware)
@@ -191,6 +195,7 @@ def create_app(
 
     app.include_router(health.router, prefix="/api")
     app.include_router(auth.router, prefix="/api")
+    app.include_router(google_auth.router, prefix="/api")
     app.include_router(providers.router, prefix="/api")
     app.include_router(provider_limits.router, prefix="/api")
     app.include_router(transactions.router, prefix="/api")

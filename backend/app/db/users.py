@@ -1,5 +1,7 @@
-"""Users. `get_by_username` is the one deliberately unscoped read: it is how a session starts."""
+"""Users. `get_by_username` and `get_by_google_sub` are the deliberately unscoped reads: they are
+how a session starts."""
 
+import hashlib
 import re
 from typing import Any
 
@@ -44,6 +46,37 @@ def get_by_id(db: Database, user_id: str) -> dict[str, Any] | None:
         return None
     rows = db.table("users").select("*").eq("id", user_id).limit(1).execute().data
     return rows[0] if rows else None
+
+
+def get_by_google_sub(db: Database, sub: str) -> dict[str, Any] | None:
+    if not isinstance(sub, str) or not sub:
+        return None
+    rows = db.table("users").select("*").eq("google_sub", sub).limit(1).execute().data
+    return rows[0] if rows else None
+
+
+def google_username(sub: str) -> str:
+    """Stable, valid under USERNAME_PATTERN, and reveals nothing about the account (ASSUMED 60)."""
+    return "g-" + hashlib.sha256(sub.encode()).hexdigest()[:16]
+
+
+def create_google(db: Database, *, sub: str, email: str, display_name: str) -> dict[str, Any]:
+    """A user who signs in with Google (ADR D-69). No passphrase, so the passphrase login can never
+    open this account."""
+    name = display_name.strip()[:100] or email.split("@", 1)[0] or "Student"
+    row = {"username": google_username(sub), "display_name": name, "google_sub": sub,
+           "email": email}  # fmt: skip
+    try:
+        return db.table("users").insert(row).execute().data[0]
+    except APIError as err:
+        if err.code == UNIQUE_VIOLATION:
+            raise UsernameTakenError(row["username"]) from err
+        raise
+
+
+def update_google_profile(db: Database, user_id: str, *, email: str) -> None:
+    """Google's email for the account can change; the display name stays the user's own."""
+    db.table("users").update({"email": email}).eq("id", require_user_id(user_id)).execute()
 
 
 def create(

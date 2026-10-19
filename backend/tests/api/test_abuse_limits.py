@@ -13,6 +13,7 @@ from app.main import create_app
 # POSTs that compute or read and never change the user's data (plus login/logout themselves).
 NOT_WRITES = {
     ("post", "/api/auth/login"),
+    ("post", "/api/auth/google/exchange"),  # a sign-in, like login (ADR D-69)
     ("post", "/api/auth/logout"),
     ("post", "/api/risk/check"),
     ("post", "/api/risk/schedule"),  # stateless, like the check (D-57)

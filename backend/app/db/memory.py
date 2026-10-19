@@ -29,7 +29,7 @@ FOREIGN_KEY_VIOLATION = "23503"
 
 # table -> columns whose combined value must be unique (text is compared case-insensitively)
 UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
-    "users": [("username",)],
+    "users": [("username",), ("google_sub",)],
     "user_settings": [("user_id",)],
     "bnpl_installments": [("plan_id", "seq")],
     "provider_limits": [("user_id", "provider")],
@@ -40,7 +40,13 @@ UNIQUE_KEYS: dict[str, list[tuple[str, ...]]] = {
 }
 # table -> defaults applied on insert (callables are invoked per row)
 DEFAULTS: dict[str, dict[str, Any]] = {
-    "users": {"persona": None, "passphrase_hash": None, "token_version": 0},
+    "users": {
+        "persona": None,
+        "passphrase_hash": None,
+        "token_version": 0,
+        "google_sub": None,
+        "email": None,
+    },
     "user_settings": {
         "onboarding_state": "new",
         "savings_buffer_sen": 0,
@@ -69,6 +75,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     "bnpl_installments": {"is_paid": False, "paid_date": None},
     "provider_limits": {"updated_at": lambda: _now()},
     "assistant_actions": {"status": "pending", "preview": None, "result": None, "decided_at": None},
+    "auth_events": {"email": None, "reason": None, "ip": None, "user_agent": None},
     "assistant_events": {
         "tier": None,
         "tool": None,
@@ -92,6 +99,7 @@ HAS_CREATED_AT = {
     "budgets",
     "assistant_actions",
     "assistant_events",
+    "auth_events",
 }
 
 # child table -> [(child column, parent table)]: composite (column, user_id) -> (id, user_id)
