@@ -152,7 +152,14 @@ def build_app(llm: Any = None, overrides: dict[str, Any] | None = None):
         supabase_service_key="not-used-in-memory",
         session_secret="e" * 48,
         cors_origins="http://localhost:3000",
-        **(overrides or {}),
+        # The evaluation measures the model, not the deployment's budgets (tested elsewhere): a
+        # small cap copied from .env would show up as refused turns, not as the model's result.
+        **{
+            "assistant_user_daily_tokens": 5_000_000,
+            "assistant_global_daily_tokens": 50_000_000,
+            "assistant_daily_requests": 10_000,
+            **(overrides or {}),
+        },
     )
     db = FakeSupabase()
     app = create_app(settings, db=db, predictor=load_if_present())

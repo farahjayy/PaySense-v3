@@ -95,3 +95,24 @@ def test_the_go_ahead_scenario_sends_the_earlier_turns_as_history():
     (history,) = seen
     assert [role for role, _ in history] == ["assistant", "user", "assistant", "user", "assistant"]
     assert "RM799" in history[1][1]
+
+
+def test_the_evaluation_is_not_stopped_by_the_deployment_budgets(monkeypatch):
+    # The evaluation measures the model, so a small token or request cap copied from a real
+    # deployment's .env (a $1 provider budget) must not turn into "refused" turns in its report.
+    monkeypatch.setenv("ASSISTANT_USER_DAILY_TOKENS", "40000")
+    monkeypatch.setenv("ASSISTANT_GLOBAL_DAILY_TOKENS", "150000")
+    monkeypatch.setenv("ASSISTANT_DAILY_REQUESTS", "100")
+
+    app, _ = ev.build_app()
+    settings = app.state.settings
+
+    # a thirteen-scenario run at about 13,000 tokens a turn, three times over, fits easily
+    assert settings.assistant_user_daily_tokens >= 1_000_000
+    assert settings.assistant_global_daily_tokens >= 5_000_000
+    assert settings.assistant_daily_requests >= 1_000
+
+
+def test_an_explicit_override_still_wins_over_the_evaluation_defaults():
+    app, _ = ev.build_app(overrides={"assistant_user_daily_tokens": 123})
+    assert app.state.settings.assistant_user_daily_tokens == 123
