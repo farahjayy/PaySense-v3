@@ -21,6 +21,9 @@ test("on the real database and model: login, import, forecast, check, confirm, s
   await page.getByLabel("Username").fill(account.username);
   await page.getByLabel("Passphrase", { exact: true }).fill(account.passphrase ?? "");
   await page.getByRole("button", { name: "Continue" }).click();
+  // A throwaway account has never accepted the privacy notice (WP19), so it is shown first.
+  await expect(page.getByRole("heading", { name: "Before you start" })).toBeVisible();
+  await page.getByRole("button", { name: /i understand/i }).click();
   await expect(page.getByRole("heading", { level: 1, name: /hi, real journey/i })).toBeVisible();
   await expect(page.getByText(/unlocks with four months/i)).toBeVisible();
 
