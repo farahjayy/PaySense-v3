@@ -116,3 +116,13 @@ def test_secrets_do_not_appear_in_repr():
     assert "topsecretvalue" not in text
     assert "svc-key-123" not in text
     assert s.session_secret.get_secret_value().startswith("topsecretvalue")
+
+
+def test_a_root_env_serves_the_backend_and_backend_env_overrides_it(monkeypatch, tmp_path):
+    _clean_env(monkeypatch)
+    root, local = tmp_path / "root.env", tmp_path / "local.env"
+    root.write_text("SUPABASE_URL=https://root.supabase.co\nSUPABASE_SERVICE_KEY=k\n"
+                    f"SESSION_SECRET={'s' * 32}\nCORS_ORIGINS=http://localhost:3000\n")  # fmt: skip
+    local.write_text("SUPABASE_URL=https://local.supabase.co\n")
+    assert load_settings(env_file=(root,)).supabase_url == "https://root.supabase.co"
+    assert load_settings(env_file=(root, local)).supabase_url == "https://local.supabase.co"

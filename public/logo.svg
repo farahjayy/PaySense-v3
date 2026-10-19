@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="200" height="200" role="img" aria-label="PaySense">
+  <rect width="40" height="40" rx="10" fill="#f7f4d5"/>
+  <path fill="#105666" d="M19 9.5a10.5 10.5 0 1 0 0 21z"/>
+  <path fill="#d3968c" d="M22 9.5a10.5 10.5 0 0 1 10.5 10.5H22z"/>
+  <path fill="#105666" fill-opacity=".45" d="M22 23h10.3A10.5 10.5 0 0 1 22 30.5z"/>
+</svg>

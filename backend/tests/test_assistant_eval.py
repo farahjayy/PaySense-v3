@@ -18,12 +18,14 @@ def scripted(system, messages, tools):
     text = messages[-1].text if messages[-1].role == "user" else ""
     if messages[-1].role == "tool":
         return say("Done; see the card.")
-    if "poem" in text:
+    if "poem" in text or "Tesla" in text:
         return say("OUT_OF_SCOPE")
     if text == "Can I afford a phone?":
         return say("Which provider and how many instalments?")
     phone = {"provider": "spaylater", "item_name": "Phone", "purchase_date": "2025-12-29",
              "num_installments": 3, "total_price_sen": 79900}  # fmt: skip
+    if "RM699" in text:
+        return call("check_purchase_risk", {**phone, "total_price_sen": 69900})
     if "Go ahead" in text:
         return call("propose_action", {"type": "create_plan", "payload": phone})
     if "When should I buy" in text:
@@ -116,3 +118,12 @@ def test_the_evaluation_is_not_stopped_by_the_deployment_budgets(monkeypatch):
 def test_an_explicit_override_still_wins_over_the_evaluation_defaults():
     app, _ = ev.build_app(overrides={"assistant_user_daily_tokens": 123})
     assert app.state.settings.assistant_user_daily_tokens == 123
+
+
+def test_a_correction_that_rechecks_the_old_price_fails():
+    (correction,) = [s for s in ev.SCENARIOS if s.key == "correction"]
+    body = {"mode": "llm", "pending_actions": [], "refused": False, "reply": "At Risk.",
+            "steps": [{"tool": "check_purchase_risk", "status": "ok",
+                       "inputs": {"total_price_sen": 79900}}]}  # fmt: skip
+    ok, reasons = ev.judge(correction, 200, body, 0, 0)
+    assert not ok and reasons == ["check_purchase_risk ran with the wrong inputs"]

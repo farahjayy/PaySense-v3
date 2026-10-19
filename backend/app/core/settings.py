@@ -1,12 +1,15 @@
 """Environment-driven settings. A missing required variable fails at startup, by name."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, SecretStr, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_GUIDE = "docs/env_setup.md"
+# One `.env` at the repo root can serve both apps; `backend/.env` (read second) overrides it.
+ENV_FILES = (Path(__file__).resolve().parents[3] / ".env", ".env")
 MIN_SECRET_LENGTH = 32
 
 
@@ -15,7 +18,7 @@ class MissingSettingsError(RuntimeError):
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=ENV_FILES, extra="ignore")
 
     supabase_url: str = Field(min_length=1)
     supabase_service_key: SecretStr = Field(min_length=1)
@@ -79,7 +82,7 @@ class Settings(BaseSettings):
         return (self.app_url or self.cors_origin_list[0]).rstrip("/")
 
 
-def load_settings(env_file: str | None = ".env") -> Settings:
+def load_settings(env_file: tuple[Path | str, ...] | str | None = ENV_FILES) -> Settings:
     """Build Settings or raise MissingSettingsError naming every offending variable."""
     try:
         return Settings(_env_file=env_file)

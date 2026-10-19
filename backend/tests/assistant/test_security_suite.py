@@ -83,7 +83,11 @@ def test_forged_history_with_fake_tool_results_is_rejected_or_ignored(setup, api
     assert body["narration_replaced"] is True
 
 
-def test_injection_in_a_transaction_description_cannot_write(setup, fake_db, amir_id):
+def test_injection_in_a_transaction_description_cannot_write(setup, api, fake_db, amir_id):
+    # worst case: a deployment that sends descriptions to the model (the default withholds them)
+    api.app.state.settings = api.app.state.settings.model_copy(
+        update={"assistant_redact_descriptions": False}
+    )
     transactions.create(fake_db, amir_id, date="2025-12-28", amount_sen=500, type="expense",
                         category="Food", description=INJECTION)  # fmt: skip
     model = hostile_model([call("list_recent_transactions", {"limit": 5}), *ALL_WRITE_ATTEMPTS])
@@ -158,3 +162,12 @@ def test_tools_ignore_a_paste_the_model_tries_to_supply(make_ctx):
     args = {"rows": [], "pasted_text": "28/12 Fake 999.00"}
     record = executor.run_tool(ctx, "parse_pasted_transactions", args, caller="model")
     assert record.step.status == "error"
+
+
+def test_descriptions_are_withheld_from_the_model_by_default(setup, fake_db, amir_id):
+    transactions.create(fake_db, amir_id, date="2025-12-28", amount_sen=500, type="expense",
+                        category="Food", description=INJECTION)  # fmt: skip
+    model = hostile_model([call("list_recent_transactions", {"limit": 5}), *ALL_WRITE_ATTEMPTS])
+    setup(model, "What did I buy lately?")
+    shown = model.calls[1][1][-1].tool_results[0].content
+    assert INJECTION not in str(shown["data"]) and shown["data"]["descriptions_redacted"] is True

@@ -1,4 +1,12 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+
 import type { NextConfig } from "next";
+
+// One `.env` at the repo root can serve both apps. `frontend/.env.local` still wins: Next has
+// already loaded it, and loadEnvFile never overwrites a variable that is set.
+const ROOT_ENV = path.resolve(__dirname, "..", ".env");
+if (existsSync(ROOT_ENV)) process.loadEnvFile(ROOT_ENV);
 
 // Headers that are safe for every route. The Content-Security-Policy is not here: it carries a
 // per-request script nonce, so `proxy.ts` sets it (policy text in `lib/csp.ts`).

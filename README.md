@@ -1,6 +1,62 @@
+<div align="center">
+
+<img src="public/logo.svg" width="160" alt="PaySense logo">
+
 # PaySense
 
-**Think before you split.** PaySense helps Malaysian university students decide whether a buy-now-pay-later (BNPL) plan fits *before* they commit. It forecasts the student's money from their own records, scores the risk of a proposed plan, explains why, and lets them ask an AI assistant in plain words. The assistant reads and works things out through the app's own tools; it never makes up a figure and never changes anything until the student presses **Confirm**.
+**Think before you split.**<br>
+An AI assistant that tells Malaysian university students whether a buy-now-pay-later plan fits their money before they commit, using only their own records.
+
+<p>
+  <img src="https://img.shields.io/badge/Topic-A_%C2%B7_AI_finance_assistant-105666?style=for-the-badge" alt="Topic A · AI finance assistant"> <img src="https://img.shields.io/badge/Market-Malaysian_students-d3968c?style=for-the-badge" alt="Market Malaysian students"> <img src="https://img.shields.io/badge/Tests-3%2C267_passing-2ea44f?style=for-the-badge" alt="Tests 3,267 passing"> <img src="https://img.shields.io/badge/License-Apache--2.0-6f42c1?style=for-the-badge" alt="License Apache-2.0">
+</p>
+
+<sub>built with</sub>
+
+<p>
+  <img src="https://img.shields.io/badge/Next.js_16-000000?style=flat&logo=nextdotjs&logoColor=white" alt="Next.js 16">
+  <img src="https://img.shields.io/badge/React_19-20232a?style=flat&logo=react&logoColor=white" alt="React 19">
+  <img src="https://img.shields.io/badge/TypeScript-3178c6?style=flat&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Tailwind_CSS_4-06b6d4?style=flat&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
+  <img src="https://img.shields.io/badge/TanStack_Query-ff4154?style=flat&logo=reactquery&logoColor=white" alt="TanStack Query">
+  <img src="https://img.shields.io/badge/Recharts-22b5bf?style=flat&logo=chartdotjs&logoColor=white" alt="Recharts">
+  <img src="https://img.shields.io/badge/zod-3e67b1?style=flat&logo=zod&logoColor=white" alt="zod">
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/Python_3.12-3776ab?style=flat&logo=python&logoColor=white" alt="Python 3.12">
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Pydantic_v2-e92063?style=flat&logo=pydantic&logoColor=white" alt="Pydantic v2">
+  <img src="https://img.shields.io/badge/Supabase_Postgres-3fcf8e?style=flat&logo=supabase&logoColor=white" alt="Supabase Postgres">
+  <img src="https://img.shields.io/badge/Google_Sign--In-4285f4?style=flat&logo=google&logoColor=white" alt="Google Sign-In">
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/PyTorch_LSTM-ee4c2c?style=flat&logo=pytorch&logoColor=white" alt="PyTorch LSTM">
+  <img src="https://img.shields.io/badge/ONNX_Runtime-005ced?style=flat&logo=onnx&logoColor=white" alt="ONNX Runtime">
+  <img src="https://img.shields.io/badge/LightGBM-9acd32?style=flat&logo=lightgbm&logoColor=white" alt="LightGBM">
+  <img src="https://img.shields.io/badge/XGBoost-337ab7?style=flat&logo=xgboost&logoColor=white" alt="XGBoost">
+  <img src="https://img.shields.io/badge/scikit--learn-f7931e?style=flat&logo=scikitlearn&logoColor=white" alt="scikit-learn">
+  <img src="https://img.shields.io/badge/Prophet-0467df?style=flat&logo=meta&logoColor=white" alt="Prophet">
+  <img src="https://img.shields.io/badge/SHAP-ff0d57?style=flat&logo=python&logoColor=white" alt="SHAP">
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/Claude-d97757?style=flat&logo=anthropic&logoColor=white" alt="Claude">
+  <img src="https://img.shields.io/badge/Gemini-8e75b2?style=flat&logo=googlegemini&logoColor=white" alt="Gemini">
+  <img src="https://img.shields.io/badge/pytest-0a9edc?style=flat&logo=pytest&logoColor=white" alt="pytest">
+  <img src="https://img.shields.io/badge/Vitest-6e9f18?style=flat&logo=vitest&logoColor=white" alt="Vitest">
+  <img src="https://img.shields.io/badge/Playwright-2ead33?style=flat&logo=playwright&logoColor=white" alt="Playwright">
+  <img src="https://img.shields.io/badge/Vercel_%2B_Render-000000?style=flat&logo=vercel&logoColor=white" alt="Vercel + Render">
+</p>
+
+<sub>FinTechathon 2026 · Topic A: AI assistant for personal finance · Team Dang Wangi, Universiti Teknologi PETRONAS</sub>
+
+</div>
+
+---
+
+PaySense helps Malaysian university students decide whether a buy-now-pay-later (BNPL) plan fits *before* they commit. It forecasts the student's money from their own records, scores the risk of a proposed plan, explains why, and lets them ask an AI assistant in plain words. The assistant reads and works things out through the app's own tools; it never makes up a figure and never changes anything until the student presses **Confirm**.
 
 Built for the FinTechathon (Topic A: an AI assistant for personal finance) from PaySense v2, a Final Year Project (BSc (Hons) Computer Science, Universiti Teknologi PETRONAS). See [`CREDITS.md`](CREDITS.md).
 
@@ -50,7 +106,7 @@ All generated by scripts; nothing typed in by hand.
 
 ## Honest limits
 
-PaySense's risk score is trained on **synthetic** students, not on real repayment outcomes: 10,000 generated profiles whose label is the chance, simulated by the forecasting engine, that the student's running margin goes below zero once the plan is added. Those labels are often already decided: **52.7%** are exactly 0 or 1, **46.0%** of students are already short (a 10% or higher chance) before any purchase, and the purchase changes the risk band for only **10.7%** — so the model mostly reproduces each student's starting position, and its accuracy (lockbox Brier 0.0142 against 0.1674 for always guessing the average) is accuracy at copying the simulation, not at predicting real defaults. The shown score lands in the same band as a direct simulation of the same purchase **92.0%** of the time. When a purchase is not Safe, a smallest change that reaches Safe exists for only **12.6%** of results (14 of 111), because most of those students are short before they buy anything; the app says so instead of inventing a fix. The forecast's 80% band is still too narrow in places: after this version's recalibration it holds the real 13-week total **69%** of the time for spending (was 61%) and **53%** for income (was 50%) — about the nominal 80% for spending only once a student has 26 or more weeks of history, and only 33–38% for the shortest (17–25 week) histories — so probabilities are more extreme than a calibrated forecast would give. The savings buffer, most generator parameters (115 of 131) and the band check itself rest on assumptions or synthetic data, not on measured Malaysian student finances.
+PaySense's risk score is trained on **synthetic** students, not on real repayment outcomes: 11,000 generated profiles whose label is the chance, simulated by the forecasting engine, that the student's running margin goes below zero once the plan is added. Those labels are often already decided: **54.4%** are exactly 0 or 1, **42.7%** of students are already short (a 10% or higher chance) before any purchase, and the purchase changes the risk band for only **10.7%**. The model therefore starts from the simulated chance without the purchase and learns only what the purchase adds; its accuracy (lockbox Brier 0.0078, against 0.1608 for always guessing the average and 0.0532 for "the purchase adds nothing") is accuracy at copying the simulation, not at predicting real defaults. The shown score lands in the same band as a direct simulation of the same purchase **95.5%** of the time (just showing the chance without the purchase would already do so **91.0%** of the time). When a purchase is not Safe, a smallest change that reaches Safe exists for only **16.0%** of results (17 of 106), because most of those students are short before they buy anything, and for **57%** of them no feature of the purchase stands out as a reason; the app says so instead of inventing a fix. Where the purchase does change the band (11.6% of lockbox profiles) the model's band matches the simulation no more often than the constant guess (**0.767** for both), although its probability is closer (mean absolute error 0.144 against 0.352), and of the 17 suggested changes checked by direct simulation only **76.5%** are Safe there too. The forecast's 80% band now holds the real 13-week total **80%** of the time for spending and **81%** for income on fresh synthetic students (was 71% and 52%), including the shortest 17–25-week histories (78% and 82%); beyond 13 weeks it narrows again (49% for a 52-week spending total), so long plans are the least reliable. Those students all share one calendar, so that coverage is in-period, not out-of-time. On real accounts (Berka bank accounts and one MoneyData account, neither students) the new band rule beats the old one but stays below 80%: for Berka spending it holds the 13-week total **16%** of the time at 17–25 weeks of history and **78%** at 52 weeks or more. The chance of running short is also not uniformly better under the new rule: its pooled gain in Brier score comes from the 17–25-week histories, and for histories of 26 weeks or more the old rule scored lower (at 52 weeks or more, 0.0196 against 0.0175). The savings buffer, most generator parameters (115 of 131) and every band check rest on assumptions or synthetic data, not on measured Malaysian student finances.
 
 The sources of every figure in this paragraph are listed in [`docs/honest-limits.md`](docs/honest-limits.md).
 

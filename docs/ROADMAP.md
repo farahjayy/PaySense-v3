@@ -12,6 +12,7 @@ What PaySense does today, and what comes next. Items are in rough priority order
 - [x] **Assistant:** plain-language requests over the app's own tools, three permission tiers, writes only after the student presses Confirm, a number check on every reply, guided mode without a model.
 - [x] **Security:** hardened login, per-user scoping, quotas, an on-screen security drill over four attack classes, a published known-risk list ([`../SECURITY.md`](../SECURITY.md)).
 - [x] **Privacy:** consent, export and delete-my-data; synthetic personas only.
+- [x] **Sign in with Google** beside the passphrase login (self-service sign-up with a verified email).
 
 ## Next
 
@@ -20,7 +21,9 @@ What PaySense does today, and what comes next. Items are in rough priority order
 - [ ] **Real repayment outcomes, with consent,** to replace the synthetic training labels.
 - [ ] **Forecast fixes the outcome check points to:** drift beyond 13 weeks, and bands for short histories on real accounts ([`../reports/engine1/outcome_check.md`](../reports/engine1/outcome_check.md)).
 - [ ] **More providers:** named schedules for other BNPL providers once a real checkout example confirms each one's rules.
-- [ ] **Bank-statement import** beyond CSV and Excel.
+- [ ] **Bank-statement import** beyond CSV and Excel: text PDFs read by code, screenshots read by a vision model and checked by a local OCR reader, rows the two disagree on flagged.
+- [ ] **The Watcher:** on import and when the app opens, at most three findings from the existing rules, each with a bundle of proposals the student confirms; recurring entries proposed, never assumed.
+- [ ] **Provider failover** across more than one LLM provider, each with its own key.
 
 ## Not planned
 
