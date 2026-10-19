@@ -1,0 +1,5 @@
+model,brier_all,brier_low_baseline
+lightgbm (calibrated: platt),0.0142,0.0102
+lightgbm (uncalibrated),0.0143,0.0102
+logistic (benchmark),0.02,0.0161
+constant (development mean label; the subgroup's own mean there),0.1674,0.0655

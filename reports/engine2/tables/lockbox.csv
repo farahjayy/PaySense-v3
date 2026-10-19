@@ -1,5 +1,7 @@
-model,brier_all,brier_low_baseline
-lightgbm (calibrated: platt),0.0142,0.0102
-lightgbm (uncalibrated),0.0143,0.0102
-logistic (benchmark),0.02,0.0161
-constant (development mean label; the subgroup's own mean there),0.1674,0.0655
+model,brier_all,brier_low_baseline,brier_skill_vs_constant
+lightgbm (calibrated: platt),0.0078,0.0092,0.9514
+lightgbm (uncalibrated),0.0079,0.0092,0.951
+logistic (benchmark),0.0126,0.0151,0.9214
+constant (development mean label; the subgroup's own mean there),0.1608,0.0579,0.0
+predict p_without (benchmark): no added risk,0.0532,,0.6694
+p_without + mean added share (benchmark),0.0478,,0.7029

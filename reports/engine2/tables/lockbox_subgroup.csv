@@ -1,5 +1,5 @@
 subgroup,model,profiles,brier,ece,calibration_slope,auc_at_030,band_agreement
-low_baseline,lightgbm (calibrated),534,0.0102,0.0133,1.1157,0.9901,0.9176
-low_baseline,lightgbm (uncalibrated),534,0.0102,0.0134,1.055,0.9901,
-low_baseline,logistic (benchmark),534,0.0161,,,,
-low_baseline,"constant (0.0792, the subgroup's development mean)",534,0.0655,,,,
+low_baseline,lightgbm (calibrated),602,0.0092,0.0096,0.9597,0.9916,0.9319
+low_baseline,lightgbm (uncalibrated),602,0.0092,0.0104,0.9181,0.9916,
+low_baseline,logistic (benchmark),602,0.0151,,,,
+low_baseline,"constant (0.0762, the subgroup's development mean)",602,0.0579,,,,

@@ -3,7 +3,7 @@
     "days": 365,
     "start": "2025-01-01"
   },
-  "band_rule_sha256": "e876f6b1ce910b4473ffd9660d7b0daa90dc245da4774298ac9a1b74403cdb27",
+  "band_rule_sha256": "013d802d483bbc2fd6575df7c486529fa174ab1393ecd5637278c2f37f1463b7",
   "capped_profiles": 0,
   "feature_names": [
     "disc_weekly_p50",
@@ -22,27 +22,27 @@
     "upfront_to_income",
     "limit_utilisation_with_purchase",
     "limit_known",
-    "savings_buffer_to_income"
+    "savings_buffer_to_outgoings"
   ],
-  "feature_schema_hash": "10c5b74d0b8dfdbe",
+  "feature_schema_hash": "5f8bc37590df913b",
   "file": {
     "name": "labels.jsonl",
-    "sha256": "e1bd36b1fc20d435745279ed846b307d6eeea3767984d3b2106fc9217601442c"
+    "sha256": "266744994300526baa5caca1911669b156e77eb490cb34e9c4a464186ace8a5b"
   },
-  "git_commit": "d0a342498b498812eafbdc7df6fc390d1c577f42",
+  "git_commit": "caed0ca62cb8b228d778c9e22d149bf4cbf089b7",
   "horizon_max_weeks": 180,
   "label_quantiles": {
     "25": 0.0,
     "5": 0.0,
-    "50": 0.143,
-    "75": 0.833,
+    "50": 0.099,
+    "75": 0.766,
     "95": 1.0
   },
-  "label_version": "3",
+  "label_version": "4",
   "locked_profiles": 0,
   "params_hash": "fca0bd95ff4bf25a",
   "paths": 1000,
-  "profiles": 10000,
+  "profiles": 11000,
   "recentre_errors": false,
   "seed": 20251228,
   "served_model": "lstm",

@@ -1,0 +1,32 @@
+{
+ "serve": true,
+ "criteria": [
+  {
+   "id": 1,
+   "rule": "new-lockbox Brier skill (1 - B/B_const) at least v2's on its own lockbox",
+   "holds": true,
+   "values": [
+    0.9513835792869563,
+    0.9153021763094998
+   ]
+  },
+  {
+   "id": 2,
+   "rule": "new-lockbox Brier below the predict-p_without benchmark's",
+   "holds": true,
+   "values": [
+    0.007815243254380572,
+    0.053150918
+   ]
+  },
+  {
+   "id": 3,
+   "rule": "serving-check band agreement at least v2's minus 0.02",
+   "holds": true,
+   "values": [
+    0.955,
+    0.92
+   ]
+  }
+ ]
+}

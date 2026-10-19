@@ -1,0 +1,159 @@
+{
+  "baseline": {
+    "active_plans_with_purchase": 1.0,
+    "bnpl_outstanding_to_income": 0.23348709587624766,
+    "disc_volatility": 56.38956767656346,
+    "disc_weekly_p50": 39.75817830529664,
+    "disc_weekly_p90": 236.26091136321168,
+    "dsr_with_purchase": 0.30547654382059525,
+    "income_p10_monthly": 1031.97,
+    "instalment_amount": 35.56333333333333,
+    "instalment_to_income": 0.02992883371786956,
+    "limit_known": 0.0,
+    "limit_utilisation_with_purchase": 0.0,
+    "margin_cum_p10_without": 946.27,
+    "margin_monthly_p50_without": 475.2,
+    "monthly_fee_rate": 1.5,
+    "num_instalments": 6.0,
+    "savings_buffer_to_outgoings": 1.2895510733446043,
+    "upfront_to_income": 0.0
+  },
+  "baseline_profiles": 4501,
+  "calibrator": {
+    "coef": 0.9511191395835689,
+    "intercept": -0.01122282425428109,
+    "kind": "platt"
+  },
+  "explanation": {
+    "method": "baseline_shapley",
+    "reference": "the median, feature by feature, of the development profiles whose label is Safe (below 0.10): a typical student who is not at risk (ADR D-40)"
+  },
+  "family": "lightgbm",
+  "feature_names": [
+    "disc_weekly_p50",
+    "disc_weekly_p90",
+    "disc_volatility",
+    "margin_monthly_p50_without",
+    "margin_cum_p10_without",
+    "income_p10_monthly",
+    "instalment_amount",
+    "num_instalments",
+    "monthly_fee_rate",
+    "instalment_to_income",
+    "dsr_with_purchase",
+    "active_plans_with_purchase",
+    "bnpl_outstanding_to_income",
+    "upfront_to_income",
+    "limit_utilisation_with_purchase",
+    "limit_known",
+    "savings_buffer_to_outgoings"
+  ],
+  "feature_schema_hash": "5f8bc37590df913b",
+  "label": {
+    "engine1_metadata_sha256": "4efc39de7b0f3b2b86cd3020413a62f1c18e769e0b95b29a50b660e3856daa4e",
+    "horizon_max_weeks": 180,
+    "label_version": "4",
+    "paths": 1000,
+    "seed": 20251228,
+    "served_model": "lstm",
+    "served_model_files": {
+      "lstm_income.onnx": "87186798ef3821b42c21690df626a921707bf81291b26f14c71538222cedf36d",
+      "lstm_spend.onnx": "56b0e083483091d9c1e5d265e06ead1ab5393e118ef8c777d6d63c94f0acdb9a"
+    }
+  },
+  "logit_eps": 1e-06,
+  "metrics": {
+    "constant_baseline_brier": 0.1626142574066173,
+    "cv_brier": 0.006960708267267949,
+    "lockbox_band_agreement": 0.948,
+    "lockbox_benchmarks": {
+      "constant": {
+        "band_agreement": 0.38,
+        "brier": 0.16075315993560496,
+        "mae": 0.36398424000000007
+      },
+      "logistic": {
+        "band_agreement": 0.928,
+        "brier": 0.012634245454728174,
+        "mae": 0.0442659086150627
+      },
+      "p_without": {
+        "band_agreement": 0.884,
+        "brier": 0.053150918,
+        "mae": 0.08386199999999999
+      },
+      "p_without_plus_mean_q": {
+        "band_agreement": 0.377,
+        "brier": 0.04776576555628493,
+        "mae": 0.1456007761274916
+      }
+    },
+    "lockbox_calibrated": {
+      "auc_at_030": 0.9950466893039048,
+      "brier": 0.007815243254380572,
+      "calibration_slope": 0.9420931143964301,
+      "ece": 0.009245572126894716,
+      "log_loss": 0.21217425227284656
+    },
+    "lockbox_constant_brier": 0.16075315993560496,
+    "lockbox_logistic_brier": 0.012634245454728174,
+    "lockbox_raw": {
+      "auc_at_030": 0.9949915110356538,
+      "brier": 0.007875240230635412,
+      "calibration_slope": 0.9158897235698886,
+      "ece": 0.010112859817953276,
+      "log_loss": 0.2127468951713782
+    },
+    "lockbox_rule": "indices 10,000-10,999"
+  },
+  "monotone_constraints": true,
+  "onnx_sha256": "b4ed19b95afda01ce7f516c1601d02d56dd6d3b19c752af7a680c137b8e75725",
+  "parity": {
+    "onnx_vs_trained_model": {
+      "explained_by_float32_thresholds": [],
+      "max_abs_diff": 3.7132571617526366e-07,
+      "rows": 3000,
+      "rows_over_1e-6": 0
+    },
+    "served_vs_trained_calibrated": {
+      "max_abs_diff": 4.1594402078182213e-07,
+      "rows": 3000,
+      "rows_over_1e-6": 0
+    }
+  },
+  "serving_constants": {
+    "BAND_RULE_SHA256": "013d802d483bbc2fd6575df7c486529fa174ab1393ecd5637278c2f37f1463b7",
+    "BOOTSTRAP_BLOCK": 4,
+    "DASHBOARD_MONTHS": 3,
+    "POPULATION_RECORD_SHA256": "9ff22cd0a65e5c0b6d641cb2e9098b39b1fec260226a10b4153612b4ac3a95f9",
+    "RISK_CHECK_MAX_WEEKS": 180
+  },
+  "target": "two_part",
+  "training": {
+    "config": "full",
+    "development_profiles": 9000,
+    "final_params": {
+      "colsample_bytree": 0.8188700319124432,
+      "learning_rate": 0.036197395361713375,
+      "min_child_samples": 93,
+      "n_estimators": 350,
+      "num_leaves": 29,
+      "subsample": 0.8328067211847204
+    },
+    "git_commit": "caed0ca62cb8b228d778c9e22d149bf4cbf089b7",
+    "labels_sha256": "266744994300526baa5caca1911669b156e77eb490cb34e9c4a464186ace8a5b",
+    "lockbox_profiles": 1000,
+    "versions": {
+      "lightgbm": "4.7.0",
+      "numpy": "2.5.3",
+      "onnxruntime": "1.30.0",
+      "optuna": "5.0.0",
+      "python": "3.12.3",
+      "scikit-learn": "1.9.1",
+      "scipy": "1.18.1",
+      "torch": "2.14.1+cpu",
+      "xgboost": "3.4.1"
+    }
+  },
+  "version": "v3"
+}

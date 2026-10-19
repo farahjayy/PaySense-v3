@@ -1,4 +1,4 @@
 persona,profiles,mean_label,mean_p_without,share_safe,share_caution,share_at_risk
-budget_conscious,3958.0,0.2842,0.216,0.5811,0.0867,0.3322
-frequent_bnpl,3482.0,0.3634,0.2606,0.4756,0.1011,0.4233
-irregular_income,2560.0,0.4968,0.43,0.2859,0.1215,0.5926
+budget_conscious,4338.0,0.2522,0.1852,0.6194,0.0805,0.3001
+frequent_bnpl,3826.0,0.3301,0.2282,0.512,0.1061,0.3819
+irregular_income,2836.0,0.4843,0.4172,0.3039,0.1202,0.5758

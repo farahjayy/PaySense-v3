@@ -1,56 +1,56 @@
 {
   "assessed": 200,
-  "band_agreement": 0.92,
-  "band_agreement_where_plan_decides": 0.9108910891089109,
+  "band_agreement": 0.955,
+  "band_agreement_where_plan_decides": 0.9375,
   "gap": {
-    "max_abs": 0.4725180752451468,
-    "mean": -0.0004007087337094212,
-    "mean_abs": 0.05305157244909747,
-    "p95_abs": 0.19273698328371128
+    "max_abs": 0.3683427227345557,
+    "mean": 0.004184325594494567,
+    "mean_abs": 0.02047247677657087,
+    "p95_abs": 0.11638768043435924
   },
   "locked": 0,
-  "mean_evaluations_when_not_safe": 16.16216216216216,
-  "mean_factors_shown": 2.21,
-  "non_safe": 111,
-  "non_safe_short_before_purchase": 0.8558558558558559,
-  "non_safe_with_no_reason": 0.0,
-  "plan_decides_profiles": 101,
+  "mean_evaluations_when_not_safe": 15.68867924528302,
+  "mean_factors_shown": 0.82,
+  "non_safe": 106,
+  "non_safe_short_before_purchase": 0.8301886792452831,
+  "non_safe_with_no_reason": 0.5660377358490566,
+  "plan_decides_profiles": 112,
   "profiles": 200,
   "rejected_by_plan_rules": 0,
   "rejected_reasons": {},
   "seconds": {
-    "max": 0.664592831999471,
-    "p50": 0.11698104300012346,
-    "p95": 0.45000693774977596
+    "max": 2.1583384699999897,
+    "p50": 0.30360268299999404,
+    "p95": 0.9221750171500025
   },
-  "share_with_no_factor": 0.31,
+  "share_with_no_factor": 0.735,
   "slowest": [
     {
-      "index": 108,
-      "seconds": 0.665
-    },
-    {
       "index": 48,
-      "seconds": 0.654
+      "seconds": 2.158
     },
     {
-      "index": 81,
-      "seconds": 0.619
+      "index": 108,
+      "seconds": 2.038
     },
     {
-      "index": 180,
-      "seconds": 0.608
+      "index": 182,
+      "seconds": 1.925
     },
     {
-      "index": 39,
-      "seconds": 0.579
+      "index": 164,
+      "seconds": 1.411
+    },
+    {
+      "index": 16,
+      "seconds": 1.384
     }
   ],
   "suggestion_basis": {
-    "model": 7,
+    "model": 10,
     "simulation": 7
   },
-  "suggestion_reaches_safe": 0.12612612612612611,
-  "suggestion_safe_by_simulation": 0.8571428571428571,
-  "suggestions_checked": 14
+  "suggestion_reaches_safe": 0.16037735849056603,
+  "suggestion_safe_by_simulation": 0.7647058823529411,
+  "suggestions_checked": 17
 }
