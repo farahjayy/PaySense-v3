@@ -19,7 +19,7 @@
 
 ## B. Local steps, in order
 
-1. **Pull the branch** `claude/fervent-tesla-2rh1ov`; review and merge to `main` when satisfied (only the author merges). Prefer a **squash merge**: commit `d422555` added a production build folder (`frontend/.next-live/`, no credentials in it, checked) that the next commit removed; a squash keeps it out of `main`'s history.
+1. ✅ *Done locally (2026-10-19): `origin/main` already held the merge at `c611f55`; fast-forwarded and branched `claude/local-dev`.* **Pull the branch** `claude/fervent-tesla-2rh1ov`; review and merge to `main` when satisfied (only the author merges). Prefer a **squash merge**: commit `d422555` added a production build folder (`frontend/.next-live/`, no credentials in it, checked) that the next commit removed; a squash keeps it out of `main`'s history.
 2. **Apply the migrations** in the Supabase SQL editor (project `paysense-v3`), each from the branch head: `0003_login_hardening.sql` (it changed after it was first written: the `assistant_chat` lock name), `0004_budgets_assistant.sql`, `0005_savings_buffer.sql`, `0006_privacy.sql`.
 3. **Check them:** `cd backend && uv run python scripts/check_rls.py` (needs `SUPABASE_ANON_KEY`; every table must answer 401), then `uv run pytest -m integration` (the `test_v3_migrations.py` tests stop skipping).
 4. **Run the app on the real database:** `uv run uvicorn app.main:app --port 8000` and `cd frontend && npm run dev`; sign in once in a browser.
@@ -28,7 +28,7 @@
 7. **Env templates:** add the variable names from `env_setup.md` to `backend/.env.example` (no values).
 8. **Deploy** (`deployment.md`): Render blueprint (`paysense-v3-api`), Vercel, CORS, `FORWARDED_ALLOW_IPS`, the smoke test, `demo_run.py --api <live URL>`, the phone checklist, a keep-alive choice.
 9. **Second-Opinion Check (D-57):** needs no migration (a saved report keeps it inside the existing jsonb `input`). On the real database, step 6's `find_demo_scenario.py` now also fills the *Adds* and *Safer timing* columns; pick the video's shot 10 from them. Answer questions.md 37 (the 5-point threshold and the RM1,500 wording) and 38 (the engine fixes the outcome check points to).
-10. **Optional, real data:** download MoneyData and Berka and run `uv run python -m ml.engine1_eval.serving_check` for real-data band coverage.
+10. ✅ *Done locally (2026-10-19): `serving_check` now scores R3; results in `reports/engine1/serving_check.md` section 3 and `questions.md` rows 41 and 45.* **Optional, real data:** download MoneyData and Berka and run `uv run python -m ml.engine1_eval.serving_check` for real-data band coverage.
 11. **Before submitting:** re-run `scripts/run_security_scans.py`, `scripts/run_security_drill.py` and `scripts/collect_test_evidence.py`; re-copy the figures in `submission/` from the reports they name; record the video with `demo-video-script.md`.
 
 ## C. Checks that run without you
