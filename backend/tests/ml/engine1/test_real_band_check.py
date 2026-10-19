@@ -200,3 +200,20 @@ def test_the_serving_check_section_scores_the_served_rule_files_end_to_end() -> 
     )
     assert "clearly worse than R2 on real data" in text
     assert "synthetic" in text and "berka" in text
+
+
+def test_a_regeneration_without_stored_results_keeps_the_previous_parity_line_labelled() -> None:
+    from ml.engine1_eval.serving_check import carry_over_parity
+
+    previous = (
+        "## 1. The served network reproduces the evaluated scores\n\n"
+        "{'checked': 560, 'max_abs_mase_difference': 5.2e-07}\n\nmore\n"
+    )
+    none_stored = {"checked": 0, "note": "no stored evaluation results on this machine"}
+    kept = carry_over_parity(none_stored, previous)
+    assert "{'checked': 560, 'max_abs_mase_difference': 5.2e-07}" in kept
+    assert "carried over from the previous report" in kept
+    fresh = {"checked": 12, "max_abs_mase_difference": 1e-07}
+    assert carry_over_parity(fresh, previous) == str(fresh)
+    assert carry_over_parity(none_stored, None) == str(none_stored)
+    assert carry_over_parity(none_stored, "no parity line here") == str(none_stored)

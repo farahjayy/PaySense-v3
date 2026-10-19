@@ -6,6 +6,8 @@
 
 {'checked': 560, 'max_abs_mase_difference': 5.203915156015704e-07}
 
+(This line is carried over from the previous report: the stored evaluation results are not on the machine that regenerated this one, so parity was not re-checked here.)
+
 The ONNX files were also compared with torch on held-out windows at export time (`backend/models/engine1/v1/metadata.json`).
 
 ## 2. Calibration of the 13-week total
@@ -21,9 +23,9 @@ For each origin the user's own error record (latest ten origins, eight-week path
 | moneydata | spend | 94 | -0.003 | 0.36 |
 | moneydata | income | 94 | +0.189 | 0.50 |
 | synthetic | spend | 600 | -0.014 | 0.51 |
-| synthetic | income | 600 | +0.073 | 0.68 |
+| synthetic | income | 600 | +0.095 | 0.67 |
 
-### With the production widening factor (1.5)
+### With the v2 widening factor (1.5)
 
 | dataset | kind | origins | typical bias (median over origins) | inside P10-P90 |
 |---|---|---|---|---|
@@ -32,6 +34,47 @@ For each origin the user's own error record (latest ten origins, eight-week path
 | moneydata | spend | 94 | +0.024 | 0.54 |
 | moneydata | income | 94 | +0.339 | 0.46 |
 | synthetic | spend | 600 | +0.013 | 0.69 |
-| synthetic | income | 600 | +0.238 | 0.69 |
+| synthetic | income | 600 | +0.222 | 0.66 |
 
 The bands are narrower than nominal, as the P4 audit predicted; the widening factor is an assumption that narrows the gap, not a calibration. Probabilities derived from the bands (P(shortfall)) are therefore more extreme than a calibrated forecast would give, which the interface must present as an estimate. Engine 2's labels use the same function, so training and serving agree.
+
+## 3. The served band rule (R3) on real data
+
+Sections 1 and 2 score the engine v2 rules. This section scores the rule served now, through the function serving uses (`real_band_check.py`; plan `refdocs/plans/2026-10-19-local-completion.md`, section 3, rule written before this was run).
+
+R1 is the single 1.5 factor, R2 the v2 table (D-54) and R3 the rule served now (monthly floor, population record below 26 weeks, refitted table). All three are scored on the same origins (from 17 weeks of history, every fourth week) with the same random draws; *inside P10-P90* should be 0.80 and *median bias* is (simulated median - realised) as a share of the recent level, above 0 meaning too high. The synthetic rows are the held-out Engine 1 test students scored by the same code, so the two can be read side by side.
+
+| dataset | series | weeks of history | origins | inside P10-P90: R1 | R2 | R3 | median bias: R1 | R2 | R3 |
+|---|---|---|---|---|---|---|---|---|---|
+| berka | income | 17-25 | 180 | 0.21 | 0.27 | 0.72 | +0.464 | +0.237 | +0.103 |
+| berka | income | 26-38 | 180 | 0.39 | 0.38 | 0.65 | +0.602 | +0.489 | +0.045 |
+| berka | income | 39-51 | 180 | 0.47 | 0.44 | 0.77 | +0.436 | +0.514 | +0.019 |
+| berka | income | 52+ | 1969 | 0.51 | 0.58 | 0.71 | +0.384 | +0.274 | +0.005 |
+| berka | spend | 17-25 | 180 | 0.22 | 0.14 | 0.16 | +0.191 | +1.031 | -0.708 |
+| berka | spend | 26-38 | 180 | 0.33 | 0.30 | 0.56 | +0.724 | +1.329 | +0.701 |
+| berka | spend | 39-51 | 180 | 0.58 | 0.53 | 0.76 | +0.402 | +0.747 | +0.246 |
+| berka | spend | 52+ | 1969 | 0.63 | 0.56 | 0.78 | +0.305 | +0.738 | +0.159 |
+| moneydata | income | 17-25 | 3 | 0.00 | 0.00 | 0.00 | -17.813 | -17.863 | -17.196 |
+| moneydata | income | 26-38 | 3 | 0.33 | 0.33 | 0.33 | -2.061 | -2.159 | -2.250 |
+| moneydata | income | 39-51 | 3 | 1.00 | 1.00 | 1.00 | +0.113 | +0.246 | -0.170 |
+| moneydata | income | 52+ | 87 | 0.49 | 0.54 | 0.63 | +0.315 | +0.217 | -0.024 |
+| moneydata | spend | 17-25 | 3 | 0.33 | 0.67 | 0.67 | -0.093 | +0.534 | +0.207 |
+| moneydata | spend | 26-38 | 3 | 0.67 | 1.00 | 0.67 | -0.481 | -0.281 | -0.557 |
+| moneydata | spend | 39-51 | 3 | 0.00 | 0.00 | 0.00 | -3.753 | -3.519 | -3.798 |
+| moneydata | spend | 52+ | 87 | 0.55 | 0.68 | 0.68 | +0.100 | +0.336 | +0.019 |
+| synthetic | income | 17-25 | 180 | 0.36 | 0.36 | 0.85 | +0.533 | +0.337 | +0.080 |
+| synthetic | income | 26-38 | 180 | 0.52 | 0.52 | 0.78 | +0.312 | +0.287 | -0.028 |
+| synthetic | income | 39-51 | 180 | 0.38 | 0.41 | 0.82 | +0.422 | +0.479 | +0.124 |
+| synthetic | income | 52+ | 240 | 0.73 | 0.78 | 0.87 | +0.221 | +0.126 | -0.029 |
+| synthetic | spend | 17-25 | 180 | 0.36 | 0.39 | 0.73 | +0.055 | +0.256 | +0.074 |
+| synthetic | spend | 26-38 | 180 | 0.67 | 0.78 | 0.81 | +0.038 | +0.192 | +0.038 |
+| synthetic | spend | 39-51 | 180 | 0.67 | 0.78 | 0.77 | -0.017 | +0.082 | -0.031 |
+| synthetic | spend | 52+ | 240 | 0.70 | 0.79 | 0.83 | -0.012 | +0.109 | -0.022 |
+
+### Rule from the plan, applied to the real datasets
+
+R3 is *clearly worse* if it covers the realised total more than 0.05 less often than R2, for histories of 26 weeks or more, or for 17-25 weeks, pooled over the real datasets and both series.
+
+- coverage(R3) - coverage(R2), 26 weeks or more: +0.18
+- coverage(R3) - coverage(R2), 17-25 weeks: +0.23
+- R3 is clearly worse than R2 on real data: **no**
