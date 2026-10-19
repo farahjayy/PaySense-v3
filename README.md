@@ -139,11 +139,11 @@ No real personal financial data is in this repository. Personas and training dat
 
 <table>
   <tr>
-    <td align="center" width="20%"><img src="public/Farah.png" width="140" alt="Nur Farah binti Ahmad Nazri"><br><b>Nur Farah binti Ahmad Nazri</b></td>
+    <td align="center" width="20%"><img src="public/Farah.svg" width="140" alt="Nur Farah binti Ahmad Nazri"><br><b>Nur Farah binti Ahmad Nazri</b></td>
     <td align="center" width="20%"><br><b>Nurlisa Nabiha Binti Roslan</b></td>
-    <td align="center" width="20%"><img src="public/Chip.png" width="140" alt="Fakhrul Azim Bin Ahmed Mardzukie"><br><b>Fakhrul Azim Bin Ahmed Mardzukie</b></td>
-    <td align="center" width="20%"><img src="public/Hao.png" width="140" alt="Por Jie Hao"><br><b>Por Jie Hao</b></td>
-    <td align="center" width="20%"><img src="public/Sharvin.png" width="140" alt="Sharvin A/L Kanesan"><br><b>Sharvin A/L Kanesan</b></td>
+    <td align="center" width="20%"><img src="public/Chip.svg" width="140" alt="Fakhrul Azim Bin Ahmed Mardzukie"><br><b>Fakhrul Azim Bin Ahmed Mardzukie</b></td>
+    <td align="center" width="20%"><img src="public/Hao.svg" width="140" alt="Por Jie Hao"><br><b>Por Jie Hao</b></td>
+    <td align="center" width="20%"><img src="public/Sharvin.svg" width="140" alt="Sharvin A/L Kanesan"><br><b>Sharvin A/L Kanesan</b></td>
   </tr>
 </table>
 
