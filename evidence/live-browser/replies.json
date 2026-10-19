@@ -1,19 +1,23 @@
 [
  {
   "step": "status line",
-  "reply": "Assistant on (gemini)"
+  "reply": "Checking the assistant…"
  },
  {
   "step": "Can I afford an RM799 phone on SPayLater over 3 months?",
-  "reply": "This purchase is rated as \"At Risk\" because you are already running short each month. The model suggests that choosing an item priced around RM 400 would be a safer option. Please note that this is not financial advice; you decide."
+  "reply": "A RM799 phone on SPayLater over 3 months comes out At Risk (score 17). Your chance of running short is about 83% with the purchase and about 73% without it, so you are already At Risk before buying. Each instalment would be about RM 266, starting 2026-01-29. No alternative I checked reaches Safe, so I'd suggest waiting or looking at a cheaper option before going ahead."
  },
  {
   "step": "What's the safest way to buy it?",
-  "reply": "The risk check indicates that this purchase remains \"At Risk\" regardless of the instalment plan. The safest suggestion is to choose an item priced at about RM 400, as your current monthly budget is already showing a shortfall. Please remember that this is not financial advice and you are responsible for your final decision."
+  "reply": "No option reaches Safe. The engine's suggestions are to spread the purchase over 6 instalments, which still leaves it At Risk at about 82%, or to choose something priced around RM 400. Your chance of running short is already about 73% before this purchase, so waiting or buying a cheaper item is the safer route."
  },
  {
   "step": "Go ahead with that.",
-  "reply": "I have proposed the SPayLater plan for your phone as requested. Please check the card to confirm the details; nothing will be saved until you do so."
+  "reply": "I could not work that out."
+ },
+ {
+  "step": "Please add the RM799 SPayLater phone plan over 3 months so I can confirm it.",
+  "reply": "I've proposed the RM799 SPayLater phone plan over 3 instalments, with the first payment due 29 Jan 2026. It is waiting for your confirmation, and nothing is saved until you press Confirm on the card. The risk check runs again before it saves, and the plan is still At Risk.\n\nThis is the 3-instalment plan you asked about, not the 6-instalment option or a cheaper item from my last reply. Tell me if you want one of those instead."
  },
  {
   "step": "Confirm",
