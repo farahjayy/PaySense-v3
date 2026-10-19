@@ -4,3 +4,5 @@ reports/datagen/** text eol=lf
 reports/engine1/** text eol=lf
 *.png binary
 *.onnx binary
+backend/models/**/*.json text eol=lf
+backend/models/**/*.yaml text eol=lf

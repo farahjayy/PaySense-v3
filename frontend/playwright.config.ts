@@ -20,6 +20,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // The dashboard forecast is CPU-bound in one stub-backend process; with every worker signing in
+  // at once a slower machine (the author's Windows laptop) queues it past the 5 s default.
+  expect: { timeout: 15_000 },
   reporter: [["list"]],
   use: { baseURL: FRONTEND_URL, trace: "retain-on-failure", launchOptions },
   projects: [

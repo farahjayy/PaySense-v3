@@ -66,3 +66,4 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-18-engine-outcome-check.md](2026-10-18-engine-outcome-check.md) | [../plans/2026-10-18-engine-outcome-check.md](../plans/2026-10-18-engine-outcome-check.md) | ✅ Done (evaluation only) |
 | [2026-10-18-engine-v3.md](2026-10-18-engine-v3.md) | [../plans/2026-10-18-engine-v3.md](../plans/2026-10-18-engine-v3.md) | ✅ Done |
 | [2026-10-18-security-drill.md](2026-10-18-security-drill.md) | [../plans/2026-10-18-security-drill.md](../plans/2026-10-18-security-drill.md) | ✅ Done |
+| [2026-10-19-local-completion.md](2026-10-19-local-completion.md) | [../plans/2026-10-19-local-completion.md](../plans/2026-10-19-local-completion.md) | 🔶 In progress |

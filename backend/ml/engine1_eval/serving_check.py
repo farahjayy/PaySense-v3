@@ -8,6 +8,9 @@
    realised total is compared with them. Reported per dataset and kind: bias of the median and
    the share of outcomes inside the 80% band, with and without engine v2's single widening factor
    (v3 widens by history length: `ml.engine1_eval.band_calibration`).
+3. The served band rule (engine v3, R3: monthly floor, population record below 26 weeks) next to
+   the v2 table and the single 1.5 factor on the same windows, on real data and on the held-out
+   synthetic students (`real_band_check.py`).
 Writes `reports/engine1/serving_check.md`. Latency and memory are printed, not written (they vary
 from run to run), and recorded in STATUS.
 """
@@ -27,6 +30,7 @@ from app.engines.forecasting.errors import rolling_error_paths, widen
 from app.engines.forecasting.onnx_model import load_served
 from app.engines.forecasting.service import V1_ERROR_INFLATION as ERROR_INFLATION
 from app.engines.forecasting.simulate import path_bootstrap
+from ml.engine1_eval import real_band_check
 from ml.engine1_eval.data import Series
 from ml.engine1_eval.harness import EvalConfig, evaluate_series
 from ml.engine1_eval.loaders import berka, moneydata
@@ -202,8 +206,23 @@ def build(config_name: str) -> str:
         "assumption that narrows the gap, not a calibration. Probabilities derived from the bands "
         "(P(shortfall)) are therefore more extreme than a calibrated forecast would give, which "
         "the interface must present as an estimate. Engine 2's labels use the same function, so "
-        "training and serving agree.\n"
+        "training and serving agree.\n\n"
+        "## 3. The served band rule (R3) on real data\n\n"
+        "Sections 1 and 2 score the engine v2 rules. This section scores the rule served now, "
+        "through the function serving uses (`real_band_check.py`; plan "
+        "`refdocs/plans/2026-10-19-local-completion.md`, section 3, rule written before this "
+        f"was run).\n\n{real_band_section(synthetic, real, served, config.seed)}"
     )
+
+
+def real_band_section(synthetic: list[Series], real: list[Series], served, seed: int) -> str:
+    rules = real_band_check.rules_under_test()
+    rows = [
+        row
+        for s in [*synthetic, *real]
+        for row in real_band_check.score_series(s, served, rules, seed)
+    ]
+    return real_band_check.render_section(rows)
 
 
 def main(argv: Sequence[str] | None = None) -> None:

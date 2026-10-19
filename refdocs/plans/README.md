@@ -65,3 +65,4 @@ Status vocabulary: `Draft` · `In progress` · `Done` · `Blocked` · `Supersede
 | [2026-10-18-engine-outcome-check.md](2026-10-18-engine-outcome-check.md) | Engine 1 outcome check (served P against realised shortfalls) and recursion check beyond 13 weeks | ✅ Done (evaluation only) |
 | [2026-10-18-engine-v3.md](2026-10-18-engine-v3.md) | Engine v3 round: monthly clip, population error record, band refit, two-part Engine 2 target, savings feature against outgoings; pre-registered serve rules | ✅ Done (R3 and Engine 2 v3 served) |
 | [2026-10-18-security-drill.md](2026-10-18-security-drill.md) | Security drill: the four named attack classes run in-app against a sandbox, fooled vs harmed | ✅ Done |
+| [2026-10-19-local-completion.md](2026-10-19-local-completion.md) | Local completion round: Windows baseline, real-data check of band rule R3 (rule written first), real database, deploy | 🔶 In progress |
