@@ -1,4 +1,5 @@
-"""Engine 2, old and new side by side, and the bias-term sensitivity (WP16):
+"""Engine 2, every version side by side, the bias-term sensitivity (WP16) and the engine v3
+serve rule (plan 2026-10-18-engine-v3 §5.4):
 
     cd backend && uv run python -m ml.engine2_train.compare_versions
 
@@ -19,7 +20,7 @@ from typing import Any
 import numpy as np
 
 from app.engines.forecasting.simulate import band
-from app.engines.risk.features import BUFFER_FEATURE
+from app.engines.risk.features import BUFFER_FEATURE, EARLIER_BUFFER_FEATURES
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA = ROOT / "data" / "engine2"
@@ -28,6 +29,7 @@ MODELS = ROOT / "backend" / "models" / "engine2"
 BANDS = ("Safe", "Caution", "At Risk")
 SATURATION = 0.02  # within this of exactly 0 or 1 (the P5 stop-rule margin)
 SAFE_EDGE = 0.10
+SERVING_DROP = 0.02  # plan §5.4 criterion 3: v3's serving band agreement may fall by at most this
 
 
 def read_labels(path: Path) -> dict[int, dict[str, Any]]:
@@ -42,9 +44,16 @@ def read_labels(path: Path) -> dict[int, dict[str, Any]]:
                 "label": float(r["label"]),
                 "p_without": float(r["p_without"]),
                 "persona": r.get("truth", {}).get("persona"),
-                "buffer": float(r["features"].get(BUFFER_FEATURE, 0.0)),
+                "buffer": _buffer(r["features"]),
             }
     return out
+
+
+def _buffer(features: dict[str, float]) -> float:
+    for name in (BUFFER_FEATURE, *EARLIER_BUFFER_FEATURES):
+        if name in features:
+            return float(features[name])
+    return 0.0
 
 
 def label_facts(labels: dict[int, dict[str, Any]]) -> dict[str, float]:
@@ -71,8 +80,11 @@ def model_facts(meta_path: Path) -> dict[str, Any]:
     m = meta.get("metrics", {})
     calibrated = (m.get("lockbox_calibrated") or {}).get("brier")
     constant = m.get("lockbox_constant_brier")
+    benchmarks = m.get("lockbox_benchmarks") or {}
     return {
         "family": meta.get("family"),
+        "target": meta.get("target", "p_with"),
+        "lockbox_rule": m.get("lockbox_rule", "every tenth profile"),
         "features": len(meta.get("feature_names", [])),
         "cv_brier": m.get("cv_brier"),
         "lockbox_brier_calibrated": (m.get("lockbox_calibrated") or {}).get("brier"),
@@ -84,7 +96,64 @@ def model_facts(meta_path: Path) -> dict[str, Any]:
         ),
         "lockbox_band_agreement": m.get("lockbox_band_agreement"),
         "lockbox_auc_at_030": (m.get("lockbox_calibrated") or {}).get("auc_at_030"),
+        "lockbox_brier_p_without": (benchmarks.get("p_without") or {}).get("brier"),
     }
+
+
+def paired_change(old: dict[int, dict], new: dict[int, dict]) -> dict[str, Any]:
+    """The same students in two label versions: what the engine changes did to their labels."""
+    common = sorted(set(old) & set(new))
+    a = np.array([old[i]["label"] for i in common])
+    b = np.array([new[i]["label"] for i in common])
+    base_a = np.array([old[i]["p_without"] for i in common])
+    base_b = np.array([new[i]["p_without"] for i in common])
+    bands_a, bands_b = [band(v) for v in a], [band(v) for v in b]
+    return {
+        "profiles": len(common),
+        "mean_label_old": float(a.mean()),
+        "mean_label_new": float(b.mean()),
+        "mean_p_without_old": float(base_a.mean()),
+        "mean_p_without_new": float(base_b.mean()),
+        "mean_absolute_change": float(np.abs(b - a).mean()),
+        "band_agreement": float(np.mean([x == y for x, y in zip(bands_a, bands_b, strict=True)])),
+        "transitions": {
+            f"{x} -> {y}": sum(1 for p, q in zip(bands_a, bands_b, strict=True) if (p, q) == (x, y))
+            for x in BANDS
+            for y in BANDS
+        },
+    }
+
+
+def decide_engine2(v2: dict[str, Any], v3: dict[str, Any]) -> dict[str, Any]:
+    """Plan §5.4: serve v3 only if all three criteria hold; a missing number fails its criterion."""
+
+    def known(*values: Any) -> bool:
+        return all(v is not None for v in values)
+
+    s2, s3 = v2.get("lockbox_brier_skill"), v3.get("lockbox_brier_skill")
+    b3, bp = v3.get("lockbox_brier_calibrated"), v3.get("lockbox_brier_p_without")
+    a2, a3 = v2.get("serving_band_agreement"), v3.get("serving_band_agreement")
+    criteria = [
+        {
+            "id": 1,
+            "rule": "new-lockbox Brier skill (1 - B/B_const) at least v2's on its own lockbox",
+            "holds": known(s2, s3) and s3 >= s2,
+            "values": [s3, s2],
+        },
+        {
+            "id": 2,
+            "rule": "new-lockbox Brier below the predict-p_without benchmark's",
+            "holds": known(b3, bp) and b3 < bp,
+            "values": [b3, bp],
+        },
+        {
+            "id": 3,
+            "rule": f"serving-check band agreement at least v2's minus {SERVING_DROP:.2f}",
+            "holds": known(a2, a3) and a3 >= a2 - SERVING_DROP - 1e-12,
+            "values": [a3, a2],
+        },
+    ]
+    return {"serve": all(c["holds"] for c in criteria), "criteria": criteria}
 
 
 def serving_facts(path: Path) -> dict[str, Any]:
@@ -167,9 +236,50 @@ def _fmt(value: Any) -> str:
     return str(value)
 
 
-def render(facts: dict[str, dict[str, Any]], bias: dict[str, Any], buffer: dict[str, Any]) -> str:
+def _v3_section(pairs: dict[str, Any] | None, verdict: dict[str, Any] | None) -> list[str]:
+    if pairs is None or verdict is None:
+        return []
+    lines = [
+        "## v3 against v2 for the same students (paired by profile)",
+        "",
+        "v3 (engine v3 round) makes its labels with Engine 1's band rule R3 (each simulated month "
+        "floored at zero, a population error record below 26 weeks of history, a refitted "
+        "table: D-60, D-61), measures the savings buffer against expected outgoings (D-63) and "
+        "trains a two-part target (D-62). Indices 10,000-10,999 are new (its lockbox).",
+        "",
+        "| measure | value |",
+        "|---|---|",
+        *[f"| {k} | {_fmt(v)} |" for k, v in pairs.items() if k != "transitions"],
+        "",
+        "Band of the v2 label (rows) against the v3 label (columns):",
+        "",
+        "| v2 \\ v3 | " + " | ".join(BANDS) + " |",
+        "|---|---|---|---|",
+        *[
+            f"| {x} | " + " | ".join(str(pairs["transitions"][f"{x} -> {y}"]) for y in BANDS) + " |"
+            for x in BANDS
+        ],
+        "",
+        "## Serve rule for v3 (written in the plan before any v3 label was made)",
+        "",
+    ]
+    for c in verdict["criteria"]:
+        values = " against ".join(_fmt(v) for v in c["values"])
+        lines.append(f"{c['id']}. {c['rule']}: {values}: **{'holds' if c['holds'] else 'fails'}**.")
+    lines += ["", f"**{'v3 is served' if verdict['serve'] else 'v2 stays served'}.**", ""]
+    return lines
+
+
+def render(
+    facts: dict[str, dict[str, Any]],
+    bias: dict[str, Any],
+    buffer: dict[str, Any],
+    pairs: dict[str, Any] | None = None,
+    verdict: dict[str, Any] | None = None,
+) -> str:
+    versions = list(facts)
     keys = list(dict.fromkeys(k for f in facts.values() for k in f))
-    rows = [f"| {k} | {_fmt(facts['v1'].get(k))} | {_fmt(facts['v2'].get(k))} |" for k in keys]
+    rows = ["| " + " | ".join([k, *(_fmt(facts[v].get(k)) for v in versions)]) + " |" for k in keys]
     trans = bias["transitions"]
     trans_rows = [f"| {x} | " + " | ".join(str(trans[(x, y)]) for y in BANDS) + " |" for x in BANDS]
     buffer_rows = [
@@ -181,24 +291,30 @@ def render(facts: dict[str, dict[str, Any]], bias: dict[str, Any], buffer: dict[
     persona_rows = [f"| {p} | {d:+.4f} |" for p, d in bias["mean_change_by_persona"].items()]
     return "\n".join(
         [
-            "# Engine 2: version 1 and version 2 side by side",
+            "# Engine 2: every version side by side",
             "",
             "> Generated by `python -m ml.engine2_train.compare_versions` - do not edit by hand.",
             "> v1 = the P5/P6 model (labels version 2, 16 features, one band widening of 1.5). "
             "v2 = WP16 (labels version 3: the running margin starts from the savings buffer, "
-            "D-50, and the band is widened by history length, C2; 17 features). The v1 report "
-            "is kept unchanged in `v1/`.",
+            "D-50, and the band is widened by history length, C2; 17 features). v3 = the engine "
+            "v3 round (labels version 4: Engine 1's band rule R3; the savings feature against "
+            "outgoings; the two-part target; 11,000 profiles, lockbox indices 10,000-10,999). The "
+            "v1 and v2 reports are kept unchanged in `v1/` and `v2/`.",
             "",
             "## Labels, model and serving check",
             "",
-            "| measure | v1 | v2 |",
-            "|---|---|---|",
+            "| measure | " + " | ".join(versions) + " |",
+            "|---|" + "---|" * len(versions),
             *rows,
             "",
             "The v2 lockbox is the same students as v1's (every tenth profile index): it was "
             "scored once for v1 in P5 and once more here, with labels made by different code. "
-            "The second scoring is disclosed rather than hidden; no choice in v2 was made on it.",
+            "The second scoring is disclosed rather than hidden; no choice in v2 was made on it. "
+            "v3's lockbox is new (indices 10,000-10,999, never labelled before); v3 was also "
+            "scored "
+            "on the old lockbox for continuity only (`README.md`).",
             "",
+            *_v3_section(pairs, verdict),
             "## What changed for the same students (paired by profile)",
             "",
             "Both changes act together (the buffer start and the new bands), so this is not the "
@@ -244,26 +360,36 @@ def render(facts: dict[str, dict[str, Any]], bias: dict[str, Any], buffer: dict[
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Engine 2 v1 and v2 side by side.")
     parser.add_argument("--v1-labels", type=Path, default=DATA / "v1" / "labels.jsonl")
-    parser.add_argument("--v2-labels", type=Path, default=DATA / "labels.jsonl")
+    parser.add_argument("--v2-labels", type=Path, default=DATA / "v2" / "labels.jsonl")
+    parser.add_argument("--v3-labels", type=Path, default=DATA / "labels.jsonl")
+    parser.add_argument("--v3-model", type=Path, default=MODELS / "v3" / "metadata.json")
     parser.add_argument("--recentred", type=Path, default=DATA / "recentred" / "labels.jsonl")
     parser.add_argument("--out", type=Path, default=REPORTS)
     args = parser.parse_args(argv)
-    v1, v2 = read_labels(args.v1_labels), read_labels(args.v2_labels)
+    v1, v2, v3 = (read_labels(p) for p in (args.v1_labels, args.v2_labels, args.v3_labels))
     centred = read_labels(args.recentred)
     facts = {
         "v1": {**label_facts(v1), **model_facts(MODELS / "v1" / "metadata.json"),
                **serving_facts(REPORTS / "v1" / "serving_check.json")},
         "v2": {**label_facts(v2), **model_facts(MODELS / "v2" / "metadata.json"),
+               **serving_facts(REPORTS / "v2" / "serving_check.json")},
+        "v3": {**label_facts(v3), **model_facts(args.v3_model),
                **serving_facts(REPORTS / "serving_check.json")},
     }  # fmt: skip
+    pairs = paired_change(v2, v3)
+    verdict = decide_engine2(facts["v2"], facts["v3"])
+    (args.out / "tables").mkdir(parents=True, exist_ok=True)
+    (args.out / "tables" / "engine2_v3_decision.json").write_text(
+        json.dumps(verdict, indent=1) + "\n", encoding="utf-8", newline="\n"
+    )
     bias = bias_sensitivity(v2, centred)
     buffer = buffer_effect(v1, v2)
     (args.out / "tables").mkdir(parents=True, exist_ok=True)
     with (args.out / "tables" / "versions.csv").open("w", encoding="utf-8", newline="") as h:
         writer = csv.writer(h)
-        writer.writerow(["measure", "v1", "v2"])
+        writer.writerow(["measure", *facts])
         for key in dict.fromkeys(k for f in facts.values() for k in f):
-            writer.writerow([key, facts["v1"].get(key), facts["v2"].get(key)])
+            writer.writerow([key, *(facts[v].get(key) for v in facts)])
     with (args.out / "tables" / "bias_sensitivity.csv").open(
         "w", encoding="utf-8", newline=""
     ) as h:
@@ -277,9 +403,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         for persona, change in bias["mean_change_by_persona"].items():
             writer.writerow([f"mean change {persona}", change])
     (args.out / "versions.md").write_text(
-        render(facts, bias, buffer), encoding="utf-8", newline="\n"
+        render(facts, bias, buffer, pairs, verdict), encoding="utf-8", newline="\n"
     )
     print(f"wrote {args.out / 'versions.md'}")  # noqa: T201
+    print(json.dumps(verdict, indent=1))  # noqa: T201
 
 
 if __name__ == "__main__":

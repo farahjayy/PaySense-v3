@@ -23,6 +23,7 @@ and `reports/engine1/tables/outcome_check.csv`.
 
 import argparse
 import csv
+import json
 import time
 import zlib
 from collections.abc import Iterable, Mapping, Sequence
@@ -32,11 +33,10 @@ from pathlib import Path
 
 import numpy as np
 
-from app.engines.forecasting.bands import inflation_for
-from app.engines.forecasting.errors import widen
+from app.engines.forecasting.bands import BandRule, load_band_rule
 from app.engines.forecasting.flows import known_flows
 from app.engines.forecasting.series import WeeklySeries
-from app.engines.forecasting.service import MIN_SERIES_WEEKS, error_record
+from app.engines.forecasting.service import MIN_SERIES_WEEKS, served_error_records
 from app.engines.forecasting.serving import served_forecaster
 from app.engines.forecasting.simulate import (
     CAUTION_BELOW,
@@ -71,8 +71,23 @@ PATHS = DEFAULT_PATHS
 EPS = 1 / (2 * PATHS)  # log loss clips P to half a simulated path from 0 and 1
 BINS = 10
 BOOTSTRAP_DRAWS = 1000
-METHODS = ("lstm", "ma13")
-LABELS = {"lstm": "served LSTM", "ma13": "MA13 (benchmark)", "constant": "constant (benchmark)"}
+# Engine v3 (plan 2026-10-18-engine-v3): every forecaster under band rule R2 (the D-54 table,
+# weekly floor) and, when its files exist, R3 (monthly floor, population record, refitted table).
+METHODS = ("lstm", "lstm_r3", "ma13", "ma13_r3")
+LABELS = {
+    "lstm": "LSTM, R2",
+    "lstm_r3": "LSTM, R3",
+    "ma13": "MA13, R2 (benchmark)",
+    "ma13_r3": "MA13, R3 (benchmark)",
+    "constant": "constant (benchmark)",
+}
+RULE_FILES = {
+    "lstm": ROOT / "backend" / "models" / "engine1" / "rules" / "v2" / "band_inflation.json",
+    "lstm_r3": ROOT / "backend" / "models" / "engine1" / "rules" / "v3" / "band_inflation.json",
+    "ma13": ROOT / "backend" / "models" / "engine1" / "rules" / "v2" / "band_inflation.json",
+    "ma13_r3": ROOT / "reports" / "engine1" / "tables" / "ma13_rule_v3" / "band_inflation.json",
+}
+GATE = ROOT / "reports" / "engine1" / "tables" / "outcome_check_v3.json"
 BUCKET_RANGES = tuple(
     (low, BUCKETS[i + 1] - 1 if i + 1 < len(BUCKETS) else None) for i, low in enumerate(BUCKETS)
 )
@@ -161,7 +176,9 @@ class _Replay:
             return self._values[:horizon]
 
 
-def _simulate(series, forecaster, spend_errors, income_errors, end, mtd, seed, paths, fallback):
+def _simulate(
+    series, forecaster, spend_errors, income_errors, end, mtd, seed, paths, fallback, clip="week"
+):
     start = _forecast_from(series)
     return simulate(
         series,
@@ -176,6 +193,7 @@ def _simulate(series, forecaster, spend_errors, income_errors, end, mtd, seed, p
         month_to_date_sen=mtd,
         fallback_errors=fallback,
         max_weeks=HORIZON,  # never past the held-back weeks
+        clip=clip,
     )
 
 
@@ -203,23 +221,16 @@ def served_p(
     month_to_date: int,
     seed: int,
     paths: int = PATHS,
+    rule: BandRule | None = None,
 ) -> tuple[float, bool]:
     """(P(shortfall), whether the error record came from the fallback), built as
-    `service.prepare_ledger` builds it."""
-    spend_errors, spend_fallback = error_record(series.spend, series.start, forecaster, "spend")
-    income_errors, income_fallback = error_record(series.income, series.start, forecaster, "income")
-    fallback = spend_fallback or income_fallback
+    `service.prepare_ledger` builds it under `rule` (the served band rule when None)."""
+    rule = rule or load_band_rule()
+    spend_errors, income_errors, fallback = served_error_records(series, forecaster, rule)
     result = _simulate(
-        series,
-        forecaster,
-        widen(spend_errors, inflation_for(series.weeks, "spend")),
-        widen(income_errors, inflation_for(series.weeks, "income")),
-        end,
-        month_to_date,
-        seed,
-        paths,
-        fallback,
-    )
+        series, forecaster, spend_errors, income_errors, end, month_to_date, seed, paths,
+        fallback, rule.clip,
+    )  # fmt: skip
     return result.p_shortfall, fallback
 
 
@@ -242,7 +253,7 @@ def cases_for_student(
     spend: np.ndarray,
     income: np.ndarray,
     start: date,
-    forecasters: Mapping[str, Forecaster],
+    forecasters: Mapping[str, Forecaster | tuple[Forecaster, BandRule]],
     cuts: Sequence[int] = CUTS,
     seed: int = SEED,
 ) -> list[Case]:
@@ -264,9 +275,10 @@ def cases_for_student(
             mtd = month_to_date_sen(series, forecast_from)
             realised = _realised(series, spend_next, income_next, end, mtd)
             p, fallback = {}, {}
-            for name, forecaster in forecasters.items():
+            for name, variant in forecasters.items():
+                forecaster, rule = variant if isinstance(variant, tuple) else (variant, None)
                 p[name], fallback[name] = served_p(
-                    series, forecaster, end, mtd, case_seed(profile, cut, weeks)
+                    series, forecaster, end, mtd, case_seed(profile, cut, weeks), rule=rule
                 )
             short = realised.p_shortfall == 1.0
             first = bool(realised.p_negative_by_month) and realised.p_negative_by_month[0] == 1.0
@@ -278,7 +290,9 @@ def cases_for_student(
 
 
 def collect(
-    path: Path, profiles: Iterable[int], forecasters: Mapping[str, Forecaster]
+    path: Path,
+    profiles: Iterable[int],
+    forecasters: Mapping[str, Forecaster | tuple[Forecaster, BandRule]],
 ) -> list[Case]:
     cases: list[Case] = []
     pending = {}
@@ -418,8 +432,16 @@ def _bucket_label(index: int) -> str:
     return f"{low}+" if high is None else f"{low}-{high}"
 
 
+def methods_in(cases: Sequence[Case]) -> list[str]:
+    """The methods every case was scored with, in the report's order."""
+    if not cases:
+        return []
+    present = set.intersection(*(set(c.p) for c in cases))
+    return [m for m in METHODS if m in present]
+
+
 def _arrays(cases: Sequence[Case], base_rate: float) -> dict[str, np.ndarray]:
-    out = {name: np.array([c.p[name] for c in cases], float) for name in METHODS}
+    out = {name: np.array([c.p[name] for c in cases], float) for name in methods_in(cases)}
     out["constant"] = np.full(len(cases), base_rate)
     return out
 
@@ -524,16 +546,19 @@ def _by_slice(rows: list[dict], group: str, title: str) -> list[str]:
 
 def _calibration(part: Sequence[Case]) -> list[str]:
     y = np.array([c.realised for c in part])
-    tables = {m: calibration_rows(np.array([c.p[m] for c in part]), y) for m in METHODS}
+    methods = methods_in(part)
+    tables = {m: calibration_rows(np.array([c.p[m] for c in part]), y) for m in methods}
     out = [
-        "| P(shortfall) | served LSTM: cases | mean P | realised rate | MA13: cases | mean P | "
-        "realised rate |",
-        "|---|---|---|---|---|---|---|",
+        "| P(shortfall) | "
+        + " | ".join(f"{LABELS[m]}: cases | mean P | realised rate" for m in methods)
+        + " |",
+        "|---|" + "---|---|---|" * len(methods),
     ]
-    for a, b in zip(tables["lstm"], tables["ma13"], strict=True):
+    for rows in zip(*(tables[m] for m in methods), strict=True):
         out.append(
-            f"| {a.label} | {a.cases} | {_f(a.mean_p)} | {_f(a.realised)} | {b.cases} | "
-            f"{_f(b.mean_p)} | {_f(b.realised)} |"
+            f"| {rows[0].label} | "
+            + " | ".join(f"{r.cases} | {_f(r.mean_p)} | {_f(r.realised)}" for r in rows)
+            + " |"
         )
     return out
 
@@ -556,16 +581,36 @@ def _bootstrap(part: Sequence[Case], base: float, cut: int) -> list[str]:
     groups = np.array([c.profile for c in part])
     loss = {m: (p - y) ** 2 for m, p in _arrays(part, base).items()}
     out = []
-    for other in ("ma13", "constant"):
+    pairs = [("lstm", "ma13"), ("lstm", "constant"), ("lstm_r3", "lstm"), ("lstm_r3", "ma13_r3")]
+    for first, other in pairs:
+        if first not in loss or other not in loss:
+            continue
         point, low, high = paired_bootstrap(
-            loss["lstm"], loss[other], groups, BOOTSTRAP_DRAWS, SEED + cut
+            loss[first], loss[other], groups, BOOTSTRAP_DRAWS, SEED + cut
         )
         out.append(
-            f"- Brier, served LSTM minus {LABELS[other]}: {point:+.4f} "
-            f"(95% interval over students {low:+.4f} to {high:+.4f}; below 0 = the LSTM is "
-            "better)."
+            f"- Brier, {LABELS[first]} minus {LABELS[other]}: {point:+.4f} "
+            f"(95% interval over students {low:+.4f} to {high:+.4f}; below 0 = "
+            f"{LABELS[first]} is better)."
         )
     return out
+
+
+def outcome_gate(cases: Sequence[Case]) -> dict[str, list[float]]:
+    """Criterion 4 of the engine v3 serve rule, per cut: Brier of the LSTM under R3 minus under
+    R2, with the paired 95% interval over students. Empty when R3 was not scored."""
+    if "lstm_r3" not in methods_in(cases) or "lstm" not in methods_in(cases):
+        return {}
+    gate = {}
+    for cut in sorted({c.cut for c in cases}):
+        part = [c for c in cases if c.cut == cut]
+        y = np.array([c.realised for c in part], float)
+        groups = np.array([c.profile for c in part])
+        loss = {m: (np.array([c.p[m] for c in part]) - y) ** 2 for m in ("lstm_r3", "lstm")}
+        gate[str(cut)] = list(
+            paired_bootstrap(loss["lstm_r3"], loss["lstm"], groups, BOOTSTRAP_DRAWS, SEED + cut)
+        )
+    return gate
 
 
 def _lowest(rows: list[dict]) -> list[str]:
@@ -591,8 +636,13 @@ def render(cases: Sequence[Case], ids: Sequence[int]) -> str:
         "changed.",
         "",
         f"Each ledger is cut {' and '.join(str(c) for c in CUTS)} weeks before its end. At the "
-        "cut the script builds what serving builds: the user's own error record widened by the "
-        f"served band table, the served forecast and the same {PATHS}-path Monte Carlo. "
+        "cut the script builds what serving builds under a band rule: the error record (the "
+        "user's own, or under R3 the population record below 26 weeks) widened by that rule's "
+        f"table, the forecast and the same {PATHS}-path Monte Carlo with that rule's floor at "
+        "zero. "
+        "**R2** is the D-54 table with every simulated week floored at zero (served before the "
+        "engine v3 round); **R3** floors each month's total, uses the population record below 26 "
+        "weeks and its own refitted table (`reports/engine1/band_v3.md`). "
         "P(shortfall) is the share of paths whose running margin (from RM0 at the start of the "
         "cut's month, plus the month so far) is below RM0 at any month-end inside the next "
         f"{HORIZON} weeks. The **realised** outcome is the same code run on the {HORIZON} "
@@ -600,7 +650,8 @@ def render(cases: Sequence[Case], ids: Sequence[int]) -> str:
         f"student, cut and bucket ({', '.join(_bucket_label(b) for b in range(len(BUCKETS)))} "
         "weeks; 52+ is the whole history before the cut). Benchmarks: a **constant** (the "
         "realised rate of these students at that cut: in-sample, the best any constant can "
-        "do) and **MA13** run through the same simulation instead of the LSTM.",
+        "do) and **MA13** run through the same simulation instead of the LSTM (under R2 with "
+        "the LSTM's table, under R3 with its own population record and table).",
         "",
         f"Log loss clips P to {EPS:g} from 0 and 1 (half a simulated path). ECE is the expected "
         f"calibration error over {BINS} equal-width probability bins. Confident misses: P "
@@ -615,7 +666,7 @@ def render(cases: Sequence[Case], ids: Sequence[int]) -> str:
         base = _base_rate(cases, cut)
         cut_rows = [r for r in rows if r["cut"] == cut]
         months = sorted({m for c in part for m in c.months})
-        fallback = {m: float(np.mean([c.fallback[m] for c in part])) for m in METHODS}
+        fallback = {m: float(np.mean([c.fallback[m] for c in part])) for m in methods_in(part)}
         cut_dates = ", ".join(sorted({c.cut_date.isoformat() for c in part}))
         shorts = [c for c in part if c.realised]
         first = float(np.mean([c.realised_first for c in shorts])) if shorts else None
@@ -626,7 +677,7 @@ def render(cases: Sequence[Case], ids: Sequence[int]) -> str:
             f"Forecast from {cut_dates}; month-ends checked: {', '.join(months)}. {len(part)} "
             f"cases from {len({c.profile for c in part})} students; realised shortfall rate "
             f"(the constant) {base:.3f}. Share of cases whose error record came from the "
-            f"fallback: served LSTM {fallback['lstm']:.3f}, MA13 {fallback['ma13']:.3f}.",
+            "fallback: " + ", ".join(f"{LABELS[m]} {v:.3f}" for m, v in fallback.items()) + ".",
             "",
             "The first month-end is the cut's own month, so it is mostly decided by the actual "
             "month so far, which the simulation is given. Share of realised shortfalls already "
@@ -692,6 +743,16 @@ def write_csv(rows: Sequence[dict], path: Path) -> None:
             )
 
 
+def variants() -> dict[str, tuple[Forecaster, BandRule]]:
+    """Every method whose band rule file exists: the forecaster and the rule it is run under."""
+    out = {}
+    for name in METHODS:
+        if RULE_FILES[name].exists():
+            model = served_forecaster("ma13" if name.startswith("ma13") else "lstm")
+            out[name] = (model, load_band_rule(RULE_FILES[name]))
+    return out
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Score served P(shortfall) against outcomes.")
     parser.add_argument("--synthetic", type=Path, default=DEFAULT_PATH)
@@ -701,10 +762,12 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = parser.parse_args(argv)
     began = time.perf_counter()
     ids = outcome_profiles(args.profiles)
-    forecasters = {name: served_forecaster(name) for name in METHODS}
-    cases = collect(args.synthetic, ids, forecasters)
+    cases = collect(args.synthetic, ids, variants())
     args.out_report.write_text(render(cases, ids), encoding="utf-8", newline="\n")
     write_csv(summary_rows(cases), args.out_table)
+    gate = outcome_gate(cases)
+    if gate:
+        GATE.write_text(json.dumps(gate, indent=1) + "\n", encoding="utf-8", newline="\n")
     seconds = time.perf_counter() - began
     print(f"wrote {args.out_report}, {args.out_table}: {len(cases)} cases, {seconds:.1f} s")  # noqa: T201
 

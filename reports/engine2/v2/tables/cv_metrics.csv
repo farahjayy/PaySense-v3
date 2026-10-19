@@ -1,0 +1,6 @@
+model,brier,brier_se,brier_low_baseline,log_loss,auc_at_030,calibration_slope,ece,versus_winner_delta,versus_winner_p_unadjusted
+logistic,0.0176,0.0002,0.0138,0.2684,0.9864,0.9975,0.0228,0.0046,0.0
+lightgbm,0.013,0.0002,0.0096,0.2446,0.9913,0.959,0.0111,,
+xgboost,0.0133,0.0003,0.0101,0.2455,0.9912,0.9723,0.0111,0.0003,0.3417
+random_forest,0.0651,0.0003,0.0614,0.4183,0.9709,3.0096,0.152,0.0521,0.0
+constant (the mean label),0.168,,,,,,,,

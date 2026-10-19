@@ -142,7 +142,7 @@ Confirmed from the founding context documents and the scaffold interview (2026-1
 | `upfront_to_income` — amount paid at checkout because the provider limit caps financing (D-28) / expected monthly income; 0 when the purchase fits the limit | Plan + limits | ↑ |
 | `limit_utilisation_with_purchase` — (unpaid financed amount on this provider + this plan's financed amount) / provider limit; 0 with `limit_known` = 0 when no limit is recorded | Limits | ↑ |
 | `limit_known` — 1 if the user recorded a limit for the provider, else 0 | Limits | none |
-| `savings_buffer_to_income` — savings buffer / expected monthly income (D-50) | User setting | ↓ |
+| `savings_buffer_to_outgoings` — savings buffer / expected monthly outgoings: existing BNPL + debt-like bills + 52/12 typical weeks of everyday spending (D-50, D-63) | User setting | ↓ |
 
 `income_to_due_gap_days` (instalment due days before the next income) was dropped in D-27: the label no longer depends on intra-month timing, so it would be a feature with no signal. It is shown to the user as a timing note instead. `balance_to_monthly_essentials` was dropped with the balance.
 
@@ -270,6 +270,11 @@ Canonical one-line list. Load-bearing entries are expanded as ADRs in `changelog
 | D-56 | Serving keeps the user's forecast bias; re-centring the error record is reported as a sensitivity only | Re-centring changes labels little and without a consistent sign |
 | D-57 | Headline: the Second-Opinion Check — simulated chance of running short without / with / added by a purchase, stacked dues across providers, and a scheduler for the first start date and count that adds at most 5 points and stays below At Risk | No product answers the cross-provider pre-purchase marginal question; rivals already show the safety basics |
 | D-58 | An in-app security drill: the four named attack classes run against a throwaway sandbox with a hostile scripted model; "fooled" and "harm" reported per attack (author to confirm) | Security is 30% and judged by those classes; a pytest suite reads as self-reported, rivals show scoreboards |
+| D-60 | Engine 1 floors each simulated month's spending and income at zero, not each week (clip mode in the band rule; author to confirm) | The weekly floor raised every simulated total: bias +0.14 / +0.26 of the level, now about 0 |
+| D-61 | Below 26 weeks of history the error record is a digest-guarded population record of 13-week ratio paths times the user's level (author to confirm) | Widening a short own record could not reach 80% (0.41 / 0.30); now 0.78 / 0.82 on a fresh group |
+| D-62 | Engine 2 learns the added share q of a two-part target p = b + (1 − b) q; served on the request's simulated b; reasons are Shapley values of q times (1 − b) (author to confirm) | The label was mostly the starting position; new-lockbox skill 0.915 → 0.951, same band as the simulation 92.0% → 95.5% |
+| D-63 | The savings feature is months of expected outgoings, not of income (author to confirm) | At zero income any buffer took the most protective value |
+| D-64 | Engine v3 served by pre-registered rules (fresh group, outcome-check gate, new lockbox 10,000–10,999; Engine 2 coupled to Engine 1's rule) (author to confirm) | Choices made on the data that checks them flatter themselves |
 
 ---
 

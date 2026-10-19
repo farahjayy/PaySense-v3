@@ -53,7 +53,7 @@ Median bias of the simulated median when re-centred (x1.5): spend -0.111, income
 | income | 52-+ | 1200 | 0.71 | 1.2 | 0.77 |
 | income | all | 3900 | 0.50 | | 0.52 |
 
-## The table the API reads (`backend/models/engine1/band_inflation.json`)
+## The v2 table (`backend/models/engine1/rules/v2/band_inflation.json`; served before the engine v3 round, see `band_v3.md`)
 
 | weeks of history from | spend | income |
 |---|---|---|

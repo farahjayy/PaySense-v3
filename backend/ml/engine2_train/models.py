@@ -4,6 +4,10 @@
   once as class 0 with weight 1 - p. It works identically for every model.
 * Random Forest, XGBoost and LightGBM carry monotone constraints on the features whose direction
   of effect on risk is known (`MONOTONE_DIRECTIONS`); the logistic regression is the benchmark.
+* Two-part target (engine v3, D-62): when the last column is `BASE_COLUMN` (the simulated chance
+  b without the purchase), the model learns q = (p - b) / (1 - b), the chance the purchase makes
+  short a path that was not short without it, with weight (1 - b) on top of duplicate-and-weight;
+  its prediction is composed back, b + (1 - b) * q-hat, so every score is on the label's scale.
 """
 
 from collections.abc import Callable
@@ -20,6 +24,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from app.engines.risk.features import MONOTONE_DIRECTIONS
+from ml.engine2_train.data import BASE_COLUMN
 
 CANDIDATES = ("logistic", "lightgbm", "xgboost", "random_forest")  # simplest first
 SEED = 0
@@ -29,10 +34,23 @@ SEED = 0
 class Fitted:
     name: str
     model: Any
-    features: tuple[str, ...]
+    features: tuple[str, ...]  # the columns it is given; the last is BASE_COLUMN when two_part
+    two_part: bool = False
+
+    @property
+    def model_features(self) -> tuple[str, ...]:
+        """The columns the underlying model sees (never the base)."""
+        return self.features[:-1] if self.two_part else self.features
+
+    def predict_q(self, x_features: np.ndarray) -> np.ndarray:
+        """The underlying model's output on feature columns only (q for a two-part model)."""
+        return self.model.predict_proba(x_features)[:, 1]
 
     def predict(self, x: np.ndarray) -> np.ndarray:
-        return self.model.predict_proba(x)[:, 1]
+        if not self.two_part:
+            return self.predict_q(x)
+        base = x[:, -1]
+        return base + (1 - base) * self.predict_q(x[:, :-1])
 
 
 def expand_soft(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -43,6 +61,15 @@ def expand_soft(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray, n
         np.concatenate([np.ones(n), np.zeros(n)]),
         np.concatenate([y, 1 - y]),
     )
+
+
+def two_part_target(y: np.ndarray, base: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(q, weight): q = (y - b) / (1 - b) in [0, 1], weight 1 - b (0 where b = 1, q then 0)."""
+    y, base = np.asarray(y, dtype=float), np.asarray(base, dtype=float)
+    weight = np.clip(1 - base, 0, 1)
+    safe = np.where(weight > 0, weight, 1.0)
+    q = np.where(weight > 0, np.clip((y - base) / safe, 0, 1), 0.0)
+    return q, weight
 
 
 def _constraints(features: tuple[str, ...]) -> list[int]:
@@ -110,13 +137,23 @@ def fit_soft(
     seed: int = SEED,
     constrained: bool = True,
 ) -> Fitted:
-    x2, y2, w2 = expand_soft(x, y)
-    model = build(name, params, features, seed, constrained)
+    two_part = bool(features) and features[-1] == BASE_COLUMN
+    if two_part:
+        q, weight = two_part_target(y, x[:, -1])
+        x2, y2, w2 = expand_soft(x[:, :-1], q)
+        w2 = w2 * np.concatenate([weight, weight])
+        keep = w2 > 0
+        x2, y2, w2 = x2[keep], y2[keep], w2[keep]
+        model_features = features[:-1]
+    else:
+        x2, y2, w2 = expand_soft(x, y)
+        model_features = features
+    model = build(name, params, model_features, seed, constrained)
     if name == "logistic":
         model.fit(x2, y2, logisticregression__sample_weight=w2)
     else:
         model.fit(x2, y2, sample_weight=w2)
-    return Fitted(name, model, features)
+    return Fitted(name, model, features, two_part)
 
 
 def suggest(name: str, trial: optuna.Trial) -> dict[str, Any]:
@@ -182,7 +219,7 @@ def logistic_sign_check(fitted: Fitted) -> list[dict[str, Any]]:
     candidates are held to. `agrees` is None where no direction is imposed (direction 0)."""
     coefficients = fitted.model.named_steps["logisticregression"].coef_[0]
     rows = []
-    for name, coefficient in zip(fitted.features, coefficients, strict=True):
+    for name, coefficient in zip(fitted.model_features, coefficients, strict=True):
         direction = MONOTONE_DIRECTIONS[name]
         rows.append(
             {

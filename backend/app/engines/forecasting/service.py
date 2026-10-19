@@ -18,10 +18,11 @@ import numpy as np
 from app.domain.flows import as_date, month_summary
 from app.domain.merchants import normalise_merchant
 from app.domain.schedule import add_months
-from app.engines.forecasting.bands import inflation_for
+from app.engines.forecasting.bands import BandRule, load_band_rule
 from app.engines.forecasting.completeness import SuspectMonth, assess
 from app.engines.forecasting.errors import mean_forecast_errors, rolling_error_paths, widen
 from app.engines.forecasting.flows import ProposedPlan, known_flows, unlogged_occurrences_net
+from app.engines.forecasting.population import load_population, recent_level, scaled_paths
 from app.engines.forecasting.series import build_weekly_series
 from app.engines.forecasting.simulate import (
     DEFAULT_PATHS,
@@ -113,6 +114,7 @@ class LedgerPrep:
     month_to_date_sen: int
     latest: date
     unmatched: tuple[str, ...]
+    clip: str = "week"  # where the simulation floors spending and income at zero (D-60)
 
 
 def error_record(
@@ -127,12 +129,63 @@ def error_record(
     return paths, False
 
 
+def served_error_record(
+    values: np.ndarray,
+    start: date | None,
+    forecaster: Forecaster,
+    kind: str,
+    rule: BandRule,
+    recentre_errors: bool = False,
+    own: tuple[np.ndarray, bool] | None = None,
+) -> tuple[np.ndarray, bool]:
+    """One series' widened error record and whether the user's own record came from the
+    fallback. Below the rule's population threshold (engine v3, D-61) the record is the
+    population's ratio paths times the user's recent level; otherwise it is the user's own
+    (`error_record`, or `own` when already computed). Either is then widened by the rule's factor
+    for the history length and series (D-54)."""
+    weeks = len(values)
+    fallback = False
+    if rule.population is not None and weeks < rule.population.below_weeks:
+        record = load_population(rule.population_path(), rule.population.sha256)
+        errors = scaled_paths(record, kind, recent_level(values))
+    else:
+        errors, fallback = own or error_record(values, start, forecaster, kind)
+    if recentre_errors and errors.size:
+        errors = errors - errors.mean()
+    return widen(errors, rule.factor(weeks, kind)), fallback
+
+
+def served_error_records(
+    series: Any,
+    forecaster: Forecaster,
+    rule: BandRule | None = None,
+    recentre_errors: bool = False,
+    own: Mapping[str, tuple[np.ndarray, bool]] | None = None,
+) -> tuple[np.ndarray, np.ndarray, bool]:
+    """(spend errors, income errors, fallback): the error records serving resamples, widened
+    (`served_error_record` for each series). `fallback` says whether either of the user's own
+    records had to come from the series' spread. One function for serving, the labels and every
+    check, so what is measured is what is served. `own` passes a user's own (unwidened) records
+    already computed, by kind."""
+    rule = rule or load_band_rule()
+    spend, spend_fallback = served_error_record(
+        series.spend, series.start, forecaster, "spend", rule, recentre_errors,
+        (own or {}).get("spend"),
+    )  # fmt: skip
+    income, income_fallback = served_error_record(
+        series.income, series.start, forecaster, "income", rule, recentre_errors,
+        (own or {}).get("income"),
+    )  # fmt: skip
+    return spend, income, spend_fallback or income_fallback
+
+
 def prepare_ledger(
     rows: Iterable[Mapping[str, Any]],
     items: Iterable[Mapping[str, Any]],
     today: date,
     forecaster: Forecaster,
     recentre_errors: bool = False,
+    rule: BandRule | None = None,
 ) -> LedgerPrep | Forecast:
     """The plan-independent half of a forecast, or the locked forecast if the ledger is too thin.
 
@@ -153,15 +206,15 @@ def prepare_ledger(
         return _locked("needs_four_months", months, suspects, series.weeks)
 
     forecast_from = series.start + timedelta(days=7 * series.weeks)
-    spend_errors, spend_fallback = error_record(series.spend, series.start, forecaster, "spend")
-    income_errors, income_fallback = error_record(series.income, series.start, forecaster, "income")
-    fallback = spend_fallback or income_fallback
-    if recentre_errors:
-        spend_errors = spend_errors - spend_errors.mean() if spend_errors.size else spend_errors
-        income_errors = (
-            income_errors - income_errors.mean() if income_errors.size else income_errors
-        )
-    error_std = float(np.std(spend_errors)) if spend_errors.size else 0.0
+    rule = rule or load_band_rule()
+    # the volatility feature is the spread of the user's OWN spend errors, unwidened, also
+    # when a short history resamples the population record (its definition does not change)
+    own = {"spend": error_record(series.spend, series.start, forecaster, "spend")}
+    own_spend = own["spend"][0]
+    error_std = float(np.std(own_spend)) if own_spend.size else 0.0  # unchanged by re-centring
+    spend_errors, income_errors, fallback = served_error_records(
+        series, forecaster, rule, recentre_errors, own
+    )
     first_of_month = date(forecast_from.year, forecast_from.month, 1)
     return LedgerPrep(
         rows=rows,
@@ -170,14 +223,15 @@ def prepare_ledger(
         suspects=suspects,
         series=series,
         forecast_from=forecast_from,
-        spend_errors=widen(spend_errors, inflation_for(series.weeks, "spend")),
-        income_errors=widen(income_errors, inflation_for(series.weeks, "income")),
+        spend_errors=spend_errors,
+        income_errors=income_errors,
         fallback=fallback,
         error_std=error_std,
         month_to_date_sen=month_to_date_net(rows, first_of_month, forecast_from)
         + unlogged_occurrences_net(confirmed, rows, first_of_month, forecast_from),
         latest=max(as_date(r["date"]) for r in rows),
         unmatched=_unmatched(rows, confirmed),
+        clip=rule.clip,
     )
 
 
@@ -211,6 +265,7 @@ def forecast_prepared(
         fallback_errors=prep.fallback,
         max_weeks=max_weeks,
         starting_buffer_sen=savings_buffer_sen,
+        clip=prep.clip,
     )
     return Forecast(
         status="ok",

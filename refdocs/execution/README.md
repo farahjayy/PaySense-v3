@@ -64,4 +64,5 @@ If reality diverges from the doc mid-build, **edit the doc** and note it in the 
 | [2026-10-18-wp12-submission-pack.md](2026-10-18-wp12-submission-pack.md) | [../plans/2026-10-18-wp12-submission-pack.md](../plans/2026-10-18-wp12-submission-pack.md) | ✅ Drafts done |
 | [2026-10-18-second-opinion-check.md](2026-10-18-second-opinion-check.md) | [../plans/2026-10-18-second-opinion-check.md](../plans/2026-10-18-second-opinion-check.md) | ✅ Done |
 | [2026-10-18-engine-outcome-check.md](2026-10-18-engine-outcome-check.md) | [../plans/2026-10-18-engine-outcome-check.md](../plans/2026-10-18-engine-outcome-check.md) | ✅ Done (evaluation only) |
+| [2026-10-18-engine-v3.md](2026-10-18-engine-v3.md) | [../plans/2026-10-18-engine-v3.md](../plans/2026-10-18-engine-v3.md) | ✅ Done |
 | [2026-10-18-security-drill.md](2026-10-18-security-drill.md) | [../plans/2026-10-18-security-drill.md](../plans/2026-10-18-security-drill.md) | ✅ Done |

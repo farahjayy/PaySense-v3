@@ -50,7 +50,7 @@ def inputs(**overrides):
 
 def test_there_are_seventeen_features_in_a_fixed_order():
     assert len(FEATURE_NAMES) == 17 and len(set(FEATURE_NAMES)) == 17
-    assert FEATURE_NAMES[-1] == "savings_buffer_to_income"  # added last (D-50), order kept
+    assert FEATURE_NAMES[-1] == "savings_buffer_to_outgoings"  # last (D-50, D-63), order kept
     assert FEATURE_NAMES[0] == "disc_weekly_p50" and FEATURE_NAMES[-2] == "limit_known"
 
 
@@ -219,23 +219,44 @@ def test_the_engine_one_features_are_the_six_forecast_derived_ones():
     assert "instalment_amount" not in features.ENGINE1_FEATURES
 
 
-# --- the savings buffer (ADR D-50) ---
-def test_the_buffer_is_measured_in_months_of_income_and_lowers_risk():
+# --- the savings buffer (ADR D-50; measured against outgoings since engine v3, D-63) ---
+# inputs(): BNPL RM100 + bills RM300 a month + RM70 a week of everyday spending (52/12 weeks)
+OUTGOINGS = 10000 + 30000 + 7000 * 52 / 12
+
+
+def test_the_buffer_is_measured_in_months_of_expected_outgoings_and_lowers_risk():
     values = compute_features(inputs(savings_buffer_sen=300000))
-    assert values["savings_buffer_to_income"] == 1.5  # RM3,000 against RM2,000 a month
-    assert MONOTONE_DIRECTIONS["savings_buffer_to_income"] == -1
+    assert values["savings_buffer_to_outgoings"] == pytest.approx(300000 / OUTGOINGS)
+    assert MONOTONE_DIRECTIONS["savings_buffer_to_outgoings"] == -1
+    assert FEATURE_CONSTANTS["weeks_per_month"] == pytest.approx(52 / 12)
 
 
 def test_no_buffer_is_zero_and_the_default():
-    assert compute_features(inputs())["savings_buffer_to_income"] == 0.0
-    assert compute_features(inputs(savings_buffer_sen=0))["savings_buffer_to_income"] == 0.0
+    assert compute_features(inputs())["savings_buffer_to_outgoings"] == 0.0
+    assert compute_features(inputs(savings_buffer_sen=0))["savings_buffer_to_outgoings"] == 0.0
 
 
-def test_a_buffer_with_no_income_is_capped_not_infinite():
+def test_a_small_buffer_with_no_income_is_small_not_the_cap():
+    """questions.md 34 / ml-audit L2: RM50 is not strong protection because income is zero."""
     values = compute_features(inputs(savings_buffer_sen=5000, expected_monthly_income_sen=0))
-    assert values["savings_buffer_to_income"] == features.RATIO_CAP
+    assert values["savings_buffer_to_outgoings"] == pytest.approx(5000 / OUTGOINGS)
+    assert values["savings_buffer_to_outgoings"] < 0.1
 
 
-def test_the_buffer_feature_changed_the_schema_hash_from_v1():
-    assert FEATURE_SCHEMA_HASH != "2066b37e13182a5e"  # the v1 artefact's hash
-    assert features.DEFINITIONS_VERSION == "v2"
+def test_a_buffer_with_no_outgoings_at_all_is_capped_not_infinite():
+    nothing = dataclasses.replace(
+        inputs().commitments, monthly_bnpl_sen=0, monthly_debt_like_bills_sen=0
+    )
+    quiet = dataclasses.replace(inputs().engine1, disc_weekly_p50_sen=0)
+    values = compute_features(inputs(savings_buffer_sen=5000, commitments=nothing, engine1=quiet))
+    assert values["savings_buffer_to_outgoings"] == features.RATIO_CAP
+
+
+def test_a_large_buffer_is_capped():
+    values = compute_features(inputs(savings_buffer_sen=10**9))
+    assert values["savings_buffer_to_outgoings"] == features.RATIO_CAP
+
+
+def test_the_buffer_definition_changed_the_schema_hash():
+    assert FEATURE_SCHEMA_HASH not in {"2066b37e13182a5e", "10c5b74d0b8dfdbe"}  # v1, v2 artefacts
+    assert features.DEFINITIONS_VERSION == "v3"

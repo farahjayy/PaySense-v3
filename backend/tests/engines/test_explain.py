@@ -22,7 +22,7 @@ VALUES = {
     "upfront_to_income": 0.2,
     "limit_utilisation_with_purchase": 0.9,
     "limit_known": 0.0,
-    "savings_buffer_to_income": 0.0,
+    "savings_buffer_to_outgoings": 0.0,
 }
 
 

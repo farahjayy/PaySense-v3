@@ -16,21 +16,27 @@ from dataclasses import dataclass
 
 SEN_PER_RM = 100
 RATIO_CAP = 10.0  # a ratio above ten months of income is "far beyond affordable"; cap the rest
-DEFINITIONS_VERSION = "v2"  # bump when a feature's definition (not just its name) changes
+DEFINITIONS_VERSION = "v3"  # bump when a feature's definition (not just its name) changes
 # v2 (WP16, D-50): the savings buffer feature; Engine 1's running margin starts from the buffer, so
 # every margin feature's value can change too.
+# v3 (engine v3, D-63): the buffer is measured in months of expected OUTGOINGS, not of income, so a
+# student with no income no longer gets the most protective value for any buffer at all
+# (questions.md 34); Engine 1's monthly floor and population record (D-60, D-61) change the
+# forecast-derived features' values as well.
 # Windows and caps that change feature VALUES without changing a name or a direction. They are part
 # of the schema hash (the builder in `forecasting/summary.py` imports them), so changing one makes
 # an artefact trained under the old values refuse to serve.
 RECENT_MONTHS = 3  # complete months averaged for the expected income (every ratio's denominator)
 COMMITMENT_MONTHS = 3  # existing BNPL obligations due in this many months are spread over them
 COMMITMENT_DAYS_PER_MONTH = 30
+WEEKS_PER_MONTH = 52 / 12  # a typical simulated week of everyday spending, as a month
 FEATURE_CONSTANTS: dict[str, float] = {
     "recent_months": RECENT_MONTHS,
     "commitment_months": COMMITMENT_MONTHS,
     "commitment_days_per_month": COMMITMENT_DAYS_PER_MONTH,
     "ratio_cap": RATIO_CAP,
     "sen_per_rm": SEN_PER_RM,
+    "weeks_per_month": WEEKS_PER_MONTH,
 }
 
 # name -> direction of its effect on risk: +1 raises it, -1 lowers it, 0 none / unknown
@@ -51,14 +57,18 @@ MONOTONE_DIRECTIONS: dict[str, int] = {
     "upfront_to_income": 1,
     "limit_utilisation_with_purchase": 1,
     "limit_known": 0,
-    # D-50: savings the person can fall back on, in months of expected income; added last so the
+    # D-50, D-63: savings the person can fall back on, in months of expected outgoings (existing
+    # BNPL and debt-like bills a month plus a typical month of everyday spending); last, so the
     # earlier features keep their positions
-    "savings_buffer_to_income": -1,
+    "savings_buffer_to_outgoings": -1,
 }
 FEATURE_NAMES: tuple[str, ...] = tuple(MONOTONE_DIRECTIONS)
 # The savings-buffer feature's name, for analysis code that reads stored feature values (D-09:
 # names live here only).
-BUFFER_FEATURE = "savings_buffer_to_income"
+BUFFER_FEATURE = "savings_buffer_to_outgoings"
+# The same feature's name in earlier label files (v2: months of income), for analysis code that
+# reads old labels; > 0 still means "has a buffer".
+EARLIER_BUFFER_FEATURES: tuple[str, ...] = ("savings_buffer_to_income",)
 # The features that come from Engine 1's forecast; the ablation retrains without them to show how
 # much of the model's skill the forecast contributes.
 ENGINE1_FEATURES: tuple[str, ...] = FEATURE_NAMES[:6]
@@ -132,6 +142,15 @@ def _ratio(numerator_sen: float, income_sen: int) -> float:
     return min(numerator_sen / income_sen, RATIO_CAP)
 
 
+def _months_of_outgoings(buffer_sen: int, outgoings_sen: float) -> float:
+    """How many months of expected outgoings the buffer covers, capped; defined at zero income."""
+    if buffer_sen <= 0:
+        return 0.0
+    if outgoings_sen <= 0:
+        return RATIO_CAP
+    return min(buffer_sen / outgoings_sen, RATIO_CAP)
+
+
 def compute_features(data: FeatureInputs) -> dict[str, float]:
     plan, owed, e1 = data.plan, data.commitments, data.engine1
     income = data.expected_monthly_income_sen
@@ -163,7 +182,12 @@ def compute_features(data: FeatureInputs) -> dict[str, float]:
         "upfront_to_income": _ratio(plan.upfront_sen, income),
         "limit_utilisation_with_purchase": utilisation,
         "limit_known": 1.0 if limit is not None else 0.0,
-        "savings_buffer_to_income": _ratio(data.savings_buffer_sen, income),
+        "savings_buffer_to_outgoings": _months_of_outgoings(
+            data.savings_buffer_sen,
+            owed.monthly_bnpl_sen
+            + owed.monthly_debt_like_bills_sen
+            + WEEKS_PER_MONTH * e1.disc_weekly_p50_sen,
+        ),
     }
     return {name: values[name] for name in FEATURE_NAMES}
 

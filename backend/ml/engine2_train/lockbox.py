@@ -104,13 +104,46 @@ def brier_breakdown(
     }
 
 
+def _band_index(p: np.ndarray) -> np.ndarray:
+    return np.searchsorted([0.10, 0.30], np.asarray(p, dtype=float), side="right")
+
+
+def purchase_moves_band(
+    lockbox: Dataset, predictions: dict[str, np.ndarray]
+) -> dict[str, Any] | None:
+    """Where the purchase changes the band (band of p_without != band of the label): the profiles
+    where the decision is about the purchase. Brier, mean absolute error (the error of the added
+    risk, since every model here shares the exact b) and band agreement, per prediction."""
+    if lockbox.p_without is None:
+        return None
+    mask = _band_index(lockbox.p_without) != _band_index(lockbox.y)
+    out: dict[str, Any] = {"profiles": int(mask.sum()), "share": float(mask.mean())}
+    if not mask.any():
+        return out
+    y = lockbox.y[mask]
+    for name, pred in predictions.items():
+        agreement, _ = band_agreement(pred[mask], y)
+        out[name] = {
+            "brier": brier(pred[mask], y),
+            "mae": float(np.mean(np.abs(pred[mask] - y))),
+            "band_agreement": agreement,
+        }
+    return out
+
+
 def score_lockbox(
     lockbox: Dataset, raw: np.ndarray, calibrated: np.ndarray, benchmark: np.ndarray,
     base: float, group_bases: dict[str, float],
+    benchmarks: dict[str, np.ndarray] | None = None,
 ) -> dict[str, Any]:  # fmt: skip
     """The final model on the lockbox. `base` is the development mean label; `group_bases` the
-    development mean of each subgroup (its own constant benchmark)."""
+    development mean of each subgroup (its own constant benchmark). `benchmarks` are further
+    predictions scored beside it (engine v3: predict p_without, and p_without plus the mean
+    added share)."""
     agreement, confusion = band_agreement(calibrated, lockbox.y)
+    constant = np.full(len(lockbox), base)
+    everything = {"model": calibrated, "logistic": benchmark, "constant": constant}
+    everything.update(benchmarks or {})
     groups = {
         group: _subgroup(mask, raw, calibrated, benchmark, lockbox.y, group_bases.get(group, base))
         for group, mask in lockbox.subgroups().items()
@@ -127,13 +160,31 @@ def score_lockbox(
         "reliability": reliability(calibrated, lockbox.y),
         "subgroups": groups,
         "brier_by_class": brier_breakdown(lockbox, raw, calibrated, benchmark, base),
+        "mae": float(np.mean(np.abs(calibrated - lockbox.y))),
+        "benchmarks": {
+            name: {
+                "brier": brier(pred, lockbox.y),
+                "mae": float(np.mean(np.abs(pred - lockbox.y))),
+                "band_agreement": band_agreement(pred, lockbox.y)[0],
+            }
+            for name, pred in everything.items()
+            if name != "model"
+        },
+        "purchase_moves_band": purchase_moves_band(lockbox, everything),
     }
 
 
+def _which(entry: dict[str, Any]) -> str:
+    """The lockbox a log line scored: the new one (engine v3), or the every-tenth one (untagged
+    lines and the continuity scorings)."""
+    return "new" if entry.get("lockbox") == "new" else "every tenth"
+
+
 def append_log(path: Path, entry: dict[str, Any]) -> int:
-    """Append one scoring to the log and return how many scorings it now holds."""
+    """Append one scoring to the log and return how many scorings of THAT lockbox it now holds."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    existing = len(path.read_text(encoding="utf-8").splitlines()) if path.exists() else 0
+    lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+    existing = sum(_which(json.loads(x)) == _which(entry) for x in lines if x.strip())
     line = {**entry, "scoring": existing + 1}
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(line, sort_keys=True) + "\n")

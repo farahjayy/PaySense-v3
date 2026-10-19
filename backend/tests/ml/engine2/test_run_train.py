@@ -146,7 +146,7 @@ def test_a_run_is_reproducible(tiny, tmp_path):
 # ---------------------------------------------------------------- audit M1-M3, L1, L6
 def test_both_arms_of_the_ablation_and_of_the_monotonicity_run_are_fresh_on_fresh_folds(tiny):
     root, record = tiny
-    dev, _ = split_lockbox(load_labels(root / "labels.jsonl"))
+    dev, _ = split_lockbox(load_labels(root / "labels.jsonl").with_base())  # two-part (D-62)
     fresh = TINY.seed + train.FRESH_FOLDS_OFFSET
     winner = record["winner"]
 
@@ -216,7 +216,8 @@ def test_the_constants_serving_will_need_are_copied_into_the_record(tiny):
 
     constants = record["serving_constants"]
     assert set(constants) == {
-        "RISK_CHECK_MAX_WEEKS", "DASHBOARD_MONTHS", "BAND_RULE_SHA256", "BOOTSTRAP_BLOCK"
+        "RISK_CHECK_MAX_WEEKS", "DASHBOARD_MONTHS", "BAND_RULE_SHA256", "BOOTSTRAP_BLOCK",
+        "POPULATION_RECORD_SHA256",
     }  # fmt: skip
     assert constants["RISK_CHECK_MAX_WEEKS"] >= 160
     assert {"label_version", "horizon_max_weeks", "served_model_files"} <= set(

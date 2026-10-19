@@ -116,3 +116,12 @@ def test_the_logistic_coefficients_are_compared_with_the_monotone_directions():
     assert all(r["agrees"] is None for r in free)  # no expected sign, no verdict
     constrained = [r for r in rows if r["direction"] != 0]
     assert all(isinstance(r["agrees"], bool) for r in constrained)
+
+
+def test_each_lockbox_counts_its_own_scorings(tmp_path):
+    """Engine v3: a line without a lockbox tag scored the every-tenth lockbox, as the continuity
+    lines do; the new lockbox is counted apart."""
+    log = tmp_path / "lockbox_log.jsonl"
+    assert append_log(log, {"run_id": "v2"}) == 1
+    assert append_log(log, {"run_id": "v3", "lockbox": "new"}) == 1
+    assert append_log(log, {"run_id": "v3", "lockbox": "old (continuity)"}) == 2

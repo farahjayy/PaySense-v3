@@ -107,16 +107,15 @@ def _limit_known(values: Mapping[str, float]) -> Factor | None:
 
 
 def _savings_buffer(values: Mapping[str, float]) -> Factor:
-    shown = _months(values["savings_buffer_to_income"])
+    name = "savings_buffer_to_outgoings"
+    shown = _months(values[name])
     if shown == "0.0":
         return Factor(
-            "savings_buffer_to_income",
-            "You have no savings recorded to fall back on if a month runs short.",
-            (),
+            name, "You have no savings recorded to fall back on if a month runs short.", ()
         )
     return Factor(
-        "savings_buffer_to_income",
-        f"Your savings would cover only about {shown} months of income.",
+        name,
+        f"Your savings would cover only about {shown} months of your usual spending and bills.",
         (shown,),
     )
 
@@ -164,7 +163,7 @@ TEMPLATES: dict[str, Builder] = {
         "limit_utilisation_with_purchase", "This would use about {}% of your recorded limit.", _pct
     ),
     "limit_known": _limit_known,
-    "savings_buffer_to_income": _savings_buffer,
+    "savings_buffer_to_outgoings": _savings_buffer,
 }
 
 

@@ -1,4 +1,4 @@
 option,held_out_brier
-isotonic,0.0126
-none,0.0127
-platt,0.0126
+isotonic,0.007
+none,0.0069
+platt,0.0069

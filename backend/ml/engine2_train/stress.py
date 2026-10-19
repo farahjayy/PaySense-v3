@@ -23,7 +23,6 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, NamedTuple
 
-import joblib
 import numpy as np
 
 from app.domain.categorize import REFUND, TRANSFER
@@ -35,7 +34,6 @@ from app.engines.forecasting.summary import build_feature_inputs
 from app.engines.risk.features import FEATURE_SCHEMA_HASH, as_vector, compute_features
 from ml.datagen.params import Params, load_params
 from ml.datagen.profile import generate_dated_profile
-from ml.engine2_train.calibrate import Calibrator
 from ml.engine2_train.data import LABELS_PATH, load_labels, split_lockbox
 from ml.engine2_train.labels import (
     LABEL_VERSION,
@@ -46,7 +44,7 @@ from ml.engine2_train.labels import (
 )
 from ml.engine2_train.metrics import band_agreement, brier
 from ml.engine2_train.provenance import sha256_file
-from ml.engine2_train.train import RUNS_DIR
+from ml.engine2_train.train import RUNS_DIR, calibrated_predict, load_run
 
 Rows = list[dict[str, Any]]
 Transform = Callable[[Rows, date], Rows]
@@ -115,11 +113,22 @@ class VariantRun:
     labels: np.ndarray
     locked: int
     changed: tuple[bool, ...]  # did the variant alter what the product knew about the profile
+    bases: np.ndarray | None = None  # the simulated chance without the purchase (two-part, D-62)
 
-    def summary(self, predict: Callable[[np.ndarray], np.ndarray]) -> dict[str, Any]:
+    def design(self, with_base: bool = False) -> np.ndarray:
+        """The model's input: features, plus the base as a last column for a two-part model."""
+        if not with_base:
+            return self.vectors
+        if self.bases is None:
+            raise ValueError("this run did not keep the base the two-part model needs")
+        return np.column_stack([self.vectors, self.bases])
+
+    def summary(
+        self, predict: Callable[[np.ndarray], np.ndarray], with_base: bool = False
+    ) -> dict[str, Any]:
         if not len(self.labels):
             return {"profiles": 0, "locked": self.locked}
-        pred = predict(self.vectors)
+        pred = predict(self.design(with_base))
         agreement, _ = band_agreement(pred, self.labels)
         return {
             "profiles": len(self.labels),
@@ -141,7 +150,7 @@ def run_variant(
     paths: int,
 ) -> VariantRun:
     """Re-run the pipeline on perturbed profiles with the labels' own path count and seeds."""
-    found, vectors, labels, changed, locked = [], [], [], [], 0
+    found, vectors, labels, changed, bases, locked = [], [], [], [], [], 0
     for index in indices:
         profile = generate_dated_profile(params, master_seed, index)
         known = prepare(profile, variant.rows, variant.items)
@@ -157,9 +166,12 @@ def run_variant(
         found.append(index)
         vectors.append(as_vector(compute_features(built.inputs)))
         labels.append(built.p_with)
+        bases.append(built.p_without)
         base = prepare(profile) if variant != Variant() else known
         changed.append(known["rows"] != base["rows"] or known["items"] != base["items"])
-    return VariantRun(tuple(found), np.array(vectors), np.array(labels), locked, tuple(changed))
+    return VariantRun(
+        tuple(found), np.array(vectors), np.array(labels), locked, tuple(changed), np.array(bases)
+    )
 
 
 def evaluate_variant(
@@ -213,14 +225,14 @@ def run(config_name: str, out: Path, paths: int | None = None, limit: int | None
     check_provenance(manifest, results, params, live_state(forecaster, LABELS_PATH))
     paths = paths or int(manifest["paths"])
     master_seed = int(manifest["seed"])
-    model = joblib.load(run_dir / "final_model.joblib")
-    stored = json.loads((run_dir / "calibrator.json").read_text(encoding="utf-8"))
-    calibrator = Calibrator.from_dict(stored)
+    model, calibrator = load_run(run_dir)
+    two_part = bool(getattr(model, "two_part", False))
 
     def predict(x: np.ndarray) -> np.ndarray:
-        return calibrator.apply(model.predict(x))
+        return calibrated_predict(model, calibrator, x)
 
-    _, lockbox = split_lockbox(load_labels(LABELS_PATH))
+    labels = load_labels(LABELS_PATH)
+    _, lockbox = split_lockbox(labels.with_base() if two_part else labels)
     indices = [int(i) for i in lockbox.index][:limit]
     runs = {
         name: run_variant(params, master_seed, indices, variant, forecaster, paths)
@@ -249,7 +261,7 @@ def run(config_name: str, out: Path, paths: int | None = None, limit: int | None
                 default=0.0,
             )
         ),
-        "variants": {name: r.summary(predict) for name, r in runs.items()},
+        "variants": {name: r.summary(predict, two_part) for name, r in runs.items()},
         "mean_abs_label_shift_vs_identity": {
             name: _shift(identity, r) for name, r in runs.items() if name != "identity"
         },

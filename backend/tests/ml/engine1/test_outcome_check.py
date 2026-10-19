@@ -6,6 +6,7 @@ from datetime import date, timedelta
 import numpy as np
 import pytest
 
+from app.engines.forecasting.bands import load_band_rule, parse_rule
 from app.engines.forecasting.models import MovingAverage
 from app.engines.forecasting.series import WeeklySeries
 from ml.engine1_eval.band_calibration import COHORT, DEV_PROFILES, EVAL_POOL, dev_profiles
@@ -17,6 +18,7 @@ from ml.engine1_eval.outcome_check import (
     EPS,
     HORIZON,
     OUTCOME_PROFILES,
+    RULE_FILES,
     Case,
     auc,
     band_rows,
@@ -28,6 +30,7 @@ from ml.engine1_eval.outcome_check import (
     history_lengths,
     log_loss,
     month_to_date_sen,
+    outcome_gate,
     outcome_profiles,
     paired_bootstrap,
     realised_shortfall,
@@ -125,7 +128,10 @@ def test_served_p_is_certain_when_the_record_has_no_error():
     p, fallback = served_p(_history(30, spend=1_000.0), flat, END, 0, seed=1)
     assert (p, fallback) == (1.0, False)
     assert served_p(_history(30, spend=1_000.0, income=5_000.0), flat, END, 0, seed=1)[0] == 0.0
-    assert served_p(_history(17, spend=1_000.0), flat, END, 0, seed=1)[1]  # too short: fallback
+    v2 = load_band_rule(RULE_FILES["lstm"])  # the R2 rule: a user's own record at every length
+    assert served_p(_history(17, spend=1_000.0), flat, END, 0, seed=1, rule=v2)[1]  # fallback
+    # the served rule (R3, D-61) uses the population record below 26 weeks instead: no fallback
+    assert not served_p(_history(17, spend=1_000.0), flat, END, 0, seed=1)[1]
 
 
 class _Spy:
@@ -232,7 +238,7 @@ def test_the_page_has_every_method_every_bucket_and_says_it_is_generated():
     assert "do not edit by hand" in page
     for cut in CUTS:
         assert f"## Cut {cut} weeks before the end" in page
-    for label in ("served LSTM", "MA13 (benchmark)", "constant (benchmark)"):
+    for label in ("LSTM, R2", "MA13, R2 (benchmark)", "constant (benchmark)"):
         assert page.count(f"| {label} |") >= 2 * (1 + len(BUCKET_RANGES) + 2)
     for bucket in ("17-25", "26-38", "39-51", "52+"):
         assert f"| {bucket} |" in page
@@ -253,3 +259,51 @@ def test_summary_rows_cover_each_cut_slice_and_method():
     assert lstm_all["share_p0"] == pytest.approx(3 / 12)
     negative = next(r for r in rows if r["method"] == "constant" and r["slice"] == "negative")
     assert negative["cases"] == 8 and negative["mean_p"] == pytest.approx(0.5)  # its own rate
+
+
+# --- engine v3: the same check under band rule R3 (plan 2026-10-18-engine-v3 §4.4, criterion 4) ---
+
+BUCKETS_ONE = [{"min_weeks": 17, "spend": 2.4, "income": 1.3}]
+MONTHLY = parse_rule({"version": "3", "clip": "month", "buckets": BUCKETS_ONE})
+WEEKLY = parse_rule({"version": "2", "buckets": BUCKETS_ONE})
+
+
+class _Alternating:
+    """A forecaster whose errors alternate a week under and a week over the forecast."""
+
+    name = "alternating"
+
+    def forecast(self, history, horizon, start):
+        return np.full(horizon, 1_000.0)
+
+
+def test_served_p_follows_the_rules_clip():
+    history = WeeklySeries(
+        MONDAY - timedelta(days=7 * 30), np.tile([0.0, 2_000.0], 15), np.full(30, 1_050.0)
+    )
+    weekly = served_p(history, _Alternating(), END, 0, seed=1, rule=WEEKLY)[0]
+    monthly = served_p(history, _Alternating(), END, 0, seed=1, rule=MONTHLY)[0]
+    assert monthly < weekly  # the weekly floor deleted the weeks under the forecast
+
+
+def test_a_variant_is_a_forecaster_with_its_own_rule():
+    spend = np.full(78, 100.0)
+    income = np.full(78, 150.0)
+    flat = MovingAverage(13)
+    cases = cases_for_student(
+        4001, spend, income, date(2024, 7, 1), {"lstm": flat, "lstm_r3": (flat, MONTHLY)},
+        cuts=(13,),
+    )  # fmt: skip
+    assert all(set(c.p) == {"lstm", "lstm_r3"} for c in cases)
+
+
+def test_the_gate_is_the_paired_interval_of_r3_minus_r2_for_each_cut():
+    cases = []
+    for c in _cases():
+        p = {**c.p, "lstm_r3": c.p["lstm"]}
+        cases.append(Case(c.profile, c.cut, c.weeks, c.realised, p, c.fallback, c.months,
+                          c.cut_date, c.month_to_date, c.realised_first))  # fmt: skip
+    gate = outcome_gate(cases)
+    assert set(gate) == {str(cut) for cut in CUTS}
+    assert all(v == [0.0, 0.0, 0.0] for v in gate.values())
+    assert outcome_gate(_cases()) == {}  # no R3 variant: nothing to gate

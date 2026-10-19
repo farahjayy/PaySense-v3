@@ -117,9 +117,15 @@ def _raw_probability(onnx_bytes: bytes, x: np.ndarray) -> np.ndarray:
     return np.asarray(out, dtype=float)[:, 1]
 
 
+def model_output(fitted: Any, x: np.ndarray) -> np.ndarray:
+    """What the exported network computes from feature columns: q for a two-part model (D-62),
+    the probability otherwise."""
+    return fitted.predict_q(x) if getattr(fitted, "two_part", False) else fitted.predict(x)
+
+
 def parity(fitted: Any, onnx_bytes: bytes, x: np.ndarray) -> dict[str, float | int]:
     """How far ONNX Runtime is from the original model on these rows."""
-    diff = np.abs(_raw_probability(onnx_bytes, x) - fitted.predict(x))
+    diff = np.abs(_raw_probability(onnx_bytes, x) - model_output(fitted, x))
     return {
         "rows": int(len(x)),
         "max_abs_diff": float(diff.max()),
@@ -154,7 +160,7 @@ def export(
     onnx_bytes = convert(fitted, len(FEATURE_NAMES))
     checked = np.vstack([lockbox.x, development.x[:PARITY_SAMPLE]])
     model_parity = parity(fitted, onnx_bytes, checked)
-    diff = np.abs(_raw_probability(onnx_bytes, checked) - fitted.predict(checked))
+    diff = np.abs(_raw_probability(onnx_bytes, checked) - model_output(fitted, checked))
     explained = np.zeros(len(diff), dtype=bool)
     flips: list[dict[str, Any]] = []
     booster = getattr(fitted.model, "booster_", None)
@@ -180,6 +186,7 @@ def export(
     metadata = {
         "version": version,
         "family": fitted.name,
+        "target": "two_part" if getattr(fitted, "two_part", False) else "p_with",
         "feature_names": list(FEATURE_NAMES),
         "feature_schema_hash": FEATURE_SCHEMA_HASH,
         "onnx_sha256": hashlib.sha256(onnx_bytes).hexdigest(),
@@ -227,6 +234,10 @@ def export(
             "lockbox_logistic_brier": results["lockbox"]["logistic_benchmark_brier"],
             "lockbox_constant_brier": results["lockbox"]["constant_brier"],
             "lockbox_band_agreement": results["lockbox"]["band_agreement"],
+            "lockbox_benchmarks": results["lockbox"].get("benchmarks"),
+            "lockbox_rule": "indices 10,000-10,999"
+            if results.get("continuity_profiles")
+            else "every tenth profile",
         },
         "parity": {"onnx_vs_trained_model": model_parity},
     }
@@ -240,7 +251,7 @@ def export(
         # The loaded artefact, end to end, against the training-side calibrated prediction.
         predictor = load_engine2(staging)
         served = predictor.predict_batch(checked)
-        trained = Calibrator.from_dict(calibrator).apply(fitted.predict(checked))
+        trained = Calibrator.from_dict(calibrator).apply(model_output(fitted, checked))
         end_to_end = np.abs(served - trained)
         if not accept_parity(end_to_end, explained):  # the same proven float32 flips only
             raise ExportError(f"the served artefact differs from the trained model: {end_to_end}")

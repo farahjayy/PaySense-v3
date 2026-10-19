@@ -22,7 +22,7 @@ from typing import Any
 import numpy as np
 import onnxruntime
 
-from app.engines.forecasting.bands import BAND_FILE, text_digest
+from app.engines.forecasting.bands import BAND_FILE, load_band_rule, text_digest
 from app.engines.forecasting.onnx_model import MODEL_DIR as ENGINE1_DIR
 from app.engines.forecasting.service import DASHBOARD_MONTHS
 from app.engines.forecasting.serving import ARTEFACT_VERSION as ENGINE1_VERSION
@@ -36,16 +36,31 @@ logger = logging.getLogger("paysense")
 MODEL_ROOT = Path(__file__).resolve().parents[3] / "models" / "engine2"
 MODEL_FILE = "model.onnx"
 METADATA_FILE = "metadata.json"
+# What the model's output is (engine v3, D-62): "p_with", the chance of running short with the
+# purchase (v1, v2); or "two_part", q, the chance the purchase makes short a simulated future that
+# was not short without it, which the check composes with the simulated chance without it.
+TARGETS = ("p_with", "two_part")
+
+
+def _population_sha256() -> str | None:
+    if not BAND_FILE.exists():
+        return None
+    population = load_band_rule(BAND_FILE).population
+    return population.sha256 if population is not None else None
 
 
 def live_constants() -> dict[str, Any]:
     """What every label depended on besides the network files. The band table (WP16, C2) is
-    recorded by its digest: a label made with other bands is a different label."""
+    recorded by its digest: a label made with other bands is a different label. The band rule
+    also names its clip mode and its population error record (engine v3, D-60/D-61); the record's
+    digest is recorded on its own as well, so a model made before it existed (which recorded
+    nothing) still loads only while no record is in use."""
     return {
         "RISK_CHECK_MAX_WEEKS": RISK_CHECK_MAX_WEEKS,
         "DASHBOARD_MONTHS": DASHBOARD_MONTHS,
         "BAND_RULE_SHA256": text_digest(BAND_FILE) if BAND_FILE.exists() else None,
         "BOOTSTRAP_BLOCK": BOOTSTRAP_BLOCK,
+        "POPULATION_RECORD_SHA256": _population_sha256(),
     }
 
 
@@ -137,6 +152,9 @@ class OnnxPredictor:
         self.version: str = str(meta["version"])
         self.feature_schema_hash: str = str(meta["feature_schema_hash"])
         self.family: str = str(meta.get("family", ""))
+        self.target: str = str(meta.get("target", "p_with"))
+        if self.target not in TARGETS:
+            raise ArtefactError(f"unknown model target {self.target!r}; expected one of {TARGETS}")
         metrics = meta.get("metrics", {})
         self.summary: dict[str, Any] = {
             "family": self.family,

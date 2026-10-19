@@ -39,6 +39,19 @@ class Predictor(Protocol):
 DEFAULT_PATHS = 1000  # simulated futures per check at full strength
 
 
+def is_two_part(predictor: Any) -> bool:
+    """A two-part model (engine v3, D-62) predicts q, the added share; the artefact says so."""
+    return getattr(predictor, "target", "p_with") == "two_part"
+
+
+def compose(p_without: float, q: float) -> float:
+    """The shown probability of a two-part model: the simulated chance without the purchase plus
+    the model's share q of the futures that were not short without it."""
+    base = min(1.0, max(0.0, float(p_without)))
+    share = min(1.0, max(0.0, float(q)))
+    return base + (1 - base) * share
+
+
 @dataclass(frozen=True)
 class RiskRequest:
     """What the student typed. The same fields the plan screen collects."""
@@ -164,6 +177,8 @@ def run_check(
 
     features = compute_features(built.inputs)
     probability = float(predictor.predict(as_vector(features)))
+    if is_two_part(predictor):
+        probability = compose(built.p_without, probability)
     shown = built.without
     return CheckResult(
         status="ok",

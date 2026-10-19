@@ -54,6 +54,38 @@ LSTM beats MA13 (share of series): 13 weeks 0.545; 26 weeks 0.435; 39 weeks 0.48
 
 LSTM beats MA13 (share of series): 13 weeks 0.305; 26 weeks 0.244; 39 weeks 0.192; 52 weeks 0.160.
 
+## The simulated band beyond 13 weeks: R2 against R3
+
+The served simulation run to 52 weeks from the same origins: the error record under the band rule, 300 resampled paths around the recursive LSTM forecast, and the rule's floor at zero (R2: each week; R3: each month). *Inside* is the share of series whose realised cumulative total fell inside the simulated P10-P90 (nominal 0.80); *bias* is the median of (simulated median - realised) / (recent level x weeks).
+
+### Spending, origin at week 17 (2000 series)
+
+| rule | 13 weeks: inside | bias | 26 weeks: inside | bias | 39 weeks: inside | bias | 52 weeks: inside | bias |
+|---|---|---|---|---|---|---|---|---|
+| R2 | 0.00 | +0.157 | 0.00 | +0.107 | 0.00 | +0.095 | 0.00 | +0.059 |
+| R3 | 0.74 | +0.034 | 0.70 | -0.017 | 0.65 | -0.057 | 0.60 | -0.103 |
+
+### Spending, origin at week 26 (2000 series)
+
+| rule | 13 weeks: inside | bias | 26 weeks: inside | bias | 39 weeks: inside | bias | 52 weeks: inside | bias |
+|---|---|---|---|---|---|---|---|---|
+| R2 | 0.71 | +0.166 | 0.59 | +0.147 | 0.50 | +0.112 | 0.47 | +0.083 |
+| R3 | 0.78 | +0.012 | 0.64 | -0.036 | 0.55 | -0.087 | 0.49 | -0.122 |
+
+### Income, origin at week 17 (2000 series)
+
+| rule | 13 weeks: inside | bias | 26 weeks: inside | bias | 39 weeks: inside | bias | 52 weeks: inside | bias |
+|---|---|---|---|---|---|---|---|---|
+| R2 | 0.00 | +0.282 | 0.00 | +0.049 | 0.00 | +0.202 | 0.00 | +0.146 |
+| R3 | 0.71 | +0.155 | 0.94 | +0.011 | 0.92 | +0.027 | 0.93 | -0.042 |
+
+### Income, origin at week 26 (2000 series)
+
+| rule | 13 weeks: inside | bias | 26 weeks: inside | bias | 39 weeks: inside | bias | 52 weeks: inside | bias |
+|---|---|---|---|---|---|---|---|---|
+| R2 | 0.69 | +0.237 | 0.54 | +0.306 | 0.49 | +0.233 | 0.41 | +0.275 |
+| R3 | 0.85 | -0.139 | 0.88 | -0.153 | 0.69 | -0.183 | 0.70 | -0.188 |
+
 ## Limits
 
 - Synthetic students only; every student shares one calendar, so each origin is one point in the year.
