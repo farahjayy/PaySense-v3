@@ -72,7 +72,7 @@ Run it as one of the persona accounts, on the live URL, in a private window.
 Once steps 1–6 have been done by hand, later deploys can run from the Actions tab, one workflow per side:
 
 - **Deploy API (Render)** (`.github/workflows/deploy-api.yml`) triggers the Render deploy of the commit.
-- **Deploy app (Vercel)** (`.github/workflows/deploy-web.yml`) builds and deploys the app to Vercel.
+- **Deploy app (Vercel)** (`.github/workflows/deploy-web.yml`) re-runs the app's checks on the commit (lint, types, API contract, unit tests with coverage, build), builds and deploys it to Vercel, then checks the production domain: `/welcome` and `/login` answer 200 with the security headers. A failed live check means the deploy is live but broken: promote the previous deployment in the Vercel dashboard.
 
 Each runs only by hand, only on `main`, and only on a commit CI has already passed. When a change touches both sides, run the API first and wait for Render to finish before running the app. Migrations and the smoke test (step 7) stay manual.
 
@@ -82,7 +82,10 @@ Set these in the repository's **production** environment (Settings → Environme
 |---|---|
 | `RENDER_DEPLOY_HOOK_URL` | Render → the service → Settings → Deploy Hook (API workflow) |
 | `VERCEL_TOKEN` | Vercel → Account Settings → Tokens (app workflow) |
-| `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | `.vercel/project.json` after `vercel link` in the repo root (gitignored) |
+| `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | `frontend/.vercel/project.json` after `vercel link` in `frontend/` (gitignored); `orgId` and `projectId` |
+| `VERCEL_APP_URL` (a **variable**, not a secret) | The production domain, e.g. `https://paysense-frontend.vercel.app`, for the live check (a deployment's own URL is behind Vercel's login) |
+
+The workflow runs the Vercel CLI inside `frontend/`, so the Vercel project's Root Directory must be **empty**. The actions are pinned to their current major versions; Node 20 actions no longer run on GitHub's runners, and pnpm 12 needs `pnpm/action-setup` 6.1 or later.
 
 ## Rollback and secrets
 

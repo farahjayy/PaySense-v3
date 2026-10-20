@@ -1,9 +1,18 @@
 # Production deploy of the app to Vercel, run by hand from the Actions tab (docs/deployment.md,
-# "Deploying from GitHub"). Deploys the commit it is run on, and only one that CI has already
-# passed. If the app depends on an API change, run "Deploy API" first.
+# "Deploying from GitHub"). Deploys the commit it is run on, and only one that is on main, that CI
+# has already passed, and that passes the app's own checks again here. Then it checks the live URL.
+# If the app depends on an API change, run "Deploy API" first.
 #
 # Secrets, in the "production" environment: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
-# NEXT_PUBLIC_API_BASE_URL is read from the Vercel project at build time.
+# Variable (repository or environment): VERCEL_APP_URL, the production domain, for the live check.
+# NEXT_PUBLIC_API_BASE_URL and the other app variables are read from the Vercel project at build
+# time (`vercel pull`). The Vercel project's Root Directory must be left empty: everything here
+# runs inside frontend/, which is its own pnpm project, and nothing at the repo root is built or
+# uploaded (D-74).
+#
+# Action versions: the current major of each (checked against each action's GitHub releases);
+# setup-uv publishes no moving major tag, so it is pinned to a full version.
+# Node 20 actions no longer run on GitHub-hosted runners. pnpm/action-setup needs >= 6.1 for pnpm 12.
 name: Deploy app (Vercel)
 
 on:
@@ -40,31 +49,63 @@ jobs:
             exit 1
           fi
 
+  verify:
+    name: App checks (lint, types, API contract, unit tests, build)
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UV_NO_SYNC: "1" # the API-types script runs the backend; it is synced below without ML
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      # The API contract check exports the backend's OpenAPI document, so the API is installed too
+      # (server packages only).
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --no-group ml
+        working-directory: backend
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm check:api
+      - run: pnpm exec vitest run --coverage
+      - run: pnpm build
+
   web:
     name: App (Vercel)
-    needs: gate
+    needs: [gate, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    # Everything runs inside frontend/: the app is its own pnpm project and nothing at the repo
-    # root is built or uploaded (D-74). The Vercel project's Root Directory must be left empty.
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: frontend/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: frontend/.nvmrc
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: frontend/.next/cache
           key: next-${{ hashFiles('frontend/pnpm-lock.yaml') }}-${{ github.sha }}
@@ -72,4 +113,29 @@ jobs:
       - run: npm install -g vercel@64.7.0
       - run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
       - run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
-      - run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Deploy the prebuilt output
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+          echo "Deployed: ${url}" >> "$GITHUB_STEP_SUMMARY"
+      # The deployment answers, and with the security headers the app sets (next.config.ts and the
+      # nonce CSP in proxy.ts). A failure here means the deploy is live but broken: roll back from
+      # the Vercel dashboard (Deployments → the previous one → Promote).
+      # Checked on the production domain (repo variable VERCEL_APP_URL, e.g.
+      # https://paysense-frontend.vercel.app): Vercel's default protection puts a login in front of
+      # a deployment's own URL, so only the domain answers a plain request.
+      - name: Check the live app
+        env:
+          URL: ${{ vars.VERCEL_APP_URL || steps.deploy.outputs.url }}
+        run: |
+          for page in /welcome /login; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 5 --retry-all-errors "${URL}${page}")
+            echo "${page}: ${code}"
+            [ "$code" = "200" ] || { echo "::error::${page} answered ${code}"; exit 1; }
+          done
+          headers=$(curl -sSI "${URL}/welcome")
+          for h in content-security-policy x-frame-options strict-transport-security; do
+            grep -qi "^${h}:" <<<"$headers" || { echo "::error::missing header ${h}"; exit 1; }
+          done
+          echo "Live checks passed: ${URL}" >> "$GITHUB_STEP_SUMMARY"
