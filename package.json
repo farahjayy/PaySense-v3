@@ -6,9 +6,9 @@
     "node": ">=22.22"
   },
   "scripts": {
-    "postinstall": "cd backend && uv sync",
+    "postinstall": "cd frontend && pnpm install && cd ../backend && uv sync",
     "dev": "pnpm run \"/^dev:/\"",
     "dev:api": "cd backend && uv run uvicorn app.main:app --reload --port 8000",
-    "dev:web": "pnpm --filter frontend dev"
+    "dev:web": "cd frontend && pnpm dev"
   }
 }

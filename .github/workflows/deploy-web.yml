@@ -49,25 +49,27 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      # `vercel build` runs pnpm install at the repo root; skip the root postinstall (a full
-      # `uv sync` of the backend), which the app build does not need.
-      npm_config_ignore_scripts: "true"
-      pnpm_config_ignore_scripts: "true"
+    # Everything runs inside frontend/: the app is its own pnpm project and nothing at the repo
+    # root is built or uploaded (D-74). The Vercel project's Root Directory must be left empty.
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4 # version from "packageManager" in the root package.json
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
       - uses: actions/setup-node@v4
         with:
           node-version-file: frontend/.nvmrc
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
       - uses: actions/cache@v4
         with:
           path: frontend/.next/cache
-          key: next-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
-          restore-keys: next-${{ hashFiles('pnpm-lock.yaml') }}-
+          key: next-${{ hashFiles('frontend/pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: next-${{ hashFiles('frontend/pnpm-lock.yaml') }}-
       - run: npm install -g vercel@64.7.0
-      # Run from the repo root: the Vercel project's root directory is `frontend`, and the
-      # lockfile and workspace file live here.
       - run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
       - run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
       - run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"

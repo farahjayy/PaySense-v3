@@ -8,8 +8,8 @@ from pydantic import Field, SecretStr, ValidationError, ValidationInfo, field_va
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_GUIDE = "docs/env_setup.md"
-# One `.env` at the repo root can serve both apps; `backend/.env` (read second) overrides it.
-ENV_FILES = (Path(__file__).resolve().parents[3] / ".env", ".env")
+# backend/.env only (D-74): the API deploys from `backend/` alone and never reads the repo root.
+ENV_FILES = (Path(__file__).resolve().parents[2] / ".env",)
 MIN_SECRET_LENGTH = 32
 
 

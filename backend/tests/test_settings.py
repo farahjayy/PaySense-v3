@@ -73,7 +73,7 @@ def test_server_exits_naming_session_secret_when_it_is_missing(tmp_path):
         PYTHONPATH=str(BACKEND_DIR),
     )
 
-    # The settings also read the repo-root .env by absolute path; switch that off so only the
+    # The settings also read backend/.env by absolute path; switch that off so only the
     # process environment counts, as on a server with no .env.
     no_env_file = (
         "import app.core.settings as s; s.Settings.model_config['env_file'] = None; "

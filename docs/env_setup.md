@@ -1,6 +1,6 @@
 # Environment Setup — PaySense v3
 
-> **Security:** never commit a real value from this file. `.env*` is gitignored; `.env.example` carries the *names* with blank values and is committed.
+> **Security:** never commit a real value from this file. `.env*` is gitignored; `backend/.env.example` and `frontend/.env.example` carry the *names* with blank values and are committed.
 > Never paste a real token into a plan, an execution doc, a changelog entry, or a chat transcript. If one leaks, rotate it — don't just delete the message.
 > **This repo is public.** A leaked key here is a leaked key on the internet.
 
@@ -10,9 +10,9 @@ Last updated: 2026-10-08
 
 ## Required variables
 
-**One file for both apps: `.env` at the repo root** (template: `.env.example`). The backend reads it, then `backend/.env` if present (which wins); the frontend reads it from `next.config.ts`, and `frontend/.env.local` still wins.
+**One file per app (D-74), nothing at the repo root.** Each app deploys from its own folder alone, so each reads only its own file: the API reads `backend/.env` (template `backend/.env.example`), the app reads `frontend/.env.local` (template `frontend/.env.example`). On Render and Vercel the same names are set in each dashboard instead.
 
-**Backend** (read by `backend/app/core/settings.py`)
+**Backend** (`backend/.env`; read by `backend/app/core/settings.py`)
 
 | Variable | Required | Where to get it | Read by | Notes |
 |---|---|---|---|---|
@@ -23,11 +23,12 @@ Last updated: 2026-10-08
 | `SESSION_SECRET` | Yes | Generate locally: `python -c "import secrets; print(secrets.token_urlsafe(48))"` | backend auth (HS256 signing) | Rotating it logs every tester out |
 | `CORS_ORIGINS` | Yes | Your frontend origins, comma-separated: `http://localhost:3000` locally; add the Vercel URL in P8 | backend CORS middleware | No trailing slash |
 
-**Frontend** (the same root `.env`; read by `frontend/next.config.ts`. A `frontend/.env.local`, if present, overrides it)
+**Frontend** (`frontend/.env.local`; read by Next.js itself)
 
 | Variable | Required | Where to get it | Read by | Notes |
 |---|---|---|---|---|
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | `http://localhost:8000` locally; the Render service URL in P8 | `frontend/lib/api` client | Public by design — it is inlined into the browser bundle |
+| `NEXT_PUBLIC_GOOGLE_SIGNIN` | No (`false`) | `true` only when Google sign-in is configured in `backend/.env` | the login page | Shows "Continue with Google" (D-69) |
 
 ## Optional variables
 
@@ -67,7 +68,8 @@ Last updated: 2026-10-08
 ```bash
 # from the repo root
 pnpm install                                  # frontend packages, then `uv sync` for the backend
-cp .env.example .env                          # one file for both apps; set SESSION_SECRET, then any keys
+cp backend/.env.example backend/.env          # the API's file; set SESSION_SECRET, then any keys
+cp frontend/.env.example frontend/.env.local  # the app's file; the defaults work locally
 pnpm dev                                      # API on :8000 and the app on :3000
 ```
 
@@ -82,10 +84,10 @@ Build-time vs runtime: `NEXT_PUBLIC_API_BASE_URL` is baked in at **build time** 
 ## Rules
 
 - **Client-side bundles are public.** Anything inlined into a browser build is readable by anyone who opens devtools. A key that must stay secret goes through a server-side route, never into client code — no exceptions, no "it's just a prototype".
-- **`.env.example` is the documentation.** Add the variable name there the moment you add the variable, or the next person's setup silently half-works.
+- **The `.env.example` files are the documentation.** Add the variable name to the app's own example (`backend/` or `frontend/`) the moment you add the variable, or the next person's setup silently half-works.
 - **A missing required variable should fail loudly at startup**, with a message naming the variable and pointing here. Silent fallbacks to a broken state cost hours.
 - **Rotate on exposure, not on suspicion of exposure.** If you can't prove a key never left the machine, treat it as leaked.
 
 ## When a variable changes
 
-Adding, renaming, or removing one means updating, in the same session: this file, `.env.example`, the deploy target's dashboard (if any), and a changelog entry. Miss one and the next environment breaks in a way that looks like a code bug.
+Adding, renaming, or removing one means updating, in the same session: this file, the app's `.env.example`, the deploy target's dashboard (and `backend/render.yaml` for an API variable) (if any), and a changelog entry. Miss one and the next environment breaks in a way that looks like a code bug.

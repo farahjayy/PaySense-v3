@@ -20,9 +20,9 @@
 ## Order of operations
 
 1. **Supabase** (the `paysense-v3` project, Singapore; 0001–0006 are applied). Apply **`backend/migrations/0007_google_sign_in.sql`** in the SQL editor (a new environment applies 0001–0007 in order). Then `cd backend && uv run python scripts/check_rls.py` (every table answers the anonymous key with 401) and `uv run pytest -m integration` (the `test_v3_migrations.py` tests stop skipping once the tables exist).
-2. **Local `.env`** (the repo-root `.env`, from `.env.example`, with `DB_BACKEND=supabase`): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `CORS_ORIGINS`, and for the assistant `LLM_PROVIDER` and its key (`env_setup.md`).
+2. **Local `backend/.env`** (from `backend/.env.example`, with `DB_BACKEND=supabase`): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `CORS_ORIGINS`, and for the assistant `LLM_PROVIDER` and its key (`env_setup.md`).
 3. **Demo and judge accounts**: start the API locally on the real database, then `cd backend && uv run python scripts/load_personas.py --api http://localhost:8000`. Usernames and generated passphrases go to the gitignored `data/private/persona_accounts.json`; deliver judges theirs privately. Check the demo against the real model and data: `uv run python scripts/find_demo_scenario.py --api http://localhost:8000` and `uv run python scripts/demo_run.py --api http://localhost:8000` (both write `evidence/`).
-4. **Render** (the API). New → Blueprint → this repository; it reads `render.yaml` (service **`paysense-v3-api`**, so it cannot collide with the v2 service; native Python from `backend/`, no Docker). Leave the service's Root Directory as the blueprint sets it (`backend`). Fill in the prompted values:
+4. **Render** (the API). New → Blueprint → this repository, with the Blueprint file path set to **`backend/render.yaml`** (the blueprint lives with the API so the deploy uses `backend/` alone, D-74; service **`paysense-v3-api`**, so it cannot collide with the v2 service; native Python from `backend/`, no Docker). Leave the service's Root Directory as the blueprint sets it (`backend`). Fill in the prompted values:
    - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` from step 1.
    - `GROQ_API_KEY` (free at console.groq.com; or `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` with `LLM_PROVIDER` set to match). Left empty, the assistant runs in guided mode.
    - For Google sign-in (optional): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `API_PUBLIC_URL` (the Render URL), and `NEXT_PUBLIC_GOOGLE_SIGNIN=true` on Vercel. Apply migration 0007 first.
@@ -30,7 +30,7 @@
    - `FORWARDED_ALLOW_IPS`: see "Proxy addresses" below.
    - `SESSION_SECRET` is generated for you; the token budgets, assistant cap and write quota have values in the blueprint.
    Deploys are manual (`autoDeploy: false`).
-5. **Vercel** (the app). Import the repository, root directory `frontend` (keep "Include files outside the root directory" on: the pnpm lockfile and workspace file are at the repo root). Set `NEXT_PUBLIC_API_BASE_URL` to the Render URL **before** the first build (it is baked into the bundle). Deploy.
+5. **Vercel** (the app). Import the repository, root directory `frontend`, and turn **off** "Include files outside the root directory": `frontend/` has its own lockfile and pnpm settings and reads nothing at the repo root (D-74). The "Deploy app" workflow runs the Vercel CLI inside `frontend/`, so for that path leave the project's Root Directory empty instead. Set `NEXT_PUBLIC_API_BASE_URL` to the Render URL **before** the first build (it is baked into the bundle). Deploy.
 6. **Close the loop.** Set Render's `CORS_ORIGINS` to the Vercel URL (no trailing slash) and redeploy the API.
 7. **Smoke test.** `SMOKE_PASSPHRASE=<that tester's passphrase> uv run python scripts/smoke_live.py --api https://<service>.onrender.com --origin https://<app>.vercel.app --username <a persona account>`. All seven lines must say PASS.
 8. **The demo on the live URL**: `uv run python scripts/demo_run.py --api https://<service>.onrender.com` (writes `evidence/demo-run/`), then the checklist below on a phone.

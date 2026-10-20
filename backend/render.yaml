@@ -1,4 +1,6 @@
-# Render blueprint for the API (backend/). Nothing here is deployed until the author applies it.
+# Render blueprint for the API. Nothing here is deployed until the author applies it.
+# It lives in backend/ so the API deploys from that folder alone (D-74): when creating the
+# Blueprint, set its file path to backend/render.yaml. rootDir below is relative to the repo root.
 # Secrets are never written here: `sync: false` makes Render ask for the value in its dashboard.
 # Walkthrough: docs/deployment.md
 

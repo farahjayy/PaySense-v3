@@ -135,7 +135,8 @@ Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), 
 ```bash
 git clone <this repo> && cd PaySense-v3
 pnpm install          # frontend packages, then `uv sync` for the backend
-cp .env.example .env  # one file for both apps; every variable: docs/env_setup.md
+cp backend/.env.example backend/.env           # the API's settings; every variable: docs/env_setup.md
+cp frontend/.env.example frontend/.env.local   # the app's settings
 pnpm dev              # API on http://localhost:8000, app on http://localhost:3000; Ctrl+C stops both
 ```
 
@@ -145,7 +146,7 @@ With `DB_BACKEND=memory` (the local setting) the API runs on an in-memory databa
 
 ## Demo accounts
 
-Accounts are made by the operator; there is no public sign-up. `cd backend && uv run python scripts/load_personas.py` creates one account per synthetic persona (frequent BNPL user, budget-conscious, irregular income), loads its history and writes the usernames and generated passphrases to the gitignored `data/private/persona_accounts.json`. Judges receive theirs privately with the submission; no credential is ever in this repository. A single tester: `uv run python scripts/seed_users.py --username <name> --display <Name> --persona <persona>`.
+Anyone can create an account with an email and a password on the sign-in page (D-73). Demo accounts are made by the operator. `cd backend && uv run python scripts/load_personas.py` creates one account per synthetic persona (frequent BNPL user, budget-conscious, irregular income), loads its history and writes the usernames and generated passphrases to the gitignored `data/private/persona_accounts.json`. Judges receive theirs privately with the submission; no credential is ever in this repository. A single tester: `uv run python scripts/seed_users.py --username <name> --display <Name> --persona <persona>`.
 
 ## Tests
 
@@ -163,7 +164,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs all of the abov
 
 ## Deployment
 
-The API runs on Render from `render.yaml` (native Python, server packages only), the frontend on Vercel. Nothing deploys on push: after the first setup, each side is deployed by hand from Actions → **Deploy API (Render)** ([`deploy-api.yml`](.github/workflows/deploy-api.yml)) or **Deploy app (Vercel)** ([`deploy-web.yml`](.github/workflows/deploy-web.yml)), only on `main` once CI has passed on that commit. Steps, variables and the smoke test: [`docs/deployment.md`](docs/deployment.md).
+The API runs on Render from `backend/render.yaml` (native Python, server packages only), the frontend on Vercel. Nothing deploys on push: after the first setup, each side is deployed by hand from Actions → **Deploy API (Render)** ([`deploy-api.yml`](.github/workflows/deploy-api.yml)) or **Deploy app (Vercel)** ([`deploy-web.yml`](.github/workflows/deploy-web.yml)), only on `main` once CI has passed on that commit. Steps, variables and the smoke test: [`docs/deployment.md`](docs/deployment.md).
 
 ## Security
 

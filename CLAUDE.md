@@ -100,10 +100,10 @@ One product, three source trees. Frontend and backend share **no source** — on
 |---|---|---|
 | Install everything | `pnpm install` (repo root) | Frontend packages, then `uv sync` for the backend |
 | Both dev servers | `pnpm dev` (repo root) | API on 8000, app on 3000; `pnpm dev:api` / `pnpm dev:web` for one |
-| Backend dev server | `cd backend && uv run uvicorn app.main:app --reload --port 8000` | Needs the root `.env` (`cp .env.example .env`) |
+| Backend dev server | `cd backend && uv run uvicorn app.main:app --reload --port 8000` | Needs `backend/.env` (`cp backend/.env.example backend/.env`) |
 | Backend tests | `cd backend && uv run pytest` | `-m integration` hits the real Supabase |
 | Backend lint | `cd backend && uv run ruff check . && uv run ruff format --check .` | |
-| Frontend dev server | `cd frontend && pnpm dev` | Reads the same root `.env` |
+| Frontend dev server | `cd frontend && pnpm dev` | Reads `frontend/.env.local` (`cp frontend/.env.example frontend/.env.local`) |
 | Frontend checks | `cd frontend && pnpm lint && pnpm exec tsc --noEmit && pnpm test && pnpm build` | |
 | Regenerate API types | `cd frontend && pnpm gen:api` | After any backend route/schema change |
 | E2E | `cd frontend && pnpm exec playwright test` | Backend must be running with a seeded user |

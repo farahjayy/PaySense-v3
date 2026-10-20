@@ -44,9 +44,9 @@ PATTERNS: list[tuple[str, str]] = [
 
 # Where secrets are supposed to live in THIS project.
 FIX_LINES = [
-    "  - Local dev  -> put the value in the repo-root .env (gitignored) and read it via backend/app/core/settings.py.",
+    "  - Local dev  -> put the value in backend/.env (gitignored) and read it via backend/app/core/settings.py.",
     "  - Deployed   -> set it in the Render (backend) or Vercel (frontend) environment-variable settings.",
-    "  - Document the variable NAME in the root .env.example and docs/env_setup.md. This repo is PUBLIC.",
+    "  - Document the variable NAME in backend/.env.example (or frontend/) and docs/env_setup.md. This repo is PUBLIC.",
 ]
 
 ALLOW_MARK = "pragma: allowlist secret"

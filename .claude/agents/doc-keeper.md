@@ -15,7 +15,7 @@ Then:
 3. **DECISIONS.md** — any new architectural call becomes an ADR (Decision → Why → Rejected/Trade-off) with an id matching the PRD's §7 decision log; add the one-liner there too. Any `ASSUMED:` that got resolved gets deleted there and promoted to a real ADR.
 4. **Execution doc** — if the work diverged from the plan, edit the doc to match reality and say so in the changelog's Deviations line.
 5. **Index tables** — `internal/refdocs/plans/README.md` and `internal/refdocs/execution/README.md` each carry a table of every doc and its status. A new plan gets a row; a plan that moved gets its status updated.
-6. **Guides** — a new environment variable means a row in `docs/env_setup.md` and a name in the root `.env.example`, in this session.
+6. **Guides** — a new environment variable means a row in `docs/env_setup.md` and a name in the app's own `.env.example` (`backend/` or `frontend/`), in this session.
 
 Never add deadlines, schedules or timeline commentary — the author has banned them from this project's docs. Dates on changelog entries and filenames are records and stay.
 

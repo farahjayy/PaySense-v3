@@ -14,19 +14,12 @@
       "Bash(pnpm exec tsc --noEmit:*)",
       "Bash(ls:*)",
       "Bash(cat:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Read(./**/.env.example)",
+      "Edit(./**/.env.example)",
+      "Write(./**/.env.example)"
     ],
     "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./backend/.env)",
-      "Read(./frontend/.env.local)",
-      "Edit(./.env)",
-      "Edit(./backend/.env)",
-      "Edit(./frontend/.env.local)",
-      "Write(./.env)",
-      "Write(./backend/.env)",
-      "Write(./frontend/.env.local)",
       "Read(./data/private/**)",
       "Bash(rm -rf:*)",
       "Bash(git push --force:*)",

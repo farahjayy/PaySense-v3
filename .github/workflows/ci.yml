@@ -61,13 +61,16 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen --no-group ml
         working-directory: backend
-      - uses: pnpm/action-setup@v4 # version from "packageManager" in the root package.json
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json # the app is its own pnpm project (D-74)
       - uses: actions/setup-node@v4
         with:
           node-version-file: frontend/.nvmrc
           cache: pnpm
-      # --ignore-scripts skips the root postinstall (a full `uv sync`); the backend was synced above.
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
       - run: pnpm lint
         working-directory: frontend
       - run: pnpm exec tsc --noEmit
@@ -92,13 +95,16 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen --no-group ml
         working-directory: backend
-      - uses: pnpm/action-setup@v4 # version from "packageManager" in the root package.json
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json # the app is its own pnpm project (D-74)
       - uses: actions/setup-node@v4
         with:
           node-version-file: frontend/.nvmrc
           cache: pnpm
-      # --ignore-scripts skips the root postinstall (a full `uv sync`); the backend was synced above.
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
       - run: pnpm exec playwright install --with-deps chromium
         working-directory: frontend
       - run: pnpm exec playwright test
