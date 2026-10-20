@@ -1,0 +1,88 @@
+# Production deploy, run by hand from the Actions tab (docs/deployment.md, "Deploying from GitHub").
+# Deploys the commit it is run on, and only one that CI has already passed: the API on Render
+# first, then the app on Vercel. Migrations and the smoke test stay manual (docs/deployment.md).
+#
+# Secrets, in the "production" environment: RENDER_DEPLOY_HOOK_URL, VERCEL_TOKEN, VERCEL_ORG_ID,
+# VERCEL_PROJECT_ID. NEXT_PUBLIC_API_BASE_URL is read from the Vercel project at build time.
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read # to look up the CI run for this commit
+
+# One deploy at a time, and never cancel one half-way.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Main, and CI green on this commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Refuse anything but main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Deploys run from main only (this run is on ${GITHUB_REF})."
+          exit 1
+      - name: Refuse a commit CI has not passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$GITHUB_SHA" \
+            --status success --limit 1 --json databaseId --jq length)
+          if [ "$passed" != "1" ]; then
+            echo "::error::CI has not passed on ${GITHUB_SHA}. Wait for it, or fix it, then deploy."
+            exit 1
+          fi
+
+  api:
+    name: API (Render)
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      # The hook starts the deploy and returns; Render builds backend/Dockerfile itself.
+      # ponytail: no wait for the new version; poll Render's API for the deploy status if the app
+      # ever depends on an API change landing first.
+      - name: Trigger the Render deploy of this commit
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "${HOOK}&ref=${GITHUB_SHA}" -o /dev/null
+
+  web:
+    name: App (Vercel)
+    needs: api
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # `vercel build` runs pnpm install at the repo root; skip the root postinstall (a full
+      # `uv sync` of the backend), which the app build does not need.
+      npm_config_ignore_scripts: "true"
+      pnpm_config_ignore_scripts: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from "packageManager" in the root package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+      - uses: actions/cache@v4
+        with:
+          path: frontend/.next/cache
+          key: next-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: next-${{ hashFiles('pnpm-lock.yaml') }}-
+      - run: npm install -g vercel@64.7.0
+      # Run from the repo root: the Vercel project's root directory is `frontend`, and the
+      # lockfile and workspace file live here.
+      - run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+      - run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+      - run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"

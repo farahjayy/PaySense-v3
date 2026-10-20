@@ -68,6 +68,18 @@ Run it as one of the persona accounts, on the live URL, in a private window.
 - [ ] Phone: nothing scrolls sideways; the bottom bar shows five items; the import and the plan form are usable one-handed.
 - [ ] **Memory:** Render → the service → Metrics → Memory stays under 400 MB through the checklist. If it does not, record the Cloud Run fallback as an ADR (D-15).
 
+## Deploying from GitHub
+
+Once steps 1–6 have been done by hand, later deploys can run from Actions → **Deploy** → Run workflow (`.github/workflows/deploy.yml`). It runs only by hand, only on `main`, and only on a commit CI has already passed. It triggers the Render deploy of that commit, then builds and deploys the app to Vercel. Migrations and the smoke test (step 7) stay manual.
+
+Set these in the repository's **production** environment (Settings → Environments; adding required reviewers there makes every deploy wait for approval):
+
+| Secret | Where |
+|---|---|
+| `RENDER_DEPLOY_HOOK_URL` | Render → the service → Settings → Deploy Hook |
+| `VERCEL_TOKEN` | Vercel → Account Settings → Tokens |
+| `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | `.vercel/project.json` after `vercel link` in the repo root (gitignored) |
+
 ## Rollback and secrets
 
 - Render keeps previous deploys: Deploys → a previous one → Rollback. Vercel: Deployments → Promote to Production.
