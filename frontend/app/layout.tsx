@@ -7,13 +7,20 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 // The brand's two fonts, self-hosted by Next (so `font-src 'self'` holds): Bricolage Grotesque for
-// titles and big numbers, Figtree for everything else.
+// titles and big numbers, Figtree for everything else. Not preloaded: the app's pages render their
+// text only after the session check, so a preloaded font would sit unused (a console warning).
 const display = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-brand-display",
   display: "swap",
+  preload: false,
 });
-const body = Figtree({ subsets: ["latin"], variable: "--font-brand-body", display: "swap" });
+const body = Figtree({
+  subsets: ["latin"],
+  variable: "--font-brand-body",
+  display: "swap",
+  preload: false,
+});
 
 export const metadata: Metadata = {
   title: { default: "PaySense", template: "%s · PaySense" },

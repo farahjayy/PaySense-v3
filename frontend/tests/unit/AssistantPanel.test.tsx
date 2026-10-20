@@ -22,7 +22,7 @@ vi.mock("@/lib/api/client", () => ({
 }));
 vi.mock("next/dynamic", () => ({ default: () => () => <div aria-hidden /> }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), prefetch: vi.fn() }),
   usePathname: () => "/",
 }));
 
@@ -371,7 +371,8 @@ describe("opening the assistant from a page", () => {
       { wrapper },
     );
     await userEvent.click(screen.getByRole("button", { name: "try it" }));
-    expect(screen.getByRole("dialog", { name: "Ask PaySense" })).toBeInTheDocument();
+    // the panel's code loads on first open (next/dynamic)
+    expect(await screen.findByRole("dialog", { name: "Ask PaySense" })).toBeInTheDocument();
     expect(screen.getByLabelText("Your message")).toHaveValue("What's the safest way to buy it?");
     expect(post).not.toHaveBeenCalled();
   });
@@ -394,7 +395,7 @@ describe("the Ask PaySense button", () => {
     );
     const ask = screen.getByRole("button", { name: "Ask PaySense" });
     await userEvent.click(ask);
-    expect(screen.getByRole("dialog", { name: "Ask PaySense" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Ask PaySense" })).toBeInTheDocument();
     expect(ask).toHaveAttribute("aria-expanded", "true");
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

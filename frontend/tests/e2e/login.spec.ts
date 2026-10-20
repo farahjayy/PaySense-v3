@@ -44,6 +44,8 @@ test("the session survives a reload and ends on log out", async ({ page }) => {
   await page.reload();
   await expect(page.getByRole("heading", { name: `Hi, ${DISPLAY_NAME}` })).toBeVisible();
 
+  // on a phone the profile, and with it Log out, is under More
+  if (test.info().project.name === "phone") await page.getByRole("button", { name: "More" }).click();
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page).toHaveURL(/\/login$/);
 

@@ -3,105 +3,294 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
 
-import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { BrandMark } from "@/components/auth/LoginArt";
 import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
 import { isActive } from "@/lib/nav";
 import { api } from "@/lib/api/client";
 import { AssistantLauncher } from "@/lib/assistantLauncher";
 import { clearSession, type Session } from "@/lib/session";
 
-type NavItem = { href: string; label: string; icon: string; mobile: boolean };
+// The assistant (panel, cards, chat) is only needed once someone presses "Ask PaySense", so its
+// code is loaded then, not with every page. It only renders after a click, in the browser.
+const AssistantPanel = lazy(() =>
+  import("@/components/assistant/AssistantPanel").then((m) => ({ default: m.AssistantPanel })),
+);
 
-// `mobile` marks the five items that fit a phone's bottom bar; the rest are in the sidebar and, on
-// a phone, in the "More pages" row under the header.
-const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/", label: "Dashboard", icon: "◫", mobile: true },
-  { href: "/transactions", label: "Transactions", icon: "≡", mobile: true },
-  { href: "/categories", label: "Categories", icon: "#", mobile: false },
-  { href: "/recurring", label: "Recurring", icon: "↻", mobile: false },
-  { href: "/insights", label: "Insights", icon: "✦", mobile: false },
-  { href: "/budgets", label: "Budgets", icon: "◎", mobile: false },
-  { href: "/plans", label: "Plans", icon: "▤", mobile: true },
-  { href: "/risk", label: "Risk check", icon: "◔", mobile: true },
-  { href: "/import", label: "Import", icon: "⇪", mobile: true },
-  { href: "/model", label: "About the model", icon: "ⓘ", mobile: false },
-  { href: "/security", label: "Security drill", icon: "⛨", mobile: false },
-  { href: "/account", label: "Your data", icon: "⚿", mobile: false },
+type NavItem = { href: string; label: string; icon: string };
+
+/**
+ * A navigation link that loads its page only when it is about to be used. Next's default would
+ * prefetch every link on screen (all twelve sidebar pages at once); this prefetches on hover or
+ * keyboard focus instead.
+ */
+function NavLink(props: Omit<ComponentProps<typeof Link>, "href" | "prefetch"> & { href: string }) {
+  const router = useRouter();
+  const prefetch = () => router.prefetch(props.href);
+  return <Link {...props} prefetch={false} onMouseEnter={prefetch} onFocus={prefetch} />;
+}
+type NavGroup = { label: string; items: readonly NavItem[] };
+
+// Grouped by what the student is doing. "Your data" sits with the profile, not in a group.
+const NAV_GROUPS: readonly NavGroup[] = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/", label: "Dashboard", icon: "◫" },
+      { href: "/insights", label: "Insights", icon: "✦" },
+    ],
+  },
+  {
+    label: "Your money",
+    items: [
+      { href: "/transactions", label: "Transactions", icon: "≡" },
+      { href: "/categories", label: "Categories", icon: "#" },
+      { href: "/budgets", label: "Budgets", icon: "◎" },
+      { href: "/recurring", label: "Recurring", icon: "↻" },
+      { href: "/import", label: "Import", icon: "⇪" },
+    ],
+  },
+  {
+    label: "Buy now, pay later",
+    items: [
+      { href: "/risk", label: "Risk check", icon: "◔" },
+      { href: "/plans", label: "Plans", icon: "▤" },
+    ],
+  },
+  {
+    label: "How it works",
+    items: [
+      { href: "/model", label: "About the model", icon: "ⓘ" },
+      { href: "/security", label: "Security drill", icon: "⛨" },
+    ],
+  },
 ];
+const ALL_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
+// The phone's bottom bar: the four screens used most; everything else is under "More".
+const PHONE_BAR = ["/", "/transactions", "/import", "/risk"].map(
+  (href) => ALL_ITEMS.find((item) => item.href === href)!,
+);
+
+type Tone = "dark" | "light";
 
 // The sidebar is the brand's teal, like the login panel: the one bold element of the app. Its
 // links carry a cream focus ring, since the global teal ring would vanish on teal.
-function navLinkClass(active: boolean): string {
-  return active
-    ? "bg-page font-semibold text-accent"
-    : "text-on-accent-muted hover:bg-accent-soft hover:text-on-accent";
+const TONE = {
+  dark: {
+    heading: "text-on-accent-muted",
+    link: (active: boolean) =>
+      active
+        ? "bg-page font-semibold text-accent"
+        : "text-on-accent hover:bg-accent-soft focus-visible:outline-on-accent",
+  },
+  light: {
+    heading: "text-ink-muted",
+    link: (active: boolean) =>
+      active ? "bg-accent-bg font-semibold text-accent" : "text-ink hover:bg-surface-2",
+  },
+} as const;
+
+function NavGroups({
+  pathname,
+  tone,
+  onNavigate,
+}: {
+  pathname: string;
+  tone: Tone;
+  onNavigate?: () => void;
+}) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-5">
+      {NAV_GROUPS.map((group, g) => (
+        <div key={group.label}>
+          <p id={`${id}-${g}`} className={`mb-1.5 px-3 text-[12px] font-semibold ${TONE[tone].heading}`}>
+            {group.label}
+          </p>
+          <ul aria-labelledby={`${id}-${g}`} className="flex flex-col gap-0.5">
+            {group.items.map((item) => {
+              const active = isActive(pathname, item.href);
+              return (
+                <li key={item.href}>
+                  <NavLink
+                    href={item.href}
+                    onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[14px] font-medium transition-colors ${TONE[tone].link(active)}`}
+                  >
+                    <span aria-hidden className="w-4 text-center text-sm">
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-function Sidebar({ pathname }: { pathname: string }) {
+function initials(name: string): string {
+  const words = name.split(/\s+/).filter((word) => /^\p{L}/u.test(word));
+  return words.slice(0, 2).map((word) => word[0].toUpperCase()).join("") || "?";
+}
+
+/** Who is signed in, their data, and the way out: at the foot of the sidebar and in "More". */
+function Profile({
+  user,
+  tone,
+  onLogout,
+  onNavigate,
+}: {
+  user: Session["user"];
+  tone: Tone;
+  onLogout: () => void;
+  onNavigate?: () => void;
+}) {
+  const dark = tone === "dark";
+  const linkFocus = dark ? "focus-visible:outline-on-accent" : "";
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-accent px-4 py-6 md:flex">
+    <div className={`rounded-2xl p-3 ${dark ? "bg-accent-deep" : "border border-line bg-surface-2"}`}>
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose font-display text-[15px] font-bold text-ink"
+        >
+          {initials(user.display_name)}
+        </span>
+        <div className="min-w-0">
+          <p className={`truncate text-[14px] font-semibold ${dark ? "text-on-accent" : "text-ink"}`}>
+            {user.display_name}
+          </p>
+          <p className={`truncate text-[12px] ${dark ? "text-on-accent-muted" : "text-ink-muted"}`}>
+            {user.username}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <Link
+          href="/account"
+          onClick={onNavigate}
+          className={`rounded-lg px-1 text-[13px] font-semibold underline-offset-2 hover:underline ${dark ? "text-on-accent" : "text-accent"} ${linkFocus}`}
+        >
+          Your data
+        </Link>
+        <button
+          type="button"
+          onClick={onLogout}
+          className={`rounded-lg px-2 py-1 text-[13px] font-semibold ${
+            dark ? "text-on-accent hover:bg-accent-soft" : "text-ink hover:bg-surface"
+          } ${linkFocus}`}
+        >
+          Log out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Sidebar({
+  pathname,
+  user,
+  onLogout,
+}: {
+  pathname: string;
+  user: Session["user"];
+  onLogout: () => void;
+}) {
+  return (
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-accent px-3 py-5 md:flex">
       <Link
         href="/"
-        className="mb-8 flex items-center gap-2.5 rounded-lg px-2 focus-visible:outline-on-accent"
+        className="mb-6 flex items-center gap-2.5 rounded-lg px-3 focus-visible:outline-on-accent"
       >
         <BrandMark className="h-9 w-9 shrink-0" />
         <span className="font-display text-[20px] font-bold tracking-tight text-on-accent">
           Pay<span className="text-rose">Sense</span>
         </span>
       </Link>
-      <nav aria-label="Main navigation" className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(pathname, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors focus-visible:outline-on-accent ${navLinkClass(active)}`}
-            >
-              <span aria-hidden className="text-sm">
-                {item.icon}
-              </span>
-              {item.label}
-            </Link>
-          );
-        })}
+      <nav aria-label="Main navigation" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+        <NavGroups pathname={pathname} tone="dark" />
       </nav>
-      <p className="mt-auto px-2 text-[11px] leading-relaxed text-on-accent-muted">
-        Financial health forecasting and BNPL risk classification for students.
-      </p>
+      <div className="mt-4">
+        <Profile user={user} tone="dark" onLogout={onLogout} />
+      </div>
     </aside>
   );
 }
 
-function MobileNav({ pathname }: { pathname: string }) {
+/** A phone has one navigation: this bar, with every other screen and the profile under "More". */
+function MobileNav({
+  pathname,
+  user,
+  onLogout,
+}: {
+  pathname: string;
+  user: Session["user"];
+  onLogout: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const inMore = !PHONE_BAR.some((item) => isActive(pathname, item.href));
+  const itemClass = (active: boolean) =>
+    `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
+      active ? "text-accent" : "text-ink-muted"
+    }`;
   return (
-    <nav
-      aria-label="Quick navigation"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface md:hidden"
-    >
-      {NAV_ITEMS.filter((item) => item.mobile).map((item) => {
-        const active = isActive(pathname, item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium ${
-              active ? "text-accent" : "text-ink-muted"
-            }`}
-          >
-            <span aria-hidden className="text-base leading-none">
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      <nav
+        aria-label="Quick navigation"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface md:hidden"
+      >
+        {PHONE_BAR.map((item) => {
+          const active = isActive(pathname, item.href);
+          return (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={itemClass(active)}
+            >
+              <span aria-hidden className="text-base leading-none">
+                {item.icon}
+              </span>
+              {item.label}
+            </NavLink>
+          );
+        })}
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+          className={itemClass(inMore)}
+        >
+          <span aria-hidden className="text-base leading-none">
+            ⋯
+          </span>
+          More
+        </button>
+      </nav>
+      <Dialog open={open} title="Menu" onClose={() => setOpen(false)}>
+        <div className="flex flex-col gap-5">
+          <Profile user={user} tone="light" onLogout={onLogout} onNavigate={() => setOpen(false)} />
+          <NavGroups pathname={pathname} tone="light" onNavigate={() => setOpen(false)} />
+        </div>
+      </Dialog>
+    </>
   );
 }
 
@@ -157,7 +346,7 @@ export function AppShell({ user, children }: Props) {
       >
         Skip to content
       </a>
-      <Sidebar pathname={pathname} />
+      <Sidebar pathname={pathname} user={user} onLogout={handleLogout} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4 sm:px-6">
           <Link
@@ -181,29 +370,8 @@ export function AppShell({ user, children }: Props) {
             >
               Ask PaySense
             </Button>
-            <span className="hidden max-w-[10rem] truncate text-[13px] font-medium text-ink sm:inline">
-              {user.display_name}
-            </span>
-            <Button variant="secondary" size="sm" onClick={handleLogout}>
-              Log out
-            </Button>
           </div>
         </header>
-        <nav
-          aria-label="More pages"
-          className="flex flex-wrap gap-x-5 gap-y-1 border-b border-line bg-surface px-4 py-2 text-[13px] font-medium md:hidden"
-        >
-          {NAV_ITEMS.filter((item) => !item.mobile).map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(pathname, item.href) ? "page" : undefined}
-              className="whitespace-nowrap py-1 text-accent underline-offset-2 hover:underline"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
         <main
           id="main"
           ref={main}
@@ -215,9 +383,11 @@ export function AppShell({ user, children }: Props) {
           </AssistantLauncher.Provider>
         </main>
       </div>
-      <MobileNav pathname={pathname} />
+      <MobileNav pathname={pathname} user={user} onLogout={handleLogout} />
       {assistantOpen && (
-        <AssistantPanel onClose={closeAssistant} prompt={prompt} />
+        <Suspense fallback={null}>
+          <AssistantPanel onClose={closeAssistant} prompt={prompt} />
+        </Suspense>
       )}
     </div>
   );

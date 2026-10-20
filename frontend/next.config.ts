@@ -24,6 +24,8 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   // The e2e run sets NEXT_DIST_DIR so it never fights a developer's `next dev` over `.next/dev/lock`.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
+  // Next's dev-only "N" badge defaults to bottom-left, on top of the sidebar's profile card.
+  devIndicators: { position: "bottom-right" },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

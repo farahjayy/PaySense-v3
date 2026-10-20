@@ -9,8 +9,9 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { clearSession, getSession, saveSession } from "@/lib/session";
 
 const replace = vi.fn();
+const prefetch = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ replace, prefetch }),
   usePathname: () => "/",
 }));
 
@@ -89,7 +90,7 @@ describe("AppShell", () => {
     expect(dashboardLinks.some((l) => l.getAttribute("aria-current") === "page")).toBe(true);
   });
 
-  it("links every screen from the sidebar and keeps five on the phone bar", () => {
+  it("links every screen from the sidebar and keeps four plus More on the phone bar", () => {
     render(
       <AppShell user={USER}>
         <p>page body</p>
@@ -111,11 +112,12 @@ describe("AppShell", () => {
         0,
       );
     }
-    const phoneBar = screen.getAllByRole("navigation").find((n) => n.className.includes("fixed"));
-    expect(phoneBar && phoneBar.querySelectorAll("a").length).toBe(5);
+    const phoneBar = screen.getByRole("navigation", { name: "Quick navigation" });
+    expect(phoneBar.querySelectorAll("a")).toHaveLength(4);
+    expect(within(phoneBar).getByRole("button", { name: /more/i })).toBeInTheDocument();
   });
 
-  it("keeps Recurring and About the model reachable on a phone in a 'More pages' row", () => {
+  it("groups the sidebar into sections", () => {
     render(
       <AppShell user={USER}>
         <p>page body</p>
@@ -123,7 +125,42 @@ describe("AppShell", () => {
       { wrapper },
     );
 
-    const more = screen.getByRole("navigation", { name: "More pages" });
+    const sidebar = screen.getByRole("navigation", { name: "Main navigation" });
+    for (const [section, page] of [
+      ["Overview", "Dashboard"],
+      ["Your money", "Transactions"],
+      ["Buy now, pay later", "Risk check"],
+      ["How it works", "Security drill"],
+    ]) {
+      const list = within(sidebar).getByRole("list", { name: section });
+      expect(within(list).getByRole("link", { name: new RegExp(page, "i") })).toBeInTheDocument();
+    }
+  });
+
+  it("shows who is signed in, with their data and a way out", () => {
+    render(
+      <AppShell user={USER}>
+        <p>page body</p>
+      </AppShell>,
+      { wrapper },
+    );
+
+    expect(screen.getByText("amir")).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument(); // the initials avatar
+    expect(screen.getByRole("link", { name: "Your data" })).toHaveAttribute("href", "/account");
+  });
+
+  it("keeps every other screen reachable on a phone under More, in one navigation", async () => {
+    render(
+      <AppShell user={USER}>
+        <p>page body</p>
+      </AppShell>,
+      { wrapper },
+    );
+
+    expect(screen.queryByRole("navigation", { name: "More pages" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: /more/i }));
+    const more = screen.getByRole("dialog", { name: "Menu" });
     expect(within(more).getByRole("link", { name: "Recurring" })).toHaveAttribute(
       "href",
       "/recurring",
@@ -166,5 +203,22 @@ describe("AppShell", () => {
     expect(getSession()).toBeNull();
     expect(replace).toHaveBeenCalledWith("/login");
     expect(post).toHaveBeenCalledWith("/api/auth/logout"); // the server ends every session too
+  });
+});
+
+describe("navigation loading", () => {
+  it("does not prefetch every page on screen; a page loads when its link is hovered", async () => {
+    prefetch.mockClear();
+    render(
+      <AppShell user={USER}>
+        <p>page body</p>
+      </AppShell>,
+      { wrapper },
+    );
+
+    expect(prefetch).not.toHaveBeenCalled();
+    const sidebar = screen.getByRole("navigation", { name: "Main navigation" });
+    await userEvent.hover(within(sidebar).getByRole("link", { name: /budgets/i }));
+    expect(prefetch).toHaveBeenCalledWith("/budgets");
   });
 });
