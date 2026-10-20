@@ -33,17 +33,21 @@
   font-family: var(--lg-font-body);
 }
 
+/* The login page fills the window: the brand panel on the left, the form on the right. On a phone
+   the panel is a short band above the form. */
+.login-theme.lg-page {
+  padding: 0;
+}
 .login-theme .lg-shell {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
-  min-height: calc(100dvh - 2rem);
-  max-width: 1280px;
-  margin-inline: auto;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
 }
 @media (min-width: 880px) {
   .login-theme .lg-shell {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: 1fr;
   }
 }
 
@@ -55,15 +59,20 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 40px;
-  padding: 32px;
-  border-radius: 32px;
+  gap: 20px;
+  padding: 20px 20px 28px;
+  border-radius: 0 0 28px 28px;
   background: var(--lg-teal);
   color: var(--lg-page);
 }
 @media (min-width: 880px) {
   .login-theme .lg-panel {
-    padding: 44px 48px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    gap: 40px;
+    padding: 44px clamp(40px, 5vw, 72px);
+    border-radius: 0;
   }
 }
 
@@ -161,7 +170,7 @@
   margin: 0;
   font-family: var(--lg-font-display);
   font-weight: 800;
-  font-size: clamp(2.5rem, 1.4rem + 3.4vw, 4.25rem);
+  font-size: clamp(2rem, 1.2rem + 3.4vw, 4.25rem);
   line-height: 1.02;
   letter-spacing: -0.025em;
   text-wrap: balance;
@@ -171,16 +180,30 @@
   color: var(--lg-rosy);
 }
 .login-theme .lg-pitch p {
-  margin: 18px 0 0;
+  margin: 10px 0 0;
   max-width: 26rem;
-  font-size: 1.125rem;
+  font-size: 1rem;
   line-height: 1.5;
   color: rgba(247, 244, 213, 0.92);
 }
 
-/* the three result characters */
+@media (min-width: 880px) {
+  .login-theme .lg-pitch p {
+    margin-top: 18px;
+    font-size: 1.125rem;
+  }
+}
+
+/* the three result characters: on a laptop only, the phone band stays short */
 .login-theme .lg-bands {
-  display: grid;
+  display: none;
+}
+@media (min-width: 880px) {
+  .login-theme .lg-bands {
+    display: grid;
+  }
+}
+.login-theme .lg-bands {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   max-width: 30rem;
@@ -271,25 +294,23 @@
 
 /* ---------- Right: form card ---------- */
 .login-theme .lg-stage {
-  display: grid;
-  place-items: center;
-  padding-block: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 32px 20px 40px;
 }
-.login-theme .lg-card {
-  width: 100%;
-  max-width: 440px;
-  padding: 36px 32px 32px;
-  border: 1.5px solid var(--lg-line);
-  border-radius: 28px;
-  background: var(--lg-card);
-  box-shadow:
-    0 1px 0 rgba(10, 51, 35, 0.04),
-    0 24px 48px -28px rgba(16, 86, 102, 0.35);
-}
-@media (min-width: 560px) {
-  .login-theme .lg-card {
-    padding: 44px 40px 40px;
+@media (min-width: 880px) {
+  .login-theme .lg-stage {
+    padding: 48px clamp(32px, 5vw, 72px);
   }
+}
+/* No card chrome: the right half of the page is the form. */
+.login-theme .lg-card,
+.login-theme .lg-fine {
+  width: 100%;
+  max-width: 420px;
 }
 .login-theme .lg-hello {
   display: block;
@@ -448,6 +469,59 @@
   }
 }
 
+/* Sign in / Create account switch */
+.login-theme .lg-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding: 4px;
+  border-radius: 16px;
+  background: var(--lg-line);
+}
+.login-theme .lg-tab {
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--lg-ink-2);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms,
+    color 140ms;
+}
+.login-theme .lg-tab[aria-pressed="true"] {
+  background: var(--lg-card);
+  color: var(--lg-ink);
+  box-shadow: 0 1px 3px rgba(10, 51, 35, 0.12);
+}
+.login-theme .lg-tab:focus-visible {
+  outline: 3px solid var(--lg-teal);
+  outline-offset: 2px;
+}
+.login-theme .lg-form .lg-label:not(:first-child) {
+  margin-top: 18px;
+}
+
+/* "or", between the form and Google */
+.login-theme .lg-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 0;
+  color: var(--lg-ink-3);
+  font-size: 0.875rem;
+}
+.login-theme .lg-or::before,
+.login-theme .lg-or::after {
+  content: "";
+  flex: 1;
+  height: 1.5px;
+  background: var(--lg-line);
+}
+
 /* WP7: the responsible-use line and the context box under the form */
 .login-theme .lg-google {
   width: 100%;
@@ -470,16 +544,8 @@
   outline: 3px solid var(--lg-teal);
   outline-offset: 3px;
 }
-.login-theme .lg-test-account {
-  margin-top: 1rem;
-}
-.login-theme .lg-test-account summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--lg-ink-2);
-}
 .login-theme .lg-note {
-  margin-top: 1rem;
+  margin-top: 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--lg-ink-2);

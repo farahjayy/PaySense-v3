@@ -4,9 +4,9 @@ const PASSPHRASE = "correct horse battery staple";
 
 async function signIn(page: Page, journey: string) {
   await page.goto("/login");
-  await page.getByLabel("Username").fill(`e2e-${test.info().project.name}-${journey}`);
-  await page.getByLabel("Passphrase", { exact: true }).fill(PASSPHRASE);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Email or username").fill(`e2e-${test.info().project.name}-${journey}`);
+  await page.getByLabel("Password", { exact: true }).fill(PASSPHRASE);
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
 }
 
 test("first login shows the privacy notice, which must be accepted before the app", async ({

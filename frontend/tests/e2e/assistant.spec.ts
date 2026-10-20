@@ -7,9 +7,9 @@ import { expect, test, type Page } from "@playwright/test";
  */
 async function signIn(page: Page, journey: string) {
   await page.goto("/login");
-  await page.getByLabel("Username").fill(`e2e-${test.info().project.name}-${journey}`);
-  await page.getByLabel("Passphrase", { exact: true }).fill("correct horse battery staple");
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Email or username").fill(`e2e-${test.info().project.name}-${journey}`);
+  await page.getByLabel("Password", { exact: true }).fill("correct horse battery staple");
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /hi, e2e tester/i })).toBeVisible();
 }
 

@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -15,10 +16,15 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     expect(
-      screen.getByRole("heading", { level: 2, name: "Think before you split." }),
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Think before you split.",
+      }),
     ).toBeVisible();
     expect(
-      screen.getByText("Instantly check if a BNPL instalment fits into your monthly spending."),
+      screen.getByText(
+        "Instantly check if a BNPL instalment fits into your monthly spending.",
+      ),
     ).toBeVisible();
   });
 
@@ -37,15 +43,50 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole("heading", { level: 1, name: "Welcome" })).toBeVisible();
-    expect(screen.getByLabelText(/username/i)).toBeVisible();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Welcome back" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Email or username")).toBeVisible();
   });
 
-  it("asks for the passphrase and says what PaySense is not", () => {
+  it("switches between signing in and creating an account", async () => {
+    render(<LoginPage />);
+    const signin = screen.getByRole("button", {
+      name: "Sign in",
+      pressed: true,
+    });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create account", pressed: false }),
+    );
+
+    expect(signin).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Create your account" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Your name")).toBeVisible();
+    expect(screen.getByLabelText("Email")).toHaveAttribute("type", "email");
+    expect(
+      screen.queryByRole("link", { name: "Continue with Google" }),
+    ).toBeNull();
+  });
+
+  it("opens on Create account when linked with #signup", async () => {
+    window.location.hash = "#signup";
     render(<LoginPage />);
 
-    expect(screen.getByText("Enter your username and passphrase to start.")).toBeVisible();
-    expect(screen.queryByText(/there is no password/i)).toBeNull();
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Create your account",
+      }),
+    ).toBeVisible();
+    window.location.hash = "";
+  });
+
+  it("says what PaySense is not", () => {
+    render(<LoginPage />);
+
     const note = screen.getByText(/not financial advice/i);
     expect(note).toHaveTextContent(/not a credit decision/i);
     expect(note).toHaveTextContent(/nothing changes until you confirm/i);
@@ -56,8 +97,16 @@ describe("LoginPage", () => {
 
     const box = container.querySelector("details");
     expect(box).not.toBeNull();
-    expect(within(box as HTMLElement).getByText(/new to BNPL in Malaysia/i)).toBeInTheDocument();
-    for (const term of [/ringgit/i, /SPayLater/, /TikTok PayLater/, /Atome/, /PTPTN/]) {
+    expect(
+      within(box as HTMLElement).getByText(/new to BNPL in Malaysia/i),
+    ).toBeInTheDocument();
+    for (const term of [
+      /ringgit/i,
+      /SPayLater/,
+      /TikTok PayLater/,
+      /Atome/,
+      /PTPTN/,
+    ]) {
       expect(box).toHaveTextContent(term);
     }
   });
@@ -71,7 +120,9 @@ describe("LoginPage", () => {
   it("has no automated accessibility violations (contrast is checked from the tokens)", async () => {
     const { container } = render(<LoginPage />);
 
-    const results = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+    const results = await axe.run(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
 
     expect(results.violations.map((violation) => violation.id)).toEqual([]);
   });
@@ -80,21 +131,25 @@ describe("LoginPage", () => {
     beforeEach(() => vi.stubEnv("NEXT_PUBLIC_GOOGLE_SIGNIN", "true"));
     afterEach(() => vi.unstubAllEnvs());
 
-    it("offers Google first and keeps the passphrase form under a test-account fold", () => {
+    it("offers Google under the form, after an 'or', with no test-account fold", () => {
       render(<LoginPage />);
 
       const google = screen.getByRole("link", { name: "Continue with Google" });
-      const fold = screen.getByText("Use a test account").closest("details") as HTMLElement;
-      expect(fold).not.toHaveAttribute("open");
-      expect(within(fold).getByLabelText(/username/i)).toBeInTheDocument();
-      expect(google.compareDocumentPosition(fold) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(screen.getByText("Continue with Google to start.")).toBeVisible();
+      const field = screen.getByLabelText("Email or username");
+      expect(
+        field.compareDocumentPosition(google) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(screen.getByText("or")).toBeVisible();
+      expect(screen.queryByText("Use a test account")).toBeNull();
     });
 
     it("has no automated accessibility violations", async () => {
       const { container } = render(<LoginPage />);
 
-      const results = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+      const results = await axe.run(container, {
+        rules: { "color-contrast": { enabled: false } },
+      });
 
       expect(results.violations.map((violation) => violation.id)).toEqual([]);
     });

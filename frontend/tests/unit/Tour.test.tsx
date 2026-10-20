@@ -57,6 +57,37 @@ describe("guided tour", () => {
     expect(onDone).toHaveBeenCalledOnce();
   });
 
+  it("walks the main path in six stops when everything is on screen", async () => {
+    render(
+      <>
+        {["forecast", "import", "transactions", "risk", "ask", "data"].map((t) => (
+          <button key={t} data-tour={t}>
+            {t}
+          </button>
+        ))}
+      </>,
+    );
+    const { rerender } = render(<></>);
+    rerender(<Tour onDone={vi.fn()} />);
+
+    const titles = [];
+    for (let i = 0; i < 6; i++) {
+      titles.push(screen.getByRole("heading", { level: 2 }).textContent);
+      // Plans is reached through the risk check's stop, not a stop of its own
+      if (i === 3) expect(screen.getByText(/save it as a plan/i)).toBeInTheDocument();
+      if (i < 5) await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    }
+    expect(screen.getByRole("dialog")).toHaveTextContent("6 of 6");
+    expect(titles).toEqual([
+      "Where your money is heading",
+      "Start here",
+      "Everything you've spent",
+      "Check before you split",
+      "Ask PaySense",
+      "Your data",
+    ]);
+  });
+
   it("ends on Skip or Escape, and at once when there is nothing to point at", async () => {
     const onDone = vi.fn();
     const { rerender, unmount } = render(targets());

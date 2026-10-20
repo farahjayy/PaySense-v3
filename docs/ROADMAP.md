@@ -13,9 +13,11 @@ What PaySense does today, and what comes next. Items are in rough priority order
 - [x] **Security:** hardened login, per-user scoping, quotas, an on-screen security drill over four attack classes, a published known-risk list ([`../SECURITY.md`](../SECURITY.md)).
 - [x] **Privacy:** consent, export and delete-my-data; synthetic personas only.
 - [x] **Sign in with Google** beside the passphrase login (self-service sign-up with a verified email).
+- [x] **Email sign-up:** create an account with an email and a password (ownership of the email is not verified yet).
 
 ## Next
 
+- [ ] **Email accounts:** confirm the address by a link, and a password reset.
 - [ ] **Deploy** the backend (Render) and frontend (Vercel) and run the live checklist on a phone ([`deployment.md`](deployment.md)).
 - [ ] **A student pilot** with the usability-testing kit in [`../uat/`](../uat/): SUS, explanation clarity, and whether the check changes decisions.
 - [ ] **Real repayment outcomes, with consent,** to replace the synthetic training labels.

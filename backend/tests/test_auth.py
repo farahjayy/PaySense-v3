@@ -295,3 +295,80 @@ def test_limiter_memory_is_bounded_when_keys_keep_changing():
         limiter.record_failure(f"key-{n}")
 
     assert limiter.tracked_keys() <= 100
+
+
+# --- Sign-up with an email and a password (D-73) ---
+
+NEW_PASSWORD = "a long enough password"
+
+
+def _signup(client: TestClient, email="Nur@Example.com", password=NEW_PASSWORD, name="Nur"):
+    return client.post(
+        "/api/auth/signup", json={"email": email, "password": password, "display_name": name}
+    )
+
+
+def test_signup_creates_an_account_and_signs_in(client):
+    res = _signup(client)
+
+    assert res.status_code == 201
+    body = res.json()
+    assert body["user"]["display_name"] == "Nur"
+    assert body["user"]["email"] == "nur@example.com"
+    assert body["user"]["username"].startswith("e-")
+    me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"})
+    assert me.status_code == 200
+    assert me.json()["email"] == "nur@example.com"
+
+
+def test_an_email_account_signs_in_with_its_email_in_any_case(client):
+    _signup(client)
+
+    assert _login(client, "NUR@example.COM", NEW_PASSWORD).status_code == 200
+    assert _login(client, "nur@example.com", "the wrong password!!").status_code == 401
+
+
+def test_an_email_already_used_is_409_whatever_its_case(client):
+    _signup(client)
+    res = _signup(client, email="nur@EXAMPLE.com")
+
+    assert res.status_code == 409
+    assert res.json()["detail"]["code"] == "email_taken"
+
+
+def test_a_short_password_is_refused(client):
+    res = _signup(client, password="short")
+
+    assert res.status_code == 422
+    assert res.json()["detail"]["code"] == "weak_password"
+    assert res.json()["detail"]["message"] == "Your password needs at least 12 characters."
+
+
+@pytest.mark.parametrize("email", ["no-at-sign", "two@@example.com", "a b@example.com", "x@nodot"])
+def test_a_malformed_email_is_refused(client, email):
+    res = _signup(client, email=email)
+
+    assert res.status_code == 422
+    assert res.json()["detail"]["code"] == "invalid_email"
+
+
+def test_a_blank_name_is_refused(client):
+    assert _signup(client, name="   ").status_code == 422
+
+
+def test_username_accounts_and_their_answers_are_unchanged(client):
+    assert _login(client, "amir").json()["user"]["email"] is None
+
+
+def test_signups_count_against_the_address_limiter(settings, db):
+    client = TestClient(create_app(settings, db=db, login_limiter=LoginRateLimiter(max_failures=2)))
+    assert _signup(client, email="one@example.com").status_code == 201
+    assert _signup(client, email="two@example.com").status_code == 201
+    assert _signup(client, email="three@example.com").status_code == 429
+
+
+def test_signup_is_recorded_in_the_audit_log(client, db):
+    _signup(client)
+
+    events = db.table("auth_events").select("*").execute().data
+    assert [(e["event"], e["email"]) for e in events] == [("signup", "nur@example.com")]

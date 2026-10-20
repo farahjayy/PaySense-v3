@@ -1,45 +1,27 @@
 import type { Metadata } from "next";
 
-import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
-import { HelloFace } from "@/components/auth/LoginArt";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { AuthCard } from "@/components/auth/AuthCard";
 import { LoginPanel } from "@/components/auth/LoginPanel";
 import { LocalTerms } from "@/components/ui/LocalTerms";
 
-export const metadata: Metadata = { title: "Log in" };
+export const metadata: Metadata = { title: "Sign in" };
 
 export default function LoginPage() {
-  // With Google sign-in on (D-69) it is the main way in; the passphrase form stays for the
-  // seeded test and judge accounts, folded away. The pitch panel's one link goes back to /welcome.
+  // Email and password for everyone (D-73); Google beside it when switched on (D-69). Seeded
+  // judge and tester accounts sign in with their username in the same field.
   const google = process.env.NEXT_PUBLIC_GOOGLE_SIGNIN === "true";
   return (
     <main className="lg-shell page-enter">
       <LoginPanel />
       <div className="lg-stage">
-        <section className="lg-card">
-          <HelloFace />
-          <h1>Welcome</h1>
-          {google ? (
-            <>
-              <p className="lg-lede">Continue with Google to start.</p>
-              <GoogleSignIn />
-              <details className="lg-test-account">
-                <summary>Use a test account</summary>
-                <LoginForm />
-              </details>
-            </>
-          ) : (
-            <>
-              <p className="lg-lede">Enter your username and passphrase to start.</p>
-              <LoginForm />
-            </>
-          )}
+        <AuthCard google={google} />
+        <div className="lg-fine">
           <p className="lg-note">
             PaySense gives estimates from your own records. It is not financial advice and not a
             credit decision: you decide, and nothing changes until you confirm it.
           </p>
           <LocalTerms className="lg-terms" />
-        </section>
+        </div>
       </div>
     </main>
   );

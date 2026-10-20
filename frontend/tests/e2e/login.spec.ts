@@ -15,9 +15,9 @@ test("a visitor lands on /welcome, goes on to /login, signs in, and lands on the
   await page.getByRole("link", { name: "Get started" }).first().click();
   await expect(page).toHaveURL(/\/login$/);
 
-  await page.getByLabel("Username").fill(USERNAME);
-  await page.getByLabel("Passphrase", { exact: true }).fill(PASSPHRASE);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Email or username").fill(USERNAME);
+  await page.getByLabel("Password", { exact: true }).fill(PASSPHRASE);
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("heading", { name: `Hi, ${DISPLAY_NAME}` })).toBeVisible();
@@ -30,13 +30,13 @@ test("a visitor lands on /welcome, goes on to /login, signs in, and lands on the
 test("a wrong passphrase shows one generic error and stays on /login", async ({ page }) => {
   await page.goto("/login");
 
-  await page.getByLabel("Username").fill(USERNAME);
-  await page.getByLabel("Passphrase", { exact: true }).fill("not the right passphrase");
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Email or username").fill(USERNAME);
+  await page.getByLabel("Password", { exact: true }).fill("not the right passphrase");
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
 
   // Next's route announcer is also role="alert", so match on the message.
   await expect(
-    page.getByRole("alert").filter({ hasText: "That username and passphrase do not match." }),
+    page.getByRole("alert").filter({ hasText: "That email or username and password do not match." }),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
 });
@@ -44,9 +44,9 @@ test("a wrong passphrase shows one generic error and stays on /login", async ({ 
 test("the session survives a reload and ends on log out", async ({ page }) => {
   // its own account: logging out revokes every session of that user (D-49)
   await page.goto("/login");
-  await page.getByLabel("Username").fill(`e2e-${test.info().project.name}-logout`);
-  await page.getByLabel("Passphrase", { exact: true }).fill(PASSPHRASE);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Email or username").fill(`e2e-${test.info().project.name}-logout`);
+  await page.getByLabel("Password", { exact: true }).fill(PASSPHRASE);
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: `Hi, ${DISPLAY_NAME}` })).toBeVisible();
 
   await page.reload();
@@ -59,4 +59,22 @@ test("the session survives a reload and ends on log out", async ({ page }) => {
 
   await page.goto("/");
   await expect(page).toHaveURL(/\/welcome$/);
+});
+
+test("a new student creates an account from the welcome page and lands in onboarding", async ({
+  page,
+}) => {
+  // unique per run: the e2e server keeps its accounts until it restarts
+  const email = `new-${test.info().project.name}-${Date.now()}@example.com`;
+  await page.goto("/welcome");
+  await page.getByRole("link", { name: /create your account/i }).click();
+  await expect(page).toHaveURL(/\/login#signup$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Create your account" })).toBeVisible();
+
+  await page.getByLabel("Your name").fill("Nur");
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(PASSPHRASE);
+  await page.locator("form").getByRole("button", { name: "Create account" }).click();
+
+  await expect(page.getByRole("region", { name: "Getting to know PaySense" })).toBeVisible();
 });

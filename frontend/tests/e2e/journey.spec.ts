@@ -26,12 +26,12 @@ function watchForCspViolations(page: Page): string[] {
 async function signIn(page: Page, journey: string) {
   await page.goto("/login");
   await page
-    .getByLabel("Username")
+    .getByLabel("Email or username")
     .fill(`e2e-${test.info().project.name}-${journey}`);
   await page
-    .getByLabel("Passphrase", { exact: true })
+    .getByLabel("Password", { exact: true })
     .fill("correct horse battery staple");
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: /hi, e2e tester/i }),
   ).toBeVisible();
@@ -94,9 +94,9 @@ test("a visitor without a session is sent to the welcome page, then on to log in
 }) => {
   await page.goto("/plans");
   await expect(page).toHaveURL(/\/welcome/);
-  await page.getByRole("link", { name: "Log in" }).click();
+  await page.getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login/);
-  await expect(page.getByLabel("Username")).toBeVisible();
+  await expect(page.getByLabel("Email or username")).toBeVisible();
 });
 
 test("a tester checks a purchase, tries the suggestion, adds the plan and reads the saved report", async ({

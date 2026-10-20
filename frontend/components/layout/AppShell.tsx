@@ -231,7 +231,8 @@ function Profile({
             {user.display_name}
           </p>
           <p className={`truncate text-[12px] ${dark ? "text-on-accent-muted" : "text-ink-muted"}`}>
-            {user.username}
+            {/* email and Google accounts have a generated username; show what the person knows */}
+            {user.email ?? user.username}
           </p>
         </div>
       </div>

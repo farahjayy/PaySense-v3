@@ -236,7 +236,9 @@
   fill: var(--lg-rosy);
   transform-box: fill-box;
   transform-origin: center;
-  animation: wl-pop 0.4s ease-out 1.4s both, wl-pulse 2.4s ease-in-out 2s infinite;
+  animation:
+    wl-pop 0.4s ease-out 1.4s both,
+    wl-pulse 2.4s ease-in-out 2s infinite;
 }
 .login-theme .wl-faces {
   position: absolute;
@@ -316,6 +318,27 @@
   color: var(--lg-ink-2);
 }
 
+.login-theme .wl-copy {
+  margin: 0;
+  max-width: 44rem;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--lg-ink-2);
+}
+.login-theme .wl-step .wl-answer {
+  margin-top: 14px;
+}
+.login-theme .wl-control {
+  display: grid;
+  gap: 10px;
+  max-width: 44rem;
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  color: var(--lg-ink-2);
+}
+
 .login-theme .wl-ready {
   position: relative;
   isolation: isolate;
@@ -382,5 +405,11 @@
     animation: wl-rise linear both;
     animation-timeline: view();
     animation-range: entry 0% entry 60%;
+  }
+}
+/* the global rule shortens durations, but a scroll-driven reveal follows the scroll, not time */
+@media (prefers-reduced-motion: reduce) {
+  .login-theme .wl-reveal {
+    animation: none !important;
   }
 }

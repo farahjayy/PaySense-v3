@@ -11,9 +11,9 @@ test("onboarding and the tour open on a first visit, can be skipped, stay away, 
   page,
 }) => {
   await page.goto("/login");
-  await page.getByLabel("Username").fill(USERNAME);
-  await page.getByLabel("Passphrase", { exact: true }).fill(PASSPHRASE);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Email or username").fill(USERNAME);
+  await page.getByLabel("Password", { exact: true }).fill(PASSPHRASE);
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
 
   const onboarding = page.getByRole("region", { name: "Getting to know PaySense" });
   await expect(onboarding).toBeVisible();

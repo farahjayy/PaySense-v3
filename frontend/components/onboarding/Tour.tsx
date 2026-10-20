@@ -21,9 +21,15 @@ const STOPS: readonly Stop[] = [
     text: "Bring in a bank or e-wallet statement. You review it before anything is saved.",
   },
   {
+    target: "transactions",
+    title: "Everything you've spent",
+    text: "Your imported and added transactions, with categories you can fix. The forecast learns from these.",
+  },
+  {
     target: "risk",
     title: "Check before you split",
-    text: "Describe a pay-later buy and see whether it fits, before you commit.",
+    // Plans has no stop of its own: on a phone it sits under More, where the tour cannot point.
+    text: "Describe a pay-later buy and see whether it fits, before you commit. If you go ahead, save it as a plan and PaySense tracks each instalment.",
   },
   {
     target: "ask",

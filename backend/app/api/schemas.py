@@ -54,8 +54,17 @@ class HealthOut(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    username: str = Field(min_length=1, max_length=64)
+    # a username, or the email of an email account (D-73)
+    username: str = Field(min_length=1, max_length=320)
     passphrase: str = Field(min_length=1, max_length=128)
+
+
+class SignupRequest(BaseModel):
+    """Checked in the route, not here, so each failure gets its own code and message."""
+
+    email: str = Field(min_length=1, max_length=320)
+    password: str = Field(min_length=1, max_length=128)
+    display_name: str = Field(min_length=1, max_length=100)
 
 
 class UserOut(BaseModel):
@@ -65,6 +74,7 @@ class UserOut(BaseModel):
     username: str
     display_name: str
     persona: Persona | None = None
+    email: str | None = None  # set for email and Google accounts
 
 
 class LoginResponse(BaseModel):

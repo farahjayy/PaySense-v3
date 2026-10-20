@@ -74,6 +74,37 @@ def create_google(db: Database, *, sub: str, email: str, display_name: str) -> d
         raise
 
 
+# Deliberately loose: one "@", no spaces, a dot in the domain. Ownership is not verified (D-73).
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def normalise_email(raw: str) -> str | None:
+    """Trimmed, lower-cased email if it is well-formed, else None. Never raises on hostile input."""
+    candidate = raw.strip().lower() if isinstance(raw, str) else ""
+    return candidate if len(candidate) <= 320 and EMAIL_PATTERN.fullmatch(candidate) else None
+
+
+def email_username(email: str) -> str:
+    """The username of an email account (D-73): valid under USERNAME_PATTERN, so the existing
+    case-insensitive unique index allows one account per email, and no migration is needed."""
+    return "e-" + hashlib.sha256(email.encode()).hexdigest()[:16]
+
+
+def create_with_email(
+    db: Database, *, email: str, display_name: str, password: str
+) -> dict[str, Any]:
+    """A user who signs up with an email and a password. `email` must already be normalised.
+    Raises ValueError for a weak password and UsernameTakenError when the email is in use."""
+    row = {"username": email_username(email), "display_name": display_name.strip()[:100],
+           "email": email, "passphrase_hash": hash_passphrase(password)}  # fmt: skip
+    try:
+        return db.table("users").insert(row).execute().data[0]
+    except APIError as err:
+        if err.code == UNIQUE_VIOLATION:
+            raise UsernameTakenError(row["username"]) from err
+        raise
+
+
 def update_google_profile(db: Database, user_id: str, *, email: str) -> None:
     """Google's email for the account can change; the display name stays the user's own."""
     db.table("users").update({"email": email}).eq("id", require_user_id(user_id)).execute()

@@ -14,6 +14,7 @@ from app.main import create_app
 NOT_WRITES = {
     ("post", "/api/auth/login"),
     ("post", "/api/auth/google/exchange"),  # a sign-in, like login (ADR D-69)
+    ("post", "/api/auth/signup"),  # no user yet; limited per address like login (D-73)
     ("post", "/api/auth/logout"),
     ("post", "/api/risk/check"),
     ("post", "/api/risk/schedule"),  # stateless, like the check (D-57)

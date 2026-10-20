@@ -18,6 +18,8 @@ const SessionSchema = z.object({
     // A plain string: the allowed values belong to the backend, and a value this build does not
     // know about must not silently invalidate a valid login.
     persona: z.string().nullable(),
+    // optional: sessions saved before email accounts existed (D-73) have no such field
+    email: z.string().nullable().optional(),
   }),
 });
 

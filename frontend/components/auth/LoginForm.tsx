@@ -9,20 +9,70 @@ import { saveSession, useAuth } from "@/lib/session";
 
 import { ArrowIcon, EyeIcon, EyeOffIcon } from "./LoginArt";
 
-// Who a tester messages when they have lost their username.
-const SUPPORT_CONTACT = "Farah";
+export type AuthMode = "signin" | "signup";
 
-export function LoginForm() {
+// The server's rule (app/core/passphrase.py, D-49); checked here only to say so before submitting.
+const MIN_PASSWORD = 12;
+
+type FieldProps = {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  describedBy: string;
+  invalid: boolean;
+  readOnly: boolean;
+  type?: string;
+  autoComplete: string;
+  maxLength: number;
+  placeholder?: string;
+};
+
+function Field({
+  id,
+  label,
+  onChange,
+  describedBy,
+  invalid,
+  type = "text",
+  ...input
+}: FieldProps) {
+  return (
+    <>
+      <label htmlFor={id} className="lg-label">
+        {label}
+      </label>
+      <div className={invalid ? "lg-field lg-field-error" : "lg-field"}>
+        <input
+          id={id}
+          className="lg-input"
+          type={type}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          onChange={(event) => onChange(event.target.value)}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
+          // read-only, not disabled: a disabled input drops keyboard focus to <body>.
+          {...input}
+        />
+      </div>
+    </>
+  );
+}
+
+/** Sign in with an email (or a seeded username) and a password, or create an email account. */
+export function LoginForm({ mode = "signin" }: { mode?: AuthMode }) {
   const router = useRouter();
   const auth = useAuth();
-  const inputId = useId();
-  const hintId = `${inputId}-hint`;
-  const errorId = `${inputId}-error`;
-  const passphraseId = `${inputId}-passphrase`;
-  const [username, setUsername] = useState("");
-  const [passphrase, setPassphrase] = useState("");
-  const [isHidden, setIsHidden] = useState(false);
-  const [showPassphrase, setShowPassphrase] = useState(false);
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const signup = mode === "signup";
+  const [name, setName] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +80,17 @@ export function LoginForm() {
     if (auth.status === "authenticated") router.replace("/");
   }, [auth.status, router]);
 
-  const trimmed = username.trim();
-  const ready = trimmed !== "" && passphrase !== "";
+  const trimmed = identifier.trim();
+  const ready = signup
+    ? name.trim() !== "" &&
+      trimmed !== "" &&
+      password.trim().length >= MIN_PASSWORD
+    : trimmed !== "" && password !== "";
+  const describedBy = error ? `${hintId} ${errorId}` : hintId;
+  const edit = (set: (value: string) => void) => (value: string) => {
+    set(value);
+    if (error) setError(null);
+  };
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,10 +98,14 @@ export function LoginForm() {
     setIsPending(true);
     setError(null);
     try {
-      const { data, error: apiError } = await api.POST("/api/auth/login", {
-        // the passphrase is sent exactly as typed: spaces can be part of it
-        body: { username: trimmed, passphrase },
-      });
+      // the password is sent exactly as typed: spaces can be part of it
+      const { data, error: apiError } = signup
+        ? await api.POST("/api/auth/signup", {
+            body: { email: trimmed, password, display_name: name.trim() },
+          })
+        : await api.POST("/api/auth/login", {
+            body: { username: trimmed, passphrase: password },
+          });
       if (!data) {
         setError(errorMessage(apiError));
         return;
@@ -62,80 +125,71 @@ export function LoginForm() {
     }
   }
 
+  const common = { describedBy, invalid: !!error, readOnly: isPending };
   return (
-    <form onSubmit={handleSubmit} className="lg-form" noValidate aria-busy={isPending}>
-      <label htmlFor={inputId} className="lg-label">
-        Username
-      </label>
-      <div className={error ? "lg-field lg-field-error" : "lg-field"}>
-        <input
-          id={inputId}
-          className="lg-input"
-          name="username"
-          type={isHidden ? "password" : "text"}
-          autoComplete="username"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          maxLength={64}
-          placeholder="e.g. amir"
-          value={username}
-          onChange={(event) => {
-            setUsername(event.target.value);
-            if (error) setError(null);
-          }}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${hintId} ${errorId}` : hintId}
-          // read-only, not disabled: a disabled input drops keyboard focus to <body>.
-          readOnly={isPending}
+    <form
+      onSubmit={handleSubmit}
+      className="lg-form"
+      noValidate
+      aria-busy={isPending}
+    >
+      {signup && (
+        <Field
+          id={`${id}-name`}
+          label="Your name"
+          value={name}
+          onChange={edit(setName)}
+          autoComplete="name"
+          maxLength={100}
+          placeholder="e.g. Aina"
+          {...common}
         />
-        {/* A tester can hide the username before a screenshot. */}
-        <button
-          type="button"
-          className="lg-eye"
-          aria-label="Hide text"
-          aria-pressed={isHidden}
-          onClick={() => setIsHidden((hidden) => !hidden)}
-        >
-          {isHidden ? <EyeOffIcon /> : <EyeIcon />}
-        </button>
-      </div>
-      <label htmlFor={passphraseId} className="lg-label">
-        Passphrase
+      )}
+      <Field
+        id={`${id}-identifier`}
+        label={signup ? "Email" : "Email or username"}
+        type={signup ? "email" : "text"}
+        value={identifier}
+        onChange={edit(setIdentifier)}
+        autoComplete={signup ? "email" : "username"}
+        maxLength={320}
+        placeholder="you@example.com"
+        {...common}
+      />
+      <label htmlFor={`${id}-password`} className="lg-label">
+        Password
       </label>
       <div className={error ? "lg-field lg-field-error" : "lg-field"}>
         <input
-          id={passphraseId}
+          id={`${id}-password`}
           className="lg-input"
-          name="passphrase"
-          type={showPassphrase ? "text" : "password"}
-          autoComplete="current-password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          autoComplete={signup ? "new-password" : "current-password"}
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
           maxLength={128}
-          value={passphrase}
-          onChange={(event) => {
-            setPassphrase(event.target.value);
-            if (error) setError(null);
-          }}
+          value={password}
+          onChange={(event) => edit(setPassword)(event.target.value)}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${hintId} ${errorId}` : hintId}
+          aria-describedby={describedBy}
           readOnly={isPending}
         />
         <button
           type="button"
           className="lg-eye"
-          aria-label="Show passphrase"
-          aria-pressed={showPassphrase}
-          onClick={() => setShowPassphrase((shown) => !shown)}
+          aria-label="Show password"
+          aria-pressed={showPassword}
+          onClick={() => setShowPassword((shown) => !shown)}
         >
-          {showPassphrase ? <EyeOffIcon /> : <EyeIcon />}
+          {showPassword ? <EyeOffIcon /> : <EyeIcon />}
         </button>
       </div>
       <p id={hintId} className="lg-hint">
-        Use the username and passphrase from your invite. Lost them? Message{" "}
-        <strong>{SUPPORT_CONTACT}</strong>.
+        {signup
+          ? `At least ${MIN_PASSWORD} characters. A short sentence is easy to remember.`
+          : "Have an invite from the team? Enter its username here."}
       </p>
       {error && (
         <p id={errorId} role="alert" className="lg-error">
@@ -143,7 +197,15 @@ export function LoginForm() {
         </p>
       )}
       <button type="submit" className="lg-go" disabled={!ready || isPending}>
-        <span>{isPending ? "Signing in…" : "Continue"}</span>
+        <span>
+          {isPending
+            ? signup
+              ? "Creating your account…"
+              : "Signing in…"
+            : signup
+              ? "Create account"
+              : "Sign in"}
+        </span>
         <ArrowIcon />
       </button>
     </form>

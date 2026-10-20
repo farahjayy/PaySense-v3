@@ -81,6 +81,7 @@ def current_user(
         username=row["username"],
         display_name=row["display_name"],
         persona=row.get("persona"),
+        email=row.get("email"),
     )
 
 

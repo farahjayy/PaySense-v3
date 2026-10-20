@@ -78,7 +78,7 @@ The **Security drill** page (`/security`, `POST /api/security/drill`) runs 14 at
 
 ## 5. Known risks (kept honest)
 
-1. **No second factor.** A student signs in with Google (verified email; D-69) or, for the seeded test and judge accounts, a username + passphrase; there is no passphrase reset or 2FA app. Seeded passphrases must be delivered privately.
+1. **No second factor.** A student signs in with Google (verified email; D-69) or with an email and a password they set at sign-up (D-73; the email's ownership is **not** verified, so anyone can register an address they do not own), and the seeded test and judge accounts use a username + passphrase; there is no password reset or 2FA app. Seeded passphrases must be delivered privately.
 2. **Spread-out guessing against one username** from many addresses is limited only per address (ASSUMED 31), chosen so that a stranger cannot lock the owner out; seeded passphrases are 144 random bits.
 3. **In-memory rate limiters and the daily write quota reset on restart** and are per process (run one worker). The token budgets are in the database and survive restarts.
 4. **`style-src 'unsafe-inline'`** remains for inline style attributes (progress bars, charts); scripts are nonce-only.

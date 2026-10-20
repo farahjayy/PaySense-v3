@@ -1,7 +1,7 @@
 import ipaddress
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, status
 
 from app.api.deps import (
     CurrentUser,
@@ -11,8 +11,8 @@ from app.api.deps import (
     get_username_limiter,
 )
 from app.api.rate_limit import LoginRateLimiter
-from app.api.schemas import ERROR_RESPONSES, LoginRequest, LoginResponse, UserOut
-from app.core.errors import api_error, unauthorized
+from app.api.schemas import ERROR_RESPONSES, LoginRequest, LoginResponse, SignupRequest, UserOut
+from app.core.errors import api_error, conflict, unauthorized
 from app.core.passphrase import verify_passphrase
 from app.core.security import create_access_token
 from app.core.settings import Settings
@@ -24,7 +24,7 @@ LimiterDep = Annotated[LoginRateLimiter, Depends(get_login_limiter)]
 UsernameLimiterDep = Annotated[LoginRateLimiter, Depends(get_username_limiter)]
 # One answer for every failure (unknown user, wrong passphrase, no passphrase set), so the login
 # form cannot be used to find out which usernames exist (ADR D-49).
-_INVALID = ("invalid_credentials", "That username and passphrase do not match.")
+_INVALID = ("invalid_credentials", "That email or username and password do not match.")
 
 
 def client_key(request: Request) -> str:
@@ -69,13 +69,51 @@ def login(
     if not username_limiter.attempt(name_key):
         limiter.forgive(key)
         raise _too_many(username_limiter)
-    row = users.get_by_username(db, body.username)
+    # an email signs in to the account created with it (D-73); anything else is a username
+    email = users.normalise_email(body.username)
+    row = users.get_by_username(db, users.email_username(email) if email else body.username)
     # verify even when there is no such user: the time taken must not say whether it exists
     matched = verify_passphrase(row.get("passphrase_hash") if row else None, body.passphrase)
     if row is None or not matched:
         raise unauthorized(*_INVALID)  # the attempt is already counted
     limiter.forgive(key)
     username_limiter.forgive(name_key)
+    return session_for(row, settings)
+
+
+@router.post("/signup", response_model=LoginResponse, status_code=status.HTTP_201_CREATED)
+def signup(
+    body: SignupRequest,
+    request: Request,
+    db: DbDep,
+    settings: SettingsDep,
+    limiter: LimiterDep,
+) -> LoginResponse:
+    """Create an account with an email and a password, and sign in to it (D-73)."""
+    key = client_key(request)
+    # every sign-up counts and none is forgiven: one address cannot mint accounts in bulk
+    if not limiter.attempt(key):
+        raise _too_many(limiter)
+    email = users.normalise_email(body.email)
+    if email is None:
+        raise api_error(422, "invalid_email", "Enter a valid email address.")
+    if not body.display_name.strip():
+        raise api_error(422, "invalid_name", "Enter your name.")
+    try:
+        row = users.create_with_email(
+            db, email=email, display_name=body.display_name, password=body.password
+        )
+    except ValueError as err:
+        message = f"Your password {str(err).removeprefix('a passphrase ')}."
+        raise api_error(422, "weak_password", message) from err
+    except users.UsernameTakenError as err:
+        raise conflict(
+            "email_taken", "An account with that email already exists. Sign in instead."
+        ) from err
+    auth_events.record(
+        db, "signup", user_id=row["id"], email=email, ip=key,
+        user_agent=request.headers.get("user-agent"),
+    )  # fmt: skip
     return session_for(row, settings)
 
 
@@ -90,6 +128,7 @@ def session_for(row: dict, settings: Settings) -> LoginResponse:
             username=row["username"],
             display_name=row["display_name"],
             persona=row.get("persona"),
+            email=row.get("email"),
         ),
     )
 
