@@ -163,7 +163,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs all of the abov
 
 ## Deployment
 
-The API runs on Render from `render.yaml` (Docker, `backend/Dockerfile`), the frontend on Vercel. Nothing deploys on push: after the first setup, each side is deployed by hand from Actions → **Deploy API (Render)** ([`deploy-api.yml`](.github/workflows/deploy-api.yml)) or **Deploy app (Vercel)** ([`deploy-web.yml`](.github/workflows/deploy-web.yml)), only on `main` once CI has passed on that commit. Steps, variables and the smoke test: [`docs/deployment.md`](docs/deployment.md).
+The API runs on Render from `render.yaml` (native Python, server packages only), the frontend on Vercel. Nothing deploys on push: after the first setup, each side is deployed by hand from Actions → **Deploy API (Render)** ([`deploy-api.yml`](.github/workflows/deploy-api.yml)) or **Deploy app (Vercel)** ([`deploy-web.yml`](.github/workflows/deploy-web.yml)), only on `main` once CI has passed on that commit. Steps, variables and the smoke test: [`docs/deployment.md`](docs/deployment.md).
 
 ## Security
 

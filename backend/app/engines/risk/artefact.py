@@ -82,7 +82,7 @@ def text_sha256s(path: Path) -> set[str]:
     """Digests of a text file as checked out with LF and with CRLF line endings.
 
     Git converts line endings on checkout, so a model trained on Windows records the CRLF digest
-    and a Linux image holds the LF file. The settings are the same either way.
+    and a Linux checkout (the Render build) holds the LF file. The settings are the same either way.
     """
     lf = path.read_bytes().replace(b"\r\n", b"\n")
     return {hashlib.sha256(lf).hexdigest(), hashlib.sha256(lf.replace(b"\n", b"\r\n")).hexdigest()}

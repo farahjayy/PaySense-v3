@@ -34,7 +34,7 @@ jobs:
       - run: uv run pytest -q --cov=app --cov-report=term
 
   backend-runtime:
-    name: Backend tests without the ML stack (what the server image runs)
+    name: Backend tests without the ML stack (what Render runs)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:

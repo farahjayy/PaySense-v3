@@ -1,7 +1,7 @@
 """D-52: text artefacts that are digested must be checked out with LF on every platform.
 
 The loaders tolerate CRLF for the files they hash as text, but the pre-registered reports and the
-Docker image are built from LF. Pinning the end-of-line in `.gitattributes` removes the platform
+Render build are made from LF. Pinning the end-of-line in `.gitattributes` removes the platform
 difference instead of relying on each loader to forgive it.
 """
 

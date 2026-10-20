@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 5
     environment: production
     steps:
-      # The hook starts the deploy and returns; Render builds backend/Dockerfile itself.
+      # The hook starts the deploy and returns; Render runs the build in render.yaml itself.
       # ponytail: no wait for the new version; poll Render's API for the deploy status before
       # running "Deploy app" if the app ever depends on an API change landing first.
       - name: Trigger the Render deploy of this commit

@@ -5,11 +5,19 @@
 services:
   - type: web
     name: paysense-v3-api # not "paysense-api": that name belongs to the v2 (FYP) service
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    runtime: python # Render's native Python; version from backend/.python-version
+    rootDir: backend
+    # Server packages only: the ml group (torch, prophet, the tree libraries) is for training.
+    buildCommand: pip install uv && uv sync --frozen --no-default-groups
+    # One worker: the login rate limiter keeps its state in the process. FORWARDED_ALLOW_IPS has no
+    # default: unset, every client would share the proxy's limiter bucket, so the start fails instead.
+    # --limit-concurrency sheds load with a 503 instead of exhausting memory.
+    startCommand: >-
+      .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers
+      --forwarded-allow-ips "${FORWARDED_ALLOW_IPS:?set FORWARDED_ALLOW_IPS to the proxy address range}"
+      --limit-concurrency 40 --timeout-keep-alive 5
     region: singapore # next to the Supabase project (Singapore)
-    plan: free # 512 MB; the served stack measured about 112 MB (see the guide)
+    plan: free # 512 MB; the served stack measured about 150 MB (see the guide)
     healthCheckPath: /api/health
     autoDeploy: false # deploys happen when the author chooses
     envVars:
