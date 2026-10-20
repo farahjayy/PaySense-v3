@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { BandFace, BrandMark, type BandKey } from "./LoginArt";
 
 // Same names as the app's result bands (lib/format.ts), in the order the app lists them.
@@ -19,12 +21,12 @@ export function LoginPanel() {
       <div className="lg-blob lg-blob-a" aria-hidden="true" />
       <div className="lg-blob lg-blob-b" aria-hidden="true" />
 
-      <div className="lg-brand">
+      <Link href="/welcome" className="lg-brand">
         <BrandMark />
         <span className="lg-brand-name">
           Pay<span>Sense</span>
         </span>
-      </div>
+      </Link>
 
       <div className="lg-pitch">
         <h2>

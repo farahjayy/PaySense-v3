@@ -2,7 +2,6 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ConsentGate } from "@/components/account/ConsentNotice";
 import { AlertStrip } from "@/components/dashboard/AlertStrip";
 import { AccountScreen } from "@/components/screens/AccountScreen";
 
@@ -18,50 +17,6 @@ vi.mock("@/lib/api/client", () => ({
     PUT: (...a: unknown[]) => put(...a),
   },
 }));
-
-describe("first-login consent", () => {
-  beforeEach(() => {
-    get.mockReset();
-    post.mockReset();
-  });
-
-  it("shows the notice instead of the app until it is accepted", async () => {
-    get.mockResolvedValue(ok(CONSENT));
-    post.mockResolvedValue(ok({ ...CONSENT, accepted: true, accepted_at: "2026-10-18T10:00:00Z" }));
-    render(
-      <ConsentGate>
-        <p>the app</p>
-      </ConsentGate>,
-      { wrapper },
-    );
-    expect(await screen.findByRole("heading", { name: "Before you start" })).toBeInTheDocument();
-    expect(screen.getByText(/Google \(Gemini API\)/)).toBeInTheDocument();
-    expect(screen.queryByText("the app")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: /i understand/i }));
-    expect(post).toHaveBeenCalledWith("/api/account/consent", { body: { version: "v1" } });
-    expect(await screen.findByText("the app")).toBeInTheDocument();
-  });
-
-  it("opens the app straight away once accepted, or if the notice cannot load", async () => {
-    get.mockResolvedValue(ok({ ...CONSENT, accepted: true }));
-    const { unmount } = render(
-      <ConsentGate>
-        <p>the app</p>
-      </ConsentGate>,
-      { wrapper },
-    );
-    expect(await screen.findByText("the app")).toBeInTheDocument();
-    unmount();
-    get.mockResolvedValue(fail(500, "internal_error", "Nope"));
-    render(
-      <ConsentGate>
-        <p>the app</p>
-      </ConsentGate>,
-      { wrapper },
-    );
-    expect(await screen.findByText("the app")).toBeInTheDocument();
-  });
-});
 
 describe("AccountScreen", () => {
   beforeEach(() => {

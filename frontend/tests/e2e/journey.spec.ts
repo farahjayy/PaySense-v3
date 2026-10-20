@@ -24,8 +24,7 @@ function watchForCspViolations(page: Page): string[] {
 
 /** Each browser project signs in as its own seeded tester, so parallel runs keep separate ledgers. */
 async function signIn(page: Page, journey: string) {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/login/);
+  await page.goto("/login");
   await page
     .getByLabel("Username")
     .fill(`e2e-${test.info().project.name}-${journey}`);
@@ -90,10 +89,12 @@ test("every screen loads for a signed-in tester with its own title", async ({
   expect(violations).toEqual([]);
 });
 
-test("a visitor without a session is sent to the login page", async ({
+test("a visitor without a session is sent to the welcome page, then on to log in", async ({
   page,
 }) => {
   await page.goto("/plans");
+  await expect(page).toHaveURL(/\/welcome/);
+  await page.getByRole("link", { name: "Log in" }).click();
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByLabel("Username")).toBeVisible();
 });

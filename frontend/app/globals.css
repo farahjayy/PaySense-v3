@@ -65,7 +65,7 @@ body {
   }
 }
 
-/* The intro tour's entrances (components/onboarding/IntroTour.tsx): each plays once per slide. */
+/* Onboarding's picture entrances (components/onboarding/Onboarding.tsx): each plays once per step. */
 @keyframes intro-draw {
   to {
     stroke-dashoffset: 0;
@@ -97,4 +97,64 @@ body {
 .intro-pop {
   display: inline-block;
   animation: intro-pop 0.4s ease-out both;
+}
+
+/* Onboarding steps slide in from the side they came from; the picture card floats gently. */
+@keyframes ob-in-next {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes ob-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes ob-float {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.ob-in-next {
+  animation: ob-in-next 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.ob-in-back {
+  animation: ob-in-back 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.ob-float {
+  animation: ob-float 5s ease-in-out 0.6s infinite;
+}
+/* The login panel's rings, behind the onboarding picture. */
+.ob-ring {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  translate: 45% 45%;
+  border: 1.5px solid rgb(247 244 213 / 0.14);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Each app page fades up as it arrives (app/(app)/template.tsx remounts on navigation). */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.page-enter {
+  animation: page-enter 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Tooltips appear after a short pause, so sweeping down the sidebar does not flash every one. */
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+.tip {
+  animation: tip-in 0.18s ease-out 0.25s both;
 }

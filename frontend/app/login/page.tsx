@@ -10,10 +10,10 @@ export const metadata: Metadata = { title: "Log in" };
 
 export default function LoginPage() {
   // With Google sign-in on (D-69) it is the main way in; the passphrase form stays for the
-  // seeded test and judge accounts, folded away. The pitch panel has nothing to tab to.
+  // seeded test and judge accounts, folded away. The pitch panel's one link goes back to /welcome.
   const google = process.env.NEXT_PUBLIC_GOOGLE_SIGNIN === "true";
   return (
-    <main className="lg-shell">
+    <main className="lg-shell page-enter">
       <LoginPanel />
       <div className="lg-stage">
         <section className="lg-card">

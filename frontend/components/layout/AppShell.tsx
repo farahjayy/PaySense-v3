@@ -17,6 +17,7 @@ import {
 import { BrandMark } from "@/components/auth/LoginArt";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { isActive } from "@/lib/nav";
 import { api } from "@/lib/api/client";
 import { AssistantLauncher } from "@/lib/assistantLauncher";
@@ -28,12 +29,13 @@ import { clearSession, type Session } from "@/lib/session";
 const AssistantPanel = lazy(() =>
   import("@/components/assistant/AssistantPanel").then((m) => ({ default: m.AssistantPanel })),
 );
-// The intro tour is shown once per browser, so its code loads only when it opens.
-const IntroTour = lazy(() =>
-  import("@/components/onboarding/IntroTour").then((m) => ({ default: m.IntroTour })),
+// The intro replays only when asked for from the profile, so its code loads then.
+const Onboarding = lazy(() =>
+  import("@/components/onboarding/Onboarding").then((m) => ({ default: m.Onboarding })),
 );
 
-type NavItem = { href: string; label: string; icon: string };
+/** `hint` is the sidebar tooltip: what the page is for, in a line. */
+type NavItem = { href: string; label: string; icon: string; hint: string };
 
 /**
  * A navigation link that loads its page only when it is about to be used. Next's default would
@@ -52,32 +54,65 @@ const NAV_GROUPS: readonly NavGroup[] = [
   {
     label: "Overview",
     items: [
-      { href: "/", label: "Dashboard", icon: "◫" },
-      { href: "/insights", label: "Insights", icon: "✦" },
+      {
+        href: "/", label: "Dashboard", icon: "◫",
+        hint: "Where your money is heading, what you owe, and what to do next",
+      },
+      {
+        href: "/insights", label: "Insights", icon: "✦",
+        hint: "How your spending moved, with where every figure came from",
+      },
     ],
   },
   {
     label: "Your money",
     items: [
-      { href: "/transactions", label: "Transactions", icon: "≡" },
-      { href: "/categories", label: "Categories", icon: "#" },
-      { href: "/budgets", label: "Budgets", icon: "◎" },
-      { href: "/recurring", label: "Recurring", icon: "↻" },
-      { href: "/import", label: "Import", icon: "⇪" },
+      {
+        href: "/transactions", label: "Transactions", icon: "≡",
+        hint: "Everything you have logged or imported, a month at a time",
+      },
+      {
+        href: "/categories", label: "Categories", icon: "#",
+        hint: "The labels on your transactions, and your own",
+      },
+      {
+        href: "/budgets", label: "Budgets", icon: "◎",
+        hint: "Set a monthly spending limit per category and track it",
+      },
+      {
+        href: "/recurring", label: "Recurring", icon: "↻",
+        hint: "Rent, allowance, PTPTN and subscriptions on a schedule",
+      },
+      {
+        href: "/import", label: "Import", icon: "⇪",
+        hint: "Bring in a bank or e-wallet statement, or a spreadsheet",
+      },
     ],
   },
   {
     label: "Buy now, pay later",
     items: [
-      { href: "/risk", label: "Risk check", icon: "◔" },
-      { href: "/plans", label: "Plans", icon: "▤" },
+      {
+        href: "/risk", label: "Risk check", icon: "◔",
+        hint: "See if a buy-now-pay-later purchase fits before you commit",
+      },
+      {
+        href: "/plans", label: "Plans", icon: "▤",
+        hint: "The instalment plans you have committed to, and what is left",
+      },
     ],
   },
   {
     label: "How it works",
     items: [
-      { href: "/model", label: "About the model", icon: "ⓘ" },
-      { href: "/security", label: "Security drill", icon: "⛨" },
+      {
+        href: "/model", label: "About the model", icon: "ⓘ",
+        hint: "How the forecast, risk check and assistant work, and their limits",
+      },
+      {
+        href: "/security", label: "Security drill", icon: "⛨",
+        hint: "Attack the assistant on purpose and see what the defences stop",
+      },
     ],
   },
 ];
@@ -128,17 +163,23 @@ function NavGroups({
               const active = isActive(pathname, item.href);
               return (
                 <li key={item.href}>
-                  <NavLink
-                    href={item.href}
-                    onClick={onNavigate}
-                    aria-current={active ? "page" : undefined}
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[14px] font-medium transition-colors ${TONE[tone].link(active)}`}
-                  >
-                    <span aria-hidden className="w-4 text-center text-sm">
-                      {item.icon}
-                    </span>
-                    {item.label}
-                  </NavLink>
+                  {/* Hover hints only beside the sidebar: the phone menu has no hover. */}
+                  <Tooltip text={tone === "dark" ? item.hint : ""}>
+                    {(describedBy) => (
+                      <NavLink
+                        href={item.href}
+                        onClick={onNavigate}
+                        aria-current={active ? "page" : undefined}
+                        aria-describedby={describedBy}
+                        className={`flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[14px] font-medium transition-[background-color,color,translate] duration-200 ${active ? "" : "hover:translate-x-0.5"} ${TONE[tone].link(active)}`}
+                      >
+                        <span aria-hidden className="w-4 text-center text-sm">
+                          {item.icon}
+                        </span>
+                        {item.label}
+                      </NavLink>
+                    )}
+                  </Tooltip>
                 </li>
               );
             })}
@@ -369,61 +410,64 @@ export function AppShell({ user, children }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
-      >
-        Skip to content
-      </a>
-      <Sidebar pathname={pathname} user={user} onLogout={handleLogout} onIntro={intro.show} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4 sm:px-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-display text-[17px] font-bold tracking-tight text-ink md:hidden"
-          >
-            <BrandMark className="h-7 w-7 shrink-0" />
-            <span>
-              Pay<span className="text-accent">Sense</span>
-            </span>
-          </Link>
-          <div className="ml-auto flex items-center gap-3">
-            <Button
-              ref={askButton}
-              variant="accent"
-              size="sm"
-              aria-expanded={assistantOpen}
-              onClick={() =>
-                assistantOpen ? closeAssistant() : setAssistantOpen(true)
-              }
-            >
-              Ask PaySense
-            </Button>
-          </div>
-        </header>
-        <main
-          id="main"
-          ref={main}
-          tabIndex={-1}
-          className="flex-1 px-4 py-6 pb-24 outline-none sm:px-6 md:pb-8"
+    <>
+      {/* While the intro replays over it, the app behind is inert: no focus, no clicks. */}
+      <div className="flex min-h-screen" inert={intro.open}>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
         >
-          <AssistantLauncher.Provider value={openAssistant}>
-            {children}
-          </AssistantLauncher.Provider>
-        </main>
+          Skip to content
+        </a>
+        <Sidebar pathname={pathname} user={user} onLogout={handleLogout} onIntro={intro.show} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4 sm:px-6">
+            <Link
+              href="/"
+              className="flex items-center gap-2 font-display text-[17px] font-bold tracking-tight text-ink md:hidden"
+            >
+              <BrandMark className="h-7 w-7 shrink-0" />
+              <span>
+                Pay<span className="text-accent">Sense</span>
+              </span>
+            </Link>
+            <div className="ml-auto flex items-center gap-3">
+              <Button
+                ref={askButton}
+                variant="accent"
+                size="sm"
+                aria-expanded={assistantOpen}
+                onClick={() =>
+                  assistantOpen ? closeAssistant() : setAssistantOpen(true)
+                }
+              >
+                Ask PaySense
+              </Button>
+            </div>
+          </header>
+          <main
+            id="main"
+            ref={main}
+            tabIndex={-1}
+            className="flex-1 px-4 py-6 pb-24 outline-none sm:px-6 md:pb-8"
+          >
+            <AssistantLauncher.Provider value={openAssistant}>
+              {children}
+            </AssistantLauncher.Provider>
+          </main>
+        </div>
+        <MobileNav pathname={pathname} user={user} onLogout={handleLogout} onIntro={intro.show} />
+        {assistantOpen && (
+          <Suspense fallback={null}>
+            <AssistantPanel onClose={closeAssistant} prompt={prompt} />
+          </Suspense>
+        )}
       </div>
-      <MobileNav pathname={pathname} user={user} onLogout={handleLogout} onIntro={intro.show} />
       {intro.open && (
         <Suspense fallback={null}>
-          <IntroTour onClose={intro.close} />
+          <Onboarding slides onDone={intro.close} onClose={intro.close} />
         </Suspense>
       )}
-      {assistantOpen && (
-        <Suspense fallback={null}>
-          <AssistantPanel onClose={closeAssistant} prompt={prompt} />
-        </Suspense>
-      )}
-    </div>
+    </>
   );
 }

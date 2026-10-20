@@ -6,8 +6,13 @@ const DISPLAY_NAME = process.env.PLAYWRIGHT_DISPLAY_NAME ?? "E2E Tester";
 // Every seeded browser-test account shares this passphrase (test tooling only, D-49).
 const PASSPHRASE = process.env.PLAYWRIGHT_PASSPHRASE ?? "correct horse battery staple";
 
-test("a visitor is sent to /login, signs in, and lands on the shell", async ({ page }) => {
+test("a visitor lands on /welcome, goes on to /login, signs in, and lands on the shell", async ({
+  page,
+}) => {
   await page.goto("/");
+  await expect(page).toHaveURL(/\/welcome$/);
+  await expect(page.getByRole("heading", { level: 1, name: /think before you split/i })).toBeVisible();
+  await page.getByRole("link", { name: "Get started" }).first().click();
   await expect(page).toHaveURL(/\/login$/);
 
   await page.getByLabel("Username").fill(USERNAME);

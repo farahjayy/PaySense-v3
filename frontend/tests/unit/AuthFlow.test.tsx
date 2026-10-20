@@ -38,14 +38,14 @@ describe("a real 401 travelling through client, middleware and AuthGate", () => 
     network.mockReset();
   });
 
-  it("clears the session and sends the visitor to /login", async () => {
+  it("clears the session and sends the visitor to /welcome", async () => {
     saveSession({ token: "stale", expiresAt: Date.now() + 60_000, user: USER });
     network.mockResolvedValue(json(401, { detail: { code: "invalid_token", message: "expired" } }));
     const { wrapper } = setup();
 
     render(<AuthGate>private</AuthGate>, { wrapper });
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/welcome"));
     expect(getSession()).toBeNull();
     expect(network.mock.calls[0][0].headers.get("authorization")).toBe("Bearer stale");
   });

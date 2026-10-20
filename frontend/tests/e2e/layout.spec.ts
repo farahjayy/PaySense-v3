@@ -41,8 +41,10 @@ for (const width of [360, 375]) {
   }) => {
     test.skip(test.info().project.name !== "phone", "phone widths only");
     await page.setViewportSize({ width, height: 780 });
-    await page.goto("/login");
-    expect(await overflow(page), "/login").toBeLessThanOrEqual(0);
+    for (const path of ["/welcome", "/login"]) {
+      await page.goto(path);
+      expect(await overflow(page), path).toBeLessThanOrEqual(0);
+    }
     await signIn(page);
     for (const path of SCREENS) {
       await page.goto(path);

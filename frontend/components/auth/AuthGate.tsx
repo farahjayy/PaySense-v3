@@ -11,7 +11,7 @@ type Props = { children: ReactNode };
 
 /**
  * Renders its children only for a signed-in visitor. A stored session is also confirmed with the
- * server once; if the server rejects it, the API client clears it and the visitor lands on /login.
+ * server once; if the server rejects it, the API client clears it and the visitor lands on /welcome.
  * Whenever the session ends, cached query data is dropped so the next user never sees it.
  */
 export function AuthGate({ children }: Props) {
@@ -34,7 +34,7 @@ export function AuthGate({ children }: Props) {
   useEffect(() => {
     if (auth.status === "anonymous") {
       queryClient.clear();
-      router.replace("/login");
+      router.replace("/welcome");
     }
   }, [auth.status, queryClient, router]);
 
