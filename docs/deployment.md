@@ -9,7 +9,7 @@
 | **The API runs with only its server packages, as Render runs it** | The `buildCommand` and `startCommand` from `render.yaml`, run locally in a fresh environment: `uv sync --frozen --no-default-groups` installs 181 MB with no torch; uvicorn started, loaded both models (start-up refuses any artefact mismatch), answered `/api/health` with `{"status":"ok"}`, and held **149 MiB** resident; without `FORWARDED_ALLOW_IPS` the start command refuses to run. The backend test suite also passes without the ML group (`uv run --no-group ml pytest --ignore=tests/ml`) |
 | The smoke script against a running API | `smoke_live.py`: the service answers, CORS allows the origin, anonymous calls are refused; **login answers 503** until the real database has migration 0003's `passphrase_hash` column |
 | The frontend builds for production and runs under the Content-Security-Policy | `pnpm build`; 26 Playwright journeys on desktop and phone with no policy violations, and no sideways scroll at 360 / 375 px |
-| The assistant against a real provider | `scripts/assistant_eval.py --runs 3` on Claude Haiku 5.5 (`reports/assistant/`) and earlier on free-tier Gemini; `scripts/demo_run.py`; the browser journey `pnpm exec playwright test -c playwright.live.config.ts`. **Not yet run on Groq, the default (D-70)**: run the evaluation with `GROQ_API_KEY` before quoting a Groq figure |
+| The assistant against a real provider | `scripts/assistant_eval.py --runs 3` on Claude Haiku 5.5, a provider since removed (D-75) (`reports/assistant/`) and earlier on free-tier Gemini; `scripts/demo_run.py`; the browser journey `pnpm exec playwright test -c playwright.live.config.ts`. **Not yet run on Groq, the default (D-70)**: run the evaluation with `GROQ_API_KEY` before quoting a Groq figure |
 
 | **Not** verified — do these on deploy | Why |
 |---|---|
@@ -24,7 +24,7 @@
 3. **Demo and judge accounts**: start the API locally on the real database, then `cd backend && uv run python scripts/load_personas.py --api http://localhost:8000`. Usernames and generated passphrases go to the gitignored `data/private/persona_accounts.json`; deliver judges theirs privately. Check the demo against the real model and data: `uv run python scripts/find_demo_scenario.py --api http://localhost:8000` and `uv run python scripts/demo_run.py --api http://localhost:8000` (both write `evidence/`).
 4. **Render** (the API). New → Blueprint → this repository, with the Blueprint file path set to **`backend/render.yaml`** (the blueprint lives with the API so the deploy uses `backend/` alone, D-74; service **`paysense-v3-api`**, so it cannot collide with the v2 service; native Python from `backend/`, no Docker). Leave the service's Root Directory as the blueprint sets it (`backend`). Fill in the prompted values:
    - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` from step 1.
-   - `GROQ_API_KEY` (free at console.groq.com; or `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` with `LLM_PROVIDER` set to match). Left empty, the assistant runs in guided mode.
+   - `GROQ_API_KEY` (free at console.groq.com; or `GEMINI_API_KEY` with `LLM_PROVIDER=gemini`). Left empty, the assistant runs in guided mode.
    - For Google sign-in (optional): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `API_PUBLIC_URL` (the Render URL), and `NEXT_PUBLIC_GOOGLE_SIGNIN=true` on Vercel. Apply migration 0007 first.
    - `CORS_ORIGINS`: a placeholder now, the Vercel URL after step 5.
    - `FORWARDED_ALLOW_IPS`: see "Proxy addresses" below.

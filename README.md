@@ -43,7 +43,6 @@ An AI assistant that tells Malaysian university students whether a buy-now-pay-l
 
 <p>
   <img src="https://img.shields.io/badge/Groq-f55036?style=flat&logoColor=white" alt="Groq">
-  <img src="https://img.shields.io/badge/Claude-d97757?style=flat&logo=anthropic&logoColor=white" alt="Claude">
   <img src="https://img.shields.io/badge/Gemini-8e75b2?style=flat&logo=googlegemini&logoColor=white" alt="Gemini">
   <img src="https://img.shields.io/badge/pytest-0a9edc?style=flat&logo=pytest&logoColor=white" alt="pytest">
   <img src="https://img.shields.io/badge/Vitest-6e9f18?style=flat&logo=vitest&logoColor=white" alt="Vitest">
@@ -71,7 +70,7 @@ Repository: [github.com/farahjayy/PaySense-v3](https://github.com/farahjayy/PayS
 |---|---|
 | **Financial health forecast** | Places known income, bills and instalments on their dates, forecasts the variable part with a global LSTM (chosen over ARIMA, Prophet and simple benchmarks), and simulates 1,000 futures: a running-margin chart with an 80% band, a health score and the chance of running short. A savings buffer the student enters is counted; nothing else is assumed. |
 | **BNPL risk check** | For a purchase on SPayLater, TikTok PayLater, Atome or any other provider: the exact instalment schedule from the provider's rules, a Safe / Caution / At Risk band from a calibrated LightGBM model (chosen over random forest, XGBoost and logistic regression), the reasons (exact Shapley values), and the smallest change that reaches Safe, or an honest "none does". |
-| **Assistant** | Chat or quick actions. Three permission tiers: read, compute or propose, and write — writes only from a proposal the student confirms on a card built from the stored proposal. Every figure in its answer is checked against the tools' results. Works with Groq, Gemini or Claude behind one interface; falls back to guided mode (no model) when the provider is unavailable. |
+| **Assistant** | Chat or quick actions. Three permission tiers: read, compute or propose, and write — writes only from a proposal the student confirms on a card built from the stored proposal. Every figure in its answer is checked against the tools' results. Works with Groq or Gemini behind one interface; falls back to guided mode (no model) when the provider is unavailable. |
 | **Budgets, bills, insights** | Category budgets with pace, a suggested budget with its arithmetic shown, bill and instalment collisions, spending insights, ranked recommendations and alerts, all from rules over the student's own data. |
 | **Ledger** | Manual entry, CSV / Excel import with preview and duplicate flags, import by pasting messy text into the assistant, recurring items, categories. |
 | **Sign-in and first visit** | Create an account with an email and a password, or sign in with Google; seeded test accounts sign in with their username in the same field. Logout ends every session. A first visit gets short welcome slides, then a guided tour that points at the real controls (forecast, import, transactions, risk check, assistant, your data). Both can be skipped and replayed from the profile menu. |
@@ -94,7 +93,7 @@ flowchart LR
     end
 
     db[("Supabase Postgres<br/>RLS on · in-memory locally")]
-    llm["LLM provider<br/>Groq · Gemini · Claude"]
+    llm["LLM provider<br/>Groq · Gemini"]
     ml["backend/ml/ · offline<br/>synthetic data, evaluation, training"]
     models[["backend/models/<br/>ONNX artefacts"]]
 

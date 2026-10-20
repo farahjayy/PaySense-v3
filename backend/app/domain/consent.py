@@ -11,7 +11,6 @@ CONSENT_VERSION = "v2"
 PROVIDER_NAMES = {
     "groq": "Groq (open-weight models, servers in the United States)",
     "gemini": "Google (Gemini API)",
-    "anthropic": "Anthropic (Claude API)",
 }
 
 

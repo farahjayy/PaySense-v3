@@ -38,10 +38,9 @@ class Settings(BaseSettings):
 
     # ---- the assistant (ADRs D-47, D-48, D-53). Keys are optional: none means guided mode.
     assistant_enabled: bool = True
-    llm_provider: Literal["groq", "gemini", "anthropic", "none"] = "groq"  # D-70
+    llm_provider: Literal["groq", "gemini", "none"] = "groq"  # D-70; Anthropic removed (D-75)
     groq_api_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
-    anthropic_api_key: SecretStr | None = None
     assistant_model: str | None = None  # None: the provider adapter's default model
     # Transaction descriptions are user text (merchant names, notes, injected instructions): kept
     # from the LLM provider unless a deployment turns this off.

@@ -115,6 +115,12 @@ def test_unsafe_cors_origins_are_rejected(origins):
         Settings(**_kwargs(cors_origins=origins))
 
 
+def test_anthropic_is_no_longer_a_provider():
+    # removed (D-75): an old LLM_PROVIDER=anthropic fails at start-up instead of running guided
+    with pytest.raises(ValidationError):
+        Settings(**_kwargs(llm_provider="anthropic"))
+
+
 def test_secrets_do_not_appear_in_repr():
     s = Settings(**_kwargs(session_secret="topsecretvalue" * 3, supabase_service_key="svc-key-123"))
 

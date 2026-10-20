@@ -1,0 +1,8 @@
+# Never uploaded by `vercel` run in frontend/ (the CLI does not skip env files on its own).
+.env*
+# Local build output and test leftovers; Vercel builds from source.
+.next*
+coverage
+test-results
+playwright-report
+tsconfig.tsbuildinfo

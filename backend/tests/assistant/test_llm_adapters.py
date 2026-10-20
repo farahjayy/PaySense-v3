@@ -1,4 +1,4 @@
-"""WP4c / D-53: the Gemini, Anthropic and Groq adapters map the neutral types to each wire format.
+"""WP4c / D-53: the Gemini and Groq adapters map the neutral types to each wire format.
 No test touches the network: every request goes to an httpx.MockTransport."""
 
 import json
@@ -8,7 +8,6 @@ import pytest
 from pydantic import SecretStr
 
 from app.assistant.llm import (
-    AnthropicLLM,
     GeminiLLM,
     GroqLLM,
     LLMError,
@@ -124,46 +123,12 @@ def test_a_network_failure_or_timeout_is_an_llm_error():
         GeminiLLM(KEY, client=client(refuse)).complete("s", [], [], max_output_tokens=1, timeout=1)
 
 
-def test_anthropic_request_and_response_mapping():
-    seen = {}
-
-    def handler(request):
-        seen["headers"] = request.headers
-        seen["body"] = json.loads(request.content)
-        return httpx.Response(200, json={
-            "content": [{"type": "text", "text": "Let me check."},
-                        {"type": "tool_use", "id": "tu_1", "name": "get_forecast", "input": {}}],
-            "usage": {"input_tokens": 300, "output_tokens": 20},
-        })  # fmt: skip
-
-    llm = AnthropicLLM(KEY, client=client(handler))
-    history = [
-        Message("user", "Can I afford it?"),
-        Message("assistant", tool_calls=[ToolCall("tu_0", "get_budgets", {})]),
-        Message("tool", tool_results=[ToolResult("tu_0", "get_budgets", {"ok": True})]),
-    ]
-    out = llm.complete("sys", history, [SPEC], max_output_tokens=500, timeout=5)
-    assert seen["headers"]["x-api-key"] == KEY
-    assert seen["headers"]["anthropic-version"] == "2023-06-01"
-    body = seen["body"]
-    assert body["model"] == "claude-sonnet-5-5" and body["system"] == "sys"
-    assert body["tools"][0]["input_schema"]["type"] == "object"
-    assert body["messages"][2]["content"][0] == {"type": "tool_result", "tool_use_id": "tu_0",
-                                                 "content": '{"ok": true}'}  # fmt: skip
-    assert out.text == "Let me check."
-    assert out.tool_calls == [ToolCall("tu_1", "get_forecast", {})]
-    assert (out.input_tokens, out.output_tokens) == (300, 20)
-
-
 def test_build_llm_follows_the_settings(settings):
     assert build_llm(settings) is None  # no key
     assert "No API key" in guided_reason(settings)
     gemini = settings.model_copy(update={"llm_provider": "gemini",
                                          "gemini_api_key": SecretStr(KEY)})  # fmt: skip
     assert isinstance(build_llm(gemini), GeminiLLM) and guided_reason(gemini) is None
-    anthropic = settings.model_copy(update={"llm_provider": "anthropic",
-                                            "anthropic_api_key": SecretStr(KEY)})  # fmt: skip
-    assert isinstance(build_llm(anthropic), AnthropicLLM)
     off = gemini.model_copy(update={"assistant_enabled": False})
     assert build_llm(off) is None and "switched off" in guided_reason(off)
     none = gemini.model_copy(update={"llm_provider": "none"})

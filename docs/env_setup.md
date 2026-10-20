@@ -41,11 +41,10 @@ Last updated: 2026-10-08
 | `DAILY_WRITE_QUOTA` | `300` | Writes one user may make per Malaysian day across every write route (D-49, WP18) |
 | `SMOKE_PASSPHRASE` | unset | Read only by `scripts/smoke_live.py`: the passphrase of the seeded tester it logs in as |
 | `ASSISTANT_ENABLED` | `true` | `false` puts the assistant in guided mode (tools from buttons, no model) |
-| `LLM_PROVIDER` | `groq` | `groq`, `gemini`, `anthropic` or `none` (D-53, D-70). No key for the chosen provider = guided mode |
+| `LLM_PROVIDER` | `groq` | `groq`, `gemini` or `none` (D-53, D-70; Anthropic removed, D-75). No key for the chosen provider = guided mode |
 | `GROQ_API_KEY` | unset → guided mode | https://console.groq.com/keys (free tier, rate limited). Server-side only. Default model `llama-3.3-70b-versatile`; change it with `ASSISTANT_MODEL` |
 | `GEMINI_API_KEY` | unset → guided mode | Google AI Studio → Get API key. Server-side only (`SecretStr`), never logged or returned. Free-tier prompts may be used by Google to improve its products: synthetic personas only |
-| `ANTHROPIC_API_KEY` | unset → guided mode | https://console.anthropic.com/settings/keys. Server-side only. Used when `LLM_PROVIDER=anthropic` |
-| `ASSISTANT_MODEL` | `gemini-3.1-flash-lite` / `claude-sonnet-5-5` | Model name for the chosen provider; check it in the provider's console |
+| `ASSISTANT_MODEL` | `llama-3.3-70b-versatile` / `gemini-3.1-flash-lite` | Model name for the chosen provider; check it in the provider's console |
 | `ASSISTANT_REDACT_DESCRIPTIONS` | `false` | `true` hides transaction descriptions from the model |
 | `ASSISTANT_MAX_TOOL_CALLS` | `6` | Tool calls per turn before the turn stops |
 | `ASSISTANT_MAX_OUTPUT_TOKENS` | `1024` | Output-token cap per model call |

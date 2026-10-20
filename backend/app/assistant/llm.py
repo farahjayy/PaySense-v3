@@ -5,7 +5,6 @@ The agent speaks only this module's types: `Message` (user / assistant / tool tu
 
     GroqLLM       open-weight models on Groq's OpenAI-compatible API (free tier; the default, D-70)
     GeminiLLM     Gemini API generateContent with function calling (free tier)
-    AnthropicLLM  Claude through the Messages API with tool use (the upgrade, D-53)
     FakeLLM       scripted, for every test: never touches the network
 
 A provider failure of any kind (network, quota, timeout, a malformed answer) is an `LLMError`, which
@@ -24,13 +23,10 @@ import httpx
 from app.core.settings import Settings
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_VERSION = "2023-06-01"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 # Gemini default: the free tier allows only 20 requests a day on gemini-3.8-flash (measured);
 # the lite model has its own, larger allowance and passed every live scenario (ASSUMED 29).
-DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite", "anthropic": "claude-sonnet-5-5",
-                  "groq": "llama-3.3-70b-versatile"}  # fmt: skip
+DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite", "groq": "llama-3.3-70b-versatile"}
 
 
 class LLMError(Exception):
@@ -103,8 +99,8 @@ class LLM(Protocol):
 
 
 # ------------------------------------------------------------------ schemas
-# The schema keywords function declarations accept (Gemini's OpenAPI subset; Anthropic accepts a
-# superset of it). Anything else is dropped after the conversions below.
+# The schema keywords function declarations accept (Gemini's OpenAPI subset). Anything else is
+# dropped after the conversions below.
 SCHEMA_KEYS = frozenset(
     {"type", "format", "description", "nullable", "enum", "items", "properties", "required",
      "minItems", "maxItems", "minLength", "maxLength", "pattern", "minimum", "maximum"}
@@ -281,86 +277,6 @@ class GeminiLLM:
         )
 
 
-# ------------------------------------------------------------------ Anthropic
-class AnthropicLLM:
-    provider = "anthropic"
-
-    def __init__(self, api_key: str, model: str | None = None, client: httpx.Client | None = None):
-        self._key = api_key
-        self.model = model or DEFAULT_MODELS["anthropic"]
-        self._client = client or httpx.Client()
-
-    @staticmethod
-    def _messages(messages: Sequence[Message]) -> list[dict[str, Any]]:
-        out: list[dict[str, Any]] = []
-        for m in messages:
-            if m.role == "user":
-                out.append({"role": "user", "content": m.text})
-            elif m.role == "assistant":
-                blocks: list[dict[str, Any]] = [{"type": "text", "text": m.text}] if m.text else []
-                blocks += [
-                    {"type": "tool_use", "id": c.id, "name": c.name, "input": c.arguments}
-                    for c in m.tool_calls
-                ]
-                out.append({"role": "assistant", "content": blocks})
-            else:
-                out.append(
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": r.call_id,
-                                "content": json.dumps(r.content, default=str),
-                            }  # fmt: skip
-                            for r in m.tool_results
-                        ],
-                    }
-                )
-        return out
-
-    def complete(self, system, messages, tools, *, max_output_tokens, timeout) -> LLMResponse:
-        body = {
-            "model": self.model,
-            "max_tokens": max_output_tokens,
-            "system": system,
-            "messages": self._messages(messages),
-            "tools": [
-                {
-                    "name": t.name,
-                    "description": t.description,
-                    "input_schema": flatten_schema(t.parameters),
-                }  # fmt: skip
-                for t in tools
-            ],
-        }
-        data = _post(
-            self._client,
-            ANTHROPIC_URL,
-            headers={
-                "x-api-key": self._key,
-                "anthropic-version": ANTHROPIC_VERSION,
-                "content-type": "application/json",
-            },
-            body=body,
-            timeout=timeout,
-        )
-        blocks = data.get("content")
-        if not isinstance(blocks, list):
-            raise LLMError("the model's answer had no content")
-        usage = data.get("usage", {})
-        return LLMResponse(
-            text="".join(b.get("text", "") for b in blocks if b.get("type") == "text").strip(),
-            tool_calls=[
-                ToolCall(id=str(b["id"]), name=str(b["name"]), arguments=dict(b.get("input") or {}))
-                for b in blocks
-                if b.get("type") == "tool_use"
-            ],
-            input_tokens=int(usage.get("input_tokens", 0)),
-            output_tokens=int(usage.get("output_tokens", 0)),
-        )
-
-
 # ------------------------------------------------------------------ Groq
 class GroqLLM:
     """Groq speaks the OpenAI chat-completions format: tool arguments travel as JSON strings."""
@@ -487,10 +403,6 @@ def build_llm(settings: Settings, client: httpx.Client | None = None) -> LLM | N
         return GeminiLLM(
             settings.gemini_api_key.get_secret_value(), settings.assistant_model, client
         )
-    if settings.llm_provider == "anthropic" and settings.anthropic_api_key:
-        return AnthropicLLM(
-            settings.anthropic_api_key.get_secret_value(), settings.assistant_model, client
-        )
     if settings.llm_provider == "groq" and settings.groq_api_key:
         return GroqLLM(settings.groq_api_key.get_secret_value(), settings.assistant_model, client)
     return None
@@ -504,7 +416,6 @@ def guided_reason(settings: Settings) -> str | None:
         return "No model provider is configured."
     key = {
         "gemini": settings.gemini_api_key,
-        "anthropic": settings.anthropic_api_key,
         "groq": settings.groq_api_key,
     }[settings.llm_provider]
     if not key:
