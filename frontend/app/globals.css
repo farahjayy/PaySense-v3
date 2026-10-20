@@ -1,31 +1,38 @@
 @import "tailwindcss";
 
-/* PaySense design tokens — ported from v1 (warm editorial light theme). */
+/* PaySense design tokens: the brand of the login page (soft pond: teal, cream, rose), app-wide.
+   Every text pair is at least WCAG AA (4.5:1; non-text 3:1). The band colours (success / warning /
+   danger) keep their hues because they carry meaning. */
 @theme {
-  --color-page: #f4f3ef;
-  --color-surface: #ffffff;
-  --color-surface-2: #fafaf7;
-  --color-line: #e3e1d9;
-  --color-field: #8a887f; /* input borders: 3.5:1 on white (WCAG 1.4.11); --color-line is decorative */
-  --color-ink: #1c1c1a;
-  --color-ink-secondary: #6b6a63;
-  --color-ink-muted: #6e6c64; /* 4.7:1 on the page background, 5.3:1 on white (WCAG AA) */
-  --color-accent: #185fa5;
-  --color-accent-bg: #e6f1fb;
+  --color-page: #f7f4d5;
+  --color-surface: #fffef6;
+  --color-surface-2: #faf6df;
+  --color-line: #e4e0b8;
+  --color-field: #6b8a84; /* input borders: 3.7:1 on the surface (WCAG 1.4.11); --color-line is decorative */
+  --color-ink: #0a3323;
+  --color-ink-secondary: #3f5a54; /* 6.7:1 on the page */
+  --color-ink-muted: #4d655f; /* 5.6:1 on the page */
+  --color-accent: #105666; /* the brand teal: 8.2:1 on the surface */
+  --color-accent-bg: #dcebe6;
+  --color-accent-deep: #0c4553;
+  --color-accent-soft: #1b6b7d;
+  --color-rose: #d3968c; /* decorative only (the wordmark, the mark): never text on light */
+  --color-on-accent: #f7f4d5; /* text on the teal sidebar: 7.4:1 */
+  --color-on-accent-muted: #bcd3cf; /* 5.3:1 on the teal */
   --color-success: #3b6d11;
   --color-success-bg: #eaf3de;
   --color-warning: #854f0b;
   --color-warning-bg: #faeeda;
   --color-danger: #a32d2d;
   --color-danger-bg: #fcebeb;
-  --color-chart-blue: #85b7eb;
-  --color-chart-edge: #3b82c4; /* outline of the chart band: 4.1:1 on white */
+  --color-chart-blue: #a9cfc9; /* the forecast band fill, in the brand teal family */
+  --color-chart-edge: #1b6b7d; /* outline of the chart band: 6.0:1 on the surface */
   --color-chart-red: #e24b4a;
 
-  --font-serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: var(--font-brand-display), "Segoe UI", system-ui, sans-serif;
+  --font-sans: var(--font-brand-body), "Segoe UI", system-ui, sans-serif;
 
-  --radius-card: 12px;
+  --radius-card: 16px;
 }
 
 html {
@@ -39,10 +46,13 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Accent focus ring on everything interactive */
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+/* Accent focus ring on everything interactive. In the base layer, so an `outline-none` utility on a
+   region focused from code (the main area after navigation) wins over it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

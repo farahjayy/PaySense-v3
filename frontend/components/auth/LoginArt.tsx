@@ -4,13 +4,14 @@ import type { ReactNode } from "react";
 
 export type BandKey = "safe" | "caution" | "risk";
 
-export function BrandMark() {
+/** The PaySense mark, on the login panel and in the app's sidebar; colours from the brand tokens. */
+export function BrandMark({ className = "lg-brand-mark" }: { className?: string }) {
   return (
-    <svg className="lg-brand-mark" viewBox="0 0 40 40" aria-hidden="true">
-      <rect className="lg-mark-page" width="40" height="40" rx="12" />
-      <path className="lg-mark-teal" d="M19 9.5a10.5 10.5 0 1 0 0 21z" />
-      <path className="lg-mark-rosy" d="M22 9.5a10.5 10.5 0 0 1 10.5 10.5H22z" />
-      <path className="lg-mark-teal" fillOpacity=".45" d="M22 23h10.3A10.5 10.5 0 0 1 22 30.5z" />
+    <svg className={className} viewBox="0 0 40 40" aria-hidden="true">
+      <rect fill="var(--color-page)" width="40" height="40" rx="12" />
+      <path fill="var(--color-accent)" d="M19 9.5a10.5 10.5 0 1 0 0 21z" />
+      <path fill="var(--color-rose)" d="M22 9.5a10.5 10.5 0 0 1 10.5 10.5H22z" />
+      <path fill="var(--color-accent)" fillOpacity=".45" d="M22 23h10.3A10.5 10.5 0 0 1 22 30.5z" />
     </svg>
   );
 }

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import { BrandMark } from "@/components/auth/LoginArt";
 import { Button } from "@/components/ui/Button";
 import { isActive } from "@/lib/nav";
 import { api } from "@/lib/api/client";
@@ -31,20 +32,25 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: "/account", label: "Your data", icon: "⚿", mobile: false },
 ];
 
+// The sidebar is the brand's teal, like the login panel: the one bold element of the app. Its
+// links carry a cream focus ring, since the global teal ring would vanish on teal.
 function navLinkClass(active: boolean): string {
   return active
-    ? "bg-accent-bg font-semibold text-accent"
-    : "text-ink-secondary hover:bg-surface-2 hover:text-ink";
+    ? "bg-page font-semibold text-accent"
+    : "text-on-accent-muted hover:bg-accent-soft hover:text-on-accent";
 }
 
 function Sidebar({ pathname }: { pathname: string }) {
   return (
-    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 md:flex">
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-accent px-4 py-6 md:flex">
       <Link
         href="/"
-        className="mb-8 block px-2 text-lg font-bold tracking-tight text-ink"
+        className="mb-8 flex items-center gap-2.5 rounded-lg px-2 focus-visible:outline-on-accent"
       >
-        Pay<span className="text-accent">Sense</span>
+        <BrandMark className="h-9 w-9 shrink-0" />
+        <span className="font-display text-[20px] font-bold tracking-tight text-on-accent">
+          Pay<span className="text-rose">Sense</span>
+        </span>
       </Link>
       <nav aria-label="Main navigation" className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => {
@@ -54,7 +60,7 @@ function Sidebar({ pathname }: { pathname: string }) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${navLinkClass(active)}`}
+              className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors focus-visible:outline-on-accent ${navLinkClass(active)}`}
             >
               <span aria-hidden className="text-sm">
                 {item.icon}
@@ -64,7 +70,7 @@ function Sidebar({ pathname }: { pathname: string }) {
           );
         })}
       </nav>
-      <p className="mt-auto px-2 text-[10px] leading-relaxed text-ink-muted">
+      <p className="mt-auto px-2 text-[11px] leading-relaxed text-on-accent-muted">
         Financial health forecasting and BNPL risk classification for students.
       </p>
     </aside>
@@ -156,9 +162,12 @@ export function AppShell({ user, children }: Props) {
         <header className="flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4 sm:px-6">
           <Link
             href="/"
-            className="text-base font-bold tracking-tight text-ink md:hidden"
+            className="flex items-center gap-2 font-display text-[17px] font-bold tracking-tight text-ink md:hidden"
           >
-            Pay<span className="text-accent">Sense</span>
+            <BrandMark className="h-7 w-7 shrink-0" />
+            <span>
+              Pay<span className="text-accent">Sense</span>
+            </span>
           </Link>
           <div className="ml-auto flex items-center gap-3">
             <Button
@@ -172,7 +181,7 @@ export function AppShell({ user, children }: Props) {
             >
               Ask PaySense
             </Button>
-            <span className="max-w-[10rem] truncate text-[13px] font-medium text-ink">
+            <span className="hidden max-w-[10rem] truncate text-[13px] font-medium text-ink sm:inline">
               {user.display_name}
             </span>
             <Button variant="secondary" size="sm" onClick={handleLogout}>

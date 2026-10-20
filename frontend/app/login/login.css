@@ -23,8 +23,8 @@
   --lg-risk: var(--color-danger);
   --lg-risk-bg: var(--color-danger-bg);
 
-  --lg-font-display: var(--font-login-display), "Segoe UI", system-ui, sans-serif;
-  --lg-font-body: var(--font-login-body), "Segoe UI", system-ui, sans-serif;
+  --lg-font-display: var(--font-display);
+  --lg-font-body: var(--font-sans);
 
   min-height: 100dvh;
   padding: 16px;
@@ -145,15 +145,6 @@
 }
 .login-theme .lg-brand-name span {
   color: var(--lg-rosy);
-}
-.login-theme .lg-mark-page {
-  fill: var(--lg-page);
-}
-.login-theme .lg-mark-teal {
-  fill: var(--lg-teal);
-}
-.login-theme .lg-mark-rosy {
-  fill: var(--lg-rosy);
 }
 
 .login-theme .lg-pitch {

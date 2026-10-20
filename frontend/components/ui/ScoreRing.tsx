@@ -46,7 +46,7 @@ export function ScoreRing({ score, band, caption = "out of 100" }: Props) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden>
-        <span className="font-serif text-[40px] font-semibold leading-none tracking-tight text-ink">
+        <span className="font-display text-[40px] font-semibold leading-none tracking-tight text-ink">
           {clamped}
         </span>
         <span className="mt-1 text-[11px] text-ink-muted">{caption}</span>

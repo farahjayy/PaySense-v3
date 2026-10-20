@@ -9,7 +9,7 @@ export function PageHeader({ title, intro, actions }: Props) {
       <div className="max-w-2xl">
         <h1
           tabIndex={-1}
-          className="font-serif outline-none text-[28px] font-semibold leading-tight tracking-tight text-ink"
+          className="font-display outline-none text-[32px] font-bold leading-tight tracking-tight text-ink"
         >
           {title}
         </h1>

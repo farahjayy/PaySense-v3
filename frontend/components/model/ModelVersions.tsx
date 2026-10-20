@@ -24,7 +24,7 @@ export function ModelVersions() {
   return (
     <Card>
       <section aria-labelledby="versions">
-        <h2 id="versions" className="font-serif text-lg font-semibold text-ink">
+        <h2 id="versions" className="font-display text-lg font-semibold text-ink">
           What is running now
         </h2>
         <dl className="mt-3 grid gap-x-6 gap-y-2 text-[14px] sm:grid-cols-[auto_1fr]">

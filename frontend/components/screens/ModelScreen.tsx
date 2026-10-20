@@ -9,7 +9,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
   return (
     <Card>
       <section aria-labelledby={id}>
-        <h2 id={id} className="font-serif text-lg font-semibold text-ink">
+        <h2 id={id} className="font-display text-lg font-semibold text-ink">
           {title}
         </h2>
         <div className="mt-2 space-y-3 text-[14px] leading-relaxed text-ink-secondary">

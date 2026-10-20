@@ -284,7 +284,7 @@ export function SpendingView({ data }: { data: SpendingInsights }) {
   return (
     <div className="space-y-4">
       <Card>
-        <p className="font-serif text-[18px] font-semibold text-ink">{data.headline}</p>
+        <p className="font-display text-[18px] font-semibold text-ink">{data.headline}</p>
         <CardCaption>
           {data.previous_month
             ? `Compared with ${formatMonth(data.previous_month)}.`

@@ -62,7 +62,7 @@ export function Dialog({ open, title, onClose, dismissible = true, children }: P
       {open && (
         <div className="p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
-            <h2 id={titleId} className="font-serif text-lg font-semibold">
+            <h2 id={titleId} className="font-display text-lg font-semibold">
               {title}
             </h2>
             <button

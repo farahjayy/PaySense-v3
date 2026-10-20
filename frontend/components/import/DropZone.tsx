@@ -33,7 +33,7 @@ export function DropZone({ onFile, busy }: Props) {
         dragging ? "border-accent bg-accent-bg" : "border-line bg-surface"
       }`}
     >
-      <p className="font-serif text-lg font-semibold text-ink">Drop a statement or spreadsheet here</p>
+      <p className="font-display text-lg font-semibold text-ink">Drop a statement or spreadsheet here</p>
       <p className="max-w-sm text-[13px] leading-relaxed text-ink-secondary">
         A CSV or Excel (.xlsx) file from your bank, your e-wallet or your own budget sheet, up to 5
         MB. Nothing is saved until you have reviewed it.

@@ -34,7 +34,7 @@ export function ConsentGate({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto max-w-2xl">
       <Card>
-        <h1 tabIndex={-1} className="font-serif text-[24px] font-semibold text-ink">
+        <h1 tabIndex={-1} className="font-display text-[24px] font-semibold text-ink">
           Before you start
         </h1>
         <p className="mt-1 text-[14px] text-ink-secondary">
