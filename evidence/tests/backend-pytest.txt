@@ -1,4 +1,6 @@
 $ uv run pytest -q -p no:cacheprovider --cov=app --cov-report=term  (in backend/)
+app/core/__init__.py                          0      0   100%
+app/core/body_limit.py                       39      0   100%
 app/core/errors.py                           13      1    92%
 app/core/google.py                           71      1    99%
 app/core/passphrase.py                       41      0   100%
@@ -76,6 +78,4 @@ app/security/drill.py                       229      6    97%
 app/seed.py                                  16      2    88%
 -------------------------------------------------------------
 TOTAL                                      8307    209    97%
-=========================== short test summary info ============================
-FAILED tests/test_settings.py::test_server_exits_naming_session_secret_when_it_is_missing
-1 failed, 2829 passed, 25 deselected in 428.05s (0:07:08)
+2830 passed, 25 deselected in 428.88s (0:07:08)

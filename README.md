@@ -8,7 +8,7 @@
 An AI assistant that tells Malaysian university students whether a buy-now-pay-later plan fits their money before they commit, using only their own records.
 
 <p>
-  <img src="https://img.shields.io/badge/Topic-A_%C2%B7_AI_finance_assistant-105666?style=for-the-badge" alt="Topic A · AI finance assistant"> <img src="https://img.shields.io/badge/Market-Malaysian_students-d3968c?style=for-the-badge" alt="Market Malaysian students"> <img src="https://img.shields.io/badge/Tests-3%2C267_passing-2ea44f?style=for-the-badge" alt="Tests 3,267 passing"> <img src="https://img.shields.io/badge/License-Apache--2.0-6f42c1?style=for-the-badge" alt="License Apache-2.0">
+  <img src="https://img.shields.io/badge/Topic-A_%C2%B7_AI_finance_assistant-105666?style=for-the-badge" alt="Topic A · AI finance assistant"> <img src="https://img.shields.io/badge/Market-Malaysian_students-d3968c?style=for-the-badge" alt="Market Malaysian students"> <img src="https://img.shields.io/badge/Tests-3%2C314_passing-2ea44f?style=for-the-badge" alt="Tests 3,314 passing"> <img src="https://img.shields.io/badge/License-Apache--2.0-6f42c1?style=for-the-badge" alt="License Apache-2.0">
 </p>
 
 <sub>built with</sub>

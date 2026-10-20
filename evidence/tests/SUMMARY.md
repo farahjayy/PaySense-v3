@@ -6,10 +6,10 @@
 |---|---|---|---|---|
 | backend-ruff | `cd backend && uv run ruff check .` | 0 | 0 | All checks passed! |
 | backend-format | `cd backend && uv run ruff format --check .` | 0 | 0 | 381 files already formatted |
-| backend-pytest | `cd backend && uv run pytest -q -p no:cacheprovider --cov=app --cov-report=term` | 1 | 432 | errors.py                           13      1    92%; errors.py            25      0   100%; TOTAL                                      8307    209    97%; 1 failed, 2829 passed, 25 deselected in 428.05s (0:07:08) |
+| backend-pytest | `cd backend && uv run pytest -q -p no:cacheprovider --cov=app --cov-report=term` | 0 | 434 | errors.py                           13      1    92%; errors.py            25      0   100%; TOTAL                                      8307    209    97%; 2830 passed, 25 deselected in 428.88s (0:07:08) |
 | frontend-lint | `cd frontend && pnpm lint` | 0 | 7 | - |
-| frontend-tsc | `cd frontend && pnpm exec tsc --noEmit` | 0 | 6 | - |
+| frontend-tsc | `cd frontend && pnpm exec tsc --noEmit` | 0 | 2 | - |
 | frontend-api-types | `cd frontend && pnpm check:api` | 0 | 2 | matches the backend OpenAPI document |
 | frontend-vitest | `cd frontend && pnpm exec vitest run --coverage` | 0 | 31 | 52 passed (52); Tests  455 passed (455); All files          /   91.49 /    87.67 /   88.41 /   92.09 / |
-| frontend-build | `cd frontend && pnpm build` | 0 | 6 | Compiled successfully in 2.6s |
-| frontend-playwright | `cd frontend && pnpm exec playwright test` | 1 | 745 | Error Context: test-results/login-the-session-survives-a-reload-and-ends-on-log-out-phone/error-context.md; Error Context: test-results/topic-first-login-shows-th-dfcf0--be-accepted-before-the-app-phone/error-context.md; Error Context: test-results/topic-set-a-budget-add-an--73077-e-over-budget-alert-appears-phone/error-context.md; 30 failed |
+| frontend-build | `cd frontend && pnpm build` | 0 | 6 | Compiled successfully in 2.2s |
+| frontend-playwright | `cd frontend && pnpm exec playwright test` | 0 | 50 | error and stays on /login (826ms); error and stays on /login (761ms); 29 passed (49.1s) |

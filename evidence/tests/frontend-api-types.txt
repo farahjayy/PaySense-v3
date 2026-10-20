@@ -1,5 +1,5 @@
 $ pnpm check:api  (in frontend/)
 ✨ openapi-typescript 7.13.0
-🚀 /tmp/paysense-api-N29M0O/openapi.json → /tmp/paysense-api-N29M0O/schema.d.ts [179.3ms]
+🚀 /tmp/paysense-api-kBXshC/openapi.json → /tmp/paysense-api-kBXshC/schema.d.ts [180.6ms]
 lib/api/schema.d.ts matches the backend OpenAPI document.
 $ node scripts/api-types.mjs --check
