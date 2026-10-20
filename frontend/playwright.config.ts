@@ -28,10 +28,18 @@ export default defineConfig({
     baseURL: FRONTEND_URL,
     trace: "retain-on-failure",
     launchOptions,
-    // Every journey starts with the first-visit intro tour already seen; intro.spec.ts clears it.
+    // Every journey starts with the first-visit intro and tour already seen; intro.spec.ts clears them.
     storageState: {
       cookies: [],
-      origins: [{ origin: FRONTEND_URL, localStorage: [{ name: "paysense.intro.seen", value: "1" }] }],
+      origins: [
+        {
+          origin: FRONTEND_URL,
+          localStorage: [
+            { name: "paysense.intro.seen", value: "1" },
+            { name: "paysense.tour.seen", value: "1" },
+          ],
+        },
+      ],
     },
   },
   projects: [

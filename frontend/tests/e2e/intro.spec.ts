@@ -7,7 +7,7 @@ const PASSPHRASE = process.env.PLAYWRIGHT_PASSPHRASE ?? "correct horse battery s
 // A browser that has never seen the intro.
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test("onboarding opens on a first visit, can be skipped, stays away, and replays", async ({
+test("onboarding and the tour open on a first visit, can be skipped, stay away, and replay", async ({
   page,
 }) => {
   await page.goto("/login");
@@ -22,6 +22,14 @@ test("onboarding opens on a first visit, can be skipped, stays away, and replays
   await onboarding.getByRole("button", { name: "Skip" }).click();
   await expect(onboarding).toBeHidden();
   await expect(page.getByRole("heading", { name: /^Hi, / })).toBeVisible();
+
+  // Then the tour of the app itself points at the real controls, one at a time.
+  const tour = page.getByRole("dialog", { name: "Tour of PaySense" });
+  await expect(tour.getByRole("heading", { name: "Where your money is heading" })).toBeVisible();
+  await tour.getByRole("button", { name: "Next" }).click();
+  await expect(tour.getByRole("heading", { name: "Start here" })).toBeVisible();
+  await tour.getByRole("button", { name: "Skip tour" }).click();
+  await expect(tour).toBeHidden();
 
   await page.reload();
   await expect(page.getByRole("heading", { name: /^Hi, / })).toBeVisible();

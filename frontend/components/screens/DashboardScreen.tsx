@@ -39,7 +39,9 @@ export function DashboardScreen() {
       />
       <AlertStrip />
       <GettingStarted />
-      <Outlook />
+      <div data-tour="forecast">
+        <Outlook />
+      </div>
       <TryThis />
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-2">

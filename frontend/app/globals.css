@@ -158,3 +158,29 @@ body {
 .tip {
   animation: tip-in 0.18s ease-out 0.25s both;
 }
+
+/* The guided tour (components/onboarding/Tour.tsx): the spotlight glides between stops and
+   breathes; each bubble pops in beside its target. */
+.tour-spot {
+  box-shadow: 0 0 0 9999px rgb(10 30 36 / 0.6);
+  transition-property: top, left, width, height;
+  transition-duration: 0.4s;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: tour-pulse 2s ease-in-out 0.5s infinite;
+}
+@keyframes tour-pulse {
+  50% {
+    box-shadow:
+      0 0 0 9999px rgb(10 30 36 / 0.6),
+      0 0 0 6px rgb(247 244 213 / 0.35);
+  }
+}
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+.tour-in {
+  animation: tour-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both;
+}

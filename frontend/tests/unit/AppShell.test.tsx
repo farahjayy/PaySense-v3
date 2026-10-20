@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { AuthGate } from "@/components/auth/AuthGate";
+import { tourSeen } from "@/lib/introTour";
 import { clearSession, getSession, saveSession } from "@/lib/session";
 
 const replace = vi.fn();
@@ -242,6 +243,31 @@ describe("Intro replay", () => {
     await userEvent.click(within(tour).getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog", { name: "Welcome to PaySense" })).toBeNull();
     expect(replay).toHaveFocus();
+  });
+});
+
+describe("Guided tour", () => {
+  beforeEach(() => signIn());
+
+  it("opens once on the dashboard after the intro, over an inert app, and Skip ends it for good", async () => {
+    window.localStorage.removeItem("paysense.tour.seen");
+    // jsdom lays nothing out; give the marked controls a box so the tour has something to point at.
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      top: 10, left: 10, right: 130, bottom: 50, width: 120, height: 40, x: 10, y: 10, toJSON: () => ({}),
+    });
+    render(
+      <AppShell user={USER}>
+        <p>page body</p>
+      </AppShell>,
+      { wrapper },
+    );
+    const tour = await screen.findByRole("dialog", { name: "Tour of PaySense" });
+    expect(tour).toHaveTextContent("Start here");
+    expect(screen.getByText("page body").closest("[inert]")).not.toBeNull();
+    await userEvent.click(within(tour).getByRole("button", { name: "Skip tour" }));
+    expect(screen.queryByRole("dialog", { name: "Tour of PaySense" })).toBeNull();
+    expect(tourSeen()).toBe(true);
+    vi.restoreAllMocks();
   });
 });
 

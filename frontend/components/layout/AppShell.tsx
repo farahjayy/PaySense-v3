@@ -6,10 +6,12 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Suspense,
   lazy,
+  useCallback,
   useEffect,
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type ComponentProps,
   type ReactNode,
 } from "react";
@@ -21,7 +23,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { isActive } from "@/lib/nav";
 import { api } from "@/lib/api/client";
 import { AssistantLauncher } from "@/lib/assistantLauncher";
-import { useIntroTour } from "@/lib/introTour";
+import { introSeen, markTourSeen, tourSeen, useIntroTour } from "@/lib/introTour";
 import { clearSession, type Session } from "@/lib/session";
 
 // The assistant (panel, cards, chat) is only needed once someone presses "Ask PaySense", so its
@@ -33,6 +35,9 @@ const AssistantPanel = lazy(() =>
 const Onboarding = lazy(() =>
   import("@/components/onboarding/Onboarding").then((m) => ({ default: m.Onboarding })),
 );
+const Tour = lazy(() => import("@/components/onboarding/Tour").then((m) => ({ default: m.Tour })));
+
+const subscribeNothing = () => () => {};
 
 /** `hint` is the sidebar tooltip: what the page is for, in a line. */
 type NavItem = { href: string; label: string; icon: string; hint: string };
@@ -168,6 +173,7 @@ function NavGroups({
                     {(describedBy) => (
                       <NavLink
                         href={item.href}
+                        data-tour={item.href.slice(1) || undefined}
                         onClick={onNavigate}
                         aria-current={active ? "page" : undefined}
                         aria-describedby={describedBy}
@@ -232,6 +238,7 @@ function Profile({
       <div className="mt-3 flex items-center justify-between gap-2">
         <Link
           href="/account"
+          data-tour="data"
           onClick={onNavigate}
           className={`rounded-lg px-1 text-[13px] font-semibold underline-offset-2 hover:underline ${dark ? "text-on-accent" : "text-accent"} ${linkFocus}`}
         >
@@ -325,6 +332,7 @@ function MobileNav({
             <NavLink
               key={item.href}
               href={item.href}
+              data-tour={item.href.slice(1) || undefined}
               aria-current={active ? "page" : undefined}
               className={itemClass(active)}
             >
@@ -339,6 +347,7 @@ function MobileNav({
           type="button"
           aria-haspopup="dialog"
           aria-expanded={open}
+          data-tour="data"
           onClick={() => setOpen(true)}
           className={itemClass(inMore)}
         >
@@ -375,6 +384,12 @@ export function AppShell({ user, children }: Props) {
   const askButton = useRef<HTMLButtonElement>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const intro = useIntroTour();
+  // The tour of the app runs once per browser, on the dashboard, after the intro slides; read on
+  // the server as not due, so it never flashes in a server render.
+  const tourDue = useSyncExternalStore(subscribeNothing, () => introSeen() && !tourSeen(), () => false);
+  const [tourEnded, setTourEnded] = useState(false); // covers a browser that will not store it
+  const [tourReplay, setTourReplay] = useState(false);
+  const touring = tourReplay || (pathname === "/" && tourDue && !tourEnded);
   const [prompt, setPrompt] = useState<{ text: string; n: number } | null>(
     null,
   );
@@ -400,6 +415,12 @@ export function AppShell({ user, children }: Props) {
     (main.current?.querySelector<HTMLElement>("h1") ?? main.current)?.focus();
   }, [pathname]);
 
+  const endTour = useCallback(() => {
+    markTourSeen();
+    setTourEnded(true);
+    setTourReplay(false);
+  }, []);
+
   function handleLogout() {
     // Revoke on the server (every session of this user ends, D-49); the page does not wait for
     // it, and a failure still logs out locally.
@@ -411,8 +432,8 @@ export function AppShell({ user, children }: Props) {
 
   return (
     <>
-      {/* While the intro replays over it, the app behind is inert: no focus, no clicks. */}
-      <div className="flex min-h-screen" inert={intro.open}>
+      {/* While the intro or the tour is over it, the app behind is inert: no focus, no clicks. */}
+      <div className="flex min-h-screen" inert={intro.open || touring}>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
@@ -434,6 +455,7 @@ export function AppShell({ user, children }: Props) {
             <div className="ml-auto flex items-center gap-3">
               <Button
                 ref={askButton}
+                data-tour="ask"
                 variant="accent"
                 size="sm"
                 aria-expanded={assistantOpen}
@@ -465,7 +487,19 @@ export function AppShell({ user, children }: Props) {
       </div>
       {intro.open && (
         <Suspense fallback={null}>
-          <Onboarding slides onDone={intro.close} onClose={intro.close} />
+          <Onboarding
+            slides
+            onDone={() => {
+              intro.close();
+              setTourReplay(true); // a replay that runs to the end carries on into the tour
+            }}
+            onClose={intro.close}
+          />
+        </Suspense>
+      )}
+      {touring && (
+        <Suspense fallback={null}>
+          <Tour onDone={endTour} />
         </Suspense>
       )}
     </>
