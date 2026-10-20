@@ -15,12 +15,12 @@ test("first login shows the privacy notice, which must be accepted before the ap
   await signIn(page, "consent");
   const onboarding = page.getByRole("region", { name: "Getting to know PaySense" });
   await expect(onboarding.getByRole("heading", { name: "Before you start" })).toBeVisible();
-  await expect(onboarding.getByText(/What the assistant sends/)).toBeVisible();
+  await expect(onboarding.getByRole("listitem").filter({ hasText: "What the assistant sends" })).toBeVisible();
   await onboarding.getByRole("button", { name: /i understand/i }).click();
   await onboarding.getByRole("link", { name: "Go to the dashboard" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /hi, e2e tester/i })).toBeVisible();
   await page.goto("/account");
-  await expect(page.getByText(/You accepted version v1/)).toBeVisible();
+  await expect(page.getByText(/You accepted version v2/)).toBeVisible();
 });
 
 test("set a budget, add an expense, the bar moves, and the over-budget alert appears", async ({

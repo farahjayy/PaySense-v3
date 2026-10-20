@@ -10,23 +10,23 @@
 | The smoke script against that container | `smoke_live.py`: the service answers, CORS allows the origin, anonymous calls are refused; **login answers 503** because the real database does not yet have migration 0003's `passphrase_hash` column. Expected until the migrations are applied |
 | The API runs with only its runtime dependencies | `uv sync --frozen --no-default-groups` (what the image runs); the backend test suite also passes without the ML group (`uv run --no-group ml pytest --ignore=tests/ml`) |
 | The frontend builds for production and runs under the Content-Security-Policy | `pnpm build`; 26 Playwright journeys on desktop and phone with no policy violations, and no sideways scroll at 360 / 375 px |
-| The assistant against the real provider | `scripts/assistant_eval.py --runs 3` (36 / 36), `scripts/demo_run.py --in-memory`, and the browser journey `pnpm exec playwright test -c playwright.live.config.ts`, all with the real Gemini key |
+| The assistant against a real provider | `scripts/assistant_eval.py --runs 3` on Claude Haiku 5.5 (`reports/assistant/`) and earlier on free-tier Gemini; `scripts/demo_run.py`; the browser journey `pnpm exec playwright test -c playwright.live.config.ts`. **Not yet run on Groq, the default (D-70)**: run the evaluation with `GROQ_API_KEY` before quoting a Groq figure |
 
 | **Not** verified — do these on deploy | Why |
 |---|---|
-| Migrations 0003–0006 on the real Supabase project | They cannot be applied from the build session (the author applies them); every v3 feature that stores something needs them |
-| Anything v3 against the real database | Login itself needs 0003 |
+| Migration 0007 (Google sign-in) on the real Supabase project | 0003–0006 are applied and `check_rls.py` passes 13 of 13 tables; 0007 is not yet confirmed |
 | `FORWARDED_ALLOW_IPS` | Render's proxy addresses must be read from its documentation or observed (below) |
 | A phone browser on the live URL | Needs the live URL |
 
 ## Order of operations
 
-1. **Supabase** (the `paysense-v3` project, Singapore; 0001 and 0002 are applied). Apply **`backend/migrations/0003_login_hardening.sql`, `0004_budgets_assistant.sql`, `0005_savings_buffer.sql`, `0006_privacy.sql`**, in order, in the SQL editor, each from the branch head (0003 changed after it was first written). Then `cd backend && uv run python scripts/check_rls.py` (every table answers the anonymous key with 401) and `uv run pytest -m integration` (the `test_v3_migrations.py` tests stop skipping once the tables exist).
+1. **Supabase** (the `paysense-v3` project, Singapore; 0001–0006 are applied). Apply **`backend/migrations/0007_google_sign_in.sql`** in the SQL editor (a new environment applies 0001–0007 in order). Then `cd backend && uv run python scripts/check_rls.py` (every table answers the anonymous key with 401) and `uv run pytest -m integration` (the `test_v3_migrations.py` tests stop skipping once the tables exist).
 2. **Local `.env`** (the repo-root `.env`, from `.env.example`, with `DB_BACKEND=supabase`): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `CORS_ORIGINS`, and for the assistant `LLM_PROVIDER` and its key (`env_setup.md`).
 3. **Demo and judge accounts**: start the API locally on the real database, then `cd backend && uv run python scripts/load_personas.py --api http://localhost:8000`. Usernames and generated passphrases go to the gitignored `data/private/persona_accounts.json`; deliver judges theirs privately. Check the demo against the real model and data: `uv run python scripts/find_demo_scenario.py --api http://localhost:8000` and `uv run python scripts/demo_run.py --api http://localhost:8000` (both write `evidence/`).
 4. **Render** (the API). New → Blueprint → this repository; it reads `render.yaml` (service **`paysense-v3-api`**, so it cannot collide with the v2 service). Fill in the prompted values:
    - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` from step 1.
-   - `GEMINI_API_KEY` (or `ANTHROPIC_API_KEY` with `LLM_PROVIDER=anthropic`). Left empty, the assistant runs in guided mode.
+   - `GROQ_API_KEY` (free at console.groq.com; or `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` with `LLM_PROVIDER` set to match). Left empty, the assistant runs in guided mode.
+   - For Google sign-in (optional): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `API_PUBLIC_URL` (the Render URL), and `NEXT_PUBLIC_GOOGLE_SIGNIN=true` on Vercel. Apply migration 0007 first.
    - `CORS_ORIGINS`: a placeholder now, the Vercel URL after step 5.
    - `FORWARDED_ALLOW_IPS`: see "Proxy addresses" below.
    - `SESSION_SECRET` is generated for you; the token budgets, assistant cap and write quota have values in the blueprint.

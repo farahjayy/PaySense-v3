@@ -62,7 +62,9 @@ export default defineConfig({
       // scripts) must be exercised exactly as it will be served.
       command: "pnpm build && pnpm start --port 3100",
       url: FRONTEND_URL,
-      env: { NEXT_PUBLIC_API_BASE_URL: API_URL, NEXT_DIST_DIR: ".next-e2e" },
+      // Pinned here: next.config.ts also loads the repo-root .env, which never overrides a set
+      // variable, so a developer's Google sign-in flag cannot hide the passphrase form under test.
+      env: { NEXT_PUBLIC_API_BASE_URL: API_URL, NEXT_DIST_DIR: ".next-e2e", NEXT_PUBLIC_GOOGLE_SIGNIN: "false" },
       reuseExistingServer: false,
       timeout: 180_000,
     },

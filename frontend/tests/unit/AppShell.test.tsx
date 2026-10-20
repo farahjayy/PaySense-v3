@@ -202,7 +202,8 @@ describe("AppShell", () => {
     await userEvent.click(screen.getByRole("button", { name: /log out/i }));
 
     expect(getSession()).toBeNull();
-    expect(replace).toHaveBeenCalledWith("/login");
+    // where AuthGate sends every visitor without a session, so the two never race
+    expect(replace).toHaveBeenCalledWith("/welcome");
     expect(post).toHaveBeenCalledWith("/api/auth/logout"); // the server ends every session too
   });
 });

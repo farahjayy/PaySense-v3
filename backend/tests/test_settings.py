@@ -73,9 +73,15 @@ def test_server_exits_naming_session_secret_when_it_is_missing(tmp_path):
         PYTHONPATH=str(BACKEND_DIR),
     )
 
+    # The settings also read the repo-root .env by absolute path; switch that off so only the
+    # process environment counts, as on a server with no .env.
+    no_env_file = (
+        "import app.core.settings as s; s.Settings.model_config['env_file'] = None; "
+        "s.load_settings.__defaults__ = (None,); import app.main as m; m.app"
+    )
     result = subprocess.run(  # noqa: S603
-        [sys.executable, "-c", "import app.main as m; m.app"],
-        cwd=tmp_path,  # no .env here, so only the process environment counts
+        [sys.executable, "-c", no_env_file],
+        cwd=tmp_path,
         env=env,
         capture_output=True,
         text=True,

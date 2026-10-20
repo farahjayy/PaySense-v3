@@ -21,7 +21,10 @@ test("a visitor lands on /welcome, goes on to /login, signs in, and lands on the
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("heading", { name: `Hi, ${DISPLAY_NAME}` })).toBeVisible();
-  await expect(page.getByText(DISPLAY_NAME, { exact: true }).first()).toBeVisible();
+  // the sidebar's profile card; on a phone it is inside More
+  if (test.info().project.name === "desktop") {
+    await expect(page.getByText(DISPLAY_NAME, { exact: true }).first()).toBeVisible();
+  }
 });
 
 test("a wrong passphrase shows one generic error and stays on /login", async ({ page }) => {
@@ -52,8 +55,8 @@ test("the session survives a reload and ends on log out", async ({ page }) => {
   // on a phone the profile, and with it Log out, is under More
   if (test.info().project.name === "phone") await page.getByRole("button", { name: "More" }).click();
   await page.getByRole("button", { name: "Log out" }).click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/welcome$/);
 
   await page.goto("/");
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/welcome$/);
 });

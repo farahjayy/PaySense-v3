@@ -427,7 +427,7 @@ export function AppShell({ user, children }: Props) {
     api.POST("/api/auth/logout").catch(() => undefined);
     clearSession();
     queryClient.clear();
-    router.replace("/login");
+    router.replace("/welcome"); // AuthGate's destination too; a different one would race it
   }
 
   return (

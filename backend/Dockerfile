@@ -29,5 +29,7 @@ EXPOSE 8000
 
 # One worker: the login rate limiter keeps its state in the process. FORWARDED_ALLOW_IPS must name
 # the platform's proxy addresses (a CIDR is accepted), never "*", or a client could forge its
-# address and dodge the limit. --limit-concurrency sheds load with a 503 instead of exhausting memory.
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --proxy-headers --forwarded-allow-ips \"${FORWARDED_ALLOW_IPS:-127.0.0.1}\" --limit-concurrency 40 --timeout-keep-alive 5"]
+# address and dodge the limit. It has no default: unset, every client would share the proxy's
+# limiter bucket, so the container refuses to start instead (for a local run, set it to 127.0.0.1).
+# --limit-concurrency sheds load with a 503 instead of exhausting memory.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --proxy-headers --forwarded-allow-ips \"${FORWARDED_ALLOW_IPS:?set FORWARDED_ALLOW_IPS to the proxy address range}\" --limit-concurrency 40 --timeout-keep-alive 5"]

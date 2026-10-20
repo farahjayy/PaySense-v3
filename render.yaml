@@ -27,7 +27,9 @@ services:
         sync: false # the platform's proxy range, never "*" (see the guide)
       # The assistant (D-53). Without a key it runs in guided mode (no model): safe to deploy first.
       - key: LLM_PROVIDER
-        value: gemini # or anthropic once credit is available; "none" switches the model off
+        value: groq # D-70; or gemini / anthropic with the matching key; "none" switches the model off
+      - key: GROQ_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: ANTHROPIC_API_KEY
@@ -40,3 +42,10 @@ services:
         value: "300"
       - key: DAILY_WRITE_QUOTA
         value: "300"
+      # Sign in with Google (D-69): off unless all three are set. API_PUBLIC_URL is this service's URL.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: API_PUBLIC_URL
+        sync: false
