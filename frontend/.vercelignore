@@ -1,5 +1,8 @@
 # Never uploaded by `vercel` run in frontend/ (the CLI does not skip env files on its own).
 .env*
+# The committed template holds no values, and `vercel build` links every `.env*` file into each
+# function: excluded here, the prebuilt deploy fails with ENOENT on it.
+!.env.example
 # Local build output and test leftovers; Vercel builds from source.
 .next*
 coverage
