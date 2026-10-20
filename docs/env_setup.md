@@ -10,9 +10,9 @@ Last updated: 2026-10-08
 
 ## Required variables
 
-**One file per app (D-74), nothing at the repo root.** Each app deploys from its own folder alone, so each reads only its own file: the API reads `backend/.env` (template `backend/.env.example`), the app reads `frontend/.env.local` (template `frontend/.env.example`). On Render and Vercel the same names are set in each dashboard instead.
+**Locally: one `.env` at the repo root for both apps** (template: `.env.example`). The backend reads it, then `backend/.env` if present (which wins); the frontend reads it from `next.config.ts`, and `frontend/.env.local` still wins. **Deployed (D-74):** Render gets `backend/` alone and Vercel gets `frontend/` alone, so the root file is never there; each dashboard holds that app's variables, listed in `backend/.env.example` and `frontend/.env.example`.
 
-**Backend** (`backend/.env`; read by `backend/app/core/settings.py`)
+**Backend** (root `.env` or `backend/.env`; read by `backend/app/core/settings.py`)
 
 | Variable | Required | Where to get it | Read by | Notes |
 |---|---|---|---|---|
@@ -23,7 +23,7 @@ Last updated: 2026-10-08
 | `SESSION_SECRET` | Yes | Generate locally: `python -c "import secrets; print(secrets.token_urlsafe(48))"` | backend auth (HS256 signing) | Rotating it logs every tester out |
 | `CORS_ORIGINS` | Yes | Your frontend origins, comma-separated: `http://localhost:3000` locally; add the Vercel URL in P8 | backend CORS middleware | No trailing slash |
 
-**Frontend** (`frontend/.env.local`; read by Next.js itself)
+**Frontend** (root `.env` via `frontend/next.config.ts`, or `frontend/.env.local`)
 
 | Variable | Required | Where to get it | Read by | Notes |
 |---|---|---|---|---|
@@ -68,8 +68,7 @@ Last updated: 2026-10-08
 ```bash
 # from the repo root
 pnpm install                                  # frontend packages, then `uv sync` for the backend
-cp backend/.env.example backend/.env          # the API's file; set SESSION_SECRET, then any keys
-cp frontend/.env.example frontend/.env.local  # the app's file; the defaults work locally
+cp .env.example .env                          # one file for both apps locally; set SESSION_SECRET, then any keys
 pnpm dev                                      # API on :8000 and the app on :3000
 ```
 
@@ -84,10 +83,10 @@ Build-time vs runtime: `NEXT_PUBLIC_API_BASE_URL` is baked in at **build time** 
 ## Rules
 
 - **Client-side bundles are public.** Anything inlined into a browser build is readable by anyone who opens devtools. A key that must stay secret goes through a server-side route, never into client code — no exceptions, no "it's just a prototype".
-- **The `.env.example` files are the documentation.** Add the variable name to the app's own example (`backend/` or `frontend/`) the moment you add the variable, or the next person's setup silently half-works.
+- **The `.env.example` files are the documentation.** Add the variable name to the root example and to the app's own (`backend/` or `frontend/`) the moment you add the variable, or the next person's setup silently half-works.
 - **A missing required variable should fail loudly at startup**, with a message naming the variable and pointing here. Silent fallbacks to a broken state cost hours.
 - **Rotate on exposure, not on suspicion of exposure.** If you can't prove a key never left the machine, treat it as leaked.
 
 ## When a variable changes
 
-Adding, renaming, or removing one means updating, in the same session: this file, the app's `.env.example`, the deploy target's dashboard (and `backend/render.yaml` for an API variable) (if any), and a changelog entry. Miss one and the next environment breaks in a way that looks like a code bug.
+Adding, renaming, or removing one means updating, in the same session: this file, the root and the app's `.env.example`, the deploy target's dashboard (and `backend/render.yaml` for an API variable) (if any), and a changelog entry. Miss one and the next environment breaks in a way that looks like a code bug.

@@ -1,7 +1,13 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+
 import type { NextConfig } from "next";
 
-// Env comes from `frontend/.env.local` (Next's own loading) or the Vercel project: the app deploys
-// from `frontend/` alone and reads nothing at the repo root (D-74).
+// Locally the repo-root `.env` serves both apps; `frontend/.env.local` still wins (Next has already
+// loaded it, and loadEnvFile never overwrites a set variable). A Vercel deploy gets `frontend/`
+// alone (D-74), so there the root file does not exist and the project's variables are used.
+const ROOT_ENV = path.resolve(__dirname, "..", ".env");
+if (existsSync(ROOT_ENV)) process.loadEnvFile(ROOT_ENV);
 
 // Headers that are safe for every route. The Content-Security-Policy is not here: it carries a
 // per-request script nonce, so `proxy.ts` sets it (policy text in `lib/csp.ts`).

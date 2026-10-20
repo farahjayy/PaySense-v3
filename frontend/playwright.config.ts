@@ -62,8 +62,8 @@ export default defineConfig({
       // scripts) must be exercised exactly as it will be served.
       command: "pnpm build && pnpm start --port 3100",
       url: FRONTEND_URL,
-      // Pinned here: a set variable beats `.env.local`, so a developer's own values (the API URL,
-      // the Google sign-in flag) cannot leak into the run.
+      // Pinned here: a set variable beats the root `.env` and `.env.local`, so a developer's own
+      // values (the API URL, the Google sign-in flag) cannot leak into the run.
       env: { NEXT_PUBLIC_API_BASE_URL: API_URL, NEXT_DIST_DIR: ".next-e2e", NEXT_PUBLIC_GOOGLE_SIGNIN: "false" },
       reuseExistingServer: false,
       timeout: 180_000,

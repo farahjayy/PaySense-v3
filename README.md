@@ -135,8 +135,7 @@ Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), 
 ```bash
 git clone <this repo> && cd PaySense-v3
 pnpm install          # frontend packages, then `uv sync` for the backend
-cp backend/.env.example backend/.env           # the API's settings; every variable: docs/env_setup.md
-cp frontend/.env.example frontend/.env.local   # the app's settings
+cp .env.example .env  # one file for both apps locally; every variable: docs/env_setup.md
 pnpm dev              # API on http://localhost:8000, app on http://localhost:3000; Ctrl+C stops both
 ```
 
