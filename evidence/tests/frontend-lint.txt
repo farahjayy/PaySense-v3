@@ -1,5 +1,2 @@
-$ npm run lint  (in frontend/)
-
-> frontend@0.1.0 lint
-> eslint
-
+$ pnpm lint  (in frontend/)
+$ eslint

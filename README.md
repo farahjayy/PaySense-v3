@@ -42,6 +42,7 @@ An AI assistant that tells Malaysian university students whether a buy-now-pay-l
 </p>
 
 <p>
+  <img src="https://img.shields.io/badge/Groq-f55036?style=flat&logoColor=white" alt="Groq">
   <img src="https://img.shields.io/badge/Claude-d97757?style=flat&logo=anthropic&logoColor=white" alt="Claude">
   <img src="https://img.shields.io/badge/Gemini-8e75b2?style=flat&logo=googlegemini&logoColor=white" alt="Gemini">
   <img src="https://img.shields.io/badge/pytest-0a9edc?style=flat&logo=pytest&logoColor=white" alt="pytest">
@@ -70,9 +71,10 @@ Repository: [github.com/farahjayy/PaySense-v3](https://github.com/farahjayy/PayS
 |---|---|
 | **Financial health forecast** | Places known income, bills and instalments on their dates, forecasts the variable part with a global LSTM (chosen over ARIMA, Prophet and simple benchmarks), and simulates 1,000 futures: a running-margin chart with an 80% band, a health score and the chance of running short. A savings buffer the student enters is counted; nothing else is assumed. |
 | **BNPL risk check** | For a purchase on SPayLater, TikTok PayLater, Atome or any other provider: the exact instalment schedule from the provider's rules, a Safe / Caution / At Risk band from a calibrated LightGBM model (chosen over random forest, XGBoost and logistic regression), the reasons (exact Shapley values), and the smallest change that reaches Safe, or an honest "none does". |
-| **Assistant** | Chat or quick actions. Three permission tiers: read, compute or propose, and write — writes only from a proposal the student confirms on a card built from the stored proposal. Every figure in its answer is checked against the tools' results. Works with Gemini or Claude behind one interface; falls back to guided mode (no model) when the provider is unavailable. |
+| **Assistant** | Chat or quick actions. Three permission tiers: read, compute or propose, and write — writes only from a proposal the student confirms on a card built from the stored proposal. Every figure in its answer is checked against the tools' results. Works with Groq, Gemini or Claude behind one interface; falls back to guided mode (no model) when the provider is unavailable. |
 | **Budgets, bills, insights** | Category budgets with pace, a suggested budget with its arithmetic shown, bill and instalment collisions, spending insights, ranked recommendations and alerts, all from rules over the student's own data. |
 | **Ledger** | Manual entry, CSV / Excel import with preview and duplicate flags, import by pasting messy text into the assistant, recurring items, categories. |
+| **Sign-in and first visit** | Sign in with Google, or a username and passphrase for seeded accounts; logout ends every session. A first visit gets short welcome slides, then a guided tour that points at the real controls (forecast, import, risk check, assistant, your data). Both can be skipped and replayed from the profile menu. |
 | **Privacy** | Consent before the assistant sends anything to a provider; download or delete all your data; every database query scoped to the signed-in user. |
 
 ## Architecture
@@ -157,9 +159,11 @@ Accounts are made by the operator; there is no public sign-up. `cd backend && uv
 | Browser journeys, desktop and phone | `cd frontend && pnpm exec playwright test` (starts both servers on an in-memory backend) |
 | Everything, with outputs kept in `evidence/tests/` | `cd backend && uv run python scripts/collect_test_evidence.py` |
 
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs all of the above, plus a secret scan of the whole history, on every push and pull request.
+
 ## Deployment
 
-The API runs on Render from `render.yaml` (Docker, `backend/Dockerfile`), the frontend on Vercel. Steps, variables and the smoke test: [`docs/deployment.md`](docs/deployment.md).
+The API runs on Render from `render.yaml` (Docker, `backend/Dockerfile`), the frontend on Vercel. Nothing deploys on push: after the first setup, a deploy is started by hand from Actions → **Deploy** ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), runs only on `main` once CI has passed on that commit, and ships the API then the app. Steps, variables and the smoke test: [`docs/deployment.md`](docs/deployment.md).
 
 ## Security
 
@@ -177,7 +181,8 @@ frontend/           Next.js app: app/ routes, components/, lib/ (API client from
 data/               synthetic personas and manifests (raw third-party data and private data are gitignored)
 reports/            generated evaluation reports
 evidence/           generated demo, test and scan evidence
-public/             team photos for this README
+public/             logo and team photos for this README
+.github/workflows/  CI on every push; the manual production deploy
 docs/               technical documentation, honest limits, roadmap, deployment and setup guides
 ```
 
@@ -191,8 +196,9 @@ More: [`docs/file-structure.md`](docs/file-structure.md).
 | [`docs/honest-limits.md`](docs/honest-limits.md) | What the numbers do not show, every figure traced to a generated report |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | What is done and what comes next |
 | [`docs/demo-scenario.md`](docs/demo-scenario.md) | The demo purchases as the real model scored them (generated) |
-| [`docs/deployment.md`](docs/deployment.md) | Deploying to Render, Vercel and Supabase |
+| [`docs/deployment.md`](docs/deployment.md) | Deploying to Render, Vercel and Supabase, the deploy workflow, the live checklist |
 | [`docs/env_setup.md`](docs/env_setup.md) | Every environment variable |
+| [`docs/file-structure.md`](docs/file-structure.md) | Where everything lives in the repository |
 | [`SECURITY.md`](SECURITY.md) | Security self-assessment: permission tiers, controls, threat model, known risks |
 
 Design notes, plans and decision records are kept in the team's private repository.

@@ -24,7 +24,7 @@ backend/ml/          offline: may import app.domain and app.db.plans helpers; ap
 | `domain/` | pure logic, no I/O: `money` (sen maths), `schedule`, `plan_builder`, `plans`, `providers`, `categorize`, `categories`, `flows`, `csv_import`, `upload`, `bills`, `bill_analysis`, `breakdown`, `budgets`, `insights`, `recommendations`, `merchants`, `consent` |
 | `engines/forecasting/` | Engine 1: series building, the served LSTM (ONNX), the band table (`bands.py`), the Monte Carlo simulation, the dashboard summary |
 | `engines/risk/` | Engine 2: `features.py` (the only place its features are computed), the artefact loader and its start-up checks, assessment, exact Shapley reasons, counterfactual search, sentence templates |
-| `assistant/` | the AI assistant: `tools` (Tier 0/1, the model's only tools), `writes` (Tier 2, confirm-only), `policy`, `executor`, `actions` (pending proposals), `llm` (Gemini, Claude and a fake behind one interface), `agent` (the loop and its caps), `numbers` (the number check), `paste` (import by chat), `guided`, `prompt` |
+| `assistant/` | the AI assistant: `tools` (Tier 0/1, the model's only tools), `writes` (Tier 2, confirm-only), `policy`, `executor`, `actions` (pending proposals), `llm` (Groq, Gemini, Claude and a fake behind one interface), `agent` (the loop and its caps), `numbers` (the number check), `paste` (import by chat), `guided`, `prompt` |
 
 ## Offline ML (`backend/ml/`)
 

@@ -1,2 +1,2 @@
-$ npx tsc --noEmit  (in frontend/)
+$ pnpm exec tsc --noEmit  (in frontend/)
 

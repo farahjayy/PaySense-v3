@@ -1,13 +1,5 @@
-$ npx vitest run --coverage  (in frontend/)
- ...onents/account |     100 |       80 |     100 |     100 |                   
-  ...entNotice.tsx |     100 |       80 |     100 |     100 | 46-57             
- ...ents/assistant |   91.93 |    80.62 |   94.69 |   93.44 |                   
-  ...tantPanel.tsx |   88.04 |    83.49 |   95.83 |   92.59 | ...43-144,325-326 
-  ConfirmCard.tsx  |   95.83 |    82.05 |     100 |   95.65 | 72                
-  ...edActions.tsx |   93.65 |    83.33 |   90.47 |   92.98 | 174,185,279,308   
-  ResultCard.tsx   |   93.44 |    72.36 |   96.96 |   93.44 | 86,180,239,386    
- components/auth   |   97.18 |    93.75 |     100 |     100 |                   
-  AuthGate.tsx     |     100 |     87.5 |     100 |     100 | 27                
+$ pnpm exec vitest run --coverage  (in frontend/)
+  GoogleSignIn.tsx |   93.33 |      100 |      75 |   96.29 | 60                
   LoginForm.tsx    |   95.45 |       95 |     100 |     100 | 38,120            
  ...ents/dashboard |   94.54 |    95.12 |   89.47 |   95.91 |                   
   BudgetStrip.tsx  |   83.33 |    83.33 |   66.66 |   83.33 | 26                
@@ -18,10 +10,13 @@ $ npx vitest run --coverage  (in frontend/)
  components/import |   65.38 |    70.58 |   57.14 |      64 |                   
   DropZone.tsx     |   56.25 |       50 |   42.85 |   53.33 | 23-30,53          
   ReviewList.tsx   |      80 |    81.81 |   71.42 |      80 | 38,68             
- components/layout |   94.73 |    72.72 |   93.75 |   97.14 |                   
-  AppShell.tsx     |   94.73 |    72.72 |   93.75 |   97.14 | 128               
+ components/layout |    91.2 |    89.65 |   86.36 |    92.1 |                   
+  AppShell.tsx     |    91.2 |    89.65 |   86.36 |    92.1 | ...69,415,493-494 
  components/model  |      90 |    72.22 |     100 |     100 |                   
   ...lVersions.tsx |      90 |    72.22 |     100 |     100 | 15,22-33,40       
+ ...nts/onboarding |   93.52 |    91.08 |   97.67 |   94.01 |                   
+  Onboarding.tsx   |   98.46 |    93.44 |     100 |     100 | 260,359,390       
+  Tour.tsx         |   89.18 |     87.5 |   93.33 |   88.88 | 74-79,117-118     
  components/plans  |   89.39 |    83.33 |   79.41 |    87.5 |                   
   PlanFields.tsx   |   56.25 |    85.71 |      50 |   53.33 | 31,52,75,103-130  
   PlanForm.tsx     |     100 |       80 |     100 |     100 | ...1,83,90-95,109 
@@ -29,48 +24,53 @@ $ npx vitest run --coverage  (in frontend/)
   ...derLimits.tsx |     100 |    76.47 |     100 |     100 | 37,65,70-72       
  ...ents/recurring |   79.16 |    74.57 |      50 |    82.6 |                   
   ...rringForm.tsx |   79.16 |    74.57 |      50 |    82.6 | 80,103,118-126    
- components/risk   |      84 |    97.82 |   69.23 |   86.36 |                   
-  RiskResult.tsx   |   66.66 |      100 |      40 |      75 | 20-21             
+ components/risk   |    92.3 |    95.61 |   84.61 |   91.83 |                   
+  RiskResult.tsx   |   66.66 |      100 |      40 |   66.66 | 23-26             
+  SaferTiming.tsx  |     100 |    95.12 |     100 |     100 | 65-68             
+  ...ndOpinion.tsx |     100 |    90.47 |     100 |     100 | 95,170            
   ...stionCard.tsx |     100 |    95.23 |     100 |     100 | 37                
   ...houtChart.tsx |    87.5 |      100 |      75 |   85.71 | 82                
- ...onents/screens |   89.04 |    84.89 |   82.75 |   89.46 |                   
+ ...onents/screens |   89.49 |    85.02 |   83.64 |   89.88 |                   
   ...untScreen.tsx |   92.68 |    82.22 |    87.5 |   94.87 | 55,110            
   ...etsScreen.tsx |   84.61 |    76.92 |   76.66 |   85.71 | ...21-137,185,318 
-  ...iesScreen.tsx |   97.87 |    92.72 |   95.65 |   97.72 | 78                
-  ...ardScreen.tsx |      76 |       90 |      40 |   81.81 | 24-27,111,130     
+  ...iesScreen.tsx |   97.87 |    92.72 |   95.65 |   97.72 | 79                
+  ...ardScreen.tsx |      76 |       90 |      40 |   81.81 | 24-27,113,132     
   ImportScreen.tsx |   84.31 |    84.44 |   94.44 |   84.78 | 40-46             
   ...htsScreen.tsx |   88.09 |    81.92 |   79.16 |   88.09 | ...34-153,182,275 
   PlansScreen.tsx  |      90 |    86.11 |   81.81 |   89.47 | 50-54,73,79       
-  ...ingScreen.tsx |   80.48 |    81.03 |   77.77 |      80 | ...89,101,134-156 
+  ...ingScreen.tsx |   80.48 |    81.03 |   77.77 |      80 | ...90,102,135-157 
   ...ortScreen.tsx |      75 |     87.5 |      50 |      75 | 33                
-  RiskScreen.tsx   |     100 |    86.11 |     100 |     100 | 51,68,72,137-143  
+  RiskScreen.tsx   |     100 |    86.11 |     100 |     100 | 57,74,83,159-165  
+  ...ityScreen.tsx |     100 |    88.88 |     100 |     100 | 73,80             
   ...onsScreen.tsx |   93.65 |    89.41 |   83.33 |   93.22 | 142-151,187-204   
  ...s/transactions |   89.74 |     88.7 |   84.21 |    92.1 |                   
   ...ySpending.tsx |     100 |    95.45 |     100 |     100 | 33                
   ...ctionForm.tsx |   80.95 |    83.33 |    62.5 |      85 | 68-78,95          
- components/ui     |    92.5 |    91.07 |   96.15 |   97.33 |                   
+ components/ui     |   94.11 |    91.12 |   96.87 |   97.84 |                   
   Dialog.tsx       |   76.92 |    73.91 |   83.33 |   90.47 | 51-52             
   MoneyInput.tsx   |     100 |    96.29 |     100 |     100 | 65                
+  Tooltip.tsx      |     100 |       90 |     100 |     100 | 29                
   fields.tsx       |     100 |       80 |     100 |     100 | 26,48,61          
- lib               |   99.12 |    96.79 |   98.93 |     100 |                   
+ lib               |   98.92 |    96.86 |   99.03 |   99.67 |                   
   assistant.ts     |     100 |    98.24 |     100 |     100 | 76                
   forecast.ts      |   96.55 |    83.33 |     100 |     100 | 64-66,91          
   import.ts        |     100 |    95.65 |     100 |     100 | 113               
   insights.ts      |     100 |    95.65 |     100 |     100 | 33                
+  introTour.ts     |   95.83 |      100 |     100 |      95 | 13                
   media.ts         |   91.66 |      100 |   83.33 |     100 |                   
   plans.ts         |   95.23 |    94.28 |     100 |     100 | 46,90             
   risk.ts          |     100 |    94.73 |     100 |     100 | 52                
- lib/api           |   97.95 |    88.33 |   96.85 |    97.9 |                   
+ lib/api           |   97.99 |    88.33 |   96.93 |   97.95 |                   
   client.ts        |   96.29 |      100 |   83.33 |   96.29 | 50                
-  queries.ts       |    98.5 |    80.95 |   97.84 |   98.47 | 222,267           
+  queries.ts       |   98.55 |    80.95 |   97.93 |   98.52 | 240,292           
   topic.ts         |   95.91 |    72.72 |   95.12 |   95.91 | 37-39             
 -------------------|---------|----------|---------|---------|-------------------
 
 =============================== Coverage summary ===============================
-Statements   : 91.05% ( 1628/1788 )
-Branches     : 86.64% ( 1434/1655 )
-Functions    : 87.88% ( 682/776 )
-Lines        : 91.77% ( 1495/1629 )
+Statements   : 91.49% ( 1936/2116 )
+Branches     : 87.67% ( 1671/1906 )
+Functions    : 88.41% ( 801/906 )
+Lines        : 92.09% ( 1760/1911 )
 ================================================================================
 Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
 Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
