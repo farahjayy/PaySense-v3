@@ -148,6 +148,16 @@ body {
   animation: page-enter 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* The route placeholder waits 150 ms before showing, so a fast page switch never flashes it. */
+@keyframes route-loading-in {
+  from {
+    opacity: 0;
+  }
+}
+.route-loading {
+  animation: route-loading-in 0.2s ease-out 0.15s both;
+}
+
 /* Tooltips appear after a short pause, so sweeping down the sidebar does not flash every one. */
 @keyframes tip-in {
   from {
