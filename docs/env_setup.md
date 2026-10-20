@@ -23,7 +23,7 @@ Last updated: 2026-10-08
 | `SESSION_SECRET` | Yes | Generate locally: `python -c "import secrets; print(secrets.token_urlsafe(48))"` | backend auth (HS256 signing) | Rotating it logs every tester out |
 | `CORS_ORIGINS` | Yes | Your frontend origins, comma-separated: `http://localhost:3000` locally; add the Vercel URL in P8 | backend CORS middleware | No trailing slash |
 
-**Frontend — `frontend/.env.local`** (template: `frontend/.env.example`, created in P0 Task 7 — `create-next-app` refuses a non-empty folder, so it can't exist before the scaffold)
+**Frontend** (the same root `.env`; read by `frontend/next.config.ts`. A `frontend/.env.local`, if present, overrides it)
 
 | Variable | Required | Where to get it | Read by | Notes |
 |---|---|---|---|---|
@@ -67,8 +67,7 @@ Last updated: 2026-10-08
 ```bash
 # from the repo root
 pnpm install                                  # frontend packages, then `uv sync` for the backend
-cp backend/.env.example backend/.env          # then fill in the values above
-cp frontend/.env.example frontend/.env.local  # then set NEXT_PUBLIC_API_BASE_URL
+cp .env.example .env                          # one file for both apps; set SESSION_SECRET, then any keys
 pnpm dev                                      # API on :8000 and the app on :3000
 ```
 

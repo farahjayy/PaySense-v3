@@ -11,6 +11,8 @@ desktop.ini
 !.env.example
 *.pem
 *.key
+# Google OAuth client downloads (client ID + secret); the values belong in .env only
+client_secret*.json
 
 .claude/settings.local.json
 

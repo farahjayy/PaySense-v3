@@ -22,7 +22,7 @@
 ## Order of operations
 
 1. **Supabase** (the `paysense-v3` project, Singapore; 0001 and 0002 are applied). Apply **`backend/migrations/0003_login_hardening.sql`, `0004_budgets_assistant.sql`, `0005_savings_buffer.sql`, `0006_privacy.sql`**, in order, in the SQL editor, each from the branch head (0003 changed after it was first written). Then `cd backend && uv run python scripts/check_rls.py` (every table answers the anonymous key with 401) and `uv run pytest -m integration` (the `test_v3_migrations.py` tests stop skipping once the tables exist).
-2. **Local `.env`** (`backend/.env`): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `CORS_ORIGINS`, and for the assistant `LLM_PROVIDER` and its key (`env_setup.md`).
+2. **Local `.env`** (the repo-root `.env`, from `.env.example`, with `DB_BACKEND=supabase`): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SESSION_SECRET`, `CORS_ORIGINS`, and for the assistant `LLM_PROVIDER` and its key (`env_setup.md`).
 3. **Demo and judge accounts**: start the API locally on the real database, then `cd backend && uv run python scripts/load_personas.py --api http://localhost:8000`. Usernames and generated passphrases go to the gitignored `data/private/persona_accounts.json`; deliver judges theirs privately. Check the demo against the real model and data: `uv run python scripts/find_demo_scenario.py --api http://localhost:8000` and `uv run python scripts/demo_run.py --api http://localhost:8000` (both write `evidence/`).
 4. **Render** (the API). New → Blueprint → this repository; it reads `render.yaml` (service **`paysense-v3-api`**, so it cannot collide with the v2 service). Fill in the prompted values:
    - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` from step 1.

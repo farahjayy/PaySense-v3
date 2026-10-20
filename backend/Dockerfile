@@ -3,7 +3,7 @@
 # for a 512 MB host (ADR D-15).
 #
 #   docker build -t paysense-api backend
-#   docker run --rm -p 8000:8000 --env-file backend/.env paysense-api
+#   docker run --rm -p 8000:8000 --env-file .env paysense-api
 #
 # Build context is backend/. Secrets come from the environment at run time, never from the image.
 
