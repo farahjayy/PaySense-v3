@@ -59,7 +59,8 @@ export function CategoriesScreen() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="Categories"
-        intro="The labels on your transactions. The built-in ones are fixed, because the forecast depends on a few of them (refunds, transfers, BNPL). The ones you add are yours to rename or delete."
+        intro="The labels on your transactions. Add your own; the built-in ones are fixed."
+        more="The forecast depends on a few built-in labels (refunds, transfers, BNPL), so those cannot change. The ones you add are yours to rename or delete."
         actions={
           <>
             <a href={TEMPLATE_HREF} download className={LINK_BUTTON}>

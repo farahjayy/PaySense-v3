@@ -31,11 +31,14 @@ export function ModelScreen() {
         title="About the model"
         intro="How the forecast, the BNPL risk check and the assistant work, what they were built from, and where they are weak."
       />
-      <p className="text-[13px] leading-relaxed text-ink-secondary">
-        PaySense was built as a university final-year project in Malaysia and extended for the
-        FinTechathon (Topic A: an AI assistant for personal finance). It is a working prototype for
-        students deciding whether to buy now and pay later; it is not a bank&apos;s product.
-      </p>
+      <details className="rounded-card border border-line bg-surface p-4 text-[13px] leading-relaxed text-ink-secondary [&_summary]:cursor-pointer [&_summary]:font-semibold [&_summary]:text-ink">
+        <summary>Where PaySense comes from</summary>
+        <p className="mt-2">
+          PaySense was built as a university final-year project in Malaysia and extended for the
+          FinTechathon (Topic A: an AI assistant for personal finance). It is a working prototype for
+          students deciding whether to buy now and pay later; it is not a bank&apos;s product.
+        </p>
+      </details>
       <LocalTerms className="rounded-card border border-line bg-surface p-4 text-[13px] leading-relaxed text-ink-secondary [&_li+li]:mt-1.5 [&_summary]:cursor-pointer [&_summary]:font-semibold [&_summary]:text-ink [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5" />
       <ModelVersions />
       <Section id="forecast" title="Financial health forecast">

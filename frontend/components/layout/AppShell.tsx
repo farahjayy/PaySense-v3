@@ -20,12 +20,17 @@ import { Dialog } from "@/components/ui/Dialog";
 import { isActive } from "@/lib/nav";
 import { api } from "@/lib/api/client";
 import { AssistantLauncher } from "@/lib/assistantLauncher";
+import { useIntroTour } from "@/lib/introTour";
 import { clearSession, type Session } from "@/lib/session";
 
 // The assistant (panel, cards, chat) is only needed once someone presses "Ask PaySense", so its
 // code is loaded then, not with every page. It only renders after a click, in the browser.
 const AssistantPanel = lazy(() =>
   import("@/components/assistant/AssistantPanel").then((m) => ({ default: m.AssistantPanel })),
+);
+// The intro tour is shown once per browser, so its code loads only when it opens.
+const IntroTour = lazy(() =>
+  import("@/components/onboarding/IntroTour").then((m) => ({ default: m.IntroTour })),
 );
 
 type NavItem = { href: string; label: string; icon: string };
@@ -154,11 +159,13 @@ function Profile({
   user,
   tone,
   onLogout,
+  onIntro,
   onNavigate,
 }: {
   user: Session["user"];
   tone: Tone;
   onLogout: () => void;
+  onIntro: () => void;
   onNavigate?: () => void;
 }) {
   const dark = tone === "dark";
@@ -199,6 +206,18 @@ function Profile({
           Log out
         </button>
       </div>
+      <button
+        type="button"
+        onClick={() => {
+          onNavigate?.();
+          onIntro();
+        }}
+        className={`mt-1 rounded-lg px-1 text-[12px] underline-offset-2 hover:underline ${
+          dark ? "text-on-accent-muted" : "text-ink-muted"
+        } ${linkFocus}`}
+      >
+        Show the intro again
+      </button>
     </div>
   );
 }
@@ -207,10 +226,12 @@ function Sidebar({
   pathname,
   user,
   onLogout,
+  onIntro,
 }: {
   pathname: string;
   user: Session["user"];
   onLogout: () => void;
+  onIntro: () => void;
 }) {
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-accent px-3 py-5 md:flex">
@@ -227,7 +248,7 @@ function Sidebar({
         <NavGroups pathname={pathname} tone="dark" />
       </nav>
       <div className="mt-4">
-        <Profile user={user} tone="dark" onLogout={onLogout} />
+        <Profile user={user} tone="dark" onLogout={onLogout} onIntro={onIntro} />
       </div>
     </aside>
   );
@@ -238,10 +259,12 @@ function MobileNav({
   pathname,
   user,
   onLogout,
+  onIntro,
 }: {
   pathname: string;
   user: Session["user"];
   onLogout: () => void;
+  onIntro: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const inMore = !PHONE_BAR.some((item) => isActive(pathname, item.href));
@@ -286,7 +309,13 @@ function MobileNav({
       </nav>
       <Dialog open={open} title="Menu" onClose={() => setOpen(false)}>
         <div className="flex flex-col gap-5">
-          <Profile user={user} tone="light" onLogout={onLogout} onNavigate={() => setOpen(false)} />
+          <Profile
+            user={user}
+            tone="light"
+            onLogout={onLogout}
+            onIntro={onIntro}
+            onNavigate={() => setOpen(false)}
+          />
           <NavGroups pathname={pathname} tone="light" onNavigate={() => setOpen(false)} />
         </div>
       </Dialog>
@@ -304,6 +333,7 @@ export function AppShell({ user, children }: Props) {
   const firstRender = useRef(true);
   const askButton = useRef<HTMLButtonElement>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const intro = useIntroTour();
   const [prompt, setPrompt] = useState<{ text: string; n: number } | null>(
     null,
   );
@@ -346,7 +376,7 @@ export function AppShell({ user, children }: Props) {
       >
         Skip to content
       </a>
-      <Sidebar pathname={pathname} user={user} onLogout={handleLogout} />
+      <Sidebar pathname={pathname} user={user} onLogout={handleLogout} onIntro={intro.show} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4 sm:px-6">
           <Link
@@ -383,7 +413,12 @@ export function AppShell({ user, children }: Props) {
           </AssistantLauncher.Provider>
         </main>
       </div>
-      <MobileNav pathname={pathname} user={user} onLogout={handleLogout} />
+      <MobileNav pathname={pathname} user={user} onLogout={handleLogout} onIntro={intro.show} />
+      {intro.open && (
+        <Suspense fallback={null}>
+          <IntroTour onClose={intro.close} />
+        </Suspense>
+      )}
       {assistantOpen && (
         <Suspense fallback={null}>
           <AssistantPanel onClose={closeAssistant} prompt={prompt} />

@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
 
-type Props = { title: string; intro?: ReactNode; actions?: ReactNode };
+type Props = { title: string; intro?: ReactNode; more?: ReactNode; actions?: ReactNode };
 
-/** The top of every screen: one h1, a sentence on what the screen is for, and its main actions. */
-export function PageHeader({ title, intro, actions }: Props) {
+/**
+ * The top of every screen: one h1, a sentence on what the screen is for, and its main actions.
+ * Background that only some readers need goes in `more`, behind a "Why?" toggle.
+ */
+export function PageHeader({ title, intro, more, actions }: Props) {
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="max-w-2xl">
@@ -14,6 +17,12 @@ export function PageHeader({ title, intro, actions }: Props) {
           {title}
         </h1>
         {intro && <p className="mt-1.5 text-[14px] leading-relaxed text-ink-secondary">{intro}</p>}
+        {more && (
+          <details className="mt-1 text-[13px] leading-relaxed text-ink-secondary">
+            <summary className="w-fit cursor-pointer rounded font-semibold text-accent">Why?</summary>
+            <p className="mt-1">{more}</p>
+          </details>
+        )}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>

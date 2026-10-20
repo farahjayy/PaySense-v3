@@ -222,3 +222,69 @@ describe("navigation loading", () => {
     expect(prefetch).toHaveBeenCalledWith("/budgets");
   });
 });
+
+describe("Intro tour", () => {
+  beforeEach(() => {
+    signIn();
+    window.localStorage.clear(); // a first visit in this browser
+  });
+
+  function shell() {
+    return render(
+      <AppShell user={USER}>
+        <p>page body</p>
+      </AppShell>,
+      { wrapper },
+    );
+  }
+
+  it("opens on a first visit and steps through four slides with buttons and arrow keys", async () => {
+    shell();
+    const tour = await screen.findByRole("dialog", { name: "Welcome to PaySense" });
+    expect(within(tour).getByText("Step 1 of 4")).toBeInTheDocument();
+    expect(within(tour).queryByRole("button", { name: "Back" })).toBeNull();
+
+    await userEvent.click(within(tour).getByRole("button", { name: "Next" }));
+    expect(within(tour).getByText("Step 2 of 4")).toBeInTheDocument();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(within(tour).getByText("Step 3 of 4")).toBeInTheDocument();
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(within(tour).getByText("Step 2 of 4")).toBeInTheDocument();
+    await userEvent.click(within(tour).getByRole("button", { name: "Back" }));
+    expect(within(tour).getByText("Step 1 of 4")).toBeInTheDocument();
+  });
+
+  it("ends with Import and Look around; Look around closes it for good", async () => {
+    const { unmount } = shell();
+    const tour = await screen.findByRole("dialog", { name: "Welcome to PaySense" });
+    for (let i = 0; i < 3; i++) {
+      await userEvent.click(within(tour).getByRole("button", { name: "Next" }));
+    }
+    expect(within(tour).getByText("Step 4 of 4")).toBeInTheDocument();
+    expect(within(tour).getByRole("link", { name: "Import a statement" })).toHaveAttribute(
+      "href",
+      "/import",
+    );
+    await userEvent.click(within(tour).getByRole("button", { name: "Look around" }));
+    expect(screen.queryByRole("dialog", { name: "Welcome to PaySense" })).toBeNull();
+
+    unmount();
+    shell();
+    await screen.findByText("page body");
+    expect(screen.queryByRole("dialog", { name: "Welcome to PaySense" })).toBeNull();
+  });
+
+  it("can be skipped from any slide and replayed from the profile", async () => {
+    shell();
+    const tour = await screen.findByRole("dialog", { name: "Welcome to PaySense" });
+    await userEvent.click(within(tour).getByRole("button", { name: "Skip" }));
+    expect(screen.queryByRole("dialog", { name: "Welcome to PaySense" })).toBeNull();
+
+    const replay = screen.getByRole("button", { name: "Show the intro again" });
+    await userEvent.click(replay);
+    const again = await screen.findByRole("dialog", { name: "Welcome to PaySense" });
+    expect(within(again).getByText("Step 1 of 4")).toBeInTheDocument();
+    await userEvent.click(within(again).getByRole("button", { name: "Close" }));
+    expect(replay).toHaveFocus();
+  });
+});

@@ -24,7 +24,16 @@ export default defineConfig({
   // at once a slower machine (the author's Windows laptop) queues it past the 5 s default.
   expect: { timeout: 15_000 },
   reporter: [["list"]],
-  use: { baseURL: FRONTEND_URL, trace: "retain-on-failure", launchOptions },
+  use: {
+    baseURL: FRONTEND_URL,
+    trace: "retain-on-failure",
+    launchOptions,
+    // Every journey starts with the first-visit intro tour already seen; intro.spec.ts clears it.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: FRONTEND_URL, localStorage: [{ name: "paysense.intro.seen", value: "1" }] }],
+    },
+  },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "phone", use: { ...devices["Pixel 7"] } },

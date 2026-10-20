@@ -38,27 +38,32 @@ export function SecurityScreen() {
         intro="Attack the assistant on purpose, and see what the attacker got the model to do and what actually happened to the data."
       />
       <Card>
-        <CardTitle>How the drill works</CardTitle>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed text-ink-secondary">
-          <li>
-            It runs on the server in a throwaway sandbox with two made-up
-            students. Your own data is never read or written.
-          </li>
-          <li>
-            The model is a script that obeys every instruction it is given, so
-            it is fooled every time: the worst case. The defences have to hold
-            without the model&apos;s help.
-          </li>
-          <li>
-            Harm is checked on the sandbox after each attack: records written
-            without a confirm, another student&apos;s data in anything returned,
-            a made-up figure reaching the reply.
-          </li>
-          <li>
-            How the real model behaves is measured separately in the assistant
-            evaluation (`reports/assistant/` in the repository).
-          </li>
-        </ul>
+        <CardTitle>Run an attack on the assistant</CardTitle>
+        <details className="mt-2 text-[14px] leading-relaxed text-ink-secondary">
+          <summary className="w-fit cursor-pointer rounded font-semibold text-accent">
+            How the drill works
+          </summary>
+          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed text-ink-secondary">
+            <li>
+              It runs on the server in a throwaway sandbox with two made-up
+              students. Your own data is never read or written.
+            </li>
+            <li>
+              The model is a script that obeys every instruction it is given, so
+              it is fooled every time: the worst case. The defences have to hold
+              without the model&apos;s help.
+            </li>
+            <li>
+              Harm is checked on the sandbox after each attack: records written
+              without a confirm, another student&apos;s data in anything returned,
+              a made-up figure reaching the reply.
+            </li>
+            <li>
+              How the real model behaves is measured separately in the assistant
+              evaluation (`reports/assistant/` in the repository).
+            </li>
+          </ul>
+        </details>
         <Button
           className="mt-4"
           variant="accent"
