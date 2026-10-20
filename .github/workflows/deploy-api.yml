@@ -1,0 +1,56 @@
+# Production deploy of the API to Render, run by hand from the Actions tab (docs/deployment.md,
+# "Deploying from GitHub"). Deploys the commit it is run on, and only one that CI has already
+# passed. Deploy the API before the app when the app depends on an API change.
+# Migrations and the smoke test stay manual (docs/deployment.md).
+#
+# Secret, in the "production" environment: RENDER_DEPLOY_HOOK_URL.
+name: Deploy API (Render)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read # to look up the CI run for this commit
+
+# One deploy at a time, and never cancel one half-way.
+concurrency:
+  group: deploy-production-api
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Main, and CI green on this commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Refuse anything but main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Deploys run from main only (this run is on ${GITHUB_REF})."
+          exit 1
+      - name: Refuse a commit CI has not passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$GITHUB_SHA" \
+            --status success --limit 1 --json databaseId --jq length)
+          if [ "$passed" != "1" ]; then
+            echo "::error::CI has not passed on ${GITHUB_SHA}. Wait for it, or fix it, then deploy."
+            exit 1
+          fi
+
+  api:
+    name: API (Render)
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      # The hook starts the deploy and returns; Render builds backend/Dockerfile itself.
+      # ponytail: no wait for the new version; poll Render's API for the deploy status before
+      # running "Deploy app" if the app ever depends on an API change landing first.
+      - name: Trigger the Render deploy of this commit
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "${HOOK}&ref=${GITHUB_SHA}" -o /dev/null
