@@ -1,4 +1,4 @@
-"""WP4c / D-53: the Gemini and Anthropic adapters map the neutral types to each wire format.
+"""WP4c / D-53: the Gemini, Anthropic and Groq adapters map the neutral types to each wire format.
 No test touches the network: every request goes to an httpx.MockTransport."""
 
 import json
@@ -10,6 +10,7 @@ from pydantic import SecretStr
 from app.assistant.llm import (
     AnthropicLLM,
     GeminiLLM,
+    GroqLLM,
     LLMError,
     Message,
     ToolCall,
@@ -157,7 +158,8 @@ def test_anthropic_request_and_response_mapping():
 def test_build_llm_follows_the_settings(settings):
     assert build_llm(settings) is None  # no key
     assert "No API key" in guided_reason(settings)
-    gemini = settings.model_copy(update={"gemini_api_key": SecretStr(KEY)})
+    gemini = settings.model_copy(update={"llm_provider": "gemini",
+                                         "gemini_api_key": SecretStr(KEY)})  # fmt: skip
     assert isinstance(build_llm(gemini), GeminiLLM) and guided_reason(gemini) is None
     anthropic = settings.model_copy(update={"llm_provider": "anthropic",
                                             "anthropic_api_key": SecretStr(KEY)})  # fmt: skip
@@ -168,3 +170,71 @@ def test_build_llm_follows_the_settings(settings):
     assert build_llm(none) is None
     model = gemini.model_copy(update={"assistant_model": "gemini-3.5-flash"})
     assert build_llm(model).model == "gemini-3.5-flash"
+
+
+def test_groq_request_and_response_mapping():
+    seen = {}
+
+    def handler(request):
+        seen["url"] = str(request.url)
+        seen["auth"] = request.headers["authorization"]
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "choices": [{"message": {"role": "assistant", "content": "Let me check.",
+                         "tool_calls": [{"id": "tc_1", "type": "function", "function": {
+                             "name": "get_forecast", "arguments": "{}"}}]}}],
+            "usage": {"prompt_tokens": 300, "completion_tokens": 20},
+        })  # fmt: skip
+
+    llm = GroqLLM(KEY, client=client(handler))
+    history = [
+        Message("user", "Can I afford it?"),
+        Message("assistant", tool_calls=[ToolCall("tc_0", "get_budgets", {"month": "2025-12"})]),
+        Message("tool", tool_results=[ToolResult("tc_0", "get_budgets", {"ok": True})]),
+    ]
+    out = llm.complete("sys", history, [SPEC], max_output_tokens=500, timeout=5)
+    assert seen["url"] == "https://api.groq.com/openai/v1/chat/completions"
+    assert seen["auth"] == f"Bearer {KEY}"
+    body = seen["body"]
+    assert body["model"] == "llama-3.3-70b-versatile" and body["max_completion_tokens"] == 500
+    assert body["messages"][0] == {"role": "system", "content": "sys"}
+    assert body["messages"][2]["tool_calls"][0]["function"] == {
+        "name": "get_budgets", "arguments": '{"month": "2025-12"}'}  # fmt: skip
+    assert body["messages"][3] == {"role": "tool", "tool_call_id": "tc_0",
+                                   "content": '{"ok": true}'}  # fmt: skip
+    assert body["tools"][0]["function"]["parameters"]["type"] == "object"
+    assert out.text == "Let me check."
+    assert out.tool_calls == [ToolCall("tc_1", "get_forecast", {})]
+    assert (out.input_tokens, out.output_tokens) == (300, 20)
+
+
+def test_groq_unreadable_tool_arguments_are_an_llm_error():
+    def handler(request):
+        bad = {
+            "id": "x",
+            "type": "function",
+            "function": {"name": "get_forecast", "arguments": "{not json"},
+        }
+        message = {"content": None, "tool_calls": [bad]}
+        return httpx.Response(200, json={"choices": [{"message": message}]})
+
+    with pytest.raises(LLMError, match="arguments"):
+        GroqLLM(KEY, client=client(handler)).complete("s", [Message("user", "hi")], [SPEC],
+                                                      max_output_tokens=50, timeout=5)  # fmt: skip
+
+
+def test_build_llm_builds_groq_and_names_its_missing_key(settings):
+    groq = settings.model_copy(update={"llm_provider": "groq"})
+    assert build_llm(groq) is None and "No API key is set for groq" in guided_reason(groq)
+    keyed = groq.model_copy(update={"groq_api_key": SecretStr(KEY)})
+    assert isinstance(build_llm(keyed), GroqLLM) and guided_reason(keyed) is None
+
+
+def test_groq_errors_never_echo_the_bearer_key():
+    def handler(request):
+        return httpx.Response(401, text=f"Invalid API Key: {KEY}")
+
+    with pytest.raises(LLMError) as err:
+        GroqLLM(KEY, client=client(handler)).complete("s", [Message("user", "hi")], [SPEC],
+                                                      max_output_tokens=50, timeout=5)  # fmt: skip
+    assert KEY not in str(err.value) and "[redacted]" in str(err.value)

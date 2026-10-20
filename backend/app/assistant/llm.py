@@ -3,7 +3,8 @@
 The agent speaks only this module's types: `Message` (user / assistant / tool turns), `ToolSpec`,
 `ToolCall`, `LLMResponse` with token counts. Each adapter maps them to its provider's wire format:
 
-    GeminiLLM     Gemini API generateContent with function calling (free tier; the default)
+    GroqLLM       open-weight models on Groq's OpenAI-compatible API (free tier; the default, D-70)
+    GeminiLLM     Gemini API generateContent with function calling (free tier)
     AnthropicLLM  Claude through the Messages API with tool use (the upgrade, D-53)
     FakeLLM       scripted, for every test: never touches the network
 
@@ -25,9 +26,11 @@ from app.core.settings import Settings
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 # Gemini default: the free tier allows only 20 requests a day on gemini-3.8-flash (measured);
 # the lite model has its own, larger allowance and passed every live scenario (ASSUMED 29).
-DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite", "anthropic": "claude-sonnet-5-5"}
+DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite", "anthropic": "claude-sonnet-5-5",
+                  "groq": "llama-3.3-70b-versatile"}  # fmt: skip
 
 
 class LLMError(Exception):
@@ -156,7 +159,7 @@ def _redact(text: str, headers: dict[str, str]) -> str:
     """Provider error text, with every credential that was sent removed (a provider may echo it)."""
     for name, value in headers.items():
         if name.lower() in ("x-goog-api-key", "x-api-key", "authorization") and value:
-            text = text.replace(value, "[redacted]")
+            text = text.replace(value.removeprefix("Bearer "), "[redacted]")
     return " ".join(text.split())
 
 
@@ -358,6 +361,85 @@ class AnthropicLLM:
         )
 
 
+# ------------------------------------------------------------------ Groq
+class GroqLLM:
+    """Groq speaks the OpenAI chat-completions format: tool arguments travel as JSON strings."""
+
+    provider = "groq"
+
+    def __init__(self, api_key: str, model: str | None = None, client: httpx.Client | None = None):
+        self._key = api_key
+        self.model = model or DEFAULT_MODELS["groq"]
+        self._client = client or httpx.Client()
+
+    @staticmethod
+    def _messages(system: str, messages: Sequence[Message]) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = [{"role": "system", "content": system}]
+        for m in messages:
+            if m.role == "user":
+                out.append({"role": "user", "content": m.text})
+            elif m.role == "assistant":
+                turn: dict[str, Any] = {"role": "assistant", "content": m.text or None}
+                if m.tool_calls:
+                    turn["tool_calls"] = [
+                        {"id": c.id, "type": "function",
+                         "function": {"name": c.name, "arguments": json.dumps(c.arguments)}}
+                        for c in m.tool_calls
+                    ]  # fmt: skip
+                out.append(turn)
+            else:
+                out += [
+                    {"role": "tool", "tool_call_id": r.call_id,
+                     "content": json.dumps(r.content, default=str)}
+                    for r in m.tool_results
+                ]  # fmt: skip
+        return out
+
+    def complete(self, system, messages, tools, *, max_output_tokens, timeout) -> LLMResponse:
+        body = {
+            "model": self.model,
+            "messages": self._messages(system, messages),
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": flatten_schema(t.parameters),
+                    },
+                }
+                for t in tools
+            ],  # fmt: skip
+            "max_completion_tokens": max_output_tokens,
+            "temperature": 0.2,
+        }
+        data = _post(
+            self._client,
+            GROQ_URL,
+            headers={"authorization": f"Bearer {self._key}", "content-type": "application/json"},
+            body=body,
+            timeout=timeout,
+        )
+        try:
+            message = data["choices"][0]["message"]
+        except (KeyError, IndexError, TypeError) as err:
+            raise LLMError("the model's answer had no content") from err
+        calls = []
+        for c in message.get("tool_calls") or []:
+            try:
+                arguments = json.loads(c["function"].get("arguments") or "{}")
+            except ValueError as err:
+                raise LLMError("the model sent tool arguments that are not JSON") from err
+            calls.append(ToolCall(str(c["id"]), str(c["function"]["name"]), dict(arguments)))
+        usage = data.get("usage", {})
+        return LLMResponse(
+            text=(message.get("content") or "").strip(),
+            tool_calls=calls,
+            input_tokens=int(usage.get("prompt_tokens", 0)),
+            output_tokens=int(usage.get("completion_tokens", 0)),
+        )
+
+
 # ------------------------------------------------------------------ fake (tests)
 Script = Callable[[str, Sequence[Message], Sequence[ToolSpec]], LLMResponse]
 
@@ -409,6 +491,8 @@ def build_llm(settings: Settings, client: httpx.Client | None = None) -> LLM | N
         return AnthropicLLM(
             settings.anthropic_api_key.get_secret_value(), settings.assistant_model, client
         )
+    if settings.llm_provider == "groq" and settings.groq_api_key:
+        return GroqLLM(settings.groq_api_key.get_secret_value(), settings.assistant_model, client)
     return None
 
 
@@ -418,9 +502,11 @@ def guided_reason(settings: Settings) -> str | None:
         return "The assistant's model is switched off."
     if settings.llm_provider == "none":
         return "No model provider is configured."
-    key = (
-        settings.gemini_api_key if settings.llm_provider == "gemini" else settings.anthropic_api_key
-    )
+    key = {
+        "gemini": settings.gemini_api_key,
+        "anthropic": settings.anthropic_api_key,
+        "groq": settings.groq_api_key,
+    }[settings.llm_provider]
     if not key:
         return f"No API key is set for {settings.llm_provider}."
     return None

@@ -5,8 +5,14 @@ provider's name is filled in from the settings, so the notice always names the p
 actually receives the assistant's messages (D-53).
 """
 
-CONSENT_VERSION = "v1"
-PROVIDER_NAMES = {"gemini": "Google (Gemini API)", "anthropic": "Anthropic (Claude API)"}
+# Bump whenever the notice changes, including who receives the assistant's data: everyone is asked
+# again before the model is called. v2: the default provider became Groq (D-70).
+CONSENT_VERSION = "v2"
+PROVIDER_NAMES = {
+    "groq": "Groq (open-weight models, servers in the United States)",
+    "gemini": "Google (Gemini API)",
+    "anthropic": "Anthropic (Claude API)",
+}
 
 
 def consent_sections(provider: str) -> list[tuple[str, str]]:

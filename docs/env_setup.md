@@ -10,12 +10,16 @@ Last updated: 2026-10-08
 
 ## Required variables
 
-**Backend — `backend/.env`** (template: `backend/.env.example`; read by `backend/app/core/settings.py`, created in P0)
+**One file for both apps: `.env` at the repo root** (template: `.env.example`). The backend reads it, then `backend/.env` if present (which wins); the frontend reads it from `next.config.ts`, and `frontend/.env.local` still wins.
+
+**Backend** (read by `backend/app/core/settings.py`)
 
 | Variable | Required | Where to get it | Read by | Notes |
 |---|---|---|---|---|
-| `SUPABASE_URL` | Yes | https://supabase.com/dashboard → your project → Project Settings → API → Project URL | backend settings → db client | Create the project in region **Southeast Asia (Singapore)** |
-| `SUPABASE_SERVICE_KEY` | Yes | Same page → API keys → the **secret / service_role** key | backend settings → db client | Server-side only. Never in the frontend, never in a `NEXT_PUBLIC_*` variable |
+| `DB_BACKEND` | `supabase` | `memory` for local development (D-71): an in-memory database with three demo students (`aina`, `hafiz`, `meiling`) already loaded; everything resets on restart. `supabase` in production | backend start-up | Never `memory` on a deployment: nothing is kept |
+| `LOCAL_DEMO_PASSPHRASE` | `paysense-local-demo` | Any phrase of 12+ characters | memory mode only | The demo students' passphrase locally |
+| `SUPABASE_URL` | When `DB_BACKEND=supabase` | https://supabase.com/dashboard → your project → Project Settings → API → Project URL | backend settings → db client | Create the project in region **Southeast Asia (Singapore)** |
+| `SUPABASE_SERVICE_KEY` | When `DB_BACKEND=supabase` | Same page → API keys → the **secret / service_role** key | backend settings → db client | Server-side only. Never in the frontend, never in a `NEXT_PUBLIC_*` variable |
 | `SESSION_SECRET` | Yes | Generate locally: `python -c "import secrets; print(secrets.token_urlsafe(48))"` | backend auth (HS256 signing) | Rotating it logs every tester out |
 | `CORS_ORIGINS` | Yes | Your frontend origins, comma-separated: `http://localhost:3000` locally; add the Vercel URL in P8 | backend CORS middleware | No trailing slash |
 
@@ -36,7 +40,8 @@ Last updated: 2026-10-08
 | `DAILY_WRITE_QUOTA` | `300` | Writes one user may make per Malaysian day across every write route (D-49, WP18) |
 | `SMOKE_PASSPHRASE` | unset | Read only by `scripts/smoke_live.py`: the passphrase of the seeded tester it logs in as |
 | `ASSISTANT_ENABLED` | `true` | `false` puts the assistant in guided mode (tools from buttons, no model) |
-| `LLM_PROVIDER` | `gemini` | `gemini`, `anthropic` or `none` (D-53). No key for the chosen provider = guided mode |
+| `LLM_PROVIDER` | `groq` | `groq`, `gemini`, `anthropic` or `none` (D-53, D-70). No key for the chosen provider = guided mode |
+| `GROQ_API_KEY` | unset → guided mode | https://console.groq.com/keys (free tier, rate limited). Server-side only. Default model `llama-3.3-70b-versatile`; change it with `ASSISTANT_MODEL` |
 | `GEMINI_API_KEY` | unset → guided mode | Google AI Studio → Get API key. Server-side only (`SecretStr`), never logged or returned. Free-tier prompts may be used by Google to improve its products: synthetic personas only |
 | `ANTHROPIC_API_KEY` | unset → guided mode | https://console.anthropic.com/settings/keys. Server-side only. Used when `LLM_PROVIDER=anthropic` |
 | `ASSISTANT_MODEL` | `gemini-3.1-flash-lite` / `claude-sonnet-5-5` | Model name for the chosen provider; check it in the provider's console |

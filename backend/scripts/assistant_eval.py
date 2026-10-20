@@ -8,7 +8,7 @@ persona loaded for a fresh user per run and the served risk model. Success is de
 scenario before running (below). A turn that fell back to guided mode is a failure. Writes the
 transcripts to `reports/assistant/live_eval.json` and the summary to
 `reports/assistant/README.md`; both are generated, never edited by hand. Needs the provider's key
-in the environment (`LLM_PROVIDER`, `GEMINI_API_KEY` or `ANTHROPIC_API_KEY`).
+in the environment (`LLM_PROVIDER`, `GROQ_API_KEY`, `GEMINI_API_KEY` or `ANTHROPIC_API_KEY`).
 """
 
 import argparse

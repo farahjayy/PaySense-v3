@@ -108,6 +108,11 @@ def create_app(
 ) -> FastAPI:
     app = FastAPI(title="PaySense API", version="0.1.0", generate_unique_id_function=_operation_id)
     app.state.settings = settings
+    if db is None and settings.db_backend == "memory":
+        from app.api.deps import malaysia_today
+        from app.db.local_demo import build_local_demo_db
+
+        db = build_local_demo_db(settings.local_demo_passphrase, malaysia_today())
     app.state.db = db  # built lazily on first use when None (see api/deps.py)
     app.state.login_limiter = login_limiter or LoginRateLimiter()
     # failures against one username from one address (D-49, ASSUMED 31): a stranger elsewhere

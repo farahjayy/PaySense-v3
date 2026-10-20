@@ -7,7 +7,8 @@ from app.main import create_app
 TEST_SECRET = "test-secret-" + "x" * 40
 # Settings read the environment as well as their arguments. Tests must never reach a real model
 # provider, whatever keys the machine running them holds (ADR D-53: tests use the fake LLM).
-LLM_ENVIRONMENT = ("GEMINI_API_KEY", "ANTHROPIC_API_KEY", "LLM_PROVIDER", "ASSISTANT_MODEL")
+LLM_ENVIRONMENT = ("GROQ_API_KEY", "GEMINI_API_KEY", "ANTHROPIC_API_KEY", "LLM_PROVIDER",
+                   "ASSISTANT_MODEL")  # fmt: skip
 
 
 @pytest.fixture(autouse=True)

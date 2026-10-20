@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, ValidationError, field_validator
+from pydantic import Field, SecretStr, ValidationError, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_GUIDE = "docs/env_setup.md"
@@ -20,8 +20,13 @@ class MissingSettingsError(RuntimeError):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_FILES, extra="ignore")
 
-    supabase_url: str = Field(min_length=1)
-    supabase_service_key: SecretStr = Field(min_length=1)
+    # D-71: "memory" runs on the in-memory database with the demo personas loaded (local only;
+    # everything resets on restart). Production uses Supabase and needs both credentials.
+    db_backend: Literal["supabase", "memory"] = "supabase"
+    supabase_url: str | None = Field(default=None, validate_default=True)
+    supabase_service_key: SecretStr | None = Field(default=None, validate_default=True)
+    # the demo personas' login in memory mode; those accounts exist nowhere else
+    local_demo_passphrase: str = "paysense-local-demo"  # noqa: S105
     session_secret: SecretStr = Field(min_length=MIN_SECRET_LENGTH)
     cors_origins: str = Field(min_length=1)
     session_ttl_hours: int = Field(default=12, gt=0)
@@ -31,7 +36,8 @@ class Settings(BaseSettings):
 
     # ---- the assistant (ADRs D-47, D-48, D-53). Keys are optional: none means guided mode.
     assistant_enabled: bool = True
-    llm_provider: Literal["gemini", "anthropic", "none"] = "gemini"
+    llm_provider: Literal["groq", "gemini", "anthropic", "none"] = "groq"  # D-70
+    groq_api_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
     assistant_model: str | None = None  # None: the provider adapter's default model
@@ -55,6 +61,14 @@ class Settings(BaseSettings):
     google_client_secret: SecretStr | None = None
     api_public_url: str | None = None  # the origin the browser uses for the API, no trailing slash
     app_url: str | None = None  # the frontend origin; defaults to the first CORS origin
+
+    @field_validator("supabase_url", "supabase_service_key")
+    @classmethod
+    def _needed_for_supabase(cls, value: str | SecretStr | None, info: ValidationInfo):
+        text = value.get_secret_value() if isinstance(value, SecretStr) else value
+        if info.data.get("db_backend", "supabase") == "supabase" and not (text or "").strip():
+            raise ValueError("required unless DB_BACKEND=memory")
+        return value
 
     @field_validator("cors_origins")
     @classmethod

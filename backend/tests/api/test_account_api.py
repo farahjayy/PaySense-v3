@@ -96,13 +96,13 @@ def test_export_holds_every_table_and_no_secrets(api, amir, fake_db, both_have_e
 
 def test_consent_is_versioned_and_names_the_provider(api, amir, fake_db):
     body = api.get("/api/account/consent", headers=amir).json()
-    assert body["accepted"] is True and body["version"] == "v1"
-    assert any("Google" in s["text"] for s in body["sections"])
+    assert body["accepted"] is True and body["version"] == "v2"
+    assert any("Groq" in s["text"] for s in body["sections"])
     row = next(r for r in fake_db.rows("user_settings") if r["user_id"] == ids(fake_db, "amir"))
     row["consent_version"] = None
     assert api.get("/api/account/consent", headers=amir).json()["accepted"] is False
-    assert api.post("/api/account/consent", json={"version": "v0"}, headers=amir).status_code == 409
-    assert api.post("/api/account/consent", json={"version": "v1"}, headers=amir).json()["accepted"]
+    assert api.post("/api/account/consent", json={"version": "v1"}, headers=amir).status_code == 409
+    assert api.post("/api/account/consent", json={"version": "v2"}, headers=amir).json()["accepted"]
 
 
 def test_the_assistant_will_not_call_the_model_before_consent(api, amir, fake_db):

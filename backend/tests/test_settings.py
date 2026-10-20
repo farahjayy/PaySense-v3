@@ -126,3 +126,13 @@ def test_a_root_env_serves_the_backend_and_backend_env_overrides_it(monkeypatch,
     local.write_text("SUPABASE_URL=https://local.supabase.co\n")
     assert load_settings(env_file=(root,)).supabase_url == "https://root.supabase.co"
     assert load_settings(env_file=(root, local)).supabase_url == "https://local.supabase.co"
+
+
+def test_memory_backend_needs_no_supabase_credentials(monkeypatch):
+    """D-71: DB_BACKEND=memory runs locally without Supabase; production keeps requiring it."""
+    _clean_env(monkeypatch)
+    s = Settings(_env_file=None, db_backend="memory", session_secret="s" * 32,
+                 cors_origins="http://localhost:3000")  # fmt: skip
+    assert s.supabase_url is None
+    with pytest.raises(ValidationError, match="DB_BACKEND=memory"):
+        Settings(_env_file=None, session_secret="s" * 32, cors_origins="http://localhost:3000")

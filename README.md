@@ -77,21 +77,37 @@ Repository: [github.com/farahjayy/PaySense-v3](https://github.com/farahjayy/PayS
 
 ## Architecture
 
-```
- Browser (Next.js, TypeScript)              FastAPI backend (Python)                       Supabase Postgres
- ┌──────────────────────────┐   HTTPS    ┌─────────────────────────────────────────┐    ┌──────────────────┐
- │ screens, charts,         │──────────▶ │ api/  routes (auth, quotas, rate limits) │    │ RLS on, no anon  │
- │ assistant panel,         │  bearer    │ db/   repositories, user_id first ──────┼──▶ │ policies; service│
- │ confirm cards            │  token     │ domain/  sen maths, schedules, budgets   │    │ key server-side  │
- │ (no money arithmetic,    │ ◀───────── │ engines/ forecasting (LSTM, ONNX) + risk │    └──────────────────┘
- │  types from OpenAPI)     │   JSON     │          (LightGBM, ONNX, Shapley)       │
- └──────────────────────────┘            │ assistant/ tools, policy, pending        │    ┌──────────────────┐
-                                         │   actions, number check, audit log ─────┼──▶ │ LLM provider     │
-                                         └─────────────────────────────────────────┘    │ (Gemini / Claude)│
- backend/ml/ (offline): synthetic population, evaluation, training, ONNX export ──▶ backend/models/ (served artefacts)
+```mermaid
+flowchart LR
+    subgraph web["Browser · Next.js + TypeScript"]
+        ui["Screens and charts<br/>assistant panel<br/>confirm cards"]
+    end
+
+    subgraph api["FastAPI backend · Python"]
+        routes["api/<br/>auth, quotas, rate limits"]
+        domain["domain/<br/>money in sen, schedules, budgets"]
+        engines["engines/<br/>LSTM forecast + LightGBM risk<br/>ONNX, Shapley reasons"]
+        assistant["assistant/<br/>tools, policy, number check<br/>pending actions, audit log"]
+        repos["db/<br/>repositories, user_id first"]
+    end
+
+    db[("Supabase Postgres<br/>RLS on · in-memory locally")]
+    llm["LLM provider<br/>Groq · Gemini · Claude"]
+    ml["backend/ml/ · offline<br/>synthetic data, evaluation, training"]
+    models[["backend/models/<br/>ONNX artefacts"]]
+
+    ui -- "HTTPS · bearer token" --> routes
+    routes -- JSON --> ui
+    routes --> domain & engines & assistant
+    domain --> repos
+    assistant --> repos
+    repos --> db
+    assistant -- "derived figures only" --> llm
+    ml -- export --> models
+    models -. loaded at start-up .-> engines
 ```
 
-The model never holds a write tool and never produces a score, forecast or amount (ADRs D-47, D-48). Details: [`SECURITY.md`](SECURITY.md) and [`docs/technical-documentation.md`](docs/technical-documentation.md).
+The browser does no money arithmetic and uses types generated from the API's OpenAPI schema. The LLM never holds a write tool and never produces a score, forecast or amount (ADRs D-47, D-48). Details: [`SECURITY.md`](SECURITY.md) and [`docs/technical-documentation.md`](docs/technical-documentation.md).
 
 ## Measured results
 
@@ -112,24 +128,18 @@ The sources of every figure in this paragraph are listed in [`docs/honest-limits
 
 ## Run it locally
 
-Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), [pnpm](https://pnpm.io/installation), Node.js 24 (`frontend/.nvmrc`; at least 22.22, which jsdom and undici in the test toolchain require), a Supabase project (free tier) for the database. Commands work the same on Windows, macOS and Linux.
+Requirements: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python), [pnpm](https://pnpm.io/installation), Node.js 24 (`frontend/.nvmrc`; at least 22.22). No database account is needed locally. Commands work the same on Windows, macOS and Linux.
 
 ```bash
 git clone <this repo> && cd PaySense-v3
-pnpm install                          # frontend packages, then `uv sync` for the backend (venv, runtime + dev + ml groups)
-cp backend/.env.example backend/.env  # fill in: docs/env_setup.md
-cp frontend/.env.example frontend/.env.local
+pnpm install          # frontend packages, then `uv sync` for the backend
+cp .env.example .env  # one file for both apps; every variable: docs/env_setup.md
+pnpm dev              # API on http://localhost:8000, app on http://localhost:3000; Ctrl+C stops both
 ```
 
-For the API and its tests only, without the ML stack: `cd backend && uv sync --no-group ml`.
+With `DB_BACKEND=memory` (the local setting) the API runs on an in-memory database with three demo students already loaded: sign in as `aina`, `hafiz` or `meiling` with the passphrase in `LOCAL_DEMO_PASSPHRASE`. Everything resets when the API restarts. For the assistant, set `GROQ_API_KEY` (free at [console.groq.com](https://console.groq.com/keys)); without a key it runs in guided mode.
 
-Apply `backend/migrations/0001` to `0006` in order in the Supabase SQL editor ([`backend/migrations/README.md`](backend/migrations/README.md)), check the lock-down with `cd backend && uv run python scripts/check_rls.py`, then:
-
-```bash
-pnpm dev     # API on http://localhost:8000 and the app on http://localhost:3000; Ctrl+C stops both
-```
-
-Each half alone: `pnpm dev:api` or `pnpm dev:web`.
+**Production** uses Supabase: set `DB_BACKEND=supabase`, `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`, apply `backend/migrations/0001` to `0007` in order ([`backend/migrations/README.md`](backend/migrations/README.md)) and check the lock-down with `cd backend && uv run python scripts/check_rls.py`. For the API and its tests only, without the ML stack: `cd backend && uv sync --no-group ml`.
 
 ## Demo accounts
 

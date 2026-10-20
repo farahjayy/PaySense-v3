@@ -21,6 +21,7 @@ scratch/
 node_modules/
 dist/
 .next/
+.next-*/
 out/
 coverage/
 *.tsbuildinfo
@@ -63,3 +64,6 @@ progress_material/
 *.npy
 
 internal/
+
+# Decks and organiser PDFs are private (internal/pdfs/); never at the public root
+/*.pdf
